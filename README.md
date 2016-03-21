@@ -6,6 +6,7 @@ SIPI is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at
 
 Knora is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
 SIPI uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
+SIPI uses the Adobe ICC Color profile, Kakadu must be licensed and downloaded separately by the user.
 
 The build process relies on cmake.
 
@@ -25,6 +26,7 @@ The build process relies on cmake.
    - exiv2-0.25
    - libpng16
    - log4cpp-1.1.2rc1
+   - download Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html> and create two headers file: `xxd -i AdobeRGB1998.icc > AdobeRGB1998_icc.h` and `xxd -i USWebCoatedSWOP.icc > USWebCoatedSWOP_icc.h`
 
 In the root directory, two additional directories must be created: `build` and `cache`.
 
