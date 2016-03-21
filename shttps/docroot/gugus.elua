@@ -1,0 +1,17 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Embedded lua test</title>
+</head>
+<body>
+<h1>Embedded lua test</h1>
+<hr/>
+<table>
+<lua>
+for i=1, 20  do
+    server.print("<tr><td>", i, "</td><td>", i*20, "</td></tr>")
+end
+</lua>
+</table>
+</body>
+</html>

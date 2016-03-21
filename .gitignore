@@ -1,0 +1,38 @@
+#
+# ignore object files and libraries
+#
+*.[oa]
+
+#
+# ignore executable
+#
+sipi
+
+#
+# other files to be ignored
+#
+#*.tif
+*.jp2
+#*.jpg
+*.jpx
+.DS_Store
+*~
+.idea/
+SipiConfig.h
+sipi.log.txt
+
+#
+# Cmake things to be ignored
+#
+lib
+local
+
+# ignore cache
+cache/
+
+# ignore ICC files
+*.icc
+
+#ignore ICC headers
+*_icc.h
+/images/
