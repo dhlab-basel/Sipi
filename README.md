@@ -156,56 +156,11 @@ Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpret
 
 ### Installing Lua modules
 
-To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>
+To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>.
 
 For example, using `local/bin/luarocks install --local package` the package will be installed in `~/.luarocks/`. To include this path in the Lua's interpreter package search path, you can use an environment variable. Running `local/bin/luarocks path` outputs the code you can use to do so. Alternatively, you can build the package path at the beginning of a Lua file by setting `package.path` and `package.cpath` (see: <http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages>).
 
-To make this easier in the future, we will provide a file that is automatically passed to the Lua interpreter, settings the paths correctly (using `lua -l set_paths`). 
-
-### Testing CORS for Knora
-
-The SIPI routes will be also accessed directly by a web browser (SALSAH web interface) and thus needs to support CORS (cross-domain requests).
-With the following code, this can be tested for a POST-request to SIPI's conversion handler.
-
-Access <http://www.salsah.org> in your web browser and run the following code in your JavaScript-interpreter:
-
-
-```javascript
-$.ajax({
-  method: "POST",
-  url: "http://sipihost:1024/convert",
-  data: {
-    source: "./test_server/images/Chlaus.jpg",
-    originalMimetype: "image/jpeg",
-    originalFilename: "Chlaus.jpg"
-  }
-})
-```
-
-You should get a JSON response from SIPI. If there is a problem with the CORS support, the browser won't let you do the request.
-
-You can also do a POST multipart request directly sending a binary image. Go to <http://www.salsah.org>, open the form to create a new resource and choose an image to upload (do not click upload). Now you can paste in the following JavaScript-code to send that image to sipi:
-
-```javascript
-var formData = new FormData();
-// here, we access the form element containing the image
-formData.append('file', $('input[type=file]')[0].files[0]);
-
-$.ajax({
-        type:'POST',
-  url: 'http://http://sipihost:1024/convert',
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        success:function(data) {
-        },
-        error: function(data) {
-        }
-    });
-```
-
-If this works, SIPI processes the request and sends you a message back.
+To make this easier in the future, we will provide a file that is automatically passed to the Lua interpreter, settings the paths correctly (using `lua -l set_paths`).
 
 ## Commit Message Schema
 
