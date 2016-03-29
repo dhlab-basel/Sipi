@@ -38,8 +38,8 @@
 function pre_flight(prefix,identifier,cookie)
 
     -- use Sipi's luarocks to install these modules
-    --requests = require "requests"
-    --json = require "json"
+    requests = require "requests"
+    json = require "json"
 
     if config.prefix_as_path then
         filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
@@ -59,8 +59,8 @@ function pre_flight(prefix,identifier,cookie)
 
 
     -- comment this in if you do not want to do a preflight request
-    print("ignoring permissions")
-    do return 'allow', filepath end
+    --print("ignoring permissions")
+    --do return 'allow', filepath end
 
     if cookie == '' then
         -- unset cookie if it is empty, so it does not get sent to Knora
@@ -92,13 +92,15 @@ function pre_flight(prefix,identifier,cookie)
         return 'deny'
     end
 
-    if ret.status ~= 200 then
+    if ret.status_code ~= 200 then
         print("Knora returned an unsuccessful HTTP status code " .. ret.status)
         print(ret.text)
         return 'deny'
     end
 
     response_json = json.decode(ret.text)
+
+    print(ret.text)
 
     --print("status: " .. response_json.status)
     --print("permission code: " .. response_json.permissionCode)
@@ -114,7 +116,7 @@ function pre_flight(prefix,identifier,cookie)
     elseif response_json.permissionCode == 1 then
         -- restricted view permission on file
         -- either watermark or size (depends on project, should be returned with permission code by Sipi responder)
-        return 'restrict:size=' .. "config.thumb_size", filepath
+        return 'restrict:size=' .. config.thumb_size, filepath
     elseif response_json.permissionCode >= 2 then
         -- full view permissions on file
         return 'allow', filepath
