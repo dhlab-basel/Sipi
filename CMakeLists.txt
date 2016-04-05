@@ -482,8 +482,14 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
-
-file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+find_file(
+    ICC
+    ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip
+    NO_DEFAULT_PATH
+)
+if(ICC-NOTFOUND)
+    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+endif()
 
 add_custom_target(
         icc_profiles
@@ -492,8 +498,10 @@ add_custom_target(
         COMMAND unzip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
+        COMMAND rm AdobeRGB1998.icc
         COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
+        COMMAND rm USWebCoatedSWOP.icc
         COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)'
 )
 
