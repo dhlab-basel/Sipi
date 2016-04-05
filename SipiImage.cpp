@@ -31,7 +31,6 @@
 //#include "formats/SipiIOOpenJ2k.h"
 #include "formats/SipiIOJpeg.h"
 #include "formats/SipiIOPng.h"
-#include "USWebCoatedSWOP_icc.h"
 #include "shttps/GetMimetype.h"
 
 using namespace std;

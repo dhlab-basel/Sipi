@@ -483,6 +483,20 @@ endif(DOXYGEN_FOUND)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
 
+file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+
+add_custom_target(
+        icc_profiles
+        COMMENT "Generating ICC profile includes"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND unzip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
+        COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
+        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)'
+)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
@@ -494,6 +508,15 @@ link_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
+
+#find_file(
+#        ICC_INCLUDES
+#        NAMES AdobeRGB1998_icc.h USWebUncoated_icc.h
+#        PATHS ${CMAKE_CURRENT_SOURCE_DIR}
+#        NO_DEFAULT_PATH
+#)
+#if(NOT ICC_INCLUDES)
+#endif()
 
 add_executable(
         sipi
@@ -523,6 +546,9 @@ add_executable(
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
         iiifparser/SipiSize.cpp iiifparser/SipiSize.h
 )
+add_dependencies(sipi icc_profiles)
+
+
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua dl pthread ${CMAKE_DL_LIBS} z m )
