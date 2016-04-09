@@ -37,7 +37,8 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test_server/images',
+    -- imgroot = './test_server/images',
+    imgroot = './images',
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -61,7 +62,7 @@ sipi = {
     cachesize = '100M',
 
     --
-    -- if the cache becomes full, the given percentage of file space is marked for reuase
+    -- if the cache becomes full, the given percentage of file space is marked for reuse
     --
     cache_hysteresis = 0.1,
 
@@ -80,6 +81,12 @@ sipi = {
     --
     tmpdir = '/tmp',
 
+
+}
+
+fileserver = {
+    docroot = './server',
+    docroute = '/server'
 }
 
 --
