@@ -29,6 +29,7 @@
 #include <sstream>
 #include <thread>
 #include <csignal>
+#include <utility>
 
 #include "Global.h"
 #include "LuaServer.h"
@@ -273,6 +274,7 @@ int main (int argc, char *argv[]) {
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
             server.prefix_as_path(sipiConf.getPrefixAsPath());
 
+
             //
             // cache parameter...
             //
@@ -303,6 +305,20 @@ int main (int argc, char *argv[]) {
             server.initscript(sipiConf.getInitScript());
 
             server.keep_alive_timeout(sipiConf.getKeepAlive());
+
+            //
+            // now we set the routes for the normal HTTP server file handling
+            //
+            std::string docroot = sipiConf.getDocRoot();
+            std::string docroute = sipiConf.getDocRoute();
+            std::pair<std::string,std::string> filehandler_info;
+
+            if (!(docroute.empty() || docroot.empty())) {
+                filehandler_info.first = docroute;
+                filehandler_info.second = docroot;
+                server.addRoute(shttps::Connection::GET, docroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::POST, docroute, shttps::FileHandler, &filehandler_info);
+            }
 
             serverptr = &server;
             old_sighandler = signal(SIGINT, sighandler);

@@ -324,7 +324,7 @@ namespace Sipi {
         else if (extension == "png") {
             ftype = "png";
         }
-        else if ((extension == "j2k") || (extension == "jpx")) {
+        else if ((extension == "j2k") || (extension == "jpx") || (extension == "jp2")) {
             ftype = "jpx";
         }
         else {

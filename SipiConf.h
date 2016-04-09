@@ -54,6 +54,8 @@ namespace Sipi {
         std::vector<shttps::LuaRoute> routes;
         std::string knora_path;
         std::string knora_port;
+        std::string docroot;
+        std::string docroute;
     public:
         SipiConf();
         SipiConf(shttps::LuaServer& luacfg);
@@ -91,6 +93,10 @@ namespace Sipi {
         inline std::string getKnoraPath(void) { return knora_path; }
 
         inline std::string getKnoraPort(void) { return knora_port; }
+
+        inline std::string getDocRoot(void) { return docroot; }
+
+        inline std::string getDocRoute(void) { return docroute; }
 
     };
 
