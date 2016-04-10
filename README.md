@@ -6,8 +6,10 @@ SIPI is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at
 
 SIPI is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
 SIPI uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
+The current version of SIPI requires version "v7_8-01382N" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_8-01382N.zip".
 
-SIPI uses the Adobe ICC Color profile, they must be licensed and downloaded separately by the user.
+SIPI uses the Adobe ICC Color profiles which are automatically downloaded by the cmake process into a file called "icc.zip". The
+user is responsible for reading and agreeing with the license conditions of Adobe as written in the provided file "Color Profile EULA.pdf"!
 
 The build process relies on cmake.
 
@@ -18,9 +20,9 @@ The build process relies on cmake.
 - cmake > 2.8.0 (for Mac, see below)
 - java openjdk devel (set environment variable `JAVA_HOME`)
 - internet connection. During the make process a large amount of open source packages are downloaded. These are:
-   - mariadb-connector-c-2.1.0
    - xz-5.2.1
    - libjpeg-v9a
+   - jbigkit-2.1
    - tiff-4.0.6
    - expat-2.1.0
    - lcms2-2.7
