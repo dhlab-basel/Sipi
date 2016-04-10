@@ -100,28 +100,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# get mariadb (ex-mysql) client library
-#
-#find_package(MariaDB 2.2.2 QUIET)
-#if(NOT MARIADB_FOUND)
-#    ExternalProject_Add(project_mariadb
-#        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-#        URL https://downloads.mariadb.com/enterprise/h2rp-sk48/connectors/c/mariadb-connector-c-2.1.0-src.tar.gz
-#        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/mariadb-connector-c-2.1.0
-#        UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/mariadb-connector-c-2.1.0/include/mysql.h < ${CMAKE_CURRENT_SOURCE_DIR}/patches/mariadb.patch
-#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local -DWITH_OPENSSL=Off
-#    )
-#    ExternalProject_Get_Property(project_mariadb install_dir)
-#    if(MAKE_SHARED_SIPI)
-#        add_library(mariadb_client SHARED IMPORTED)
-#        set_property(TARGET mariadb_client PROPERTY IMPORTED_LOCATION ${install_dir}/lib/mariadb/libmariadb.2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#    else()
-#        add_library(mariadb_client STATIC IMPORTED)
-#        set_property(TARGET mariadb_client PROPERTY IMPORTED_LOCATION ${install_dir}/lib/mariadb/libmariadbclient${CMAKE_STATIC_LIBRARY_SUFFIX})
-#    endif()
-#    add_dependencies(mariadb_client project_mariadb)
-#endif()
-
 #
 # libxyz
 #
@@ -482,6 +460,11 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
+
+#
+# Here we get the ICC profiles from the Adobe website and prepare them for including
+# We just use the AdobeRGB1998.cc and the USWebCoatedSWOP.icc profiles for now...
+#
 find_file(
     ICC
     ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip
@@ -491,10 +474,18 @@ if(ICC-NOTFOUND)
     file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
 endif()
 
-add_custom_target(
-        icc_profiles
+
+set(
+        ICC_HEADERS
+        ${CMAKE_CURRENT_SOURCE_DIR}/AdobeRGB1998_icc.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/USWebCoatedSWOP_icc.h
+
+)
+add_custom_command(
+        OUTPUT ${ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        DEPENDS icc.zip
         COMMAND unzip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
         COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
@@ -503,6 +494,10 @@ add_custom_target(
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm USWebCoatedSWOP.icc
         COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)'
+)
+add_custom_target(
+        icc_profiles
+        DEPENDS ${ICC_HEADERS}
 )
 
 include_directories(
@@ -517,20 +512,13 @@ link_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
-#find_file(
-#        ICC_INCLUDES
-#        NAMES AdobeRGB1998_icc.h USWebUncoated_icc.h
-#        PATHS ${CMAKE_CURRENT_SOURCE_DIR}
-#        NO_DEFAULT_PATH
-#)
-#if(NOT ICC_INCLUDES)
-#endif()
 
 add_executable(
         sipi
         sipi.cpp
         SipiConf.cpp SipiConf.h
         SipiError.cpp SipiError.h
+        AdobeRGB1998_icc.h USWebCoatedSWOP_icc.h
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
@@ -554,7 +542,7 @@ add_executable(
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
         iiifparser/SipiSize.cpp iiifparser/SipiSize.h
 )
-add_dependencies(sipi icc_profiles)
+#add_dependencies(sipi icc_profiles)
 
 
 
