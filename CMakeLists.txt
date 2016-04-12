@@ -465,15 +465,18 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURC
 # Here we get the ICC profiles from the Adobe website and prepare them for including
 # We just use the AdobeRGB1998.cc and the USWebCoatedSWOP.icc profiles for now...
 #
+unset(ICC CACHE)
 find_file(
     ICC
-    ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip
+    icc.zip
+    ${CMAKE_CURRENT_SOURCE_DIR}
     NO_DEFAULT_PATH
 )
-if(ICC-NOTFOUND)
+if(ICC)
+    message(STATUS "Adobe ICC profiles were already downloaded")
+else()
     file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
 endif()
-
 
 set(
         ICC_HEADERS
@@ -486,14 +489,14 @@ add_custom_command(
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         DEPENDS icc.zip
-        COMMAND unzip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND unzip -f ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
+	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm AdobeRGB1998.icc
-        COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm USWebCoatedSWOP.icc
-        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)'
+        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles *end-user*'
 )
 add_custom_target(
         icc_profiles
