@@ -11,9 +11,11 @@ addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
+      - kalakris-cmake
     packages:
       - gcc-5
       - g++-5
+      - cmake
       
 before_install:
   - sudo apt-get update -qq
