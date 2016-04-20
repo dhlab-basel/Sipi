@@ -1,21 +1,21 @@
 git:
-	depth: 5
+  depth: 5
 sudo: required
 dist: precise
 language: cpp
 
 addons:
-	apt:
-		sources:
-			- ubuntu-toolchain-r-test
-		packages:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
       - gcc-5
-			- g++-5
-
+      - g++-5
+      
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y libreadline-dev
-	- sudo apt-get install -y log4cpp
+  - sudo apt-get install -y log4cpp
 
 script:
   - cd build
