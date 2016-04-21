@@ -489,7 +489,7 @@ add_custom_command(
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         DEPENDS icc.zip
-        COMMAND unzip -f ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND unzip -o ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
 	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm AdobeRGB1998.icc
@@ -545,7 +545,7 @@ add_executable(
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
         iiifparser/SipiSize.cpp iiifparser/SipiSize.h
 )
-#add_dependencies(sipi icc_profiles)
+add_dependencies(sipi icc_profiles)
 
 
 
