@@ -45,7 +45,7 @@ function pre_flight(prefix,identifier,cookie)
 
     print("serving test image " .. filepath)
 
-    do return 'allow', filepath end
+    return 'allow', filepath
 
 end
 -------------------------------------------------------------------------------
