@@ -10,25 +10,37 @@ language: cpp
 jdk:
 - oraclejdk8
 
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    - kalakris-cmake
-    packages:
-    - gcc-5
-    - g++-5
-    - cmake
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - kalakris-cmake
+          packages:
+            - g++-5
+            - cmake
+            - libreadline-dev
+            - liblog4cpp5-dev
+      env: COMPILER="g++-5"
+    - os: osx
+      env: COMPILER="clang"
 
 before_install:
-- sudo apt-get update -qq
-- sudo apt-get install -y libreadline-dev
-- sudo apt-get install -y liblog4cpp5-dev
+- if [ `uname` = "Linux" ]; then
+     sudo apt-get update -qq;
+   elif [ `uname` = "Darwin" ]; then
+     brew update;
+     brew install cmake log4cpp;
+   fi
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_8-01382N.zip.enc -out vendor/v7_8-01382N.zip -d
+- openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in AdobeRGB1998_icc.h.enc -out AdobeRGB1998_icc.h -d
+- openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in USWebCoatedSWOP_icc.h.enc -out USWebCoatedSWOP_icc.h -d
 
 script:
 - cd build
-- cmake -DCMAKE_CXX_COMPILER=g++-5 .. && make
+- cmake -DCMAKE_CXX_COMPILER=$COMPILER .. && make
 
 notifications:
   slack:
