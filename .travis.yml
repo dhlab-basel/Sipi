@@ -13,27 +13,16 @@ jdk:
 matrix:
   include:
     - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - kalakris-cmake
-          packages:
-            - g++-5
-            - cmake
-            - libreadline-dev
-            - liblog4cpp5-dev
       env: COMPILER="g++-5"
     - os: osx
       env: COMPILER="clang"
 
 before_install:
-- if [ `uname` = "Linux" ]; then
-     sudo apt-get update -qq;
-   elif [ `uname` = "Darwin" ]; then
-     brew update;
-     brew install cmake log4cpp;
-   fi
+- if [ `uname` = "Linux" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+  -y; sudo add-apt-repository ppa:kalakris-cmake -y; sudo apt-get update -qq; sudo
+  apt-get install g++-5 -y; sudo apt-get install cmake -y; sudo apt-get install libreadline-dev
+  -y; sudo apt-get install liblog4cpp5-dev -y; elif [ `uname` = "Darwin" ]; then brew
+  update; brew install log4cpp; fi
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_8-01382N.zip.enc -out vendor/v7_8-01382N.zip -d
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in AdobeRGB1998_icc.h.enc -out AdobeRGB1998_icc.h -d
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in USWebCoatedSWOP_icc.h.enc -out USWebCoatedSWOP_icc.h -d
@@ -45,4 +34,3 @@ script:
 notifications:
   slack:
     secure: MGtrlgeHZ8F6SHmMOyOVuUac4IVSW7MF5tYGOHrRxyYuUZ5H/mADF/nHrY1wWwn9YHB460TkIma48/ctC21wyFecfvSzxfBuJtFflsXSpe8gE9DnlWaSZJgrcC7KwNcxDi4+0wIQHvFg8jbUZflsI1sB0ctMLzlt8gKQqRzjnlttznxUnU+8iEkUrPqRpFrwdL84J38Pdi4xy+7cMlx6VfaBj2UcBQz+jN22fJqOq4haCAj1w/ExrZJ1FaXJlgGafYQLV2YBeIdXrKNVV1dXpGElpOybuFbsi0XWHxHBaEALgoTZHot9QX3NXeRlm5BLVtqYXo06jFVydnnkvup44HYgPH6IFSbe4lh4kS+NKn+zbKjHwcPN2RZEvICmdpU9Gz/c0RVCPOp1NUQnnrMPcU8Q3X9LSa//y+X1nawk3vzjqeecLNZ6hJ6BAzzhF7Sy8kP5irTpGozwJtSZl8dQZX67sG7AQRpKhNw1HwGQSToasmPy8yQyVGozCoXS1m0R381xczNJcm8Ah2ApFT77VkglMwGtktWGGnYlXImwnKBK+DwJvQVkCtQ8bI5ZcGOOkH41zZ0QJ851eUMMrn2L7DDpBiZFXfp9BTWuBSIJtXTQ1SYldundmOJLKswx2rl+swngdF4cWS37lGMTiebpuxalWQ0O4uhflm7tRb0Kx9I=
-
