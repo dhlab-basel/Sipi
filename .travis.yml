@@ -10,10 +10,6 @@ language: cpp
 matrix:
   include:
   - os: linux
-    env:
-      - COMPILER="g++-5"
-      - CXX="g++-5"
-      - CC="gcc-5"
     addons:
       apt:
         sources:
@@ -25,10 +21,10 @@ matrix:
           - libreadline-dev
           - liblog4cpp5-dev
   - os: osx
-    env: COMPILER="clang"
 
 before_install:
 - if [ "$TRAVIS_OS_NAME" == "linux" ]; then jdk_switcher use oraclejdk8; fi
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CXX="g++-5" CC="gcc-5" ; fi
 - java -version
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
@@ -38,7 +34,7 @@ before_install:
 
 script:
 - cd build
-- cmake -DCMAKE_CXX_COMPILER=$COMPILER .. && make
+- cmake .. && make
 
 notifications:
   slack:
