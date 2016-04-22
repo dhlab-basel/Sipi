@@ -643,7 +643,11 @@ namespace Sipi {
         if (img->xmp != NULL) {
             unsigned int len = 0;
             const char *xmp_buf = img->xmp->xmpBytes(len);
-            write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
+            if (len > 0) {
+                cerr << "XMP..." << endl;
+                cerr << xmp_buf << endl;
+                write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
+            }
         }
 
         jp2_output_box *out_box = jpx_stream.open_stream();
