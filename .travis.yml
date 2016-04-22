@@ -28,7 +28,7 @@ before_install:
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in private/private.tar.enc -out private/private.tar -d
-- tar xvf private/private.tar
+- tar xvf private/private.tar -C private/
 - cp private/AdobeRGB1998_icc.h .
 - cp private/USWebCoatedSWOP_icc.h .
 - cp private/v7_8-01382N.zip vendor/.
