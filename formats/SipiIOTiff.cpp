@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
  * Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
  * This file is part of Sipi.
@@ -950,7 +950,9 @@ namespace Sipi {
             const unsigned char *buf;
             try {
                 buf = img->icc->iccBytes(len);
-                TIFFSetField(tif, TIFFTAG_ICCPROFILE, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_ICCPROFILE, len, buf);
+                }
             }
             catch (SipiError &err) {
                 logger != NULL ? logger << err : cerr << err;
@@ -965,7 +967,9 @@ namespace Sipi {
             unsigned char *buf;
             try {
                 buf = img->iptc->iptcBytes(len);
-                TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, len, buf);
+                }
                 delete [] buf;
             }
             catch (SipiError &err) {
@@ -982,7 +986,9 @@ namespace Sipi {
             const char *buf;
             try {
                 buf = img->xmp->xmpBytes(len);
-                TIFFSetField(tif, TIFFTAG_XMLPACKET, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_XMLPACKET, len, buf);
+                }
             }
             catch (SipiError &err) {
                 logger != NULL ? logger << err : cerr << err;
