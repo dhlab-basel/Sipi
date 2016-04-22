@@ -3,7 +3,7 @@ git:
 
 sudo: required
 
-dist: precise
+dist: trusty
 
 language: cpp
 
