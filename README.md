@@ -19,7 +19,7 @@ The build process relies on cmake.
 - a working c++11 compiler (gcc >= v5.3 or clang)
 - cmake > 2.8.0 (for Mac, see below)
 - java openjdk devel (set environment variable `JAVA_HOME`)
-- internet connection. During the make process a large amount of open source packages are downloaded. These are:
+- internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - xz-5.2.1
    - libjpeg-v9a
    - jbigkit-2.1
@@ -29,7 +29,7 @@ The build process relies on cmake.
    - exiv2-0.25
    - libpng16
    - log4cpp-1.1.2rc1
-   - download Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html> and create two headers file: `xxd -i AdobeRGB1998.icc > AdobeRGB1998_icc.h` and `xxd -i USWebCoatedSWOP.icc > USWebCoatedSWOP_icc.h`
+   - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
 
 In the root directory, two additional directories must be created: `build` and `cache`.
 
