@@ -29,7 +29,31 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
+#
+# Usually SIPI is compiled with all static libraries
+#
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
+
+#
+# Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
+#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
+        message(FATAL_ERROR "Requires at leat Clang Version 7.3 or greater!")
+        set(ENV(CXX) "clang++")
+        set(ENV(CC) "clang")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+        message(FATAL_ERROR "Requires at leat gcc++ Version 5.3 or greater!")
+        set(ENV(CXX) "g++")
+        set(ENV(CC) "gcc")
+    endif()
+else()
+    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+endif()
+
+
 
 set(DARWIN "Darwin")
 set(LINUX "Linux")

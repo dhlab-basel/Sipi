@@ -445,9 +445,9 @@ namespace Sipi {
     static void write_xmp_box(kdu_supp::jp2_family_tgt *tgt, const char *xmpstr) {
         kdu_supp::jp2_output_box out;
         out.open(tgt, jp2_uuid_4cc);
-        out.set_target_size(strlen(xmpstr) + 1 + sizeof(xmp_uuid));
+        out.set_target_size(strlen(xmpstr) + sizeof(xmp_uuid));
         out.write(xmp_uuid, 16);
-        out.write((kdu_core::kdu_byte *) xmpstr, strlen(xmpstr) + 1);
+        out.write((kdu_core::kdu_byte *) xmpstr, strlen(xmpstr));
         out.close();
     }
     //=============================================================================
@@ -546,6 +546,7 @@ namespace Sipi {
         codestream.access_siz()->parse_string("Creversible=yes");
 */
         codestream.access_siz()->finalize_all(); // Set up coding defaults
+        //codestream.access_siz()->finalize(); // Set up coding defaults
 
         jp2_family_dimensions.init(&siz); // initalize dimension box
 
@@ -644,15 +645,16 @@ namespace Sipi {
             unsigned int len = 0;
             const char *xmp_buf = img->xmp->xmpBytes(len);
             if (len > 0) {
-                cerr << "XMP..." << endl;
-                cerr << xmp_buf << endl;
                 write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
             }
         }
 
+        //jpx_out.write_headers();
         jp2_output_box *out_box = jpx_stream.open_stream();
-        //out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
 
+        out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
+
+        codestream.access_siz()->finalize_all();
 
         kdu_thread_env env, *env_ref = NULL;
         if (num_threads > 0) {
