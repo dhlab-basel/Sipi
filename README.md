@@ -160,6 +160,17 @@ To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`
 
 For example, using `local/bin/luarocks install --local package` the package will be installed in `~/.luarocks/`. To include this path in the Lua's interpreter package search path, you can use an environment variable. Running `local/bin/luarocks path` outputs the code you can use to do so. Alternatively, you can build the package path at the beginning of a Lua file by setting `package.path` and `package.cpath` (see: <http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages>).
 
+## Starting Sipi from the GNU Debugger GDB
+
+From the Sipi root dir, start sipi like this:
+
+```bash
+gdb build/sipi
+
+(gdb) run -config sipi.knora-config.lua
+
+```
+
 ## Commit Message Schema
 
 When writing commit messages, we stick to this schema:
