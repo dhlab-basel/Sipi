@@ -167,7 +167,7 @@ From the Sipi root dir, start sipi like this:
 ```bash
 gdb build/sipi
 
-(gdb) run -config sipi.knora-config.lua
+(gdb) run -config sipi.config.lua
 
 ```
 
