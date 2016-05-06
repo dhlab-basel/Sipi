@@ -256,8 +256,6 @@ int main (int argc, char *argv[]) {
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
-
-
             //store the config option in a SipiConf obj
             sipiConf = Sipi::SipiConf(luacfg);
 

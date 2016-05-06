@@ -200,17 +200,17 @@ else()
     SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif()
 ExternalProject_Add(project_tiff
-    DEPENDS project_jpeg project_xz
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    TEST_BEFORE_INSTALL 1
-    URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
-    UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
-    CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-    INSTALL_COMMAND make test
-	COMMAND make install
+        DEPENDS project_jpeg project_xz
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        TEST_BEFORE_INSTALL 1
+        URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
+        UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
+        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
+        INSTALL_COMMAND make test
+        COMMAND make install
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dir.h ${CMAKE_CURRENT_SOURCE_DIR}/local/include/
-    BUILD_IN_SOURCE 1
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_tiff install_dir)
 if(MAKE_SHARED_SIPI)

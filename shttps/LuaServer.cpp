@@ -997,7 +997,11 @@ namespace shttps {
 
 
     string LuaServer::configString(const string table, const string variable, const string defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
+
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1014,7 +1018,10 @@ namespace shttps {
 
 
     int LuaServer::configBoolean(const string table, const string variable, const bool defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1031,7 +1038,10 @@ namespace shttps {
     //=========================================================================
 
     int LuaServer::configInteger(const string table, const string variable, const int defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1047,7 +1057,10 @@ namespace shttps {
     //=========================================================================
 
     float LuaServer::configFloat(const string table, const string variable, const float defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
