@@ -34,6 +34,7 @@
 shttps::Server *serverptr = NULL;
 
 static sig_t old_sighandler;
+static sig_t old_broken_pipe_handler;
 
 static void sighandler(int sig) {
     if (serverptr != NULL) {
@@ -45,6 +46,12 @@ static void sighandler(int sig) {
         exit(0);
     }
 }
+
+static void broken_pipe_handler(int sig) {
+    auto logger = spdlog::get(shttps::loggername);
+    logger->info("Got BROKEN PIPE signal!");
+}
+//=========================================================================
 
 /*LUA TEST****************************************************************************/
 static int lua_gaga (lua_State *L)
@@ -209,6 +216,7 @@ int main(int argc, char *argv[]) {
 
     serverptr = &server;
     old_sighandler = signal(SIGINT, sighandler);
+    old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
 
     server.run();
     std::cerr << "SERVER HAS FINISHED ITS SERVICE" << std::endl;
