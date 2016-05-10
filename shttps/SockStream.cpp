@@ -28,7 +28,7 @@
 
 
 #ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL SO_NOSIGPIPE // for OS X 
+#define MSG_NOSIGNAL SO_NOSIGPIPE // for OS X
 #endif
 
 using namespace std;
