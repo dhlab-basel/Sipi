@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <title>UPLOAD</title>
+    </head>
+    <body>
+        <h1>UPLOAD</h1>
+        <hr/>
+		<h2>Header</h2>
+		<table>
+<lua>
+    myimg = {}
+    newfilename = {}
+    for imgindex,imgparam in pairs(server.uploads) do
+
+        --
+        -- check if tmporary directory is available, if not, create it
+        --
+        tmpdir = config.imgroot .. '/tmp/'
+        if  not server.fs.exists(tmpdir) then
+            server.fs.mkdir(tmpdir, 511)
+        end
+
+        --
+        -- copy the file to a safe place
+        --
+        tmppath =  tmpdir .. server.uuid62()
+        server.copyTmpfile(imgindex, tmppath)
+
+        myimg[imgindex] = SipiImage.new(tmppath)
+
+        filename = imgparam["origname"]
+        n1, n2 = string.find(filename, '.', 1, true)
+        newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
+        filename = config.imgroot .. '/' .. newfilename[imgindex]
+
+        myimg[imgindex]:write(filename)
+
+        server.fs.unlink(tmppath)
+
+    end
+    for imgindex,fn in pairs(newfilename) do
+        server.print('<tr><td>', fn,
+            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/pct:12.5/0/default.jpg" /></a></td></tr>')
+    end
+
+</lua>
+    </table>
+    </body>
+</html>

@@ -30,6 +30,7 @@
 #include <sstream>
 #include <string>
 #include <cstring>      // Needed for memset
+#include <utility>
 
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
@@ -216,14 +217,24 @@ namespace shttps {
         auto logger = spdlog::get(loggername);
 
         string docroot;
+        string route;
         if (hd == NULL) {
             docroot = ".";
+            route = "/";
         }
         else {
+            pair<string,string> tmp = *((pair<string,string> *)hd);
             docroot = *((string *) hd);
+            route = tmp.first;
+            docroot = tmp.second;
         }
 
         lua.add_servertableentry("docroot", docroot);
+        if (uri.find(route) == 0) {
+            uri = uri.substr(route.length());
+            if (uri[0] != '/') uri = "/" + uri;
+        }
+
 
         string infile = docroot + uri;
 

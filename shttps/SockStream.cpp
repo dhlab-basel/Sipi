@@ -79,7 +79,7 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
             ssize_t tmp_n = write(sock, out_buf + nn, n - nn);
             if (tmp_n <= 0) {
                 return traits_type::eof();
-                // we have a problem....
+                // we have a problem.... Possibly a broken pipe
             }
             n -= tmp_n;
             nn += tmp_n;

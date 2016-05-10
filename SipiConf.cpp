@@ -26,24 +26,25 @@ namespace Sipi {
     SipiConf::SipiConf() { }
 
     SipiConf::SipiConf(shttps::LuaServer &luacfg) {
-        // assign a value to each member
-        img_root = luacfg.configString("sipi", "imgroot", ".");
+            img_root = luacfg.configString("sipi", "imgroot", ".");
+            port = luacfg.configInteger("sipi", "port", 3333);
+            init_script = luacfg.configString("sipi", "initscript", ".");
+            cache_size = luacfg.configString("sipi", "cachesize", "");
+            cache_dir = luacfg.configString("sipi", "cachedir", "");
+            cache_hysteresis = luacfg.configFloat("sipi", "cache_hysteresis", 0.1);
+            prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
+            keep_alive = luacfg.configInteger("sipi", "keep_alive", 20);
+            thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
+            cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);
+            n_threads = luacfg.configInteger("sipi", "nthreads", std::thread::hardware_concurrency());
+            tmp_dir = luacfg.configString("sipi", "tmpdir", "/tmp");
+            scriptdir = luacfg.configString("sipi", "scriptdir", "./scripts");
+            routes = luacfg.configRoute("routes");
+            knora_path = luacfg.configString("sipi", "knora_path", "localhost");
+            knora_port = luacfg.configString("sipi", "knora_port", "3333");
+            docroot = luacfg.configString("fileserver", "docroot", "");
+            docroute = luacfg.configString("fileserver", "docroute", "");
 
-        port = luacfg.configInteger("sipi", "port", 3333);
-        init_script = luacfg.configString("sipi", "initscript", ".");
-        cache_size = luacfg.configString("sipi", "cachesize", "");
-        cache_dir = luacfg.configString("sipi", "cachedir", "");
-        cache_hysteresis = luacfg.configFloat("sipi", "cache_hysteresis", 0.1);
-        prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
-        keep_alive = luacfg.configInteger("sipi", "keep_alive", 20);
-        thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
-        cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);
-        n_threads = luacfg.configInteger("sipi", "nthreads", std::thread::hardware_concurrency());
-        tmp_dir = luacfg.configString("sipi", "tmpdir", "/tmp");
-        scriptdir = luacfg.configString("sipi", "scriptdir", "./scripts");
-        routes = luacfg.configRoute("routes");
-        knora_path = luacfg.configString("sipi", "knora_path", "localhost");
-        knora_port = luacfg.configString("sipi", "knora_port", "3333");
     }
 
 }

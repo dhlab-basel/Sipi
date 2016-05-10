@@ -29,6 +29,7 @@
 #include <sstream>
 #include <thread>
 #include <csignal>
+#include <utility>
 
 #include "Global.h"
 #include "LuaServer.h"
@@ -75,6 +76,7 @@ Sipi::SipiConf sipiConf;
 enum FileType {image, video, audio, text, binary};
 
 static sig_t old_sighandler;
+static sig_t old_broken_pipe_handler;
 
 static std::string fileType_string(FileType f_type) {
     std::string type_string;
@@ -107,10 +109,20 @@ static void sighandler(int sig) {
         serverptr->stop();
     }
     else {
+        auto logger = spdlog::get(shttps::loggername);
+        logger->info("Got SIGINT, exiting server");
         exit(0);
     }
 }
 //=========================================================================
+
+
+static void broken_pipe_handler(int sig) {
+    auto logger = spdlog::get(shttps::loggername);
+    logger->info("Got BROKEN PIPE signal!");
+}
+//=========================================================================
+
 
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
 {
@@ -255,8 +267,6 @@ int main (int argc, char *argv[]) {
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
-
-
             //store the config option in a SipiConf obj
             sipiConf = Sipi::SipiConf(luacfg);
 
@@ -272,6 +282,7 @@ int main (int argc, char *argv[]) {
             server.add_lua_globals_func(Sipi::sipiGlobals); // add new lua function "gaga"
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
             server.prefix_as_path(sipiConf.getPrefixAsPath());
+
 
             //
             // cache parameter...
@@ -304,8 +315,23 @@ int main (int argc, char *argv[]) {
 
             server.keep_alive_timeout(sipiConf.getKeepAlive());
 
+            //
+            // now we set the routes for the normal HTTP server file handling
+            //
+            std::string docroot = sipiConf.getDocRoot();
+            std::string docroute = sipiConf.getDocRoute();
+            std::pair<std::string,std::string> filehandler_info;
+
+            if (!(docroute.empty() || docroot.empty())) {
+                filehandler_info.first = docroute;
+                filehandler_info.second = docroot;
+                server.addRoute(shttps::Connection::GET, docroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::POST, docroute, shttps::FileHandler, &filehandler_info);
+            }
+
             serverptr = &server;
             old_sighandler = signal(SIGINT, sighandler);
+            old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
             server.run();
         }
         catch (shttps::Error &err) {
@@ -323,6 +349,7 @@ int main (int argc, char *argv[]) {
         server.imgroot((params["imgroot"])[0].getValue(SipiStringType));
         serverptr = &server;
         old_sighandler = signal(SIGINT, sighandler);
+        old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
         server.run();
     }
     else {

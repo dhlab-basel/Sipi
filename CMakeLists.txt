@@ -29,7 +29,31 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
+#
+# Usually SIPI is compiled with all static libraries
+#
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
+
+#
+# Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
+#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
+        message(FATAL_ERROR "Requires at leat Clang Version 7.3 or greater!")
+        set(ENV(CXX) "clang++")
+        set(ENV(CC) "clang")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+        message(FATAL_ERROR "Requires at leat gcc++ Version 5.3 or greater!")
+        set(ENV(CXX) "g++")
+        set(ENV(CC) "gcc")
+    endif()
+else()
+    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+endif()
+
+
 
 set(DARWIN "Darwin")
 set(LINUX "Linux")
@@ -99,28 +123,6 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-
-# get mariadb (ex-mysql) client library
-#
-#find_package(MariaDB 2.2.2 QUIET)
-#if(NOT MARIADB_FOUND)
-#    ExternalProject_Add(project_mariadb
-#        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-#        URL https://downloads.mariadb.com/enterprise/h2rp-sk48/connectors/c/mariadb-connector-c-2.1.0-src.tar.gz
-#        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/mariadb-connector-c-2.1.0
-#        UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/mariadb-connector-c-2.1.0/include/mysql.h < ${CMAKE_CURRENT_SOURCE_DIR}/patches/mariadb.patch
-#        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local -DWITH_OPENSSL=Off
-#    )
-#    ExternalProject_Get_Property(project_mariadb install_dir)
-#    if(MAKE_SHARED_SIPI)
-#        add_library(mariadb_client SHARED IMPORTED)
-#        set_property(TARGET mariadb_client PROPERTY IMPORTED_LOCATION ${install_dir}/lib/mariadb/libmariadb.2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#    else()
-#        add_library(mariadb_client STATIC IMPORTED)
-#        set_property(TARGET mariadb_client PROPERTY IMPORTED_LOCATION ${install_dir}/lib/mariadb/libmariadbclient${CMAKE_STATIC_LIBRARY_SUFFIX})
-#    endif()
-#    add_dependencies(mariadb_client project_mariadb)
-#endif()
 
 #
 # libxyz
@@ -198,17 +200,17 @@ else()
     SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endif()
 ExternalProject_Add(project_tiff
-    DEPENDS project_jpeg project_xz
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    TEST_BEFORE_INSTALL 1
-    URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
-    UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
-    CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-    INSTALL_COMMAND make test
-	COMMAND make install
+        DEPENDS project_jpeg project_xz
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        TEST_BEFORE_INSTALL 1
+        URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
+        UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
+        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
+        INSTALL_COMMAND make test
+        COMMAND make install
         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dir.h ${CMAKE_CURRENT_SOURCE_DIR}/local/include/
-    BUILD_IN_SOURCE 1
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_tiff install_dir)
 if(MAKE_SHARED_SIPI)
@@ -483,6 +485,48 @@ endif(DOXYGEN_FOUND)
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
 
+#
+# Here we get the ICC profiles from the Adobe website and prepare them for including
+# We just use the AdobeRGB1998.cc and the USWebCoatedSWOP.icc profiles for now...
+#
+unset(ICC CACHE)
+find_file(
+    ICC
+    icc.zip
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    NO_DEFAULT_PATH
+)
+if(ICC)
+    message(STATUS "Adobe ICC profiles were already downloaded")
+else()
+    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+endif()
+
+set(
+        ICC_HEADERS
+        ${CMAKE_CURRENT_SOURCE_DIR}/AdobeRGB1998_icc.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/USWebCoatedSWOP_icc.h
+
+)
+add_custom_command(
+        OUTPUT ${ICC_HEADERS}
+        COMMENT "Generating ICC profile includes"
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        DEPENDS icc.zip
+        COMMAND unzip -o ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
+	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
+        COMMAND rm AdobeRGB1998.icc
+	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
+        COMMAND rm USWebCoatedSWOP.icc
+        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles *end-user*'
+)
+add_custom_target(
+        icc_profiles
+        DEPENDS ${ICC_HEADERS}
+)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
@@ -495,11 +539,13 @@ link_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
+
 add_executable(
         sipi
         sipi.cpp
         SipiConf.cpp SipiConf.h
         SipiError.cpp SipiError.h
+        AdobeRGB1998_icc.h USWebCoatedSWOP_icc.h
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
@@ -523,6 +569,9 @@ add_executable(
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
         iiifparser/SipiSize.cpp iiifparser/SipiSize.h
 )
+add_dependencies(sipi icc_profiles)
+
+
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua dl pthread ${CMAKE_DL_LIBS} z m )

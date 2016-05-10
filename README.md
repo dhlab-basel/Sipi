@@ -6,8 +6,10 @@ SIPI is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at
 
 SIPI is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
 SIPI uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
+The current version of SIPI requires version "v7_8-01382N" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_8-01382N.zip".
 
-SIPI uses the Adobe ICC Color profile, they must be licensed and downloaded separately by the user.
+SIPI uses the Adobe ICC Color profiles which are automatically downloaded by the cmake process into a file called "icc.zip". The
+user is responsible for reading and agreeing with the license conditions of Adobe as written in the provided file "Color Profile EULA.pdf"!
 
 The build process relies on cmake.
 
@@ -17,17 +19,17 @@ The build process relies on cmake.
 - a working c++11 compiler (gcc >= v5.3 or clang)
 - cmake > 2.8.0 (for Mac, see below)
 - java openjdk devel (set environment variable `JAVA_HOME`)
-- internet connection. During the make process a large amount of open source packages are downloaded. These are:
-   - mariadb-connector-c-2.1.0
+- internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - xz-5.2.1
    - libjpeg-v9a
+   - jbigkit-2.1
    - tiff-4.0.6
    - expat-2.1.0
    - lcms2-2.7
    - exiv2-0.25
    - libpng16
    - log4cpp-1.1.2rc1
-   - download Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html> and create two headers file: `xxd -i AdobeRGB1998.icc > AdobeRGB1998_icc.h` and `xxd -i USWebCoatedSWOP.icc > USWebCoatedSWOP_icc.h`
+   - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
 
 In the root directory, two additional directories must be created: `build` and `cache`.
 
@@ -159,6 +161,17 @@ Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpret
 To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>.
 
 For example, using `local/bin/luarocks install --local package` the package will be installed in `~/.luarocks/`. To include this path in the Lua's interpreter package search path, you can use an environment variable. Running `local/bin/luarocks path` outputs the code you can use to do so. Alternatively, you can build the package path at the beginning of a Lua file by setting `package.path` and `package.cpath` (see: <http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages>).
+
+## Starting Sipi from the GNU Debugger GDB
+
+From the Sipi root dir, start sipi like this:
+
+```bash
+gdb build/sipi
+
+(gdb) run -config sipi.config.lua
+
+```
 
 ## Commit Message Schema
 

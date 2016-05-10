@@ -19,11 +19,13 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <string>
+ */
+#include <string>
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
 #include <csignal>
+#include <utility>
 
 #include "Error.h"
 #include "Server.h"
@@ -32,6 +34,7 @@
 shttps::Server *serverptr = NULL;
 
 static sig_t old_sighandler;
+static sig_t old_broken_pipe_handler;
 
 static void sighandler(int sig) {
     if (serverptr != NULL) {
@@ -43,6 +46,12 @@ static void sighandler(int sig) {
         exit(0);
     }
 }
+
+static void broken_pipe_handler(int sig) {
+    auto logger = spdlog::get(shttps::loggername);
+    logger->info("Got BROKEN PIPE signal!");
+}
+//=========================================================================
 
 /*LUA TEST****************************************************************************/
 static int lua_gaga (lua_State *L)
@@ -125,6 +134,7 @@ int main(int argc, char *argv[]) {
     std::string tmpdir;
     std::string scriptdir;
     std::vector<shttps::LuaRoute> routes;
+    std::pair<std::string,std::string> filehandler_info;
     int keep_alive = 20;
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-p") == 0) || (strcmp(argv[i], "-port") == 0)) {
@@ -193,8 +203,10 @@ int main(int argc, char *argv[]) {
     // now we set the routes for the normal HTTP server file handling
     //
     if (!docroot.empty()) {
-        server.addRoute(shttps::Connection::GET, "/", shttps::FileHandler, &docroot);
-        server.addRoute(shttps::Connection::POST, "/", shttps::FileHandler, &docroot);
+        filehandler_info.first = "/";
+        filehandler_info.second = docroot;
+        server.addRoute(shttps::Connection::GET, "/", shttps::FileHandler, &filehandler_info);
+        server.addRoute(shttps::Connection::POST, "/", shttps::FileHandler, &filehandler_info);
     }
 
     //
@@ -204,6 +216,7 @@ int main(int argc, char *argv[]) {
 
     serverptr = &server;
     old_sighandler = signal(SIGINT, sighandler);
+    old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
 
     server.run();
     std::cerr << "SERVER HAS FINISHED ITS SERVICE" << std::endl;

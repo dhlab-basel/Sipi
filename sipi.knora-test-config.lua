@@ -1,3 +1,4 @@
+
 --
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
@@ -19,6 +20,9 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 --
+--
+-- configuration file for use with Knora
+--
 sipi = {
     --
     -- port number the server is listening to
@@ -37,19 +41,17 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    -- imgroot = './test_server/images',
-    imgroot = './images',
+    imgroot = './knora-test', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
     --
-    prefix_as_path = false,
+    prefix_as_path = true,
 
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    -- initscript = 'sipi.knora.lua',
-    initscript = 'sipi.init.lua',
+    initscript = 'sipi.init-knora-test.lua',
 
     --
     -- path to the caching directory
@@ -62,7 +64,7 @@ sipi = {
     cachesize = '100M',
 
     --
-    -- if the cache becomes full, the given percentage of file space is marked for reuse
+    -- if the cache becomes full, the given percentage of file space is marked for reuase
     --
     cache_hysteresis = 0.1,
 
@@ -81,12 +83,16 @@ sipi = {
     --
     tmpdir = '/tmp',
 
+    --
+    -- Path to Knora Application
+    --
+    knora_path = 'localhost',
 
-}
+    --
+    -- Port of Knora Application
+    --
+    knora_port = '3333'
 
-fileserver = {
-    docroot = './server',
-    docroute = '/server'
 }
 
 --
@@ -96,14 +102,29 @@ fileserver = {
 --
 routes = {
     {
-        method = 'GET',
-        route = '/luaexe/test1',
-        script = 'test1.lua'
+        method = 'POST',
+        route = '/make_thumbnail',
+        script = 'make_thumbnail.lua'
     },
     {
-        method = 'GET',
-        route = '/luaexe/test2',
-        script = 'test2.lua'
+        method = 'POST',
+        route = '/convert_from_binaries',
+        script = 'convert_from_binaries.lua'
+    },
+    {
+        method = 'POST',
+        route = '/convert_from_file',
+        script = 'convert_from_file.lua'
+    },
+    {
+        method = 'POST',
+        route = '/Knora_login',
+        script = 'Knora_login.lua'
+    },
+    {
+        method = 'POST',
+        route = '/Knora_logout',
+        script = 'Knora_logout.lua'
     }
 
 }

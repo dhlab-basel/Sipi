@@ -1,4 +1,4 @@
-/*
+    /*
  * Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
  * Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
  * This file is part of Sipi.
@@ -19,7 +19,8 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -950,7 +951,9 @@ namespace Sipi {
             const unsigned char *buf;
             try {
                 buf = img->icc->iccBytes(len);
-                TIFFSetField(tif, TIFFTAG_ICCPROFILE, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_ICCPROFILE, len, buf);
+                }
             }
             catch (SipiError &err) {
                 logger != NULL ? logger << err : cerr << err;
@@ -965,7 +968,9 @@ namespace Sipi {
             unsigned char *buf;
             try {
                 buf = img->iptc->iptcBytes(len);
-                TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, len, buf);
+                }
                 delete [] buf;
             }
             catch (SipiError &err) {
@@ -982,7 +987,9 @@ namespace Sipi {
             const char *buf;
             try {
                 buf = img->xmp->xmpBytes(len);
-                TIFFSetField(tif, TIFFTAG_XMLPACKET, len, buf);
+                if (len > 0) {
+                    TIFFSetField(tif, TIFFTAG_XMLPACKET, len, buf);
+                }
             }
             catch (SipiError &err) {
                 logger != NULL ? logger << err : cerr << err;
