@@ -61,28 +61,43 @@ namespace Sipi {
     //=============================================================================
 
     static boolean empty_output_buffer (j_compress_ptr cinfo) {
-      HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
-      html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
-
-      cinfo->dest->free_in_buffer = html_buffer->buflen;
-      cinfo->dest->next_output_byte = html_buffer->buffer;
-
-      return true;
+        HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
+        try {
+            html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
+        }
+        catch (int i) {
+            return false;
+        }
+        cinfo->dest->free_in_buffer = html_buffer->buflen;
+        cinfo->dest->next_output_byte = html_buffer->buffer;
+        return true;
     }
     //=============================================================================
 
     static void term_destination (j_compress_ptr cinfo) {
-      HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
-      size_t nbytes = cinfo->dest->next_output_byte - html_buffer->buffer;
-      html_buffer->conobj->sendAndFlush(html_buffer->buffer, nbytes);
+        HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
+        size_t nbytes = cinfo->dest->next_output_byte - html_buffer->buffer;
+        try {
+            html_buffer->conobj->sendAndFlush(html_buffer->buffer, nbytes);
+        }
+        catch (int i) {
+            free(html_buffer->buffer);
 
-      free(html_buffer->buffer);
+            free(html_buffer);
+            cinfo->client_data = NULL;
 
-      free(html_buffer);
-      cinfo->client_data = NULL;
+            free(cinfo->dest);
+            cinfo->dest = NULL;
+            throw SipiError(__file__, __LINE__, "Error sending data! Broken pipe?");
+        }
 
-      free(cinfo->dest);
-      cinfo->dest = NULL;
+        free(html_buffer->buffer);
+
+        free(html_buffer);
+        cinfo->client_data = NULL;
+
+        free(cinfo->dest);
+        cinfo->dest = NULL;
     }
     //=============================================================================
 
