@@ -36,7 +36,7 @@ before_install:
 script:
 - cd build
 - cmake ..
-- make
+#- make
 - ls ../local/
 - ls ../local/lib/
 - ls ../local/lib/x86_64-linux-gnu/
