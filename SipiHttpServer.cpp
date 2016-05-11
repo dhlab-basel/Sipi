@@ -916,7 +916,16 @@ namespace Sipi {
                         conobj.openCacheFile(cachefile);
                     }
                     logger->debug("Before writing JPG...");
-                    img.write("jpg", "HTTP");
+                    try {
+                        img.write("jpg", "HTTP");
+                    }
+                    catch (SipiImageError &err) {
+                        if (cache != NULL) {
+                            conobj.closeCacheFile();
+                            // ToDo: remove incomplete cache file!
+                        }
+                        break;
+                    }
                     logger->debug("After writing JPG...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();

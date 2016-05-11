@@ -561,7 +561,7 @@ namespace shttps {
 
 
         bool do_close = true;
-        while (!ins.eof()) {
+        while (!ins.eof() && !os.eof()) {
             LuaServer luaserver(_initscript);
             Connection conn;
             try {
@@ -580,13 +580,18 @@ namespace shttps {
                 break;
             }
             catch(Error &err) {
-                os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
-                os << "Content-Type: text/plain\r\n";
-                stringstream ss;
-                ss << err;
-                os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                os << ss.str();
-                _logger->error("Internal server error!");
+                try {
+                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
+                    os << "Content-Type: text/plain\r\n";
+                    stringstream ss;
+                    ss << err;
+                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+                    os << ss.str();
+                    _logger->error("Internal server error!");
+                }
+                catch (int i) {
+                    _logger->error("Possibly socket closed by peer!");
+                }
                 break;
             }
 
@@ -612,13 +617,23 @@ namespace shttps {
                 _logger->debug("Calling user-supplied handler");
                 handler(conn, luaserver, _user_data, hd);
             }
+            catch (int i) {
+                _logger->error("Possibly socket closed by peer!");
+                break;
+            }
             catch(Error &err) {
-                os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
-                os << "Content-Type: text/plain\r\n";
-                stringstream ss;
-                ss << err;
-                os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                os << ss.str();
+                try {
+                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
+                    os << "Content-Type: text/plain\r\n";
+                    stringstream ss;
+                    ss << err;
+                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+                    os << ss.str();
+                }
+                catch (int i) {
+                    _logger->error("Possibly socket closed by peer!");
+                    break;
+                }
                 _logger->error("Internal server error! ") << err.to_string();
                 break;
             }
@@ -627,6 +642,7 @@ namespace shttps {
             }
 
             if (!conn.keepAlive()) break;
+
         }
 
         if (do_close) {
