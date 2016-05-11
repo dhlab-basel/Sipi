@@ -476,6 +476,9 @@ namespace Sipi {
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
+        //
+        // TODO! Support incoming 16 bit images by converting the buffer to 8 bit!
+        //
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
 

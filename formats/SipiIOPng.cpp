@@ -341,6 +341,10 @@ namespace Sipi {
     /*==========================================================================*/
 
     void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
+        //
+        // TODO! Support incoming 16 bit images may be (!!) by converting the buffer to 8 bit!
+        //
+
         FILE *outfile = NULL;
         png_structp png_ptr;
         shttps::Connection *conobj = img->connection();
