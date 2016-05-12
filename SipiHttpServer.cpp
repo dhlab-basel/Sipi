@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "SipiImage.h"
 #include "SipiError.h"
 #include "iiifparser/SipiRegion.h"
@@ -922,7 +923,7 @@ namespace Sipi {
                     catch (SipiImageError &err) {
                         if (cache != NULL) {
                             conobj.closeCacheFile();
-                            // ToDo: remove incomplete cache file!
+                            unlink(cachefile.c_str());
                         }
                         break;
                     }

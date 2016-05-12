@@ -19,7 +19,8 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -38,7 +39,6 @@
 #define ICC_MARKER  (JPEG_APP0 + 2)	/* JPEG marker code for ICC */
 #define ICC_OVERHEAD_LEN  14		/* size of non-profile data in APP2 */
 #define MAX_BYTES_IN_MARKER  65533	/* maximum data len of a JPEG marker */
-#define MAX_DATA_BYTES_IN_MARKER  (MAX_BYTES_IN_MARKER - ICC_OVERHEAD_LEN)
 
 
 using namespace std;
@@ -47,22 +47,32 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
+    /*!
+     * Special exception within the JPEG routines which can be caught separately
+     */
     class JpegError : public runtime_error {
-        int line;
     public:
-        inline JpegError() : runtime_error("!! JPEG_ERROR") { line = -1; }
-        inline JpegError(const char *msg, int line_p) : runtime_error(msg), line(line_p) {}
+        inline JpegError() : runtime_error("!! JPEG_ERROR") {}
+        inline JpegError(const char *msg) : runtime_error(msg) {}
         inline const char* what() const noexcept {
             return runtime_error::what();
         }
     };
+    //------------------------------------------------------------------
 
+    /*!
+     * Struct that is used to hold the variables for defining the
+     * private I/O routines which are used to write the the HTTP socket
+     */
     typedef struct _HtmlBuffer {
-        JOCTET *buffer;
-        size_t buflen;
-        shttps::Connection *conobj;
+        JOCTET *buffer; //!< Buffer for holding data to be written out
+        size_t buflen;  //!< length of the buffer
+        shttps::Connection *conobj; //!< Pointer to the connection objects
     } HtmlBuffer;
 
+    /*!
+     * Function which initializes the structures for managing the IO
+     */
     static void init_destination (j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
         cinfo->dest->free_in_buffer = html_buffer->buflen;
@@ -70,12 +80,15 @@ namespace Sipi {
     }
     //=============================================================================
 
+    /*!
+     * Function empty the libjeg buffer and write the data to the socket
+     */
     static boolean empty_output_buffer (j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
        try {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
         }
-        catch (int i) {
+        catch (int i) { // an error occurred (possibly a broken pipe)
             return false;
         }
         cinfo->dest->free_in_buffer = html_buffer->buflen;
@@ -85,13 +98,16 @@ namespace Sipi {
     }
     //=============================================================================
 
+    /*!
+     * Finish writing data
+     */
     static void term_destination (j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
         size_t nbytes = cinfo->dest->next_output_byte - html_buffer->buffer;
         try {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, nbytes);
         }
-        catch (int i) {
+        catch (int i) { // an error occured in sending the data (broken pipe?)
             // do nothing...
         }
 
@@ -105,6 +121,9 @@ namespace Sipi {
     }
     //=============================================================================
 
+    /*!
+     * This function is used to setup the I/O destination to the HTTP socket
+     */
     static void jpeg_html_dest(struct jpeg_compress_struct *cinfo, shttps::Connection *conobj, size_t buflen = 64*1024)
     {
       struct jpeg_destination_mgr *destmgr;
@@ -188,7 +207,7 @@ namespace Sipi {
                 case 0x0424: { // XMP data
                     //cerr << ">>> Photoshop: XMP" << endl;
                     // XMP data
-                    if (img->xmp == NULL)img->xmp = new SipiXmp((char *) ptr, datalen);
+                    if (img->xmp == NULL)img->xmp = new SipiXmp(ptr, datalen);
                 }
                 default: {
                     // URL
@@ -203,6 +222,22 @@ namespace Sipi {
             if ((datalen % 2) == 1) datalen++;
             ptr += datalen;
         }
+    }
+    //=============================================================================
+
+
+    /*!
+    * This function is used to catch libjpeg errors which otherwise would
+    * result in a call exit()
+    */
+    static void jpegErrorExit ( j_common_ptr cinfo )
+    {
+        char jpegLastErrorMsg[JMSG_LENGTH_MAX];
+        /* Create the message */
+        ( *( cinfo->err->format_message ) ) ( cinfo, jpegLastErrorMsg );
+
+        /* Jump to the setjmp point */
+        throw JpegError(jpegLastErrorMsg);
     }
     //=============================================================================
 
@@ -233,6 +268,8 @@ namespace Sipi {
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
+
+
         JSAMPARRAY linbuf = NULL;
         jpeg_saved_marker_ptr marker;
 
@@ -242,19 +279,37 @@ namespace Sipi {
         jpeg_create_decompress (&cinfo);
 
         cinfo.dct_method = JDCT_FLOAT;
-        cinfo.err = jpeg_std_error (&jerr);
 
-        jpeg_stdio_src (&cinfo, infile);
 
-        jpeg_save_markers (&cinfo, JPEG_COM, 0xffff);
-        for (int i = 0; i < 16; i++) {
-            jpeg_save_markers (&cinfo, JPEG_APP0+i, 0xffff);
+        cinfo.err = jpeg_std_error(&jerr);
+        jerr.error_exit = jpegErrorExit;
+
+        jpeg_stdio_src(&cinfo, infile);
+
+        try {
+            jpeg_save_markers(&cinfo, JPEG_COM, 0xffff);
+            for (int i = 0; i < 16; i++) {
+                jpeg_save_markers(&cinfo, JPEG_APP0 + i, 0xffff);
+            }
+        }
+        catch (JpegError &jpgerr) {
+            jpeg_destroy_decompress(&cinfo);
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
 
         //
         // now we read the header
         //
-        if (jpeg_read_header (&cinfo, TRUE) != JPEG_HEADER_OK) {
+        int res;
+        try  {
+            res = jpeg_read_header (&cinfo, TRUE);
+        }
+        catch (JpegError &jpgerr) {
+            jpeg_destroy_decompress(&cinfo);
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
+        }
+        if (res != JPEG_HEADER_OK) {
+            jpeg_destroy_decompress(&cinfo);
             throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
         }
 
@@ -350,7 +405,13 @@ namespace Sipi {
             img->icc = new SipiIcc(icc_buffer, icc_buffer_len);
         }
 
-        jpeg_start_decompress (&cinfo);
+        try {
+            jpeg_start_decompress(&cinfo);
+        }
+        catch (JpegError &jpgerr) {
+            jpeg_destroy_decompress(&cinfo);
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
+        }
 
         img->bps = 8;
         img->nx = cinfo.output_width;
@@ -388,14 +449,32 @@ namespace Sipi {
 
         img->pixels = new byte[img->ny*sll];
 
-        linbuf = (*cinfo.mem->alloc_sarray) ((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
-        for (int i = 0; i < img->ny; i++) {
-            jpeg_read_scanlines (&cinfo, linbuf, 1);
-            memcpy (&(img->pixels[i*sll]), linbuf[0], sll);
+        try {
+            linbuf = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
+            for (int i = 0; i < img->ny; i++) {
+                jpeg_read_scanlines(&cinfo, linbuf, 1);
+                memcpy(&(img->pixels[i * sll]), linbuf[0], sll);
+            }
+        }
+        catch (JpegError &jpgerr) {
+            jpeg_destroy_decompress(&cinfo);
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
+        }
+        try {
+            jpeg_finish_decompress(&cinfo);
         }
 
-        jpeg_finish_decompress (&cinfo);
-        jpeg_destroy_decompress (&cinfo);
+        catch (JpegError &jpgerr) {
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
+        }
+
+        try {
+            jpeg_destroy_decompress(&cinfo);
+        }
+        catch (JpegError &jpgerr) {
+            throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
+        }
+
 
         fclose(infile);
 
@@ -480,16 +559,6 @@ namespace Sipi {
     //============================================================================
 
 
-    static void jpegErrorExit ( j_common_ptr cinfo )
-    {
-        char jpegLastErrorMsg[JMSG_LENGTH_MAX];
-        /* Create the message */
-        ( *( cinfo->err->format_message ) ) ( cinfo, jpegLastErrorMsg );
-
-        /* Jump to the setjmp point */
-        throw JpegError("jpegErrorExit", __LINE__);
-    }
-    //=============================================================================
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
@@ -511,7 +580,7 @@ namespace Sipi {
         }
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
-            throw SipiImageError("broken pipe!");
+            throw SipiImageError(jpgerr.what());
         }
         if (strcmp (filepath.c_str(), "HTTP") == 0) { // we are transmitting the data through the webserver
             shttps::Connection *conobj = img->connection();
@@ -577,7 +646,7 @@ namespace Sipi {
             jpeg_finish_compress (&cinfo);
             jpeg_destroy_compress(&cinfo);
             if (outfile != NULL) fclose(outfile);
-            throw SipiImageError("broken pipe!");
+            throw SipiImageError(jpgerr.what());
         }
 
 
@@ -610,7 +679,7 @@ namespace Sipi {
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != NULL) fclose(outfile);
-                throw SipiImageError("broken pipe!");
+                throw SipiImageError(jpgerr.what());
             }
             delete [] exifchunk;
         }
@@ -632,7 +701,7 @@ namespace Sipi {
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != NULL) fclose(outfile);
-                throw SipiImageError("broken pipe!");
+                throw SipiImageError(jpgerr.what());
             }
             delete [] xmpchunk;
         }
@@ -656,7 +725,7 @@ namespace Sipi {
                 memcpy(iccchunk, start, start_l);
                 memcpy(iccchunk + start_l, buf + n_written, n_nextwrite);
                 try {
-                    jpeg_write_marker(&cinfo, (JPEG_APP0 + 2), (JOCTET *) iccchunk, n_nextwrite + start_l);
+                    jpeg_write_marker(&cinfo, ICC_MARKER, (JOCTET *) iccchunk, n_nextwrite + start_l);
                 }
                 catch (JpegError &jpgerr) {
                     delete [] buf;
@@ -664,7 +733,7 @@ namespace Sipi {
                     jpeg_finish_compress (&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != NULL) fclose(outfile);
-                    throw SipiImageError("broken pipe!");
+                    throw SipiImageError(jpgerr.what());
                 }
 
                 n_towrite -= n_nextwrite;
@@ -701,7 +770,7 @@ namespace Sipi {
                 delete [] iptcchunk;
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != NULL) fclose(outfile);
-                throw SipiImageError("broken pipe!");
+                throw SipiImageError(jpgerr.what());
             }
 
             delete [] iptcchunk;
@@ -721,7 +790,7 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != NULL) fclose(outfile);
-            throw SipiImageError("broken pipe!");
+            throw SipiImageError(jpgerr.what());
         }
 
         try {
@@ -730,7 +799,7 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != NULL) fclose(outfile);
-            throw SipiImageError("broken pipe!");
+            throw SipiImageError(jpgerr.what());
         }
         if (outfile != NULL) fclose(outfile);
 
