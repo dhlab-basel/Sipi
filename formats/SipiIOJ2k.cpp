@@ -101,7 +101,12 @@ namespace Sipi {
     //........................................................................
     bool J2kHttpStream::write( const kdu_byte * buf, int num_bytes)
     {
-        conobj->sendAndFlush(buf, num_bytes);
+        try {
+            conobj->sendAndFlush(buf, num_bytes);
+        }
+        catch (int i) {
+            return false;
+        }
         return true;
     };
     //-------------------------------------------------------------------------

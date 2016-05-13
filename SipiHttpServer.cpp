@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "SipiImage.h"
 #include "SipiError.h"
 #include "iiifparser/SipiRegion.h"
@@ -916,7 +917,16 @@ namespace Sipi {
                         conobj.openCacheFile(cachefile);
                     }
                     logger->debug("Before writing JPG...");
-                    img.write("jpg", "HTTP");
+                    try {
+                        img.write("jpg", "HTTP");
+                    }
+                    catch (SipiImageError &err) {
+                        if (cache != NULL) {
+                            conobj.closeCacheFile();
+                            unlink(cachefile.c_str());
+                        }
+                        break;
+                    }
                     logger->debug("After writing JPG...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();

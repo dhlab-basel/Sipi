@@ -87,8 +87,17 @@ namespace Sipi {
         SKIP_ALL = 0xFF
     } SkipMetadata;
 
+    class SipiImageError : public std::runtime_error {
+    public:
+        inline SipiImageError() : runtime_error("SipiImageError") {}
+        inline SipiImageError(const char *msg) : runtime_error(msg) {}
+        inline const char* what() const noexcept {
+            return runtime_error::what();
+        }
+    };
 
-   /*!
+
+    /*!
     * \class SipiImage
     *
     * Base class for all images in the Sipi package.

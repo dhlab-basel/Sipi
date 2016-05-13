@@ -35,7 +35,7 @@ namespace shttps {
    /*!
     * \brief Class used to thow errors from the web server implementation
     *
-    * This class which inherits from \class std::runtime_error is used to thow catchable
+    * This class which inherits from \class std::runtime_error is used to throw catchable
     * errors from the web server. The error contains the cpp-file, line number, a user given
     * description and, if available, the system error message.
     */

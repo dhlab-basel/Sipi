@@ -1024,7 +1024,13 @@ namespace Sipi {
             }
             else if (filepath == "HTTP") {
                 shttps::Connection *conobj = img->connection();
-                conobj->sendAndFlush(memtif->data, memtif->flen);
+                try {
+                    conobj->sendAndFlush(memtif->data, memtif->flen);
+                }
+                catch (int i) {
+                    memTiffFree(memtif);
+                    throw SipiError(__file__, __LINE__, "Sending data failed! Broken pipe?: " + filepath + " !");
+                }
             }
             else {
                 memTiffFree(memtif);
