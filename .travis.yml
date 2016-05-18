@@ -11,29 +11,15 @@ services:
 matrix:
   include:
   - os: linux
-    addons:
-      apt:
-        sources:
-          - ubuntu-toolchain-r-test
-          - kalakris-cmake
-        packages:
-          - g++-5
-          - cmake
-          - libreadline-dev
-          - liblog4cpp5-dev
   - os: osx
 
 before_install:
-#- if [ "$TRAVIS_OS_NAME" == "linux" ]; then jdk_switcher use oraclejdk8; fi
-#- if [ "$TRAVIS_OS_NAME" == "linux" ]; then export CXX="g++-5" CC="gcc-5" ; fi
-#- if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo mkdir -p /usr/local/luarocks ; fi
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker build -t sipi . ; fi
-- java -version
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
 - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in private/private.tar.enc -out private/private.tar -d
 - tar xvf private/private.tar
 - mv v7_8-01382N.zip vendor/.
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker build -t sipi . ; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
 
 script:
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; cd build ; fi
