@@ -3,6 +3,8 @@ git:
 
 sudo: required
 
+dist: trusty
+
 language: cpp
 
 services:
