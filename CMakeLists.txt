@@ -213,7 +213,6 @@ ExternalProject_Add(project_tiff
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_tiff install_dir)
-MESSAGE(STATUS "shared sipi: " ${MAKE_SHARED_SIPI})
 if(MAKE_SHARED_SIPI)
     add_library(tiff SHARED IMPORTED)
     set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_SHARED_LIBRARY_SUFFIX})
