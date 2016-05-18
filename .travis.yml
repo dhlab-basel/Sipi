@@ -3,7 +3,11 @@ git:
 
 sudo: required
 
+# Ubuntu 14.04
 dist: trusty
+
+# OS X 10.11 / XCode 7.3.1 
+osx_image: xcode7.3
 
 language: cpp
 
