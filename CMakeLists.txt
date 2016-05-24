@@ -81,6 +81,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
 
+set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
+set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
+set(DOXIGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxigen)
 
 
 # needed packages
@@ -475,7 +478,7 @@ add_dependencies(shttp project_shttps)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    configure_file(${DOXIGEN_FILES_DIR}/Doxyfile.in ${DOXIGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -483,7 +486,7 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
+CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
 
 #
 # Here we get the ICC profiles from the Adobe website and prepare them for including
@@ -493,34 +496,34 @@ unset(ICC CACHE)
 find_file(
     ICC
     icc.zip
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${COMMON_INCLUDE_FILES_DIR}
     NO_DEFAULT_PATH
 )
 if(ICC)
     message(STATUS "Adobe ICC profiles were already downloaded")
 else()
-    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
 endif()
 
 set(
         ICC_HEADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/AdobeRGB1998_icc.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/USWebCoatedSWOP_icc.h
+        ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
+        ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
 
 )
 add_custom_command(
         OUTPUT ${ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
         DEPENDS icc.zip
-        COMMAND unzip -o ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
-	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm AdobeRGB1998.icc
-	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm USWebCoatedSWOP.icc
-        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles *end-user*'
+        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles *end-user*'
 )
 add_custom_target(
         icc_profiles
@@ -539,31 +542,22 @@ link_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
+file(GLOB COMMON_SRC_FILES ${COMMON_SOURCE_FILES_DIR}/*.cpp)
 
 add_executable(
         sipi
-        sipi.cpp
-        SipiConf.cpp SipiConf.h
-        SipiError.cpp SipiError.h
-        AdobeRGB1998_icc.h USWebCoatedSWOP_icc.h
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
         metadata/SipiExif.cpp metadata/SipiExif.h
-        SipiImage.cpp SipiImage.h
         formats/SipiIOTiff.cpp formats/SipiIOTiff.h
         formats/SipiIOJ2k.cpp formats/SipiIOJ2k.h
         formats/SipiIOJpeg.cpp formats/SipiIOJpeg.h
         formats/SipiIOPng.cpp formats/SipiIOPng.h
         SipiParamValue.cpp SipiParamValue.h
-        SipiParam.cpp SipiParam.h
-        SipiCmdParams.cpp SipiCmdParams.h
 #        PhpSession.cpp PhpSession.h
 #        Salsah.cpp Salsah.h
 #        Template.cpp Template.h
-        SipiHttpServer.cpp SipiHttpServer.h
-        SipiCache.cpp SipiCache.h
-        SipiLua.cpp SipiLua.h
         iiifparser/SipiRotation.cpp iiifparser/SipiRotation.h
         iiifparser/SipiQualityFormat.cpp iiifparser/SipiQualityFormat.h
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
@@ -571,6 +565,7 @@ add_executable(
 )
 add_dependencies(sipi icc_profiles)
 
+include_directories(${COMMON_INCLUDE_FILES_DIR})
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
