@@ -21,9 +21,15 @@
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */#include "SockStream.h"
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
 #include <unistd.h>
+
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL SO_NOSIGPIPE // for OS X
+#endif
 
 using namespace std;
 using namespace shttps;
@@ -76,10 +82,10 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
         size_t n = out_bufsize;
         size_t nn = 0;
         while (n > 0) {
-            ssize_t tmp_n = write(sock, out_buf + nn, n - nn);
+            ssize_t tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
             if (tmp_n <= 0) {
                 return traits_type::eof();
-                // we have a problem....
+                // we have a problem.... Possibly a broken pipe
             }
             n -= tmp_n;
             nn += tmp_n;
@@ -102,7 +108,7 @@ int SockStream::sync(void)
     size_t nn = 0;
     while (n > 0) {
         int flag = 1;
-        ssize_t tmp_n = write(sock, out_buf + nn, n - nn);
+        ssize_t tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
         if (tmp_n <= 0) {
             return -1;
         }

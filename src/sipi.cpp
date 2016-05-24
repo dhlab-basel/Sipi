@@ -76,6 +76,7 @@ Sipi::SipiConf sipiConf;
 enum FileType {image, video, audio, text, binary};
 
 static sig_t old_sighandler;
+static sig_t old_broken_pipe_handler;
 
 static std::string fileType_string(FileType f_type) {
     std::string type_string;
@@ -108,10 +109,20 @@ static void sighandler(int sig) {
         serverptr->stop();
     }
     else {
+        auto logger = spdlog::get(shttps::loggername);
+        logger->info("Got SIGINT, exiting server");
         exit(0);
     }
 }
 //=========================================================================
+
+
+static void broken_pipe_handler(int sig) {
+    auto logger = spdlog::get(shttps::loggername);
+    logger->info("Got BROKEN PIPE signal!");
+}
+//=========================================================================
+
 
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
 {
@@ -320,6 +331,7 @@ int main (int argc, char *argv[]) {
 
             serverptr = &server;
             old_sighandler = signal(SIGINT, sighandler);
+            old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
             server.run();
         }
         catch (shttps::Error &err) {
@@ -337,6 +349,7 @@ int main (int argc, char *argv[]) {
         server.imgroot((params["imgroot"])[0].getValue(SipiStringType));
         serverptr = &server;
         old_sighandler = signal(SIGINT, sighandler);
+        old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
         server.run();
     }
     else {

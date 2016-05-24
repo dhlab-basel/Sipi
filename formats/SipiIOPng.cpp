@@ -319,17 +319,32 @@ namespace Sipi {
 
     static void conn_write_data(png_structp png_ptr, png_bytep data, png_size_t length) {
         shttps::Connection *conn = (shttps::Connection *) png_get_io_ptr(png_ptr);
-        conn->sendAndFlush(data, length);
+        try {
+            conn->sendAndFlush(data, length);
+        }
+        catch (int i) {
+            // TODO: do nothing ??
+        }
+
     }
     /*==========================================================================*/
 
     static void conn_flush_data(png_structp png_ptr) {
         shttps::Connection *conn = (shttps::Connection *) png_get_io_ptr(png_ptr);
-        conn->flush();
+        try {
+            conn->flush();
+        }
+        catch (int i) {
+            // TODO: do nothing ??
+        }
     }
     /*==========================================================================*/
 
     void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
+        //
+        // TODO! Support incoming 16 bit images may be (!!) by converting the buffer to 8 bit!
+        //
+
         FILE *outfile = NULL;
         png_structp png_ptr;
         shttps::Connection *conobj = img->connection();

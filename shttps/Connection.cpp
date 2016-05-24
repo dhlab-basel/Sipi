@@ -719,7 +719,12 @@ namespace shttps {
 
     Connection::~Connection()
     {
-        finalize();
+        try {
+            finalize();
+        }
+        catch (int i) {
+            // do nothing....
+        }
         if (outbuf != NULL) {
             free (outbuf);
         }
