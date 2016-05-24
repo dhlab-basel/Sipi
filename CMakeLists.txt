@@ -518,11 +518,11 @@ add_custom_command(
         DEPENDS icc.zip
         COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}
 	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/
-        COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
-        COMMAND rm AdobeRGB1998.icc
+        COMMAND xxd -i ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
 	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/
-        COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
-        COMMAND rm USWebCoatedSWOP.icc
+        COMMAND xxd -i ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles *end-user*'
 )
 add_custom_target(
@@ -531,6 +531,7 @@ add_custom_target(
 )
 
 include_directories(
+        ${COMMON_INCLUDE_FILES_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
@@ -546,6 +547,7 @@ file(GLOB COMMON_SRC_FILES ${COMMON_SOURCE_FILES_DIR}/*.cpp)
 
 add_executable(
         sipi
+        ${COMMON_SRC_FILES}
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
@@ -564,7 +566,6 @@ add_executable(
 )
 add_dependencies(sipi icc_profiles)
 
-include_directories(${COMMON_INCLUDE_FILES_DIR})
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
