@@ -554,7 +554,6 @@ add_executable(
         formats/SipiIOJ2k.cpp formats/SipiIOJ2k.h
         formats/SipiIOJpeg.cpp formats/SipiIOJpeg.h
         formats/SipiIOPng.cpp formats/SipiIOPng.h
-        SipiParamValue.cpp SipiParamValue.h
 #        PhpSession.cpp PhpSession.h
 #        Salsah.cpp Salsah.h
 #        Template.cpp Template.h
