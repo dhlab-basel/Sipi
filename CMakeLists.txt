@@ -480,8 +480,8 @@ find_package(Doxygen)
 if(DOXYGEN_FOUND)
     configure_file(${DOXIGEN_FILES_DIR}/Doxyfile.in ${DOXIGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ${DOXYGEN_EXECUTABLE} ${DOXIGEN_FILES_DIR}/Doxyfile
+        WORKING_DIRECTORY ${DOXIGEN_FILES_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
@@ -515,8 +515,8 @@ add_custom_command(
         OUTPUT ${ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
-        DEPENDS icc.zip
-        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}
+        DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
+        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
 	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/
         COMMAND xxd -i ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
@@ -530,12 +530,7 @@ add_custom_target(
         DEPENDS ${ICC_HEADERS}
 )
 
-include_directories(
-        ${COMMON_INCLUDE_FILES_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
-)
+
 
 link_directories(
 	/usr/local/lib
@@ -545,9 +540,33 @@ link_directories(
 
 file(GLOB COMMON_SRC_FILES ${COMMON_SOURCE_FILES_DIR}/*.cpp)
 
+list(REMOVE_ITEM COMMON_SRC_FILES
+    ${COMMON_SOURCE_FILES_DIR}/PhpSession.cpp
+    ${COMMON_SOURCE_FILES_DIR}/Salsah.cpp
+    ${COMMON_SOURCE_FILES_DIR}/Template.cpp
+)
+
+file(GLOB COMMON_INCLUDE_FILES ${COMMON_INCLUDE_FILES_DIR}/*.h)
+
+list(REMOVE_ITEM COMMON_SRC_FILES
+    ${COMMON_INCLUDE_FILES_DIR}/PhpSession.h
+    ${COMMON_INCLUDE_FILES_DIR}/Salsah.h
+    ${COMMON_INCLUDE_FILES_DIR}/Template.h
+)
+
+message(STATUS ${COMMON_INCLUDE_FILES})
+message(STATUS ${COMMON_INCLUDE_FILES_DIR})
+
+include_directories(
+    ${COMMON_INCLUDE_FILES_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+)
 add_executable(
         sipi
         ${COMMON_SRC_FILES}
+        ${COMMON_INCLUDE_FILES}
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
@@ -565,6 +584,7 @@ add_executable(
         iiifparser/SipiSize.cpp iiifparser/SipiSize.h
 )
 add_dependencies(sipi icc_profiles)
+
 
 
 
