@@ -517,13 +517,13 @@ add_custom_command(
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
         DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
         COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/
-        COMMAND xxd -i ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+        COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/
-        COMMAND xxd -i ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+        COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
-        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles *end-user*'
+        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
 )
 add_custom_target(
         icc_profiles
@@ -533,29 +533,11 @@ add_custom_target(
 
 
 link_directories(
-	/usr/local/lib
+        /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
-file(GLOB COMMON_SRC_FILES ${COMMON_SOURCE_FILES_DIR}/*.cpp)
-
-list(REMOVE_ITEM COMMON_SRC_FILES
-    ${COMMON_SOURCE_FILES_DIR}/PhpSession.cpp
-    ${COMMON_SOURCE_FILES_DIR}/Salsah.cpp
-    ${COMMON_SOURCE_FILES_DIR}/Template.cpp
-)
-
-file(GLOB COMMON_INCLUDE_FILES ${COMMON_INCLUDE_FILES_DIR}/*.h)
-
-list(REMOVE_ITEM COMMON_SRC_FILES
-    ${COMMON_INCLUDE_FILES_DIR}/PhpSession.h
-    ${COMMON_INCLUDE_FILES_DIR}/Salsah.h
-    ${COMMON_INCLUDE_FILES_DIR}/Template.h
-)
-
-message(STATUS ${COMMON_INCLUDE_FILES})
-message(STATUS ${COMMON_INCLUDE_FILES_DIR})
 
 include_directories(
     ${COMMON_INCLUDE_FILES_DIR}
@@ -565,19 +547,28 @@ include_directories(
 )
 add_executable(
         sipi
-        ${COMMON_SRC_FILES}
-        ${COMMON_INCLUDE_FILES}
+        src/sipi.cpp
+        src/SipiConf.cpp include/SipiConf.h
+        src/SipiError.cpp include/SipiError.h
+        include/AdobeRGB1998_icc.h include/USWebCoatedSWOP_icc.h
         metadata/SipiIcc.cpp metadata/SipiIcc.h
         metadata/SipiXmp.cpp metadata/SipiXmp.h
         metadata/SipiIptc.cpp metadata/SipiIptc.h
         metadata/SipiExif.cpp metadata/SipiExif.h
+        src/SipiImage.cpp include/SipiImage.h
         formats/SipiIOTiff.cpp formats/SipiIOTiff.h
         formats/SipiIOJ2k.cpp formats/SipiIOJ2k.h
         formats/SipiIOJpeg.cpp formats/SipiIOJpeg.h
         formats/SipiIOPng.cpp formats/SipiIOPng.h
+        src/SipiParamValue.cpp include/SipiParamValue.h
+        src/SipiParam.cpp include/SipiParam.h
+        src/SipiCmdParams.cpp include/SipiCmdParams.h
 #        PhpSession.cpp PhpSession.h
 #        Salsah.cpp Salsah.h
 #        Template.cpp Template.h
+        src/SipiHttpServer.cpp include/SipiHttpServer.h
+        src/SipiCache.cpp include/SipiCache.h
+        src/SipiLua.cpp include/SipiLua.h
         iiifparser/SipiRotation.cpp iiifparser/SipiRotation.h
         iiifparser/SipiQualityFormat.cpp iiifparser/SipiQualityFormat.h
         iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
