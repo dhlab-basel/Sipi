@@ -84,7 +84,10 @@ set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprec
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
 set(DOXIGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxigen)
-
+set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
+set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
+set(COMMON_LIB ${PROJECT_SOURCE_DIR}/lib)
+set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
 
 # needed packages
 find_package(ZLIB REQUIRED)
@@ -127,132 +130,12 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-#
-# libxyz
-#
-ExternalProject_Add(project_xz
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://tukaani.org/xz/xz-5.2.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/xz-5.2.1
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/xz-5.2.1/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_xz install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(xz SHARED IMPORTED)
-    set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblzma${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(xz STATIC IMPORTED)
-    set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblzma${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(xz project_xz)
 
-
-#
-# get libjpeg 1.4.1
-#
-ExternalProject_Add(project_jpeg
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.ijg.org/files/jpegsrc.v9a.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libjpeg-v9a
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libjpeg-v9a/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --enable-shared --enable-static
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_jpeg install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(jpeg SHARED IMPORTED)
-    set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjpeg${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=ON")
-else()
-    add_library(jpeg STATIC IMPORTED)
-    set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjpeg${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
-endif()
-add_dependencies(jpeg project_jpeg)
-
-#
-# get JBIG
-#
-ExternalProject_Add(
-        project_jbigkit
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL https://www.cl.cam.ac.uk/~mgk25/jbigkit/download/jbigkit-2.1.tar.gz
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/jbigkit-2.1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/jbigkit-2.1/libjbig/libjbig${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_jbigkit install_dir)
-add_library(jbigkit STATIC IMPORTED)
-set_property(TARGET jbigkit PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjbig${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
-add_dependencies(jbigkit project_jbigkit)
-
-
-#
-# get libtiff-4.0.6
-#
-if(MAKE_SHARED_SIPI)
-    SET(TIFF_LIBRARY "libtiff${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_SHARED_LIBRARY_SUFFIX}")
-else()
-    SET(TIFF_LIBRARY "libtiff${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
-endif()
-ExternalProject_Add(project_tiff
-        DEPENDS project_jpeg project_xz
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        TEST_BEFORE_INSTALL 1
-        URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
-        UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
-        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-        INSTALL_COMMAND make test
-        COMMAND make install
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dir.h ${CMAKE_CURRENT_SOURCE_DIR}/local/include/
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_tiff install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(tiff SHARED IMPORTED)
-    set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(tiff STATIC IMPORTED)
-    MESSAGE(STATUS "install dir" ${install_dir})
-    if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-       set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-    elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
-		if(CMAKE_DISTRO_NAME STREQUAL Ubuntu)
-       		set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/x86_64-linux-gnu/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-		else()
-       		set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib64/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-    	endif()
-    endif()
-endif()
-add_dependencies(tiff project_tiff)
-
-ExternalProject_Add(project_expat
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/expat/files/expat/2.1.0/expat-2.1.0.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/expat
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/expat/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_expat install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(expat SHARED IMPORTED)
-    set_property(TARGET expat PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexpat${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(expat STATIC IMPORTED)
-    set_property(TARGET expat PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexpat${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(expat project_expat)
-
-
+add_subdirectory(${EXT_PROJECTS_DIR}/xz)
+add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
+add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
+add_subdirectory(${EXT_PROJECTS_DIR}/TIFF)
+add_subdirectory(${EXT_PROJECTS_DIR}/expat)
 #
 # get lcms2 Version 2.7
 #
