@@ -219,6 +219,9 @@ link_directories(
 
 include_directories(
     ${COMMON_INCLUDE_FILES_DIR}
+    ${COMMON_INCLUDE_FILES_DIR}/metadata
+    ${COMMON_INCLUDE_FILES_DIR}/formats
+    ${COMMON_INCLUDE_FILES_DIR}/iiifparser
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
@@ -229,28 +232,28 @@ add_executable(
         src/SipiConf.cpp include/SipiConf.h
         src/SipiError.cpp include/SipiError.h
         include/AdobeRGB1998_icc.h include/USWebCoatedSWOP_icc.h
-        metadata/SipiIcc.cpp metadata/SipiIcc.h
-        metadata/SipiXmp.cpp metadata/SipiXmp.h
-        metadata/SipiIptc.cpp metadata/SipiIptc.h
-        metadata/SipiExif.cpp metadata/SipiExif.h
+        src/metadata/SipiIcc.cpp include/metadata/SipiIcc.h
+        src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
+        src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
+        src/metadata/SipiExif.cpp include/metadata/SipiExif.h
         src/SipiImage.cpp include/SipiImage.h
-        formats/SipiIOTiff.cpp formats/SipiIOTiff.h
-        formats/SipiIOJ2k.cpp formats/SipiIOJ2k.h
-        formats/SipiIOJpeg.cpp formats/SipiIOJpeg.h
-        formats/SipiIOPng.cpp formats/SipiIOPng.h
+        src/formats/SipiIOTiff.cpp include/formats/SipiIOTiff.h
+        src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
+        src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
+        src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
         src/SipiParamValue.cpp include/SipiParamValue.h
         src/SipiParam.cpp include/SipiParam.h
         src/SipiCmdParams.cpp include/SipiCmdParams.h
-#        PhpSession.cpp PhpSession.h
-#        Salsah.cpp Salsah.h
-#        Template.cpp Template.h
+#        src/PhpSession.cpp include/PhpSession.h
+#        src/Salsah.cpp include/Salsah.h
+#        src/Template.cpp include/Template.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
-        iiifparser/SipiRotation.cpp iiifparser/SipiRotation.h
-        iiifparser/SipiQualityFormat.cpp iiifparser/SipiQualityFormat.h
-        iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
-        iiifparser/SipiSize.cpp iiifparser/SipiSize.h
+        src/iiifparser/SipiRotation.cpp include/iiifparser/SipiRotation.h
+        src/iiifparser/SipiQualityFormat.cpp include/iiifparser/SipiQualityFormat.h
+        src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
+        src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
 )
 add_dependencies(sipi icc_profiles)
 
