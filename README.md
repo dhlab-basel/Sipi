@@ -107,7 +107,7 @@ Add the directory `cache` in the main directory.
 In the main directory, call:
 
 ```bash
-build/sipi -config sipi.config.lua
+build/sipi -config config/sipi.config.lua
 ```
 
 All operations are written to the log file `sipi.log.file`.
@@ -141,7 +141,7 @@ In the `pre_flight` function, permission checking can be implemented. In the cas
 
 ## Converting an Image
 
-To convert an image to a specified format, an HTTP request can be sent to a convert route as defined in the sipi config file (see `sipi.knora-config.lua`).
+To convert an image to a specified format, an HTTP request can be sent to a convert route as defined in the sipi config file (see `config/sipi.knora-config.lua`).
 
 For use with Knora, you find test scripts and test images in the folder `test-server`.
 
@@ -171,7 +171,7 @@ From the Sipi root dir, start sipi like this:
 ```bash
 gdb build/sipi
 
-(gdb) run -config sipi.config.lua
+(gdb) run -config config/sipi.config.lua
 
 ```
 
