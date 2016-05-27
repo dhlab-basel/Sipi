@@ -88,6 +88,10 @@ set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
 set(COMMON_LIB ${PROJECT_SOURCE_DIR}/lib)
 set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
+set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
+set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+
+
 
 # needed packages
 find_package(ZLIB REQUIRED)
@@ -134,228 +138,18 @@ find_package(Threads REQUIRED)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
-add_subdirectory(${EXT_PROJECTS_DIR}/TIFF)
+add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
-#
-# get lcms2 Version 2.7
-#
-ExternalProject_Add(project_lcms2
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/lcms/files/lcms/2.7/lcms2-2.7.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lcms2-2.6
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/lcms2-2.6/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --with-jpeg=${CMAKE_CURRENT_SOURCE_DIR}/local --with-tiff=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_lcms2 install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(lcms2 SHARED IMPORTED)
-    set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblcms2${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(lcms2 STATIC IMPORTED)
-    set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblcms2${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(lcms2 project_lcms2)
+add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
+add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
+add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/lua)
+add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
+add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
+add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
+add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
 
 
-#
-# get exiv2
-#
-#if(MAKE_SHARED_SIPI)
-#    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
-#else()
-#    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
-#endif()
-ExternalProject_Add(project_exiv2
-	DEPENDS expat
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.exiv2.org/exiv2-0.25.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/exiv2-0.25
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/exiv2-0.25/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --with-expat=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_exiv2 install_dir)
-
-if(MAKE_SHARED_SIPI)
-    add_library(exiv2 SHARED IMPORTED)
-    set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(exiv2 STATIC IMPORTED)
-    set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(exiv2 project_exiv2)
-
-#
-# get png
-#
-ExternalProject_Add(project_png
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/libpng/files/libpng16/1.6.21/libpng-1.6.21.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng-1.6.20
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-)
-ExternalProject_Get_Property(project_png install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(png SHARED IMPORTED)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(png STATIC IMPORTED)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(png project_png)
-
-
-#
-# get lua
-#
-ExternalProject_Add(project_lua
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
-    CONFIGURE_COMMAND ls
-    BUILD_COMMAND make ${LUA_ARCH}
-    INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_lua install_dir)
-add_library(lua STATIC IMPORTED)
-set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
-add_dependencies(lua project_lua)
-
-#
-# get luarocks
-#
-ExternalProject_Add(project_luarocks
-        DEPENDS lua
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL http://keplerproject.github.io/luarocks/releases/luarocks-2.3.0.tar.gz
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/luarocks-2.3.0
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/luarocks-2.3.0/configure
-            --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-            --with-lua-bin=${CMAKE_CURRENT_SOURCE_DIR}/local/bin
-            --with-lua-include=${CMAKE_CURRENT_SOURCE_DIR}/local/include
-            --with-lua-lib=${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-            --rocks-tree=${CMAKE_INSTALL_PREFIX}/luarocks
-        BUILD_COMMAND make build
-        INSTALL_COMMAND make install
-        BUILD_IN_SOURCE 1
-        )
-#ExternalProject_Get_Property(project_luarocks install_dir)
-
-#if(MAKE_SHARED_SIPI)
-#    add_library(luarocks SHARED IMPORTED)
-#    set_property(TARGET luarocks PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#else()
-#    add_library(luarocks STATIC IMPORTED)
-#    set_property(TARGET luarocks PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
-#endif()
-#add_dependencies(luarocks project_luarocks)
-
-#
-# get libmagic
-#
-Externalproject_Add(
-        project_magic
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL https://github.com/threatstack/libmagic/archive/master.zip
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local  --enable-shared --enable-static
-        BUILD_COMMAND make
-        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_magic install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(magic SHARED IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(magic STATIC IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(magic project_magic)
-
-
-
-#
-# compiling kakadu
-#
-#FindJava()
-ExternalProject_Add(project_kakadu
-	INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-	DOWNLOAD_COMMAND unzip -o -d ${CMAKE_CURRENT_SOURCE_DIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/vendor/v7_8-01382N.zip
-	CONFIGURE_COMMAND ""
-	BUILD_COMMAND make --directory=${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/make/ -f ${KDU_MAKE}
-	INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/lib/${KDU_ARCH} ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/bin/${KDU_ARCH} ${CMAKE_CURRENT_SOURCE_DIR}/local/bin
-	COMMAND  ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/managed/all_includes ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-)
-ExternalProject_Get_Property(project_kakadu install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(kdu SHARED IMPORTED)
-    set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_v78R.so)
-else()
-    add_library(kdu STATIC IMPORTED)
-    set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(kdu project_kakadu)
-if(MAKE_SHARED_SIPI)
-    add_library(kdu_aux SHARED IMPORTED)
-    set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_a78R.so)
-else()
-    add_library(kdu_aux STATIC IMPORTED)
-    set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_aux${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(kdu_aux project_kakadu)
-
-#target_link_libraries(my_app Threads::Threads)
-
-#
-# get openjpeg2000
-#
-#if(MAKE_SHARED_SIPI)
-#    SET(LIBOPT "-DBUILD_SHARED_LIBS:bool=on")
-#else ()
-#    SET(LIBOPT "-DBUILD_SHARED_LIBS:bool=off")
-#endif()
-#
-#ExternalProject_Add(project_oj2k
-#    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-#    URL https://github.com/uclouvain/openjpeg/archive/version.2.1.tar.gz
-#    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/openjpeg-2.1.0
-#    CMAKE_ARGS ${LIBOPT} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-#)
-#ExternalProject_Get_Property(project_oj2k install_dir)
-#if(MAKE_SHARED_SIPI)
-#    add_library(oj2k SHARED IMPORTED)
-#    set_property(TARGET oj2k PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libopenjp2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#else()
-#    add_library(oj2k STATIC IMPORTED)
-#    set_property(TARGET oj2k PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libopenjp2${CMAKE_STATIC_LIBRARY_SUFFIX})
-#endif()
-#add_dependencies(oj2k project_oj2k)
-
-
-#
-# httplib
-#
-ExternalProject_Add(project_shttps
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    DOWNLOAD_COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/shttps ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/shttps
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-    INSTALL_COMMAND make install
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_shttps install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(shttp SHARED IMPORTED)
-    set_property(TARGET shttp PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libshttp${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(shttp STATIC IMPORTED)
-    set_property(TARGET shttp PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libshttp${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(shttp project_shttps)
 
 
 # add a target to generate API documentation with Doxygen
@@ -368,6 +162,7 @@ if(DOXYGEN_FOUND)
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
+
 
 CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
 
@@ -476,7 +271,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sipi.config.lua
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/configure/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
