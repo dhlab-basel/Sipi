@@ -51,7 +51,7 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = 'sipi.init-knora-test.lua',
+    initscript = './config/sipi.init-knora-test.lua',
 
     --
     -- path to the caching directory
