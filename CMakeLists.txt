@@ -81,6 +81,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
 
+set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
+set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
+set(DOXIGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxigen)
+set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
+set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
+set(COMMON_LIB ${PROJECT_SOURCE_DIR}/lib)
+set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
+set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
+set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
+
 
 
 # needed packages
@@ -124,366 +135,37 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-#
-# libxyz
-#
-ExternalProject_Add(project_xz
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://tukaani.org/xz/xz-5.2.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/xz-5.2.1
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/xz-5.2.1/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_xz install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(xz SHARED IMPORTED)
-    set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblzma${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(xz STATIC IMPORTED)
-    set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblzma${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(xz project_xz)
+
+add_subdirectory(${EXT_PROJECTS_DIR}/xz)
+add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
+add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
+add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
+add_subdirectory(${EXT_PROJECTS_DIR}/expat)
+add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
+add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
+add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/lua)
+add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
+add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
+add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
+add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
 
 
-#
-# get libjpeg 1.4.1
-#
-ExternalProject_Add(project_jpeg
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.ijg.org/files/jpegsrc.v9a.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libjpeg-v9a
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libjpeg-v9a/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --enable-shared --enable-static
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_jpeg install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(jpeg SHARED IMPORTED)
-    set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjpeg${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=ON")
-else()
-    add_library(jpeg STATIC IMPORTED)
-    set_property(TARGET jpeg PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjpeg${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
-endif()
-add_dependencies(jpeg project_jpeg)
-
-#
-# get JBIG
-#
-ExternalProject_Add(
-        project_jbigkit
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL https://www.cl.cam.ac.uk/~mgk25/jbigkit/download/jbigkit-2.1.tar.gz
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/jbigkit-2.1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/jbigkit-2.1/libjbig/libjbig${CMAKE_STATIC_LIBRARY_SUFFIX} ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_jbigkit install_dir)
-add_library(jbigkit STATIC IMPORTED)
-set_property(TARGET jbigkit PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjbig${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
-add_dependencies(jbigkit project_jbigkit)
-
-
-#
-# get libtiff-4.0.6
-#
-if(MAKE_SHARED_SIPI)
-    SET(TIFF_LIBRARY "libtiff${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_SHARED_LIBRARY_SUFFIX}")
-else()
-    SET(TIFF_LIBRARY "libtiff${CMAKE_STATIC_LIBRARY_SUFFIX}")
-    SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
-endif()
-ExternalProject_Add(project_tiff
-    DEPENDS project_jpeg project_xz
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    TEST_BEFORE_INSTALL 1
-    URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6
-    UPDATE_COMMAND patch ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${CMAKE_CURRENT_SOURCE_DIR}/patches/tiff-4.0.4.patch
-    CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-    INSTALL_COMMAND make test
-	COMMAND make install
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/lib/libtiff-4.0.6/libtiff/tif_dir.h ${CMAKE_CURRENT_SOURCE_DIR}/local/include/
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_tiff install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(tiff SHARED IMPORTED)
-    set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(tiff STATIC IMPORTED)
-    MESSAGE(STATUS "install dir" ${install_dir})
-    if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-       set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-    elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
-		if(CMAKE_DISTRO_NAME STREQUAL Ubuntu)
-       		set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/x86_64-linux-gnu/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-		else()
-       		set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib64/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-    	endif()
-    endif()
-endif()
-add_dependencies(tiff project_tiff)
-
-ExternalProject_Add(project_expat
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/expat/files/expat/2.1.0/expat-2.1.0.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/expat
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/expat/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_expat install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(expat SHARED IMPORTED)
-    set_property(TARGET expat PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexpat${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(expat STATIC IMPORTED)
-    set_property(TARGET expat PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexpat${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(expat project_expat)
-
-
-#
-# get lcms2 Version 2.7
-#
-ExternalProject_Add(project_lcms2
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/lcms/files/lcms/2.7/lcms2-2.7.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lcms2-2.6
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/lcms2-2.6/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --with-jpeg=${CMAKE_CURRENT_SOURCE_DIR}/local --with-tiff=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_lcms2 install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(lcms2 SHARED IMPORTED)
-    set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblcms2${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(lcms2 STATIC IMPORTED)
-    set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblcms2${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(lcms2 project_lcms2)
-
-
-#
-# get exiv2
-#
-#if(MAKE_SHARED_SIPI)
-#    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
-#else()
-#    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
-#endif()
-ExternalProject_Add(project_exiv2
-	DEPENDS expat
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.exiv2.org/exiv2-0.25.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/exiv2-0.25
-    CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/exiv2-0.25/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local --with-expat=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_exiv2 install_dir)
-
-if(MAKE_SHARED_SIPI)
-    add_library(exiv2 SHARED IMPORTED)
-    set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(exiv2 STATIC IMPORTED)
-    set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(exiv2 project_exiv2)
-
-#
-# get png
-#
-ExternalProject_Add(project_png
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/libpng/files/libpng16/1.6.20/libpng-1.6.20.tar.gz/download
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng-1.6.20
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-)
-ExternalProject_Get_Property(project_png install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(png SHARED IMPORTED)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(png STATIC IMPORTED)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(png project_png)
-
-
-#
-# get lua
-#
-ExternalProject_Add(project_lua
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
-    CONFIGURE_COMMAND ls
-    BUILD_COMMAND make ${LUA_ARCH}
-    INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_lua install_dir)
-add_library(lua STATIC IMPORTED)
-set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
-add_dependencies(lua project_lua)
-
-#
-# get luarocks
-#
-ExternalProject_Add(project_luarocks
-        DEPENDS lua
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL http://keplerproject.github.io/luarocks/releases/luarocks-2.3.0.tar.gz
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/luarocks-2.3.0
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/luarocks-2.3.0/configure
-            --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local
-            --with-lua-bin=${CMAKE_CURRENT_SOURCE_DIR}/local/bin
-            --with-lua-include=${CMAKE_CURRENT_SOURCE_DIR}/local/include
-            --with-lua-lib=${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-            --rocks-tree=${CMAKE_INSTALL_PREFIX}/luarocks
-        BUILD_COMMAND make build
-        INSTALL_COMMAND make install
-        BUILD_IN_SOURCE 1
-        )
-#ExternalProject_Get_Property(project_luarocks install_dir)
-
-#if(MAKE_SHARED_SIPI)
-#    add_library(luarocks SHARED IMPORTED)
-#    set_property(TARGET luarocks PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#else()
-#    add_library(luarocks STATIC IMPORTED)
-#    set_property(TARGET luarocks PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libexiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
-#endif()
-#add_dependencies(luarocks project_luarocks)
-
-#
-# get libmagic
-#
-Externalproject_Add(
-        project_magic
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL https://github.com/threatstack/libmagic/archive/master.zip
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local  --enable-shared --enable-static
-        BUILD_COMMAND make
-        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_magic install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(magic SHARED IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(magic STATIC IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(magic project_magic)
-
-
-
-#
-# compiling kakadu
-#
-#FindJava()
-ExternalProject_Add(project_kakadu
-	INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-	DOWNLOAD_COMMAND unzip -o -d ${CMAKE_CURRENT_SOURCE_DIR}/lib ${CMAKE_CURRENT_SOURCE_DIR}/vendor/v7_8-01382N.zip
-	CONFIGURE_COMMAND ""
-	BUILD_COMMAND make --directory=${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/make/ -f ${KDU_MAKE}
-	INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/lib/${KDU_ARCH} ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-	COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/bin/${KDU_ARCH} ${CMAKE_CURRENT_SOURCE_DIR}/local/bin
-	COMMAND  ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/lib/v7_8-01382N/managed/all_includes ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-)
-ExternalProject_Get_Property(project_kakadu install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(kdu SHARED IMPORTED)
-    set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_v78R.so)
-else()
-    add_library(kdu STATIC IMPORTED)
-    set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(kdu project_kakadu)
-if(MAKE_SHARED_SIPI)
-    add_library(kdu_aux SHARED IMPORTED)
-    set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_a78R.so)
-else()
-    add_library(kdu_aux STATIC IMPORTED)
-    set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libkdu_aux${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(kdu_aux project_kakadu)
-
-#target_link_libraries(my_app Threads::Threads)
-
-#
-# get openjpeg2000
-#
-#if(MAKE_SHARED_SIPI)
-#    SET(LIBOPT "-DBUILD_SHARED_LIBS:bool=on")
-#else ()
-#    SET(LIBOPT "-DBUILD_SHARED_LIBS:bool=off")
-#endif()
-#
-#ExternalProject_Add(project_oj2k
-#    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-#    URL https://github.com/uclouvain/openjpeg/archive/version.2.1.tar.gz
-#    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/openjpeg-2.1.0
-#    CMAKE_ARGS ${LIBOPT} -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-#)
-#ExternalProject_Get_Property(project_oj2k install_dir)
-#if(MAKE_SHARED_SIPI)
-#    add_library(oj2k SHARED IMPORTED)
-#    set_property(TARGET oj2k PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libopenjp2${CMAKE_SHARED_LIBRARY_SUFFIX})
-#else()
-#    add_library(oj2k STATIC IMPORTED)
-#    set_property(TARGET oj2k PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libopenjp2${CMAKE_STATIC_LIBRARY_SUFFIX})
-#endif()
-#add_dependencies(oj2k project_oj2k)
-
-
-#
-# httplib
-#
-ExternalProject_Add(project_shttps
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    DOWNLOAD_COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/shttps ${CMAKE_CURRENT_SOURCE_DIR}/lib
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/shttps
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
-    INSTALL_COMMAND make install
-    BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_shttps install_dir)
-if(MAKE_SHARED_SIPI)
-    add_library(shttp SHARED IMPORTED)
-    set_property(TARGET shttp PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libshttp${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(shttp STATIC IMPORTED)
-    set_property(TARGET shttp PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libshttp${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(shttp project_shttps)
 
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    configure_file(${DOXIGEN_FILES_DIR}/Doxyfile.in ${DOXIGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ${DOXYGEN_EXECUTABLE} ${DOXIGEN_FILES_DIR}/Doxyfile
+        WORKING_DIRECTORY ${DOXIGEN_FILES_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/SipiConfig.h)
+
+CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
 
 #
 # Here we get the ICC profiles from the Adobe website and prepare them for including
@@ -493,83 +175,89 @@ unset(ICC CACHE)
 find_file(
     ICC
     icc.zip
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${COMMON_INCLUDE_FILES_DIR}
     NO_DEFAULT_PATH
 )
 if(ICC)
     message(STATUS "Adobe ICC profiles were already downloaded")
 else()
-    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip SHOW_PROGRESS)
+    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
 endif()
 
 set(
         ICC_HEADERS
-        ${CMAKE_CURRENT_SOURCE_DIR}/AdobeRGB1998_icc.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/USWebCoatedSWOP_icc.h
+        ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
+        ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
 
 )
 add_custom_command(
         OUTPUT ${ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        DEPENDS icc.zip
-        COMMAND unzip -o ${CMAKE_CURRENT_SOURCE_DIR}/icc.zip -d ${CMAKE_CURRENT_SOURCE_DIR}
-	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
+        DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
+        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
-        COMMAND rm AdobeRGB1998.icc
-	COMMAND cp '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${CMAKE_CURRENT_SOURCE_DIR}/
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
-        COMMAND rm USWebCoatedSWOP.icc
-        COMMAND rm -rf '${CMAKE_CURRENT_SOURCE_DIR}/Adobe ICC Profiles *end-user*'
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
 )
 add_custom_target(
         icc_profiles
         DEPENDS ${ICC_HEADERS}
 )
 
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
-)
+
 
 link_directories(
-	/usr/local/lib
+        /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
 
+include_directories(
+    ${COMMON_INCLUDE_FILES_DIR}
+    ${COMMON_INCLUDE_FILES_DIR}/metadata
+    ${COMMON_INCLUDE_FILES_DIR}/formats
+    ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+)
 add_executable(
         sipi
-        sipi.cpp
-        SipiConf.cpp SipiConf.h
-        SipiError.cpp SipiError.h
-        AdobeRGB1998_icc.h USWebCoatedSWOP_icc.h
-        metadata/SipiIcc.cpp metadata/SipiIcc.h
-        metadata/SipiXmp.cpp metadata/SipiXmp.h
-        metadata/SipiIptc.cpp metadata/SipiIptc.h
-        metadata/SipiExif.cpp metadata/SipiExif.h
-        SipiImage.cpp SipiImage.h
-        formats/SipiIOTiff.cpp formats/SipiIOTiff.h
-        formats/SipiIOJ2k.cpp formats/SipiIOJ2k.h
-        formats/SipiIOJpeg.cpp formats/SipiIOJpeg.h
-        formats/SipiIOPng.cpp formats/SipiIOPng.h
-        SipiParamValue.cpp SipiParamValue.h
-        SipiParam.cpp SipiParam.h
-        SipiCmdParams.cpp SipiCmdParams.h
-#        PhpSession.cpp PhpSession.h
-#        Salsah.cpp Salsah.h
-#        Template.cpp Template.h
-        SipiHttpServer.cpp SipiHttpServer.h
-        SipiCache.cpp SipiCache.h
-        SipiLua.cpp SipiLua.h
-        iiifparser/SipiRotation.cpp iiifparser/SipiRotation.h
-        iiifparser/SipiQualityFormat.cpp iiifparser/SipiQualityFormat.h
-        iiifparser/SipiRegion.cpp iiifparser/SipiRegion.h
-        iiifparser/SipiSize.cpp iiifparser/SipiSize.h
+        src/sipi.cpp
+        src/SipiConf.cpp include/SipiConf.h
+        src/SipiError.cpp include/SipiError.h
+        include/AdobeRGB1998_icc.h include/USWebCoatedSWOP_icc.h
+        src/metadata/SipiIcc.cpp include/metadata/SipiIcc.h
+        src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
+        src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
+        src/metadata/SipiExif.cpp include/metadata/SipiExif.h
+        src/SipiImage.cpp include/SipiImage.h
+        src/formats/SipiIOTiff.cpp include/formats/SipiIOTiff.h
+        src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
+        src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
+        src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
+        src/SipiParamValue.cpp include/SipiParamValue.h
+        src/SipiParam.cpp include/SipiParam.h
+        src/SipiCmdParams.cpp include/SipiCmdParams.h
+#        src/PhpSession.cpp include/PhpSession.h
+#        src/Salsah.cpp include/Salsah.h
+#        src/Template.cpp include/Template.h
+        src/SipiHttpServer.cpp include/SipiHttpServer.h
+        src/SipiCache.cpp include/SipiCache.h
+        src/SipiLua.cpp include/SipiLua.h
+        src/iiifparser/SipiRotation.cpp include/iiifparser/SipiRotation.h
+        src/iiifparser/SipiQualityFormat.cpp include/iiifparser/SipiQualityFormat.h
+        src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
+        src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
 )
 add_dependencies(sipi icc_profiles)
+
 
 
 
@@ -587,7 +275,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/sipi.config.lua
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 

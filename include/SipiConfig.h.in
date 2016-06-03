@@ -1,0 +1,8 @@
+#ifndef __defined_config_h
+#define __defined_config_h
+
+
+#cmakedefine HAVE_MALLOC_H 1
+#cmakedefine HAVE_ST_ATIMESPEC
+
+#endif

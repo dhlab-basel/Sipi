@@ -32,7 +32,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
+#include "SockStream.h"
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
@@ -582,7 +585,107 @@ namespace shttps {
         return 0;
     }
     //=========================================================================
+#ifdef GAGA
 
+    static string get_host_name() {
+        struct addrinfo hints, *info, *p;
+        int gai_result;
+
+        char hostname[1024];
+        hostname[1023] = '\0';
+        gethostname(hostname, 1023);
+
+        string result;
+
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_CANONNAME;
+
+        if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
+            return result;
+        }
+
+        if (p != NULL) {
+            result = p->ai_canonname;
+        }
+
+        freeaddrinfo(info);
+
+        return result;
+    }
+
+    /*!
+     * Get's data from a http server
+     * LUA server.http("GET", "http://server.domain/path/file" [, header])
+     * where header is an associative array (key-value pairs) of header variables
+     */
+    static int lua_http_client(lua_State *L) {
+        int top = lua_gettop(L);
+        if (top < 2) {
+            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])' requires at least 2 parameters");
+            lua_error(L);
+            return 0;
+        }
+        const char *_method = lua_tostring(L, 1);
+        string method = _method;
+        const char *_url = lua_tostring(L, 2);
+        string url = _url;
+
+        if (method == "GET") {
+            struct addrinfo *ai;
+            struct addrinfo hint;
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = PF_INET;
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_protocol = IPPROTO_TCP;
+            if (getaddrinfo(url.c_str(), NULL, &hints, &ai) != 0) {
+                lua_pop(L, top);
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not resolve hostname");
+                lua_error(L);
+                return 0;
+            }
+
+            int socketfd;
+            if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
+                lua_pop(L, top);
+                freeaddrinfo(ai);
+                perror("socket");
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
+                lua_error(L);
+                return 0;
+            }
+
+            if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                close(sockfd);
+                lua_pop(L, top);
+                freeaddrinfo(ai);
+                perror("socket");
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
+                lua_error(L);
+                return 0;
+            }
+
+            SockStream sockstream(sock);
+            istream ins(&sockstream);
+            ostream os(&sockstream);
+
+            os << "GET " << path << "HTTP/1.1\r\n";
+            string myhost = get_host_name();
+            if (!myhost.empty()) {
+                os << "Host: " << myhost << "\r\n";
+            }
+
+            freeaddrinfo(ai);
+        }
+        else {
+            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
+            lua_error(L);
+        }
+
+    }
+    //=========================================================================
+#endif
 
     static cJSON *subtable(lua_State *L) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
@@ -997,7 +1100,11 @@ namespace shttps {
 
 
     string LuaServer::configString(const string table, const string variable, const string defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
+
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1014,7 +1121,10 @@ namespace shttps {
 
 
     int LuaServer::configBoolean(const string table, const string variable, const bool defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1031,7 +1141,10 @@ namespace shttps {
     //=========================================================================
 
     int LuaServer::configInteger(const string table, const string variable, const int defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
@@ -1047,7 +1160,10 @@ namespace shttps {
     //=========================================================================
 
     float LuaServer::configFloat(const string table, const string variable, const float defval) {
-        lua_getglobal(L, table.c_str());
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return defval;
+        }
         lua_getfield(L, -1, variable.c_str());
         if (lua_isnil(L, -1)) {
             lua_pop(L, 2);
