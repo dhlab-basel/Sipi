@@ -413,7 +413,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiIOTiff::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size)
+    bool SipiIOTiff::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
     {
     	TIFF *tif;
 
@@ -814,6 +814,12 @@ namespace Sipi {
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
                 if (rtype != SipiSize::FULL) {
                     img->scale(nnx, nny);
+                }
+            }
+
+            if (force_bps_8) {
+                if (!img->to8bps()) {
+                    throw SipiError(__file__, __LINE__, "Cannont convert to 8 Bits(sample");
                 }
             }
 

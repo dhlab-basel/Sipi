@@ -158,7 +158,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size) {
+    bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         auto logger = spdlog::get(shttps::loggername);
 
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
@@ -368,6 +368,8 @@ namespace Sipi {
         kdu_supp::kdu_stripe_decompressor decompressor;
         decompressor.start(codestream);
         int stripe_heights[4] = {dims.size.y, dims.size.y, dims.size.y, dims.size.y}; // enough for alpha channel (4 components)
+
+        if (force_bps_8) img->bps = 8; // forces kakadu to convert to 8 bit!
         switch (img->bps) {
             case 8: {
                 kdu_core::kdu_byte *buffer8 = new kdu_core::kdu_byte[(int) dims.area()*img->nc];

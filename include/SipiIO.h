@@ -51,8 +51,9 @@ namespace Sipi {
          * \param reduce Reducing factor. Some file formars support
          * reading a lower resolution of the file. A reducing factor of 2 indicates
          * to read only half the resolution. [default: 0]
+         * \param force_bps_8 Convert the file to 8 bits/sample on reading thus enforcing an 8 bit image
          */
-        virtual bool read(SipiImage *img, std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL) = 0;
+        virtual bool read(SipiImage *img, std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = true) = 0;
 
        /*!
         * Get the dimension of the image

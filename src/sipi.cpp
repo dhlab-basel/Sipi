@@ -423,7 +423,7 @@ int main (int argc, char *argv[]) {
         // read the input image
         //
         Sipi::SipiImage img;
-        img.read(infname, region, size);
+        img.read(infname, region, size, format == "jpg"); //convert to bps=8 in case of JPG output
 
         delete region;
         delete size;
