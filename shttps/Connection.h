@@ -62,6 +62,17 @@ namespace shttps {
     extern size_t safeGetline(std::istream& is, std::string& t);
 
    /*!
+    * Function to parse the options of a HTTP header line
+    *
+    * \param[in] options Options-part of the string
+    * \param[in] form_encoded Has to be set to true, if it is form_encoded data [default: false]
+    * \param[in] sep Separator character between options [default: ';']
+    *
+    * \returns map of options (all names converted to lower case!)
+    */
+    extern std::map<std::string,std::string> parse_header_options(const std::string& options, bool form_encoded = false, char sep = ';');
+
+   /*!
     * urldecode is used to decode an according to the HTTP-standard urlencoded string
     *
     * \param[in] src Encoded string

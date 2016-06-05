@@ -39,6 +39,7 @@
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
+#include "ChunkReader.h"
 
 #include "sole.hpp"
 #include "cJSON.h"
@@ -63,6 +64,27 @@ namespace shttps {
         throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
     }
     //=========================================================================
+
+    // trim from start
+    static inline std::string &ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+        return s;
+    }
+    //=========================================================================
+
+    // trim from end
+    static inline std::string &rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+        return s;
+    }
+    //=========================================================================
+
+    // trim from both ends
+    static inline std::string &trim(std::string &s) {
+        return ltrim(rtrim(s));
+    }
+    //=========================================================================
+
 
     /*!
      * Instantiates a Lua server
@@ -585,10 +607,9 @@ namespace shttps {
         return 0;
     }
     //=========================================================================
-#ifdef GAGA
 
     static string get_host_name() {
-        struct addrinfo hints, *info, *p;
+        struct addrinfo hint, *info, *p;
         int gai_result;
 
         char hostname[1024];
@@ -597,12 +618,12 @@ namespace shttps {
 
         string result;
 
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_CANONNAME;
+        memset(&hint, 0, sizeof hint);
+        hint.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
+        hint.ai_socktype = SOCK_STREAM;
+        hint.ai_flags = AI_CANONNAME;
 
-        if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
+        if ((gai_result = getaddrinfo(hostname, "http", &hint, &info)) != 0) {
             return result;
         }
 
@@ -614,11 +635,55 @@ namespace shttps {
 
         return result;
     }
+    //=========================================================================
+
+
+    static map<string,string> process_http_header(istream *ins, int &content_length)
+    {
+        //
+        // process header files
+        //
+        map<string,string> header;
+        bool eoh = false; //end of header reached
+        content_length = 0; // we don't know if we will get content...
+        string line;
+        while (!eoh && !ins->eof() && !ins->fail()) {
+            (void) safeGetline(*ins, line);
+            if (line.empty() || ins->fail()) {
+                eoh = true;
+            } else {
+                size_t pos = line.find(':');
+                string name = line.substr(0, pos);
+                name = trim(name);
+                asciitolower(name);
+                string value = line.substr(pos + 1);
+                value = header[name] = trim(value);
+                if (name == "content-length") {
+                    content_length = stoi(value);
+                }
+                else if (name == "transfer-encoding") {
+                    if (value == "chunked") {
+                        content_length = -1;
+                    }
+                }
+            }
+        }
+        return header;
+    }
+    //=========================================================================
+
 
     /*!
      * Get's data from a http server
-     * LUA server.http("GET", "http://server.domain/path/file" [, header])
-     * where header is an associative array (key-value pairs) of header variables
+     * LUA: result = server.http("GET", "http://server.domain/path/file" [, header])
+     * where header is an associative array (key-value pairs) of header variables.
+     *
+     * result = {
+     *    header {
+     *       name = value [, name = value, ...]
+     *    },
+     *    body = data
+     * }
      */
     static int lua_http_client(lua_State *L) {
         int top = lua_gettop(L);
@@ -627,19 +692,65 @@ namespace shttps {
             lua_error(L);
             return 0;
         }
+
         const char *_method = lua_tostring(L, 1);
         string method = _method;
         const char *_url = lua_tostring(L, 2);
         string url = _url;
 
+        bool secure = false; // ist true, if we want a secure (SSL) connection
+        int port = 80; // contains the port number
+        string host; // contains the host name or IP-number
+        string path; // path to document
+
+        //
+        // processing the URL given
+        //
+        if (url.find("http:") == 0) {
+            url = url.substr(7);
+        }
+        else if (url.find("https:") == 0) {
+            url = url.substr(8);
+            secure = true;
+            port = 443;
+        }
+
+        size_t pos;
+        pos = url.find_first_of(":/");
+        if (pos == string::npos) {
+            host = url;
+            path = "/";
+        }
+        else {
+            host = url.substr(0, pos);
+            if (url[pos] == ':') { // we have a portnumber
+                port = stoi(url.substr(0, pos));
+                pos = url.find("/");
+                if (pos == string::npos) {
+                    path = "/";
+                }
+                else {
+                    path = url.substr(pos);
+                }
+            }
+            else {
+                path = url.substr(pos);
+            }
+        }
+
+
         if (method == "GET") {
             struct addrinfo *ai;
             struct addrinfo hint;
-            memset(&hints, 0, sizeof hints);
-            hints.ai_family = PF_INET;
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_protocol = IPPROTO_TCP;
-            if (getaddrinfo(url.c_str(), NULL, &hints, &ai) != 0) {
+
+            //
+            // resolve hostname etc. to get the IP adress
+            //
+            memset(&hint, 0, sizeof hint);
+            hint.ai_family = PF_INET;
+            hint.ai_socktype = SOCK_STREAM;
+            hint.ai_protocol = IPPROTO_TCP;
+            if (getaddrinfo(host.c_str(), NULL, &hint, &ai) != 0) {
                 lua_pop(L, top);
                 lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not resolve hostname");
                 lua_error(L);
@@ -647,7 +758,7 @@ namespace shttps {
             }
 
             int socketfd;
-            if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
+            if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
                 lua_pop(L, top);
                 freeaddrinfo(ai);
                 perror("socket");
@@ -656,8 +767,14 @@ namespace shttps {
                 return 0;
             }
 
-            if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                close(sockfd);
+            //
+            // set the port number (assuming it is an AF_INET we got...
+            //
+            struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
+
+            serv_addr->sin_port = htons(port);
+            if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
+                close(socketfd);
                 lua_pop(L, top);
                 freeaddrinfo(ai);
                 perror("socket");
@@ -666,7 +783,7 @@ namespace shttps {
                 return 0;
             }
 
-            SockStream sockstream(sock);
+            SockStream sockstream(socketfd);
             istream ins(&sockstream);
             ostream os(&sockstream);
 
@@ -676,16 +793,80 @@ namespace shttps {
                 os << "Host: " << myhost << "\r\n";
             }
 
+            //
+            // let's process the header of the return HTTP-message
+            //
+            int content_length;
+            map<string,string> header = process_http_header(&ins, content_length);
+            if (ins.fail() || ins.eof()) {
+                close(socketfd);
+                lua_pop(L, top);
+                freeaddrinfo(ai);
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Failed reading HTTP header");
+                lua_error(L);
+                return 0;
+            }
+
+            //
+            // now we read the data from the body of the HTTP-message
+            //
+            char *bodybuf = NULL;
+            if (content_length == -1) { // we expect chunked data
+                ChunkReader ckrd(&ins);
+                (void) ckrd.readAll(&bodybuf);
+            }
+            else {
+                if ((bodybuf = (char *) malloc((content_length + 1)*sizeof(char))) == NULL) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Couldn't get enough memory");
+                    lua_error(L);
+                }
+                ins.read(bodybuf, content_length);
+                if (ins.fail() ||ins.eof()) {
+                    free(bodybuf);
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Couldn't read HTTP body");
+                    lua_error(L);
+                }
+                bodybuf[content_length] = '\0';
+            }
+
+            //
+            // now let's build the Lua-table that's being returned
+            //
+            lua_createtable(L, 0, 2); // table
+            lua_pushstring(L, "header"); // table1 - "header"
+            lua_createtable(L, 0, header.size()); // table - "header" - table2
+            for (auto const &iterator : header) {
+                lua_pushstring(L, iterator.first.c_str()); // table - "header" - table2 - headername
+                lua_pushstring(L, iterator.second.c_str()); // table - "header" - table2 - headername - headervalue
+                lua_rawset(L, -3); // table - "header" - table2
+            }
+            lua_rawset(L, -3); // table
+            lua_pushstring(L, "body"); // table - "body"
+            lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+            lua_rawset(L, -3); // table
+
+            free(bodybuf);
+
+            close(socketfd);
+
             freeaddrinfo(ai);
+
+            return 1; // we return one table...
         }
         else {
             lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
             lua_error(L);
         }
-
+        return 0;
     }
     //=========================================================================
-#endif
+//#endif
 
     static cJSON *subtable(lua_State *L) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
@@ -1077,6 +1258,10 @@ namespace shttps {
 
         lua_pushstring(L, "shutdown"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_exitserver); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "http"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_http_client); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_setglobal(L, servertablename);
