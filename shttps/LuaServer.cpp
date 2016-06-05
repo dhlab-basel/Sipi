@@ -138,7 +138,7 @@ namespace shttps {
     //=========================================================================
 
     /*!
-     * Activates the the connection buffer. Optionally the bugger size and increment size can be given
+     * Activates the the connection buffer. Optionally the buffer size and increment size can be given
      * LUA: server.setBuffer([bufsize][,incsize])
      */
     static int lua_setbuffer(lua_State *L) {
@@ -674,7 +674,7 @@ namespace shttps {
 
 
     /*!
-     * Get's data from a http server
+     * Get data from a http server
      * LUA: result = server.http("GET", "http://server.domain/path/file" [, header] [, timeout])
      * where header is an associative array (key-value pairs) of header variables.
      * Parameters:
