@@ -28,12 +28,14 @@
 #include <sstream>
 #include <string>
 #include <cstring>      // Needed for memset
+#include <chrono>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include "SockStream.h"
 #include "LuaServer.h"
@@ -45,6 +47,8 @@
 #include "cJSON.h"
 
 using namespace std;
+using  ms = chrono::milliseconds;
+using get_time = chrono::steady_clock ;
 
 static const char __file__[] = __FILE__;
 
@@ -608,13 +612,9 @@ namespace shttps {
     }
     //=========================================================================
 
-    static string get_host_name() {
+    static string get_host_name(string hostname) {
         struct addrinfo hint, *info, *p;
         int gai_result;
-
-        char hostname[1024];
-        hostname[1023] = '\0';
-        gethostname(hostname, 1023);
 
         string result;
 
@@ -623,12 +623,12 @@ namespace shttps {
         hint.ai_socktype = SOCK_STREAM;
         hint.ai_flags = AI_CANONNAME;
 
-        if ((gai_result = getaddrinfo(hostname, "http", &hint, &info)) != 0) {
+        if ((gai_result = getaddrinfo(hostname.c_str(), "http", &hint, &info)) != 0) {
             return result;
         }
 
         if (p != NULL) {
-            result = p->ai_canonname;
+            result = info->ai_canonname;
         }
 
         freeaddrinfo(info);
@@ -649,7 +649,7 @@ namespace shttps {
         string line;
         while (!eoh && !ins->eof() && !ins->fail()) {
             (void) safeGetline(*ins, line);
-            if (line.empty() || ins->fail()) {
+            if (line.empty() || ins->fail() || ins->eof()) {
                 eoh = true;
             } else {
                 size_t pos = line.find(':');
@@ -675,8 +675,13 @@ namespace shttps {
 
     /*!
      * Get's data from a http server
-     * LUA: result = server.http("GET", "http://server.domain/path/file" [, header])
+     * LUA: result = server.http("GET", "http://server.domain/path/file" [, header] [, timeout])
      * where header is an associative array (key-value pairs) of header variables.
+     * Parameters:
+     *  - method: "GET" (only method allowed so far
+     *  - url: complete url including optional port, but no authorization yet
+     *  - header: optional table with HTTP-header key-value pairs
+     *  - timeout: option number of milliseconds until the connect timeouts
      *
      * result = {
      *    header {
@@ -688,7 +693,7 @@ namespace shttps {
     static int lua_http_client(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])' requires at least 2 parameters");
+            lua_pushstring(L, "Lua-error 'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
             lua_error(L);
             return 0;
         }
@@ -697,6 +702,34 @@ namespace shttps {
         string method = _method;
         const char *_url = lua_tostring(L, 2);
         string url = _url;
+
+        map<string,string> outheader;
+        int timeout = 500;
+        for (int i = 3; i <= top; i++) {
+            if (lua_istable(L, i)) { // process header table at position i
+                int index = i;
+                lua_pushnil(L);
+
+                // This is needed for it to even get the first value
+                index--;
+
+                while (lua_next(L, index) != 0) {
+                    // key is at index -2
+                    // value is at index -1
+                    if (!lua_isstring(L, -1) || !lua_isstring(L, -2)) {
+                        lua_pop(L, 1);
+                        continue;
+                    };
+                    const char *key = lua_tostring(L, -2);
+                    const char *value = lua_tostring(L, -1);
+                    outheader[key] = value;
+                    lua_pop(L, 1);
+                }
+            }
+            else if (lua_isinteger(L, i)) { // process timeout at position i
+                timeout = lua_tointeger(L, i);
+            }
+        }
 
         bool secure = false; // ist true, if we want a secure (SSL) connection
         int port = 80; // contains the port number
@@ -738,13 +771,12 @@ namespace shttps {
             }
         }
 
-
         if (method == "GET") {
             struct addrinfo *ai;
             struct addrinfo hint;
 
             //
-            // resolve hostname etc. to get the IP adress
+            // resolve hostname etc. to get the IP address of server
             //
             memset(&hint, 0, sizeof hint);
             hint.ai_family = PF_INET;
@@ -757,6 +789,9 @@ namespace shttps {
                 return 0;
             }
 
+            //
+            // now we create the socket
+            //
             int socketfd;
             if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
                 lua_pop(L, top);
@@ -768,30 +803,65 @@ namespace shttps {
             }
 
             //
+            // now let's set the timeout of the socket
+            //
+            struct timeval tv;
+
+            tv.tv_sec = timeout / 1000;  // 30 Secs Timeout
+            tv.tv_usec = timeout % 1000;  // Not init'ing this can cause strange errors
+            setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(struct timeval));
+
+            //
             // set the port number (assuming it is an AF_INET we got...
             //
             struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
 
+            char *gaga = inet_ntoa(serv_addr->sin_addr);
+
+            auto start = get_time::now();
+
+            //
+            // connect the socket
+            //
             serv_addr->sin_port = htons(port);
             if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
                 close(socketfd);
                 lua_pop(L, top);
                 freeaddrinfo(ai);
                 perror("socket");
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not connect socket");
                 lua_error(L);
                 return 0;
             }
 
+            //
+            // create the C++ streams
+            //
             SockStream sockstream(socketfd);
             istream ins(&sockstream);
             ostream os(&sockstream);
 
-            os << "GET " << path << "HTTP/1.1\r\n";
-            string myhost = get_host_name();
-            if (!myhost.empty()) {
-                os << "Host: " << myhost << "\r\n";
+            //
+            // get canonical name of request sending host
+            //
+            char myhostname[1024];
+            myhostname[1023] = '\0';
+            gethostname(myhostname, 1023);
+            string myhost = get_host_name(myhostname); // canonical name of sending host
+
+
+            //
+            // send the request header
+            //
+            os << "GET " << path << " HTTP/1.1\r\n";
+            if (!host.empty()) {
+                os << "Host: " << host << "\r\n";
             }
+            for (auto const &iterator : outheader) {
+                os << iterator.first << ": " << iterator.second << "\r\n";
+            }
+            os << "\r\n";
+            os.flush();
 
             //
             // let's process the header of the return HTTP-message
@@ -835,6 +905,9 @@ namespace shttps {
                 bodybuf[content_length] = '\0';
             }
 
+            auto end = get_time::now();
+            auto diff = end - start;
+            int duration = chrono::duration_cast<ms>(diff).count();
             //
             // now let's build the Lua-table that's being returned
             //
@@ -847,8 +920,13 @@ namespace shttps {
                 lua_rawset(L, -3); // table - "header" - table2
             }
             lua_rawset(L, -3); // table
+
             lua_pushstring(L, "body"); // table - "body"
             lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+            lua_rawset(L, -3); // table
+
+            lua_pushstring(L, "duration"); // table - "duration"
+            lua_pushinteger(L, duration); // table - "duration" - duration
             lua_rawset(L, -3); // table
 
             free(bodybuf);
@@ -866,7 +944,7 @@ namespace shttps {
         return 0;
     }
     //=========================================================================
-//#endif
+
 
     static cJSON *subtable(lua_State *L) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";

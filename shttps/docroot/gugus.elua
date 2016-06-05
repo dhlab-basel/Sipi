@@ -6,12 +6,23 @@
 <body>
 <h1>Embedded lua test</h1>
 <hr/>
-<table>
+
 <lua>
-for i=1, 20  do
-    server.print("<tr><td>", i, "</td><td>", i*20, "</td></tr>")
+
+result = server.http("GET", "http://www.salsah.org/api/resources/1", 1000)
+
+server.print("<table>")
+server.print("<tr><th>Field</th><th>Value</th></tr>")
+for k,v in pairs(server.header) do
+    server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
 end
+server.print("</table><hr/>")
+
+server.print("Duration: ", result.duration, " ms<br/><hr/>")
+server.print("Body:<br/>", result.body)
+
+
 </lua>
-</table>
+
 </body>
 </html>
