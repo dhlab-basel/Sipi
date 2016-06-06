@@ -936,6 +936,10 @@ namespace Sipi {
     //============================================================================
 
     bool SipiImage::to8bps(void) {
+        //
+        // we just use the shift-right operater (>> 8) to devide the values by 256 (2^8)!
+        // This is the most efficient and fastest way
+        //
         if (bps == 16) {
             word *inbuf = (word *) pixels;
             byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
@@ -943,6 +947,7 @@ namespace Sipi {
             for (unsigned int j = 0; j < ny; j++) {
                 for (unsigned int i = 0; i < nx; i++) {
                     for (unsigned int k = 0; k < nc; k++) {
+                        // divide pixel values by 256 using ">> 8"
                         outbuf[nc*(j*nx + i) + k] = (byte) ((inbuf[nc*(j*nx + i) + k] >> 8) & 0x00ff);
                     }
                 }
