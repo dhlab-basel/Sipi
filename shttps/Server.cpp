@@ -123,13 +123,13 @@ namespace shttps {
 						conn.setBuffer();
                         conn.status(Connection::INTERNAL_SERVER_ERROR);
                         conn.header("Content-Type", "text/text; charset=utf-8");
-                        conn << "Lua Error:\n==========\n" << err << "\n";
+                        conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                         conn.flush();
                     }
                     catch(int i) {
                         return;
                     }
-                    logger->error("ScriptHandler: error executing lua script");
+                    logger->error("ScriptHandler: error executing lua script") << err;
                     return;
                 }
                 conn.flush();
@@ -167,13 +167,13 @@ namespace shttps {
                         try {
                             conn.status(Connection::INTERNAL_SERVER_ERROR);
                             conn.header("Content-Type", "text/text; charset=utf-8");
-                            conn << "Lua Error:\n==========\n" << err << "\n";
+                            conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
                         }
                         catch (int i) {
                             return;
                         }
-                        logger->error("ScriptHandler: error executing lua chunk!");
+                        logger->error("ScriptHandler: error executing lua chunk! ") << err;
                         return;
                     }
                 }
@@ -295,13 +295,13 @@ namespace shttps {
                     try {
                         conn.status(Connection::INTERNAL_SERVER_ERROR);
                         conn.header("Content-Type", "text/text; charset=utf-8");
-                        conn << "Lua Error:\n==========\n" << err << "\n";
+                        conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                         conn.flush();
                     }
                     catch(int i) {
                         return;
                     }
-                    logger->error("FileHandler: error executing lua chunk");
+                    logger->error("FileHandler: error executing lua chunk: ") << err;
                     return;
                 }
                 conn.flush();
@@ -339,13 +339,13 @@ namespace shttps {
                         try {
                             conn.status(Connection::INTERNAL_SERVER_ERROR);
                             conn.header("Content-Type", "text/text; charset=utf-8");
-                            conn << "Lua Error:\n==========\n" << err << "\n";
+                            conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
                         }
                         catch (int i) {
                             return;
                         }
-                        logger->error("FileHandler: error executing lua chunk");
+                        logger->error("FileHandler: error executing lua chunk") << err;
                         return;
                     }
                 }
@@ -566,7 +566,6 @@ namespace shttps {
             Connection conn;
             try {
                 if (_tmpdir.empty()) {
-                    std::cerr << "'" << "_tmpdir is empty" << "'" << std::endl;
                     throw Error(__file__, __LINE__, "_tmpdir is empty");
                 }
                 conn = Connection(this, &ins, &os, _tmpdir);

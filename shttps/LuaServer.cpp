@@ -63,7 +63,6 @@ namespace shttps {
      * Error handler for Lua errors!
      */
     static int dont_panic(lua_State *L) {
-        cerr << "DON'T PANIC !!!!" << endl; // TODO: remove this debugging oputput if no longer necessary
         const char *luapanic = lua_tostring(L, -1);
         throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
     }
@@ -97,9 +96,9 @@ namespace shttps {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
+        lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
 
-        lua_atpanic(L, dont_panic);
     }
     //=========================================================================
 
@@ -112,9 +111,11 @@ namespace shttps {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
-        luaL_openlibs(L);
 
         lua_atpanic(L, dont_panic);
+
+        luaL_openlibs(L);
+
 
         if (!luafile.empty()) {
             if (luaL_loadfile(L, luafile.c_str()) != 0) {
@@ -152,7 +153,7 @@ namespace shttps {
             }
             else {
                 lua_pushstring(L,
-                               "Lua-Error 'server.setbuffer([bufize][, incsize])': requires bufsize size as integer!");
+                               "'server.setbuffer([bufize][, incsize])': requires bufsize size as integer!");
                 lua_error(L);
             }
         }
@@ -162,7 +163,7 @@ namespace shttps {
             }
             else {
                 lua_pushstring(L,
-                               "Lua-Error 'server.setbuffer([bufize][, incsize])': requires incsize size as integer!");
+                               "'server.setbuffer([bufize][, incsize])': requires incsize size as integer!");
                 lua_error(L);
             }
         }
@@ -196,12 +197,12 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.ftype(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.ftype(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.ftype(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.ftype(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -249,12 +250,12 @@ namespace shttps {
     static int lua_fs_is_readable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_readable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_readable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -278,12 +279,12 @@ namespace shttps {
     static int lua_fs_is_writeable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_writeable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_writeable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -307,12 +308,12 @@ namespace shttps {
     static int lua_fs_is_executable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_executable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_executable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -336,12 +337,12 @@ namespace shttps {
     static int lua_fs_exists(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.exists(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.exists(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.exists(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.exists(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -367,12 +368,12 @@ namespace shttps {
     static int lua_fs_unlink(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.unlink(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.unlink(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -395,17 +396,17 @@ namespace shttps {
     static int lua_fs_mkdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): parameter missing!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
         if (!lua_isinteger(L, 2)) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): mask is not an integer!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': mask is not an integer!");
             lua_error(L);
             return 0;
         }
@@ -429,12 +430,12 @@ namespace shttps {
     static int lua_fs_rmdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.rmdir(dirname): parameter missing!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.rmdir(dirname): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
@@ -469,12 +470,12 @@ namespace shttps {
     static int lua_fs_chdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.chdir(dirname): parameter missing!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.chdir(dirname): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
@@ -541,12 +542,12 @@ namespace shttps {
     static int lua_uuid_to_base62(lua_State *L) {
         int top = lua_gettop(L);
         if (top != 1) {
-            lua_pushstring(L, "Lua-error 'server.uuid_tobase62(uuid): uuid parameter missing!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.uuid_tobase62(uuid): uuid is not a string!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid is not a string!");
             lua_error(L);
             return 0;
         }
@@ -568,12 +569,12 @@ namespace shttps {
     static int lua_base62_to_uuid(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.base62_to_uuid(uuid62): uuid62 parameter missing!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.base62_to_uuid(uuid62): uuid62 is not a string!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 is not a string!");
             lua_error(L);
             return 0;
         }
@@ -686,7 +687,7 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "Lua-error 'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
+            lua_pushstring(L, "'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
             lua_error(L);
             return 0;
         }
@@ -998,7 +999,7 @@ namespace shttps {
                 return 1; // we return one table...
             }
             else {
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
+                lua_pushstring(L, "'server.http(method, url, [header])': unknown method");
                 lua_error(L);
             }
         }
@@ -1033,7 +1034,7 @@ namespace shttps {
                 // we have a string as key
                 skey = lua_tostring(L, -2);
                 if (arrayobj != NULL) {
-                    lua_pushstring(L, "server.table_to_json(table): Cannot mix int and strings as key");
+                    lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
                 }
                 if (tableobj == NULL) {
@@ -1042,7 +1043,7 @@ namespace shttps {
             }
             else if (lua_isinteger(L, -2)) {
                 if (tableobj != NULL) {
-                    lua_pushstring(L, "server.table_to_json(table): Cannot mix int and strings as key");
+                    lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
                 }
                 if (arrayobj == NULL) {
@@ -1051,7 +1052,7 @@ namespace shttps {
             }
             else {
                 // something else as key....
-                lua_pushstring(L, "server.table_to_json(table): Cannot convert key to JSON object field");
+                lua_pushstring(L, "'server.table_to_json(table)': Cannot convert key to JSON object field");
                 lua_error(L);
             }
 
@@ -1125,15 +1126,19 @@ namespace shttps {
     }
     //=========================================================================
 
+   /*!
+    * Converts a Lua table into a JSON string
+    * LUA: jsonstr = server.table_to_json(table)
+    */
     static int lua_table_to_json(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.table_to_json(table): table parameter missing!");
+            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_istable(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.table_to_json(table): table is not a lua-table!");
+            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
             lua_error(L);
             return 0;
         }
@@ -1145,6 +1150,94 @@ namespace shttps {
         return 1;
     }
     //=========================================================================
+
+    static void lua_jsonobj(lua_State *L, cJSON *subobj) {
+
+        if ((subobj->type != cJSON_Object) && (subobj->type != cJSON_Array)) {
+            return;
+        }
+
+        lua_createtable(L, 0, 0);
+
+        cJSON *next = subobj->child;
+        int i = 0;
+        while (next != NULL) {
+            if (subobj->type == cJSON_Object) {
+                lua_pushstring(L, next->string); // index
+            }
+            else if (subobj->type == cJSON_Array) {
+                lua_pushinteger(L, i); // index
+            }
+            switch (next->type) {
+                case cJSON_False: {
+                    lua_pushboolean(L, false);
+                    break;
+                }
+                case cJSON_True: {
+                    lua_pushboolean(L, true);
+                    break;
+                }
+                case cJSON_NULL: {
+                    lua_pushstring(L, "NIL"); // ToDo: we should create a custom Lua object named NULL!
+                    break;
+                }
+                case cJSON_Number: {
+                    lua_pushnumber (L, next->valuedouble);
+                    break;
+                }
+                case cJSON_String: {
+                    lua_pushstring(L, next->valuestring);
+                    break;
+                }
+                case cJSON_Array:
+                case cJSON_Object: {
+                    lua_jsonobj(L, next);
+                    break;
+                }
+            }
+            lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+
+            next = next->next;
+            i++;
+        }
+    }
+    //=========================================================================
+
+    /*!
+     * Converts a json string into a possibly nested Lua table
+     * LUA: table = server.json_to_table(jsonstr)
+     */
+    static int lua_json_to_table (lua_State *L) {
+        int top = lua_gettop(L);
+        if (top < 1) {
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr parameter missing!");
+            lua_error(L);
+            return 0;
+        }
+        if (!lua_isstring(L, 1)) {
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr is not a string!");
+            lua_error(L);
+            return 0;
+        }
+
+        const char *jsonstr = lua_tostring(L, 1);
+
+        cJSON *jsonobj = cJSON_Parse(jsonstr);
+        if (jsonobj == NULL) {
+            const char *errmsg = cJSON_GetErrorPtr();
+            stringstream ss;
+            ss <<  "'server.json_to_table(jsonstr)': Error parsing JSON: " << errmsg;
+            lua_pushstring(L, ss.str().c_str());
+            lua_error(L);
+            return 0;
+        }
+        lua_jsonobj(L, jsonobj);
+        cJSON_Delete(jsonobj);
+
+        return 1;
+    }
+    //=========================================================================
+
 
     /*!
      * Stops the HTTP server and exits everything
@@ -1175,7 +1268,7 @@ namespace shttps {
         int top = lua_gettop(L);
 
         if (top != 2) {
-            lua_pushstring(L, "Lua-error 'server.header(key,val): Invalid number of parameters!");
+            lua_pushstring(L, "'server.header(key,val)': Invalid number of parameters!");
             lua_error(L);
             return 0;
         }
@@ -1370,6 +1463,10 @@ namespace shttps {
         //
         lua_pushstring(L, "table_to_json"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_table_to_json); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "json_to_table"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_json_to_table); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         //

@@ -9,22 +9,41 @@
 
 <lua>
 
-result = server.http("GET", "http://www.salsah.org/api/resources/1", 1000)
+function print_table(table)
+    server.print("<table border=\"1\">")
+    server.print("<tr><th>Field</th><th>Value</th></tr>")
+
+    for k,v in pairs(table) do
+        server.print("<tr><td valign=\"top\">", k, "</td><td>")
+        if (type(v) == "table") then
+            print_table(v)
+        else
+            server.print(v)
+        end
+        server.print("</td></tr>")
+    end
+
+    server.print("</table>")
+end
+
+result = server.http("GET", "http://www.salsah.org/api/resources/1", 2000)
+
 
 if (result.success) then
-    server.print("<table>")
-    server.print("<tr><th>Field</th><th>Value</th></tr>")
-    for k,v in pairs(server.header) do
-        server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
-    end
-    server.print("</table><hr/>")
-
     server.print("Duration: ", result.duration, " ms<br/><hr/>")
-    server.print("Body:<br/>", result.body)
+
+    server.print("<h2>Header variables</h2>")
+    print_table(server.header)
+
+
+    answer = server.json_to_table(result.body)
+    server.print("<h2>Result</h2>")
+    print_table(answer)
 else
    server.print("ERROR: ", result.errmsg)
 end
 
+answer = server.json_to_table("waseliwas isch denn das")
 </lua>
 
 </body>
