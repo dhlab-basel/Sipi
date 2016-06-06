@@ -206,7 +206,7 @@ namespace Sipi {
          *
          * \param[in] filepath A string containing the path to the image file
          */
-        void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL);
+        void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
 
        /*!
         * Get the dimension of the image
@@ -288,6 +288,14 @@ namespace Sipi {
         * \param[in] mirror If true, mirror the image before rotation
         */
         bool rotate(float angle, bool mirror = false);
+
+       /*!
+        * Convert an image from 16 to 8 bit. The algorithm just divides all pixel values
+        * by 256 using the ">> 8" operator (fast & efficient)
+        *
+        * \returns Returns true on success, false on error
+        */
+        bool to8bps(void);
 
        /*!
         * Add a watermark to a file...

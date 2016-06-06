@@ -860,7 +860,7 @@ namespace Sipi {
         logger->debug("Nothing found in cache, reading and transforming file...");
         Sipi::SipiImage img;
         try {
-            img.read(infile, &region, &size); // we should add the croping here....
+            img.read(infile, &region, &size, quality_format.format() == SipiQualityFormat::JPG);
         }
         catch(const Sipi::SipiError &err) {
             send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err);

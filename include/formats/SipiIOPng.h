@@ -41,7 +41,7 @@ namespace Sipi {
         * \param filepath Image file path
         * \param reduce Reducing factor. Not used reading TIFF files
         */
-        bool read(SipiImage *img, std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL);
+        bool read(SipiImage *img, std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
 
        /*!
         * Get the dimension of the image

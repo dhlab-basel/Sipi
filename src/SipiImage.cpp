@@ -196,7 +196,7 @@ namespace Sipi {
         return true;
     }
 
-    void SipiImage::read(std::string filepath, SipiRegion *region, SipiSize *size) {
+    void SipiImage::read(std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         size_t pos = filepath.find_last_of('.');
         string fext = filepath.substr(pos + 1);
         string _fext;
@@ -205,21 +205,21 @@ namespace Sipi {
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[string("tif")]->read(this, filepath, region, size);
+            got_file = io[string("tif")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[string("jpg")]->read(this, filepath, region, size);
+            got_file = io[string("jpg")]->read(this, filepath, region, size, force_bps_8);
         }
         else if (_fext == "png") {
-            got_file = io[string("png")]->read(this, filepath, region, size);
+            got_file = io[string("png")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jp2") || (_fext == "jpx") || (_fext == "j2k")) {
-            got_file = io[string("jpx")]->read(this, filepath, region, size);
+            got_file = io[string("jpx")]->read(this, filepath, region, size, force_bps_8);
         }
 
         if (!got_file) {
             for(auto const &iterator : io) {
-                if ((got_file = iterator.second->read(this, filepath, region, size))) break;
+                if ((got_file = iterator.second->read(this, filepath, region, size, force_bps_8))) break;
             }
         }
         if (!got_file) {
@@ -934,6 +934,32 @@ namespace Sipi {
         return true;
     }
     //============================================================================
+
+    bool SipiImage::to8bps(void) {
+        //
+        // we just use the shift-right operater (>> 8) to devide the values by 256 (2^8)!
+        // This is the most efficient and fastest way
+        //
+        if (bps == 16) {
+            word *inbuf = (word *) pixels;
+            byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
+            if (outbuf == NULL) return false;
+            for (unsigned int j = 0; j < ny; j++) {
+                for (unsigned int i = 0; i < nx; i++) {
+                    for (unsigned int k = 0; k < nc; k++) {
+                        // divide pixel values by 256 using ">> 8"
+                        outbuf[nc*(j*nx + i) + k] = (byte) ((inbuf[nc*(j*nx + i) + k] >> 8) & 0x00ff);
+                    }
+                }
+            }
+            pixels = outbuf;
+            delete [] (word *) inbuf;
+            bps = 8;
+        }
+        return true;
+    }
+    //============================================================================
+
 
     bool SipiImage::add_watermark(string wmfilename) {
         int wm_nx, wm_ny, wm_nc;
