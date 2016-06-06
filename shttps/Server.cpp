@@ -495,6 +495,17 @@ namespace shttps {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
                 break; // accept returned something strange – probably we want to shutdown the server
             }
+
+            //
+            // get peer address
+            //
+            struct sockaddr_in peer_addr;
+            socklen_t peer_addr_size = sizeof(struct sockaddr_in);
+            int res = getpeername(newsockfs, (struct sockaddr *)&peer_addr, &peer_addr_size);
+            char client_ip[20];
+            strcpy(client_ip, inet_ntoa(peer_addr.sin_addr));
+            _logger->info("Accepted connection from: ") << client_ip;
+
             TData *tmp = (TData *) malloc(sizeof(TData));
             tmp->sock = newsockfs;
             tmp->serv = this;
