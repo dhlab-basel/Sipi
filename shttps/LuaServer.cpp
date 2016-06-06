@@ -612,31 +612,6 @@ namespace shttps {
     }
     //=========================================================================
 
-    static string get_host_name(string hostname) {
-        struct addrinfo hint, *info, *p;
-        int gai_result;
-
-        string result;
-
-        memset(&hint, 0, sizeof hint);
-        hint.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
-        hint.ai_socktype = SOCK_STREAM;
-        hint.ai_flags = AI_CANONNAME;
-
-        if ((gai_result = getaddrinfo(hostname.c_str(), "http", &hint, &info)) != 0) {
-            return result;
-        }
-
-        if (p != NULL) {
-            result = info->ai_canonname;
-        }
-
-        freeaddrinfo(info);
-
-        return result;
-    }
-    //=========================================================================
-
 
     static map<string,string> process_http_header(istream *ins, int &content_length)
     {
@@ -691,6 +666,24 @@ namespace shttps {
      * }
      */
     static int lua_http_client(lua_State *L) {
+
+        //
+        // local exception class
+        //
+        class _HttpError {
+        private:
+            int line;
+            string errormsg;
+        public:
+            inline _HttpError(int line_p, string &errormsg_p) : line(line_p), errormsg(errormsg_p) {};
+            inline _HttpError(int line_p, const char *errormsg_p) : line(line_p) { errormsg = errormsg_p; };
+            inline string what(void) {
+                stringstream ss;
+                ss << "Error #" << line << ": " << errormsg;
+                return ss.str();
+            }
+        };
+
         int top = lua_gettop(L);
         if (top < 2) {
             lua_pushstring(L, "Lua-error 'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
@@ -698,13 +691,29 @@ namespace shttps {
             return 0;
         }
 
+        string errormsg; // filled in case of errors...
+        bool success = true;
+
+        //
+        // Get the first parameter: method (ATTENTION: only "GET" is supported at the moment
+        //
         const char *_method = lua_tostring(L, 1);
         string method = _method;
+
+        //
+        // Get the second parameter: URL
+        // It has the form: http[s]://domain.name[:port][/path/to/files]
+        //
         const char *_url = lua_tostring(L, 2);
         string url = _url;
 
+        //
+        // the next parameters are either the header values and/or the timeout
+        // header: table of key/value pairs of additional HTTP-headers to be sent
+        // timeout: number of milliseconds any operation of the socket may take at maximum
+        //
         map<string,string> outheader;
-        int timeout = 500;
+        int timeout = 500; // default is 500 ms
         for (int i = 3; i <= top; i++) {
             if (lua_istable(L, i)) { // process header table at position i
                 int index = i;
@@ -731,215 +740,280 @@ namespace shttps {
             }
         }
 
-        bool secure = false; // ist true, if we want a secure (SSL) connection
-        int port = 80; // contains the port number
+        bool secure = false; // is set true, if the url starts with "https"
+        int port = 80; // contains the port number, default is 80 (or 443, if https)
         string host; // contains the host name or IP-number
         string path; // path to document
 
-        //
-        // processing the URL given
-        //
-        if (url.find("http:") == 0) {
-            url = url.substr(7);
-        }
-        else if (url.find("https:") == 0) {
-            url = url.substr(8);
-            secure = true;
-            port = 443;
-        }
+        try {
+            //
+            // processing the URL given
+            //
+            if (url.find("http:") == 0) {
+                url = url.substr(7);
+            }
+            else if (url.find("https:") == 0) {
+                url = url.substr(8);
+                secure = true;
+                port = 443;
+            }
+            else {
+                throw _HttpError(__LINE__,
+                                 "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+            }
 
-        size_t pos;
-        pos = url.find_first_of(":/");
-        if (pos == string::npos) {
-            host = url;
-            path = "/";
-        }
-        else {
-            host = url.substr(0, pos);
-            if (url[pos] == ':') { // we have a portnumber
-                port = stoi(url.substr(0, pos));
-                pos = url.find("/");
-                if (pos == string::npos) {
-                    path = "/";
+            size_t pos;
+            pos = url.find_first_of(":/");
+            if (pos == string::npos) {
+                host = url;
+                path = "/";
+            }
+            else {
+                host = url.substr(0, pos);
+                if (url[pos] == ':') { // we have a portnumber
+                    try {
+                        port = stoi(url.substr(0, pos));
+                    }
+                    catch (const std::invalid_argument &ia) {
+                        string err = string("server.http: invalid portnumber!) ") + string(ia.what());
+                        throw _HttpError(__LINE__, err);
+                    }
+                    pos = url.find("/");
+                    if (pos == string::npos) {
+                        path = "/";
+                    }
+                    else {
+                        path = url.substr(pos);
+                    }
                 }
                 else {
                     path = url.substr(pos);
                 }
             }
+
+            if (method == "GET") { // the only method we support so far...
+                struct addrinfo *ai;
+                struct addrinfo hint;
+
+                //
+                // resolve hostname etc. to get the IP address of server
+                //
+                memset(&hint, 0, sizeof hint);
+                hint.ai_family = PF_INET;
+                hint.ai_socktype = SOCK_STREAM;
+                hint.ai_protocol = IPPROTO_TCP;
+                int res;
+                if ((res = getaddrinfo(host.c_str(), NULL, &hint, &ai)) != 0) {
+                    lua_pop(L, top);
+                    string err = string("Couldn't resolve hostname! ") + string(gai_strerror(res));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // now we create the socket
+                //
+                int socketfd;
+                if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not create socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // now let's set the timeout of the socket
+                //
+                struct timeval tv;
+
+                tv.tv_sec = timeout / 1000;  // 30 Secs Timeout
+                tv.tv_usec = timeout % 1000;  // Not init'ing this can cause strange errors
+                if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(struct timeval)) != 0) {
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not create socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // set the port number (assuming it is an AF_INET we got...
+                //
+                struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
+
+                auto start = get_time::now(); // start elapsed time timer...
+
+                //
+                // connect the socket
+                //
+                serv_addr->sin_port = htons(port);
+                if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not connect socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // create the C++ streams
+                //
+                SockStream sockstream(socketfd);
+                istream ins(&sockstream);
+                ostream os(&sockstream);
+
+                //
+                // send the request header
+                //
+                os << "GET " << path << " HTTP/1.1\r\n";
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                }
+                if (!host.empty()) {
+                    os << "Host: " << host << "\r\n";
+                    if (os.fail() || os.eof()) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                    }
+                }
+                for (auto const &iterator : outheader) {
+                    os << iterator.first << ": " << iterator.second << "\r\n";
+                    if (os.fail() || os.eof()) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                    }
+                }
+
+                os << "\r\n";
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+                }
+                os.flush();
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+                }
+
+                //
+                // let's process the header of the return HTTP-message
+                //
+                int content_length;
+                map <string, string> header = process_http_header(&ins, content_length);
+                if (ins.fail() || ins.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Couldn't read HTTP header: Connection dropped by peer!");
+                }
+
+                //
+                // now we read the data from the body of the HTTP-message
+                //
+                char *bodybuf = NULL;
+                if (content_length == -1) { // we expect chunked data
+                    try {
+                        ChunkReader ckrd(&ins);
+                        size_t n = ckrd.readAll(&bodybuf);
+                    }
+                    catch (int ierr) { // i/o error
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
+                    }
+                    catch (Error err) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        string errstr = string("Couldn't read HTTP data: ") + err.to_string();
+                        throw _HttpError(__LINE__, errstr);
+                    }
+                }
+                else {
+                    if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: malloc failed!");
+                    }
+                    ins.read(bodybuf, content_length);
+                    if (ins.fail() || ins.eof()) {
+                        free(bodybuf);
+                        close(socketfd);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
+                    }
+                    bodybuf[content_length] = '\0';
+                }
+
+                auto end = get_time::now();
+                auto diff = end - start;
+                int duration = chrono::duration_cast<ms>(diff).count();
+                //
+                // now let's build the Lua-table that's being returned
+                //
+                lua_createtable(L, 0, 2); // table
+
+                lua_pushstring(L, "success"); // table - "success"
+                lua_pushboolean(L, true); // table - "body" - true
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "header"); // table1 - "header"
+                lua_createtable(L, 0, header.size()); // table - "header" - table2
+                for (auto const &iterator : header) {
+                    lua_pushstring(L, iterator.first.c_str()); // table - "header" - table2 - headername
+                    lua_pushstring(L, iterator.second.c_str()); // table - "header" - table2 - headername - headervalue
+                    lua_rawset(L, -3); // table - "header" - table2
+                }
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "body"); // table - "body"
+                lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "duration"); // table - "duration"
+                lua_pushinteger(L, duration); // table - "duration" - duration
+                lua_rawset(L, -3); // table
+
+                //
+                // free resources used
+                //
+                free(bodybuf);
+                close(socketfd);
+                freeaddrinfo(ai);
+
+                return 1; // we return one table...
+            }
             else {
-                path = url.substr(pos);
+                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
+                lua_error(L);
             }
         }
-
-        if (method == "GET") {
-            struct addrinfo *ai;
-            struct addrinfo hint;
-
-            //
-            // resolve hostname etc. to get the IP address of server
-            //
-            memset(&hint, 0, sizeof hint);
-            hint.ai_family = PF_INET;
-            hint.ai_socktype = SOCK_STREAM;
-            hint.ai_protocol = IPPROTO_TCP;
-            if (getaddrinfo(host.c_str(), NULL, &hint, &ai) != 0) {
-                lua_pop(L, top);
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not resolve hostname");
-                lua_error(L);
-                return 0;
-            }
-
-            //
-            // now we create the socket
-            //
-            int socketfd;
-            if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
-                lua_pop(L, top);
-                freeaddrinfo(ai);
-                perror("socket");
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
-                lua_error(L);
-                return 0;
-            }
-
-            //
-            // now let's set the timeout of the socket
-            //
-            struct timeval tv;
-
-            tv.tv_sec = timeout / 1000;  // 30 Secs Timeout
-            tv.tv_usec = timeout % 1000;  // Not init'ing this can cause strange errors
-            setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(struct timeval));
-
-            //
-            // set the port number (assuming it is an AF_INET we got...
-            //
-            struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
-
-            char *gaga = inet_ntoa(serv_addr->sin_addr);
-
-            auto start = get_time::now();
-
-            //
-            // connect the socket
-            //
-            serv_addr->sin_port = htons(port);
-            if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
-                close(socketfd);
-                lua_pop(L, top);
-                freeaddrinfo(ai);
-                perror("socket");
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not connect socket");
-                lua_error(L);
-                return 0;
-            }
-
-            //
-            // create the C++ streams
-            //
-            SockStream sockstream(socketfd);
-            istream ins(&sockstream);
-            ostream os(&sockstream);
-
-            //
-            // get canonical name of request sending host
-            //
-            char myhostname[1024];
-            myhostname[1023] = '\0';
-            gethostname(myhostname, 1023);
-            string myhost = get_host_name(myhostname); // canonical name of sending host
-
-
-            //
-            // send the request header
-            //
-            os << "GET " << path << " HTTP/1.1\r\n";
-            if (!host.empty()) {
-                os << "Host: " << host << "\r\n";
-            }
-            for (auto const &iterator : outheader) {
-                os << iterator.first << ": " << iterator.second << "\r\n";
-            }
-            os << "\r\n";
-            os.flush();
-
-            //
-            // let's process the header of the return HTTP-message
-            //
-            int content_length;
-            map<string,string> header = process_http_header(&ins, content_length);
-            if (ins.fail() || ins.eof()) {
-                close(socketfd);
-                lua_pop(L, top);
-                freeaddrinfo(ai);
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Failed reading HTTP header");
-                lua_error(L);
-                return 0;
-            }
-
-            //
-            // now we read the data from the body of the HTTP-message
-            //
-            char *bodybuf = NULL;
-            if (content_length == -1) { // we expect chunked data
-                ChunkReader ckrd(&ins);
-                (void) ckrd.readAll(&bodybuf);
-            }
-            else {
-                if ((bodybuf = (char *) malloc((content_length + 1)*sizeof(char))) == NULL) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Couldn't get enough memory");
-                    lua_error(L);
-                }
-                ins.read(bodybuf, content_length);
-                if (ins.fail() ||ins.eof()) {
-                    free(bodybuf);
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Couldn't read HTTP body");
-                    lua_error(L);
-                }
-                bodybuf[content_length] = '\0';
-            }
-
-            auto end = get_time::now();
-            auto diff = end - start;
-            int duration = chrono::duration_cast<ms>(diff).count();
-            //
-            // now let's build the Lua-table that's being returned
-            //
+        catch (_HttpError &err) {
             lua_createtable(L, 0, 2); // table
-            lua_pushstring(L, "header"); // table1 - "header"
-            lua_createtable(L, 0, header.size()); // table - "header" - table2
-            for (auto const &iterator : header) {
-                lua_pushstring(L, iterator.first.c_str()); // table - "header" - table2 - headername
-                lua_pushstring(L, iterator.second.c_str()); // table - "header" - table2 - headername - headervalue
-                lua_rawset(L, -3); // table - "header" - table2
-            }
+
+            lua_pushstring(L, "success"); // table - "success"
+            lua_pushboolean(L, false); // table - "success" - true
             lua_rawset(L, -3); // table
 
-            lua_pushstring(L, "body"); // table - "body"
-            lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+            lua_pushstring(L, "errmsg"); // table - "errmsg"
+            lua_pushstring(L, err.what().c_str()); // table - "errmsg" - errormsg
             lua_rawset(L, -3); // table
 
-            lua_pushstring(L, "duration"); // table - "duration"
-            lua_pushinteger(L, duration); // table - "duration" - duration
-            lua_rawset(L, -3); // table
-
-            free(bodybuf);
-
-            close(socketfd);
-
-            freeaddrinfo(ai);
-
-            return 1; // we return one table...
-        }
-        else {
-            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
-            lua_error(L);
+            return 1;
         }
         return 0;
     }

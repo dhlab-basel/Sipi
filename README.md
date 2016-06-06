@@ -185,12 +185,32 @@ Sipi provides the following functions`and preset variables:
    - `timeout`: option number of milliseconds until the connect timeouts. The result is a table:
    ```lua
    result = {
+      success = true | false
+      erromsg = "error description" -- only if success is false
       header = {
         name = value [, name = value, ...]
       },
       body = data,
       duration = milliseconds
    }
+   ```
+   An example of usage:
+   ```lua
+   result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
+   
+   if (result.success) then
+       server.print("<table>")
+       server.print("<tr><th>Field</th><th>Value</th></tr>")
+       for k,v in pairs(server.header) do
+           server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
+       end
+       server.print("</table><hr/>")
+   
+       server.print("Duration: ", result.duration, " ms<br/><hr/>")
+       server.print("Body:<br/>", result.body)
+   else
+      server.print("ERROR: ", result.errmsg)
+   end
    ```
 - `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
 - `server.sendHeader(key, value)` : Adds a new HTTP header field.
