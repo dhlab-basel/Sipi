@@ -947,6 +947,7 @@ namespace Sipi {
             for (unsigned int j = 0; j < ny; j++) {
                 for (unsigned int i = 0; i < nx; i++) {
                     for (unsigned int k = 0; k < nc; k++) {
+                        // divide pixel values by 256 using ">> 8"
                         outbuf[nc*(j*nx + i) + k] = (byte) ((inbuf[nc*(j*nx + i) + k] >> 8) & 0x00ff);
                     }
                 }
