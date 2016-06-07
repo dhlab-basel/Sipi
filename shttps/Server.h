@@ -263,9 +263,11 @@ namespace shttps {
         /*!
          * Process a request... (Eventually should be private method)
          *
-         * \param[in] Socket id
+         * \param[in] sock Socket id
+         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
+         * \param[in] peer_port Port number of peer/client
          */
-        void processRequest(int sock);
+        void processRequest(int sock, std::string &peer_ip, int peer_port);
 
         /*!
          * Add a request handler for the given request method and route

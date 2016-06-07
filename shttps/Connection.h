@@ -231,6 +231,8 @@ namespace shttps {
 
     private:
         Server *_server;          //!< Pointer to the server class
+        std::string _peer_ip;           //!< IP number of client (peer)
+        int _peer_port;            //!< Port of peer/client
         std::string http_version; //!< Holds the HTTP version of the request
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
@@ -324,6 +326,35 @@ namespace shttps {
         * Get the server
         */
         inline Server *server(void) { return _server; }
+
+       /*!
+        * Get the ip of the peer/client
+        *
+        * \returns String with peer IP (either IP4 or IP6)
+        */
+        inline std::string peer_ip(void) { return _peer_ip; }
+
+       /*!
+        * Set ip of peer
+        *
+        * \param ip String containing peer ip
+        */
+        inline void peer_ip(std::string &ip) { _peer_ip = ip; }
+
+       /*!
+        * Get port number of peer
+        *
+        * \returns Port number of peer
+        */
+        inline int peer_port(void) { return _peer_port; }
+
+       /*!
+        * Set port of peer
+        *
+        * \param port Port number of peer
+        */
+        inline void peer_port(int port) { _peer_port = port; }
+
 
        /*!
          * Get the request URI

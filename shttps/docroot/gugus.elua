@@ -9,6 +9,8 @@
 
 <lua>
 
+
+
 function print_table(table)
     server.print("<table border=\"1\">")
     server.print("<tr><th>Field</th><th>Value</th></tr>")
@@ -25,6 +27,10 @@ function print_table(table)
 
     server.print("</table>")
 end
+
+server.print("Client-ip: ", server.client_ip, "<br/>")
+server.print("Client-port: ", server.client_port, "<br/>")
+server.print("Host: ", server.host, "<br/><hr/>")
 
 result = server.http("GET", "http://www.salsah.org/api/resources/1", 2000)
 
@@ -43,7 +49,7 @@ else
    server.print("ERROR: ", result.errmsg)
 end
 
-answer = server.json_to_table("waseliwas isch denn das")
+-- answer = server.json_to_table("waseliwas isch denn das")
 </lua>
 
 </body>

@@ -59,6 +59,8 @@ namespace shttps {
 
     typedef struct {
         int sock;
+        string peer_ip;
+        int peer_port;
         Server *serv;
     } TData;
     //=========================================================================
@@ -422,7 +424,7 @@ namespace shttps {
     static void *process_request(void *arg)
     {
         TData *tdata = (TData *) arg;
-        tdata->serv->processRequest(tdata->sock);
+        tdata->serv->processRequest(tdata->sock, tdata->peer_ip, tdata->peer_port);
         tdata->serv->remove_thread(pthread_self());
         ::sem_post(tdata->serv->semaphore());
         free(tdata);
@@ -499,15 +501,28 @@ namespace shttps {
             //
             // get peer address
             //
-            struct sockaddr_in peer_addr;
-            socklen_t peer_addr_size = sizeof(struct sockaddr_in);
-            int res = getpeername(newsockfs, (struct sockaddr *)&peer_addr, &peer_addr_size);
-            char client_ip[20];
-            strcpy(client_ip, inet_ntoa(peer_addr.sin_addr));
-            _logger->info("Accepted connection from: ") << client_ip;
+            struct sockaddr_storage peer_addr;
+            socklen_t peer_addr_size = sizeof(struct sockaddr_storage);
+            int res = getpeername(newsockfs, (struct sockaddr *) &peer_addr, &peer_addr_size);
+            char client_ip[INET6_ADDRSTRLEN];
+            int peer_port;
+
+            if (peer_addr.ss_family == AF_INET) {
+                struct sockaddr_in *s = (struct sockaddr_in *)&peer_addr;
+                peer_port = ntohs(s->sin_port);
+                inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
+            } else if (peer_addr.ss_family == AF_INET6) { // AF_INET6
+                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &peer_addr;
+                peer_port = ntohs(s->sin6_port);
+                inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
+            }
+
+           _logger->info("Accepted connection from: ") << client_ip;
 
             TData *tmp = (TData *) malloc(sizeof(TData));
             tmp->sock = newsockfs;
+            tmp->peer_ip = client_ip;
+            tmp->peer_port = peer_port;
             tmp->serv = this;
             ::sem_wait(_semaphore) ;
             if( pthread_create( &thread_id, NULL,  process_request , (void *) tmp) < 0) {
@@ -563,7 +578,7 @@ namespace shttps {
     //=========================================================================
 
 
-    void Server::processRequest(int sock)
+    void Server::processRequest(int sock, string &peer_ip, int peer_port)
     {
         int n;
         SockStream sockstream(sock);
@@ -606,6 +621,8 @@ namespace shttps {
             }
 
             conn.setupKeepAlive(sock, _keep_alive_timeout);
+            conn.peer_ip(peer_ip);
+            conn.peer_port(peer_port);
 
             if (conn.resetConnection()) {
                 if (conn.keepAlive()) {

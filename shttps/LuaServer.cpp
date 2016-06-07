@@ -1355,6 +1355,14 @@ namespace shttps {
         }
         lua_rawset(L, -3); // table1
 
+        lua_pushstring(L, "client_ip"); // table1 - "index_L1"
+        lua_pushstring(L, conn.peer_ip().c_str()); // table1 - "index_L1" - "value_L1"
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "client_port"); // table1 - "index_L1"
+        lua_pushinteger(L, conn.peer_port()); // table1 - "index_L1" - "value_L1"
+        lua_rawset(L, -3); // table1
+
         lua_pushstring(L, "header"); // table1 - "index_L1"
         std::vector<std::string> headers = conn.header();
         lua_createtable(L, 0, headers.size()); // table1 - "index_L1" - table2

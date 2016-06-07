@@ -216,8 +216,10 @@ Sipi provides the following functions`and preset variables:
 - `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
 - `server.sendHeader(key, value)` : Adds a new HTTP header field.
 - `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
-- `server.host` : Host that did the request to SIPI.
-- `server.uri` : The URL used to access SIPI.
+- `server.host` : The hostname of the SIPI server that was used in the request.
+- `server.client_ip` : IP-Address of the client connecting to SIPI (IP4 or IP6).
+- `server.client_port`: Portnumber of client socket.
+- `server.uri` : The URL used to access SIPI (exclusive the hostname/dns).
 - `server.get` : Table of GET parameters.
 - `server.post` : Table of POST parameter.
 - `server.uploads`: Àrray of upload params, for each file a table with:
