@@ -129,7 +129,10 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
 int main(int argc, char *argv[]) {
     int port = 4711;
     int ssl_port = -1;
+#ifdef SHTTPS_ENABLE_SSL
     std::string ssl_certificate;
+    std::string ssl_key;
+#endif
     int nthreads = 4;
     std::string configfile;
     std::string docroot;
@@ -180,8 +183,11 @@ int main(int argc, char *argv[]) {
         try {
             shttps::LuaServer luacfg = shttps::LuaServer(configfile);
             port = luacfg.configInteger("shttps", "port", 4711);
+#ifdef SHTTPS_ENABLE_SSL
             ssl_port = luacfg.configInteger("shttps", "ssl_port", -1);
             ssl_certificate = luacfg.configString("shttps", "ssl_certificate", "");
+            ssl_key = luacfg.configString("shttps", "ssl_key", "");
+#endif
             docroot = luacfg.configString("shttps", "docroot", ".");
             tmpdir = luacfg.configString("shttps", "tmpdir", "/tmp");
             scriptdir = luacfg.configString("shttps", "scriptdir", "./scripts");
@@ -197,8 +203,11 @@ int main(int argc, char *argv[]) {
     }
 
     shttps::Server server(port, nthreads); // instantiate the server
+#ifdef SHTTPS_ENABLE_SSL
     server.ssl_port(ssl_port); // set the secure connection port (-1 means no ssl socket)
     if (!ssl_certificate.empty()) server.ssl_certificate(ssl_certificate);
+    if (!ssl_key.empty()) server.ssl_key(ssl_key);
+#endif
     server.tmpdir(tmpdir); // set the directory for storing temporaray files during upload
     server.scriptdir(scriptdir); // set the direcxtory where the Lua scripts are found for the "Lua"-routes
     server.luaRoutes(routes);

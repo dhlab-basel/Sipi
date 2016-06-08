@@ -81,6 +81,25 @@ sipi = {
     --
     tmpdir = '/tmp',
 
+    --
+    -- If compiled with SSL support, the port the server is listening for secure connections
+    --
+    ssl_port = 1025,
+
+    --
+    -- If compiled with SSL support, the path to the certificate (must be .pem file)
+    -- The follow commands can be used to generate a self-signed certificate
+    -- # openssl genrsa -out key.pem 2048
+    -- # openssl req -new -key key.pem -out csr.pem
+    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+    --
+    ssl_certificate = './certificate/certificate.pem',
+
+    --
+    -- If compiled with SSL support, the path to the key file (see above to create)
+    --
+    ssl_key = './certificate/key.pem',
+
 
 }
 

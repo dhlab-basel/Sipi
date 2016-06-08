@@ -610,21 +610,42 @@ namespace shttps {
             SSL *cSSL = NULL;
             if (sock == _ssl_sockfd) {
                 SSL_CTX *sslctx;
+                try {
+                    if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == NULL) {
+                        _logger->error("OpenSSL error: 'SSL_CTX_new()' failed!");
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_new()' failed!");
+                    }
+                    SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+                    if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
+                        string msg = "OpenSSL error: 'SSL_CTX_use_certificate_file(\"" + _ssl_certificate + "\")' failed!";
+                        throw SSLError(__file__, __LINE__, msg);
+                    }
+                    if (SSL_CTX_use_PrivateKey_file(sslctx, _ssl_key.c_str(), SSL_FILETYPE_PEM) != 1) {
+                        string msg = "OpenSSL error: 'SSL_CTX_use_PrivateKey_file(\"" + _ssl_certificate + "\")' failed!";
+                        throw SSLError(__file__, __LINE__, msg);
+                    }
+                    if (!SSL_CTX_check_private_key(sslctx)) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_check_private_key()' failed!");
+                    }
+                    if ((cSSL = SSL_new(sslctx)) == NULL) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_new()' failed!");
+                    }
+                    if (SSL_set_fd(cSSL, newsockfs) != 1) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_set_fd()' failed!");
+                    }
 
-                sslctx = SSL_CTX_new(SSLv23_server_method());
-                SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
-                int use_cert = SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str() , SSL_FILETYPE_PEM);
-                int use_prv = SSL_CTX_use_PrivateKey_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM);
-
-                cSSL = SSL_new(sslctx);
-                SSL_set_fd(cSSL, newsockfs);
-
-                //Here is the SSL Accept portion.  Now all reads and writes must use SS
-                if(SSL_accept(cSSL) <= 0) {
-                    //Error occurred, log and close down ssl
+                    //Here is the SSL Accept portion.  Now all reads and writes must use SS
+                    int suc;
+                    if ((suc = SSL_accept(cSSL)) <= 0) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_accept()' failed!");
+                    }
+               }
+                catch (SSLError &err) {
+                    cerr << "OpenSSL Error: Couldn't create secure socket!" << endl;
+                    _logger->error(err.to_string());
                     SSL_shutdown(cSSL);
                     SSL_free(cSSL);
-                    tmp->cSSL = NULL;
+                    cSSL = NULL;
                 }
             }
             tmp->cSSL = cSSL;
@@ -637,7 +658,7 @@ namespace shttps {
                 exit (1);
             }
 #ifdef SHTTPS_ENABLE_SSL
-            if (sock == _ssl_sockfd) {
+            if (tmp->cSSL != NULL) {
                 add_thread(thread_id, newsockfs, cSSL);
             }
             else {

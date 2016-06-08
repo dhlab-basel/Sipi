@@ -17,16 +17,58 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
+--
+-- Configuration parameters
+--
 shttps = {
+    --
+    -- The path to the root of the documents (.elua, .lua, image files etc.)
     docroot = './docroot',
+
+    --
+    -- Path to temporary directory used for uplaods etc.
+    --
     tmpdir = '/tmp',
+
+    --
+    -- The maximum number of threads allowed
+    --
     nthreads = 8,
+
+    --
+    -- Port number where server is listening to
+    --
     port = 4711,
+
+    --
+    -- If compiled with SSL support, the port the server is listening for secure connections
+    --
     ssl_port = 4712,
-    ssl_certificate = './certificate/shttps-test-cert.pem',
+
+    --
+    -- If compiled with SSL support, the path to the certificate (must be .pem file)
+    -- The follow commands can be used to generate a self-signed certificate
+    -- # openssl genrsa -out key.pem 2048
+    -- # openssl req -new -key key.pem -out csr.pem
+    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+    --
+    ssl_certificate = './certificate/certificate.pem',
+
+    --
+    -- If compiled with SSL support, the path to the key file (see above to create)
+    --
+    ssl_key = './certificate/key.pem',
+
+    --
+    -- Path to the scripts directory, where Lua-scripts are used to process requests using
+    -- given routes
+    --
     scriptdir = './scripts'
 }
 
+--
+-- Routes processed by Lua scripts in the "scriptdir"
+--
 routes = {
     {
         method = 'GET',

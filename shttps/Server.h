@@ -37,6 +37,7 @@
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
 #include <netdb.h>      // Needed for the socket functions
+#include <sstream>      // std::stringstream
 
 #include "spdlog/spdlog.h"  // logging...
 
@@ -52,6 +53,13 @@
 
 #include "lua.hpp"
 
+/*
+ * How to create a self-signed certificate
+ *
+ * openssl genrsa -out key.pem 2048
+ * openssl req -new -key key.pem -out csr.pem
+ * openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+ */
 
 namespace shttps {
 
@@ -102,25 +110,62 @@ namespace shttps {
      *
      */
     class Server {
+        /*!
+         * Struct to hold Global Lua function and associated userdata
+         */
         typedef struct {
             LuaSetGlobalsFunc func;
             void *func_dataptr;
         } GlobalFunc;
 
+        /*!
+         * Struct to hold the information about threads and open sockets, used for proper shutdown
+         */
         typedef struct {
-            int sid;
+            int sid;    //!< socket id
 #ifdef SHTTPS_ENABLE_SSL
-            SSL *ssl_sid;
+            SSL *ssl_sid; //!< Pointer to SLL socket struct
 #endif
         } GenericSockId;
+
+#ifdef SHTTPS_ENABLE_SSL
+        /*!
+         * Error handling class for SSL functions
+         */
+        class SSLError : Error {
+        protected:
+            SSL *cSSL;
+        public:
+            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = NULL)
+                : Error(file, line, msg), cSSL(cSSL_p) {};
+            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = NULL)
+                : Error(file, line, msg), cSSL(cSSL_p) {};
+            inline std::string to_string(void) {
+                std::stringstream ss;
+                ss << "SSL-ERROR at [" << file << ": " << line << "] ";
+                BIO *bio = BIO_new(BIO_s_mem());
+                ERR_print_errors (bio);
+                char *buf = NULL;
+                size_t len = BIO_get_mem_data (bio, &buf);
+                ss << buf << " : ";
+                BIO_free (bio);
+                ss << "Description: " << message;
+                return ss.str();
+            };
+        };
+#endif
+
     public:
 
     private:
         int port; //!< listening Port for server
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
+#ifdef SHTTPS_ENABLE_SSL
         int _ssl_sockfd; //!< SSL socket id
         std::string _ssl_certificate; //!< Path to SSL certificate
+        std::string _ssl_key; //!< Path to SSL certificate
+#endif
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
@@ -150,7 +195,7 @@ namespace shttps {
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
         Server(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "shttps.log");
-
+#ifdef SHTTPS_ENABLE_SSL
         inline void ssl_port(int ssl_port_p) { _ssl_port = ssl_port_p; }
 
         inline int ssl_port(void) { return _ssl_port; }
@@ -159,6 +204,11 @@ namespace shttps {
 
         inline std::string ssl_certificate(void) { return _ssl_certificate; }
 
+        inline void ssl_key(std::string &path) { _ssl_key = path; }
+
+        inline std::string ssl_key(void) { return _ssl_key; }
+
+#endif
         /*!
          * Returns the maximum number of parallel threads allowed
          *

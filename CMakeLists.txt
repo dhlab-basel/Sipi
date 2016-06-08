@@ -65,6 +65,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     SET(KDU_MAKE "Makefile-MAC-x86-all-gcc")
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
+    SET(OPENSSL_ROOT_DIR "/usr/local/Cellar/openssl/1.0.2g")
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     message(STATUS "Compiling for Linux64...")
     message(STATUS ${CMAKE_SYSTEM_NAME})
@@ -97,6 +98,18 @@ set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
 # needed packages
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIR})
+
+#
+# OpenSSL ??
+#
+include(FindOpenSSL)
+if(OPENSSL_FOUND)
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+else()
+    message(STATUS "No SSL support found!")
+endif()
+
 
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
@@ -266,6 +279,10 @@ target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_a
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()
+if(OPENSSL_FOUND)
+    target_link_libraries(sipi ${OPENSSL_LIBRARIES})
+endif()
+
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin

@@ -36,69 +36,83 @@ namespace Sipi {
     * This class is used to read the sipi server configuration from
     * a Lua configuration file.
     */
-    class SipiConf {
-    private:
-        int port; //<! port number for server
-        std::string img_root; //<! path to root of image repository
-        bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
-        std::string init_script;
-        std::string cache_dir;
-        std::string cache_size;
-        float cache_hysteresis;
-        int keep_alive;
-        std::string thumb_size;
-        int cache_n_files;
-        int n_threads;
-        std::string tmp_dir;
-        std::string scriptdir;
-        std::vector<shttps::LuaRoute> routes;
-        std::string knora_path;
-        std::string knora_port;
-        std::string docroot;
-        std::string docroute;
-    public:
-        SipiConf();
-        SipiConf(shttps::LuaServer& luacfg);
+   class SipiConf {
+   private:
 
-        inline int getPort(void) { return port; }
+       int port; //<! port number for server
+#ifdef SHTTPS_ENABLE_SSL
+       int ssl_port = -1;
+       std::string ssl_certificate;
+       std::string ssl_key;
+#endif
+       std::string img_root; //<! path to root of image repository
+       bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
+       std::string init_script;
+       std::string cache_dir;
+       std::string cache_size;
+       float cache_hysteresis;
+       int keep_alive;
+       std::string thumb_size;
+       int cache_n_files;
+       int n_threads;
+       std::string tmp_dir;
+       std::string scriptdir;
+       std::vector<shttps::LuaRoute> routes;
+       std::string knora_path;
+       std::string knora_port;
+       std::string docroot;
+       std::string docroute;
+   public:
+       SipiConf();
+       SipiConf(shttps::LuaServer& luacfg);
 
-        inline std::string getImgRoot(void) { return img_root; }
+       inline int getPort(void) { return port; }
 
-        inline bool getPrefixAsPath(void) { return prefix_as_path; }
+#ifdef SHTTPS_ENABLE_SSL
+       inline int getSSLPort(void) { return ssl_port; }
 
-        inline int getSubdir(void) { return port; }
+       inline std::string getSSLCertificate(void) { return ssl_certificate; }
 
-        inline std::string getInitScript(void) { return init_script; }
+       inline std::string getSSLKey(void) { return ssl_key; }
+#endif
 
-        inline std::string getCacheSize(void) { return cache_size; }
+       inline std::string getImgRoot(void) { return img_root; }
 
-        inline std::string getCacheDir(void) { return cache_dir; }
+       inline bool getPrefixAsPath(void) { return prefix_as_path; }
 
-        inline float getCacheHysteresis(void) { return cache_hysteresis; }
+       inline int getSubdir(void) { return port; }
 
-        inline int getKeepAlive(void) { return keep_alive; }
+       inline std::string getInitScript(void) { return init_script; }
 
-        inline std::string getThumbSize(void) { return thumb_size; }
+       inline std::string getCacheSize(void) { return cache_size; }
 
-        inline int getCacheNFiles(void) { return cache_n_files; }
+       inline std::string getCacheDir(void) { return cache_dir; }
 
-        inline int getNThreads(void) { return n_threads; }
+       inline float getCacheHysteresis(void) { return cache_hysteresis; }
 
-        inline std::string getTmpDir(void) { return tmp_dir; }
+       inline int getKeepAlive(void) { return keep_alive; }
 
-        inline std::string getScriptDir(void) { return scriptdir; }
+       inline std::string getThumbSize(void) { return thumb_size; }
 
-        inline std::vector<shttps::LuaRoute> getRoutes(void) { return routes; }
+       inline int getCacheNFiles(void) { return cache_n_files; }
 
-        inline std::string getKnoraPath(void) { return knora_path; }
+       inline int getNThreads(void) { return n_threads; }
 
-        inline std::string getKnoraPort(void) { return knora_port; }
+       inline std::string getTmpDir(void) { return tmp_dir; }
 
-        inline std::string getDocRoot(void) { return docroot; }
+       inline std::string getScriptDir(void) { return scriptdir; }
 
-        inline std::string getDocRoute(void) { return docroute; }
+       inline std::vector<shttps::LuaRoute> getRoutes(void) { return routes; }
 
-    };
+       inline std::string getKnoraPath(void) { return knora_path; }
+
+       inline std::string getKnoraPort(void) { return knora_port; }
+
+       inline std::string getDocRoot(void) { return docroot; }
+
+       inline std::string getDocRoute(void) { return docroute; }
+
+   };
 
 }
 
