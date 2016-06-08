@@ -1320,7 +1320,8 @@ namespace shttps {
      * This function registers all variables and functions in the server table
      */
     void LuaServer::createGlobals(Connection &conn) {
-        lua_createtable(L, 0, 13); // table1
+        lua_createtable(L, 0, 23); // table1
+        //lua_newtable(L); // table1
 
         Connection::HttpMethod method = conn.method();
         lua_pushstring(L, "method"); // table1 - "index_L1"

@@ -43,6 +43,11 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
+//
+// openssl includes
+//#include "openssl/applink.c"
+
+
 #include "Global.h"
 #include "SockStream.h"
 #include "Server.h"
@@ -59,6 +64,9 @@ namespace shttps {
 
     typedef struct {
         int sock;
+#ifdef SHTTPS_ENABLE_SSL
+        SSL *cSSL;
+#endif
         string peer_ip;
         int peer_port;
         Server *serv;
@@ -382,6 +390,7 @@ namespace shttps {
     Server::Server(int port_p, unsigned nthreads_p, const std::string &logfile_p)
         : port(port_p), _nthreads(nthreads_p)
     {
+        _ssl_port = -1;
         semname = "shttps";
         semname += to_string(port);
         _user_data = NULL;
@@ -391,6 +400,12 @@ namespace shttps {
         _logger = spdlog::rotating_logger_mt(loggername, logfile_p, 1048576 * 5, 3, true);
 
         spdlog::set_level(spdlog::level::debug);
+#ifdef SHTTPS_ENABLE_SSL
+        SSL_load_error_strings();
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+#endif
+
     }
     //=========================================================================
 
@@ -424,11 +439,81 @@ namespace shttps {
     static void *process_request(void *arg)
     {
         TData *tdata = (TData *) arg;
-        tdata->serv->processRequest(tdata->sock, tdata->peer_ip, tdata->peer_port);
+        SockStream *sockstream;
+
+#ifdef SHTTPS_ENABLE_SSL
+        if (tdata->cSSL != NULL) {
+            sockstream = new SockStream(tdata->cSSL);
+        }
+        else {
+            sockstream = new SockStream(tdata->sock);
+        }
+#else
+        sockstream = new SockStream(tdata->sock);
+#endif
+        istream ins(sockstream);
+        ostream os(sockstream);
+
+        bool do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port);
+
+        delete sockstream;
+
+        if (do_close) {
+#ifdef SHTTPS_ENABLE_SSL
+            if (tdata->cSSL != NULL) {
+                SSL_shutdown(tdata->cSSL);
+                SSL_free(tdata->cSSL);
+            }
+#endif
+            close(tdata->sock);
+        }
+
         tdata->serv->remove_thread(pthread_self());
         ::sem_post(tdata->serv->semaphore());
-        free(tdata);
+
+        delete tdata;
         return NULL;
+    }
+    //=========================================================================
+
+    static int prepare_socket(int port) {
+        int sockfd;
+        struct sockaddr_in serv_addr;
+
+        sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            perror("ERROR on socket");
+            //_logger->error("Could not create socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        int optval = 1;
+        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
+            perror("ERROR on setsocketopt");
+            //_logger->error("Could not set socket option: ") << strerror(errno);
+            exit(1);
+        }
+
+        /* Initialize socket structure */
+        bzero((char *) &serv_addr, sizeof(serv_addr));
+
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
+        serv_addr.sin_port = htons(port);
+
+        /* Now bind the host address using bind() call.*/
+        if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+            perror("ERROR on binding");
+            //_logger->error("Could not bind socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        if (::listen(sockfd, SOMAXCONN) < 0) {
+            perror("ERROR on listen");
+            //_logger->error("Could not listen on socket: ") << strerror(errno);
+            exit (1);
+        }
+        return sockfd;
     }
     //=========================================================================
 
@@ -445,54 +530,53 @@ namespace shttps {
             _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
         }
 
-        struct sockaddr_in serv_addr, cli_addr;
 
         ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
         _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
 
-        socklen_t cli_size = sizeof(cli_addr);
-
-        _sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-        if (_sockfd < 0) {
-            perror("ERROR on socket");
-            _logger->error("Could not create socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        int optval = 1;
-        if (::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
-            perror("ERROR on setsocketopt");
-            _logger->error("Could not set socket option: ") << strerror(errno);
-            exit(1);
-        }
-
-
-        /* Initialize socket structure */
-        bzero((char *) &serv_addr, sizeof(serv_addr));
-
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(port);
-
-        /* Now bind the host address using bind() call.*/
-        if (::bind(_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            perror("ERROR on binding");
-            _logger->error("Could not bind socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        if (::listen(_sockfd, SOMAXCONN) < 0) {
-            perror("ERROR on listen");
-            _logger->error("Could not listen on socket: ") << strerror(errno);
-            exit (1);
-        }
-
+        _sockfd = prepare_socket(port);
         _logger->info("Server listening on port ") << to_string(port);
+        if (_ssl_port > 0) {
+            _ssl_sockfd = prepare_socket(_ssl_port);
+            _logger->info("Server listening on SSL port ") << to_string(_ssl_port);
+
+        }
+
 
         pthread_t thread_id;
         running = true;
         while(running) {
-            int newsockfs = ::accept(_sockfd, (struct sockaddr *) &cli_addr, &cli_size);
+            int sock, maxfd;
+            struct sockaddr_storage cli_addr;
+            socklen_t cli_size = sizeof(cli_addr);
+
+            if (_ssl_port > 0) {
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                FD_SET(_sockfd, &readfds);
+                FD_SET(_ssl_sockfd, &readfds);
+                maxfd = (_sockfd > _ssl_sockfd) ? _sockfd : _ssl_sockfd;
+                if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
+                    _logger->debug("select failed (1)");
+                    break; // accept returned something strange – probably we want to shutdown the server
+                }
+
+                if (FD_ISSET(_sockfd, &readfds)) {
+                    sock = _sockfd;
+                }
+                else if (FD_ISSET(_ssl_sockfd, &readfds)) {
+                    sock = _ssl_sockfd;
+                }
+                else {
+                    _logger->debug("select failed (2)");
+                    break; // accept returned something strange – probably we want to shutdown the server
+                }
+            }
+            else {
+                sock = _sockfd;
+            }
+
+            int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
                 break; // accept returned something strange – probably we want to shutdown the server
@@ -501,36 +585,67 @@ namespace shttps {
             //
             // get peer address
             //
-            struct sockaddr_storage peer_addr;
-            socklen_t peer_addr_size = sizeof(struct sockaddr_storage);
-            int res = getpeername(newsockfs, (struct sockaddr *) &peer_addr, &peer_addr_size);
             char client_ip[INET6_ADDRSTRLEN];
             int peer_port;
 
-            if (peer_addr.ss_family == AF_INET) {
-                struct sockaddr_in *s = (struct sockaddr_in *)&peer_addr;
+
+            if (cli_addr.ss_family == AF_INET) {
+                struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
                 peer_port = ntohs(s->sin_port);
                 inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            } else if (peer_addr.ss_family == AF_INET6) { // AF_INET6
-                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &peer_addr;
+            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             }
+            _logger->info("Accepted connection from: ") << client_ip;
 
-           _logger->info("Accepted connection from: ") << client_ip;
-
-            TData *tmp = (TData *) malloc(sizeof(TData));
+            TData *tmp = new TData;
             tmp->sock = newsockfs;
             tmp->peer_ip = client_ip;
             tmp->peer_port = peer_port;
             tmp->serv = this;
+
+#ifdef SHTTPS_ENABLE_SSL
+            SSL *cSSL = NULL;
+            if (sock == _ssl_sockfd) {
+                SSL_CTX *sslctx;
+
+                sslctx = SSL_CTX_new(SSLv23_server_method());
+                SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+                int use_cert = SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str() , SSL_FILETYPE_PEM);
+                int use_prv = SSL_CTX_use_PrivateKey_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM);
+
+                cSSL = SSL_new(sslctx);
+                SSL_set_fd(cSSL, newsockfs);
+
+                //Here is the SSL Accept portion.  Now all reads and writes must use SS
+                if(SSL_accept(cSSL) <= 0) {
+                    //Error occurred, log and close down ssl
+                    SSL_shutdown(cSSL);
+                    SSL_free(cSSL);
+                    tmp->cSSL = NULL;
+                }
+            }
+            tmp->cSSL = cSSL;
+#endif
+
             ::sem_wait(_semaphore) ;
-            if( pthread_create( &thread_id, NULL,  process_request , (void *) tmp) < 0) {
+            if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
                 perror("could not create thread");
                 _logger->error("Could not create thread") << strerror(errno);
                 exit (1);
             }
+#ifdef SHTTPS_ENABLE_SSL
+            if (sock == _ssl_sockfd) {
+                add_thread(thread_id, newsockfs, cSSL);
+            }
+            else {
+                add_thread(thread_id, newsockfs);
+            }
+#else
             add_thread(thread_id, newsockfs);
+#endif
         }
         _logger->debug("Server shutting down!");
 
@@ -539,7 +654,7 @@ namespace shttps {
         //
         int num_active_threads = thread_ids.size();
         pthread_t *ptid = new pthread_t[num_active_threads];
-        int *sid = new int[num_active_threads];
+        GenericSockId *sid = new GenericSockId[num_active_threads];
         int i = 0;
         for(auto const &tid : thread_ids) {
             ptid[i] = tid.first;
@@ -548,14 +663,21 @@ namespace shttps {
         }
         for (int i = 0; i < num_active_threads; i++) {
             threadlock.lock();
-            close(sid[i]);
+#ifdef SHTTPS_ENABLE_SSL
+            if (sid[i].ssl_sid != NULL) {
+                SSL_shutdown(sid[i].ssl_sid);
+                SSL_free(sid[i].ssl_sid);
+                sid[i].ssl_sid = NULL;
+            }
+#endif
+            close(sid[i].sid);
             //
             // we indicate to the thread that the socked has been closed (and it's not a timeout)
             // by setting the socked_id in the thread_ids-table to -1. This leads the thread
             // not to close it again. In case of a timeout the socket is being closed
             // by the thread.
             //
-            thread_ids[ptid[i]] = -1;
+            thread_ids[ptid[i]].sid = -1;
             threadlock.unlock();
         }
         //
@@ -578,27 +700,22 @@ namespace shttps {
     //=========================================================================
 
 
-    void Server::processRequest(int sock, string &peer_ip, int peer_port)
+    bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port)
     {
         int n;
-        SockStream sockstream(sock);
-        istream ins(&sockstream);
-        ostream os(&sockstream);
-
 
         bool do_close = true;
-        while (!ins.eof() && !os.eof()) {
-            LuaServer luaserver(_initscript);
+        while (!ins->eof() && !os->eof()) {
             Connection conn;
             try {
                 if (_tmpdir.empty()) {
                     throw Error(__file__, __LINE__, "_tmpdir is empty");
                 }
-                conn = Connection(this, &ins, &os, _tmpdir);
+                conn = Connection(this, ins, os, _tmpdir);
             }
             catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
                 _logger->debug("Socket connection: timeout or socket closed from main");
-                if (thread_ids[pthread_self()] == -1) {
+                if (thread_ids[pthread_self()].sid == -1) {
                     _logger->debug("Socket is closed – no not close anymore");
                     do_close = false;
                 }
@@ -606,12 +723,12 @@ namespace shttps {
             }
             catch(Error &err) {
                 try {
-                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
-                    os << "Content-Type: text/plain\r\n";
+                    *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
+                    *os << "Content-Type: text/plain\r\n";
                     stringstream ss;
                     ss << err;
-                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                    os << ss.str();
+                    *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+                    *os << ss.str();
                     _logger->error("Internal server error!");
                 }
                 catch (int i) {
@@ -633,6 +750,7 @@ namespace shttps {
                 }
             }
 
+            LuaServer luaserver(_initscript);
             luaserver.createGlobals(conn);
             for (auto & global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
@@ -650,12 +768,12 @@ namespace shttps {
             }
             catch(Error &err) {
                 try {
-                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
-                    os << "Content-Type: text/plain\r\n";
+                    *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
+                    *os << "Content-Type: text/plain\r\n";
                     stringstream ss;
                     ss << err;
-                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                    os << ss.str();
+                    *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+                    *os << ss.str();
                 }
                 catch (int i) {
                     _logger->error("Possibly socket closed by peer!");
@@ -669,13 +787,9 @@ namespace shttps {
             }
 
             if (!conn.keepAlive()) break;
-
         }
 
-        if (do_close) {
-            _logger->debug("Socket was not closed, closing...");
-            close (sock);
-        }
+        return do_close;
     }
     //=========================================================================
 

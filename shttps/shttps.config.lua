@@ -22,6 +22,8 @@ shttps = {
     tmpdir = '/tmp',
     nthreads = 8,
     port = 4711,
+    ssl_port = 4712,
+    ssl_certificate = './certificate/shttps-test-cert.pem',
     scriptdir = './scripts'
 }
 

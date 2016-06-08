@@ -32,7 +32,8 @@ server.print("Client-ip: ", server.client_ip, "<br/>")
 server.print("Client-port: ", server.client_port, "<br/>")
 server.print("Host: ", server.host, "<br/><hr/>")
 
-result = server.http("GET", "http://www.salsah.org/api/resources/1", 2000)
+
+result = server.http("GET", "http://www.salsah.org/api/resources/1", 5000)
 
 
 if (result.success) then

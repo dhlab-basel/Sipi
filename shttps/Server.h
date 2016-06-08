@@ -40,6 +40,12 @@
 
 #include "spdlog/spdlog.h"  // logging...
 
+#ifdef SHTTPS_ENABLE_SSL
+#include "openssl/bio.h"
+#include "openssl/ssl.h"
+#include "openssl/err.h"
+#endif
+
 #include "Global.h"
 #include "Connection.h"
 #include "LuaServer.h"
@@ -100,17 +106,27 @@ namespace shttps {
             LuaSetGlobalsFunc func;
             void *func_dataptr;
         } GlobalFunc;
+
+        typedef struct {
+            int sid;
+#ifdef SHTTPS_ENABLE_SSL
+            SSL *ssl_sid;
+#endif
+        } GenericSockId;
     public:
 
     private:
         int port; //!< listening Port for server
+        int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
+        int _ssl_sockfd; //!< SSL socket id
+        std::string _ssl_certificate; //!< Path to SSL certificate
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
-        std::map<pthread_t, int> thread_ids;
+        std::map<pthread_t,GenericSockId> thread_ids;
         std::mutex threadlock;
         std::mutex debugio;
         int _keep_alive_timeout;
@@ -134,6 +150,14 @@ namespace shttps {
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
         Server(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "shttps.log");
+
+        inline void ssl_port(int ssl_port_p) { _ssl_port = ssl_port_p; }
+
+        inline int ssl_port(void) { return _ssl_port; }
+
+        inline void ssl_certificate(std::string &path) { _ssl_certificate = path; }
+
+        inline std::string ssl_certificate(void) { return _ssl_certificate; }
 
         /*!
          * Returns the maximum number of parallel threads allowed
@@ -230,9 +254,23 @@ namespace shttps {
 
         inline void add_thread(pthread_t thread_id_p, int sock_id) {
             threadlock.lock();
-            thread_ids[thread_id_p] = sock_id;
+            GenericSockId sid;
+            sid.sid = sock_id;
+#ifdef SHTTPS_ENABLE_SSL
+            sid.ssl_sid = NULL;
+#endif
+            thread_ids[thread_id_p] = sid;
             threadlock.unlock();
         }
+
+#ifdef SHTTPS_ENABLE_SSL
+        inline void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL) {
+            threadlock.lock();
+            GenericSockId sid = {sock_id, cSSL};
+            thread_ids[thread_id_p] = sid;
+            threadlock.unlock();
+        }
+#endif
 
         inline void remove_thread(pthread_t thread_id_p) {
             threadlock.lock();
@@ -261,15 +299,6 @@ namespace shttps {
         }
 
         /*!
-         * Process a request... (Eventually should be private method)
-         *
-         * \param[in] sock Socket id
-         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
-         * \param[in] peer_port Port number of peer/client
-         */
-        void processRequest(int sock, std::string &peer_ip, int peer_port);
-
-        /*!
          * Add a request handler for the given request method and route
          *
          * \param[in] method_p Request method (GET, PUT, POST etc.)
@@ -284,6 +313,15 @@ namespace shttps {
          */
         void addRoute(Connection::HttpMethod method_p, const std::string &path, RequestHandler handler_p,
                       void *handler_data_p = NULL);
+
+       /*!
+        * Process a request... (Eventually should be private method)
+        *
+        * \param[in] sock Socket id
+        * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
+        * \param[in] peer_port Port number of peer/client
+        */
+        bool processRequest(int sock, std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port);
 
         /*!
         * Return the user data that has been added previously
