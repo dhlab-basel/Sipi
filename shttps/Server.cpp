@@ -438,6 +438,8 @@ namespace shttps {
 
     static void *process_request(void *arg)
     {
+        signal(SIGPIPE, SIG_IGN);
+
         TData *tdata = (TData *) arg;
         SockStream *sockstream;
 
@@ -577,6 +579,7 @@ namespace shttps {
             }
 
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
                 break; // accept returned something strange – probably we want to shutdown the server

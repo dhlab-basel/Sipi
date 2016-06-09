@@ -854,12 +854,53 @@ namespace shttps {
                     throw _HttpError(__LINE__, err);
                 }
 
+#ifdef SHTTPS_ENABLE_SSL
+                SSL_CTX *ctx = NULL;
+                SSL *ssl = NULL;
+                if (secure) {
+                    ctx = SSL_CTX_new(SSLv23_client_method());
+                    ssl = SSL_new(ctx);
+                    SSL_set_fd(ssl, socketfd);
+                    if (SSL_connect(ssl) <= 0) {
+                        // ERROR.....
+                        ssl = NULL;
+                    }
+                }
+
+                X509 *cert;
+
+                cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
+                if (cert != NULL) {
+                    char *line;
+                    cerr << "Server certificates:" << endl;
+                    line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+                    cerr << "Subject: " << line << endl;
+                    free(line);
+
+                    line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+                    cerr << "Issuer: " << line << endl;
+                    free(line);
+
+                    X509_free(cert);
+                }
+
+#endif
                 //
                 // create the C++ streams
                 //
-                SockStream sockstream(socketfd);
-                istream ins(&sockstream);
-                ostream os(&sockstream);
+                SockStream *sockstream = NULL;
+#ifdef SHTTPS_ENABLE_SSL
+                if (secure) {
+                    sockstream = new SockStream(ssl);
+                }
+                else {
+                    sockstream = new SockStream(socketfd);
+                }
+#else
+                sockstream = new SockStream(socketfd);
+#endif
+                istream ins(sockstream);
+                ostream os(sockstream);
 
                 //
                 // send the request header
@@ -959,6 +1000,20 @@ namespace shttps {
                     }
                     bodybuf[content_length] = '\0';
                 }
+
+#ifdef SHTTPS_ENABLE_SSL
+                if (secure) {
+                    SSL_free(ssl);
+                }
+#endif
+                delete sockstream;
+                close (socketfd);
+
+#ifdef SHTTPS_ENABLE_SSL
+                if (secure) {
+                    SSL_CTX_free(ctx);
+                }
+#endif
 
                 auto end = get_time::now();
                 auto diff = end - start;
