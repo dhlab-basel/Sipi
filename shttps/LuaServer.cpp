@@ -868,17 +868,17 @@ namespace shttps {
                 }
 
                 X509 *cert;
-
+                string certificate_subject;
+                string certificate_issuer;
                 cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
                 if (cert != NULL) {
                     char *line;
-                    cerr << "Server certificates:" << endl;
-                    line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-                    cerr << "Subject: " << line << endl;
+                   line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
+                    certificate_subject = line;
                     free(line);
 
                     line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-                    cerr << "Issuer: " << line << endl;
+                    certificate_issuer = line;
                     free(line);
 
                     X509_free(cert);
@@ -1022,10 +1022,24 @@ namespace shttps {
                 // now let's build the Lua-table that's being returned
                 //
                 lua_createtable(L, 0, 2); // table
-
                 lua_pushstring(L, "success"); // table - "success"
                 lua_pushboolean(L, true); // table - "body" - true
                 lua_rawset(L, -3); // table
+
+                if (!certificate_issuer.empty() || certificate_subject.empty()) {
+                    lua_pushstring(L, "certificate");
+                    lua_createtable(L, 0, header.size()); // table - "header" - table2
+
+                    lua_pushstring(L, "subject"); // table - "header" - table2 - headername
+                    lua_pushstring(L, certificate_subject.c_str()); // table - "header" - table2 - headername - headervalue
+                    lua_rawset(L, -3); // table - "header" - table2
+
+                    lua_pushstring(L, "issuer"); // table - "header" - table2 - headername
+                    lua_pushstring(L, certificate_issuer.c_str()); // table - "header" - table2 - headername - headervalue
+                    lua_rawset(L, -3); // table - "header" - table2
+
+                    lua_rawset(L, -3); // table
+                }
 
                 lua_pushstring(L, "header"); // table1 - "header"
                 lua_createtable(L, 0, header.size()); // table - "header" - table2
