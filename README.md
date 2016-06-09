@@ -17,6 +17,17 @@ The build process relies on cmake.
 
 ## Prerequisites ##
 
+### Secure HTTP (https) ###
+
+SIPI supports secure connections (SSL). However, OpenSLL must be installed on the computer. On Linux,
+you just have to install the openssl RPMs (including the development version), on OS X use brew.
+
+** The OpenSSL libraries and includes are _not_ downloaded by cmake! **
+
+Cmake checks if OpenSSL is installed and compiles the support for it automatically.
+In order to use SIPI with secure connections, You need to install a certificate (see the config file
+example "config/sipi.config.lua" for instructions.
+
 ### General
 - a working c++11 compiler (gcc >= v5.3 or clang)
 - cmake > 2.8.0 (for Mac, see below)
