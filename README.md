@@ -158,6 +158,79 @@ Then run doxygen in the sipi main directory: `doxygen Doxygen.in`. You will the 
 
 Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpreter and pack manager `luarocks` as executables. **Sipi does not use your system's Lua interpreter or package manager.**
 
+### SIPI functions within Lua
+
+Sipi provides the following functions`and preset variables:
+
+- `server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given.
+- `server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
+- `server.fs.is_readable(filepath)` : Checks if a file is readable. Returns boolean.
+- `server.fs.is_writeable(filepath)` : Checks if a file is writeable. Returns boolean.
+- `server.fs.is_executable(filepath)` : Checks if a file is executable. Returns boolean.
+- `server.fs.exists(filepath)` : Checks if a file exists. Returns boolean.
+- `server.fs.unlink(filename)` : Deletes a file from the file system. The file must exist and the user must have write access.
+- `server.fs.mkdir(dirname, tonumber('0755', 8)` : Creates a new directory with given permissions.
+- `server.fs.mkdir(dirname)` : Creates a new directory.
+- `curdir = server.fs.getcwd()` : Gets the current working directory.
+- `oldir = server.fs.chdir(newdir)` : Change working directory.
+- `uuid = server.uuid()` : Generates a random version 4 uuid string.
+- `uuid62 = server.uuid62()` : Generates a base62-uuid string.
+- `uuid62 = server.uuid_to_base62(uuid)` : Converts a uuid-string to a base62 uuid.
+- `uuid = server.base62_to_uuid(uuid62)` : Converts a base62-uuid to a "normal" uuid.
+- `server.print("string"|var1 [,"string|var]...)` : Prints variables and/or strings to the HTTP connection
+- `result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`: Get's data from a http server. Parameters:
+   - `method` : "GET" (only method allowed so far
+   - `url` : complete url including optional port, but no authorization yet
+   - `header` : optional table with HTTP-header key-value pairs
+   - `timeout`: option number of milliseconds until the connect timeouts. The result is a table:
+   ```lua
+   result = {
+      success = true | false
+      erromsg = "error description" -- only if success is false
+      header = {
+        name = value [, name = value, ...]
+      },
+      body = data,
+      duration = milliseconds
+   }
+   ```
+   An example of usage:
+   ```lua
+   result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
+   
+   if (result.success) then
+       server.print("<table>")
+       server.print("<tr><th>Field</th><th>Value</th></tr>")
+       for k,v in pairs(server.header) do
+           server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
+       end
+       server.print("</table><hr/>")
+   
+       server.print("Duration: ", result.duration, " ms<br/><hr/>")
+       server.print("Body:<br/>", result.body)
+   else
+      server.print("ERROR: ", result.errmsg)
+   end
+   ```
+- `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
+- `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
+- `server.sendHeader(key, value)` : Adds a new HTTP header field.
+- `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
+- `server.host` : The hostname of the SIPI server that was used in the request.
+- `server.client_ip` : IP-Address of the client connecting to SIPI (IP4 or IP6).
+- `server.client_port`: Portnumber of client socket.
+- `server.uri` : The URL used to access SIPI (exclusive the hostname/dns).
+- `server.get` : Table of GET parameters.
+- `server.post` : Table of POST parameter.
+- `server.uploads`: Àrray of upload params, for each file a table with:
+   - `fieldname` : Name of form-field.
+   - `origname` : Original file name.
+   - `tmpname` : Temporary path to uploaded file.
+   - `mimetype` : MIME-type of uploaded file as provided by the browser.
+   - `filesize` : Size of uploaded file as bytes.
+- `server.request` : Merge of GET and POST parameters
+
+
 ### Installing Lua modules
 
 To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>.

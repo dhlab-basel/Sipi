@@ -62,6 +62,17 @@ namespace shttps {
     extern size_t safeGetline(std::istream& is, std::string& t);
 
    /*!
+    * Function to parse the options of a HTTP header line
+    *
+    * \param[in] options Options-part of the string
+    * \param[in] form_encoded Has to be set to true, if it is form_encoded data [default: false]
+    * \param[in] sep Separator character between options [default: ';']
+    *
+    * \returns map of options (all names converted to lower case!)
+    */
+    extern std::map<std::string,std::string> parse_header_options(const std::string& options, bool form_encoded = false, char sep = ';');
+
+   /*!
     * urldecode is used to decode an according to the HTTP-standard urlencoded string
     *
     * \param[in] src Encoded string
@@ -220,6 +231,8 @@ namespace shttps {
 
     private:
         Server *_server;          //!< Pointer to the server class
+        std::string _peer_ip;           //!< IP number of client (peer)
+        int _peer_port;            //!< Port of peer/client
         std::string http_version; //!< Holds the HTTP version of the request
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
@@ -313,6 +326,35 @@ namespace shttps {
         * Get the server
         */
         inline Server *server(void) { return _server; }
+
+       /*!
+        * Get the ip of the peer/client
+        *
+        * \returns String with peer IP (either IP4 or IP6)
+        */
+        inline std::string peer_ip(void) { return _peer_ip; }
+
+       /*!
+        * Set ip of peer
+        *
+        * \param ip String containing peer ip
+        */
+        inline void peer_ip(std::string &ip) { _peer_ip = ip; }
+
+       /*!
+        * Get port number of peer
+        *
+        * \returns Port number of peer
+        */
+        inline int peer_port(void) { return _peer_port; }
+
+       /*!
+        * Set port of peer
+        *
+        * \param port Port number of peer
+        */
+        inline void peer_port(int port) { _peer_port = port; }
+
 
        /*!
          * Get the request URI

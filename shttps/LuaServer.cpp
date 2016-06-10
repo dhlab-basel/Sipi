@@ -28,22 +28,27 @@
 #include <sstream>
 #include <string>
 #include <cstring>      // Needed for memset
+#include <chrono>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 
 #include "SockStream.h"
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
+#include "ChunkReader.h"
 
 #include "sole.hpp"
 #include "cJSON.h"
 
 using namespace std;
+using  ms = chrono::milliseconds;
+using get_time = chrono::steady_clock ;
 
 static const char __file__[] = __FILE__;
 
@@ -58,11 +63,31 @@ namespace shttps {
      * Error handler for Lua errors!
      */
     static int dont_panic(lua_State *L) {
-        cerr << "DON'T PANIC !!!!" << endl; // TODO: remove this debugging oputput if no longer necessary
         const char *luapanic = lua_tostring(L, -1);
         throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
     }
     //=========================================================================
+
+    // trim from start
+    static inline std::string &ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+        return s;
+    }
+    //=========================================================================
+
+    // trim from end
+    static inline std::string &rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+        return s;
+    }
+    //=========================================================================
+
+    // trim from both ends
+    static inline std::string &trim(std::string &s) {
+        return ltrim(rtrim(s));
+    }
+    //=========================================================================
+
 
     /*!
      * Instantiates a Lua server
@@ -71,9 +96,9 @@ namespace shttps {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
+        lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
 
-        lua_atpanic(L, dont_panic);
     }
     //=========================================================================
 
@@ -86,9 +111,11 @@ namespace shttps {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
-        luaL_openlibs(L);
 
         lua_atpanic(L, dont_panic);
+
+        luaL_openlibs(L);
+
 
         if (!luafile.empty()) {
             if (luaL_loadfile(L, luafile.c_str()) != 0) {
@@ -112,7 +139,7 @@ namespace shttps {
     //=========================================================================
 
     /*!
-     * Activates the the connection buffer. Optionally the bugger size and increment size can be given
+     * Activates the the connection buffer. Optionally the buffer size and increment size can be given
      * LUA: server.setBuffer([bufsize][,incsize])
      */
     static int lua_setbuffer(lua_State *L) {
@@ -126,7 +153,7 @@ namespace shttps {
             }
             else {
                 lua_pushstring(L,
-                               "Lua-Error 'server.setbuffer([bufize][, incsize])': requires bufsize size as integer!");
+                               "'server.setbuffer([bufize][, incsize])': requires bufsize size as integer!");
                 lua_error(L);
             }
         }
@@ -136,7 +163,7 @@ namespace shttps {
             }
             else {
                 lua_pushstring(L,
-                               "Lua-Error 'server.setbuffer([bufize][, incsize])': requires incsize size as integer!");
+                               "'server.setbuffer([bufize][, incsize])': requires incsize size as integer!");
                 lua_error(L);
             }
         }
@@ -170,12 +197,12 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.ftype(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.ftype(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.ftype(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.ftype(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -223,12 +250,12 @@ namespace shttps {
     static int lua_fs_is_readable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_readable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_readable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -252,12 +279,12 @@ namespace shttps {
     static int lua_fs_is_writeable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_writeable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_writeable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -281,12 +308,12 @@ namespace shttps {
     static int lua_fs_is_executable(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_executable(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.is_executable(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -310,12 +337,12 @@ namespace shttps {
     static int lua_fs_exists(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.exists(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.exists(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.exists(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.exists(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -341,12 +368,12 @@ namespace shttps {
     static int lua_fs_unlink(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.unlink(filename): parameter missing!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.unlink(filename): filename is not a string!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': filename is not a string!");
             lua_error(L);
             return 0;
         }
@@ -369,17 +396,17 @@ namespace shttps {
     static int lua_fs_mkdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): parameter missing!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
         if (!lua_isinteger(L, 2)) {
-            lua_pushstring(L, "Lua-error 'server.fs.mkdir(dirname, mask): mask is not an integer!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': mask is not an integer!");
             lua_error(L);
             return 0;
         }
@@ -403,12 +430,12 @@ namespace shttps {
     static int lua_fs_rmdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.rmdir(dirname): parameter missing!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.rmdir(dirname): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
@@ -443,12 +470,12 @@ namespace shttps {
     static int lua_fs_chdir(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.fs.chdir(dirname): parameter missing!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.fs.chdir(dirname): dirname is not a string!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': dirname is not a string!");
             lua_error(L);
             return 0;
         }
@@ -515,12 +542,12 @@ namespace shttps {
     static int lua_uuid_to_base62(lua_State *L) {
         int top = lua_gettop(L);
         if (top != 1) {
-            lua_pushstring(L, "Lua-error 'server.uuid_tobase62(uuid): uuid parameter missing!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.uuid_tobase62(uuid): uuid is not a string!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid is not a string!");
             lua_error(L);
             return 0;
         }
@@ -542,12 +569,12 @@ namespace shttps {
     static int lua_base62_to_uuid(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.base62_to_uuid(uuid62): uuid62 parameter missing!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.base62_to_uuid(uuid62): uuid62 is not a string!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 is not a string!");
             lua_error(L);
             return 0;
         }
@@ -585,107 +612,414 @@ namespace shttps {
         return 0;
     }
     //=========================================================================
-#ifdef GAGA
 
-    static string get_host_name() {
-        struct addrinfo hints, *info, *p;
-        int gai_result;
 
-        char hostname[1024];
-        hostname[1023] = '\0';
-        gethostname(hostname, 1023);
-
-        string result;
-
-        memset(&hints, 0, sizeof hints);
-        hints.ai_family = AF_UNSPEC; /*either IPV4 or IPV6*/
-        hints.ai_socktype = SOCK_STREAM;
-        hints.ai_flags = AI_CANONNAME;
-
-        if ((gai_result = getaddrinfo(hostname, "http", &hints, &info)) != 0) {
-            return result;
+    static map<string,string> process_http_header(istream *ins, int &content_length)
+    {
+        //
+        // process header files
+        //
+        map<string,string> header;
+        bool eoh = false; //end of header reached
+        content_length = 0; // we don't know if we will get content...
+        string line;
+        while (!eoh && !ins->eof() && !ins->fail()) {
+            (void) safeGetline(*ins, line);
+            if (line.empty() || ins->fail() || ins->eof()) {
+                eoh = true;
+            } else {
+                size_t pos = line.find(':');
+                string name = line.substr(0, pos);
+                name = trim(name);
+                asciitolower(name);
+                string value = line.substr(pos + 1);
+                value = header[name] = trim(value);
+                if (name == "content-length") {
+                    content_length = stoi(value);
+                }
+                else if (name == "transfer-encoding") {
+                    if (value == "chunked") {
+                        content_length = -1;
+                    }
+                }
+            }
         }
-
-        if (p != NULL) {
-            result = p->ai_canonname;
-        }
-
-        freeaddrinfo(info);
-
-        return result;
+        return header;
     }
+    //=========================================================================
+
 
     /*!
-     * Get's data from a http server
-     * LUA server.http("GET", "http://server.domain/path/file" [, header])
-     * where header is an associative array (key-value pairs) of header variables
+     * Get data from a http server
+     * LUA: result = server.http("GET", "http://server.domain/path/file" [, header] [, timeout])
+     * where header is an associative array (key-value pairs) of header variables.
+     * Parameters:
+     *  - method: "GET" (only method allowed so far
+     *  - url: complete url including optional port, but no authorization yet
+     *  - header: optional table with HTTP-header key-value pairs
+     *  - timeout: option number of milliseconds until the connect timeouts
+     *
+     * result = {
+     *    header {
+     *       name = value [, name = value, ...]
+     *    },
+     *    body = data
+     * }
      */
     static int lua_http_client(lua_State *L) {
+
+        //
+        // local exception class
+        //
+        class _HttpError {
+        private:
+            int line;
+            string errormsg;
+        public:
+            inline _HttpError(int line_p, string &errormsg_p) : line(line_p), errormsg(errormsg_p) {};
+            inline _HttpError(int line_p, const char *errormsg_p) : line(line_p) { errormsg = errormsg_p; };
+            inline string what(void) {
+                stringstream ss;
+                ss << "Error #" << line << ": " << errormsg;
+                return ss.str();
+            }
+        };
+
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])' requires at least 2 parameters");
+            lua_pushstring(L, "'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
             lua_error(L);
             return 0;
         }
+
+        string errormsg; // filled in case of errors...
+        bool success = true;
+
+        //
+        // Get the first parameter: method (ATTENTION: only "GET" is supported at the moment
+        //
         const char *_method = lua_tostring(L, 1);
         string method = _method;
+
+        //
+        // Get the second parameter: URL
+        // It has the form: http[s]://domain.name[:port][/path/to/files]
+        //
         const char *_url = lua_tostring(L, 2);
         string url = _url;
 
-        if (method == "GET") {
-            struct addrinfo *ai;
-            struct addrinfo hint;
-            memset(&hints, 0, sizeof hints);
-            hints.ai_family = PF_INET;
-            hints.ai_socktype = SOCK_STREAM;
-            hints.ai_protocol = IPPROTO_TCP;
-            if (getaddrinfo(url.c_str(), NULL, &hints, &ai) != 0) {
-                lua_pop(L, top);
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not resolve hostname");
-                lua_error(L);
-                return 0;
+        //
+        // the next parameters are either the header values and/or the timeout
+        // header: table of key/value pairs of additional HTTP-headers to be sent
+        // timeout: number of milliseconds any operation of the socket may take at maximum
+        //
+        map<string,string> outheader;
+        int timeout = 500; // default is 500 ms
+        for (int i = 3; i <= top; i++) {
+            if (lua_istable(L, i)) { // process header table at position i
+                int index = i;
+                lua_pushnil(L);
+
+                // This is needed for it to even get the first value
+                index--;
+
+                while (lua_next(L, index) != 0) {
+                    // key is at index -2
+                    // value is at index -1
+                    if (!lua_isstring(L, -1) || !lua_isstring(L, -2)) {
+                        lua_pop(L, 1);
+                        continue;
+                    };
+                    const char *key = lua_tostring(L, -2);
+                    const char *value = lua_tostring(L, -1);
+                    outheader[key] = value;
+                    lua_pop(L, 1);
+                }
             }
-
-            int socketfd;
-            if ((sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
-                lua_pop(L, top);
-                freeaddrinfo(ai);
-                perror("socket");
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
-                lua_error(L);
-                return 0;
+            else if (lua_isinteger(L, i)) { // process timeout at position i
+                timeout = lua_tointeger(L, i);
             }
-
-            if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                close(sockfd);
-                lua_pop(L, top);
-                freeaddrinfo(ai);
-                perror("socket");
-                lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': Could not create socket");
-                lua_error(L);
-                return 0;
-            }
-
-            SockStream sockstream(sock);
-            istream ins(&sockstream);
-            ostream os(&sockstream);
-
-            os << "GET " << path << "HTTP/1.1\r\n";
-            string myhost = get_host_name();
-            if (!myhost.empty()) {
-                os << "Host: " << myhost << "\r\n";
-            }
-
-            freeaddrinfo(ai);
-        }
-        else {
-            lua_pushstring(L, "Lua-error 'server.http(method, url, [header])': unknown method");
-            lua_error(L);
         }
 
+        bool secure = false; // is set true, if the url starts with "https"
+        int port = 80; // contains the port number, default is 80 (or 443, if https)
+        string host; // contains the host name or IP-number
+        string path; // path to document
+
+        try {
+            //
+            // processing the URL given
+            //
+            if (url.find("http:") == 0) {
+                url = url.substr(7);
+            }
+            else if (url.find("https:") == 0) {
+                url = url.substr(8);
+                secure = true;
+                port = 443;
+            }
+            else {
+                throw _HttpError(__LINE__,
+                                 "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+            }
+
+            size_t pos;
+            pos = url.find_first_of(":/");
+            if (pos == string::npos) {
+                host = url;
+                path = "/";
+            }
+            else {
+                host = url.substr(0, pos);
+                if (url[pos] == ':') { // we have a portnumber
+                    try {
+                        port = stoi(url.substr(0, pos));
+                    }
+                    catch (const std::invalid_argument &ia) {
+                        string err = string("server.http: invalid portnumber!) ") + string(ia.what());
+                        throw _HttpError(__LINE__, err);
+                    }
+                    pos = url.find("/");
+                    if (pos == string::npos) {
+                        path = "/";
+                    }
+                    else {
+                        path = url.substr(pos);
+                    }
+                }
+                else {
+                    path = url.substr(pos);
+                }
+            }
+
+            if (method == "GET") { // the only method we support so far...
+                struct addrinfo *ai;
+                struct addrinfo hint;
+
+                //
+                // resolve hostname etc. to get the IP address of server
+                //
+                memset(&hint, 0, sizeof hint);
+                hint.ai_family = PF_INET;
+                hint.ai_socktype = SOCK_STREAM;
+                hint.ai_protocol = IPPROTO_TCP;
+                int res;
+                if ((res = getaddrinfo(host.c_str(), NULL, &hint, &ai)) != 0) {
+                    lua_pop(L, top);
+                    string err = string("Couldn't resolve hostname! ") + string(gai_strerror(res));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // now we create the socket
+                //
+                int socketfd;
+                if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not create socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // now let's set the timeout of the socket
+                //
+                struct timeval tv;
+
+                tv.tv_sec = timeout / 1000;  // 30 Secs Timeout
+                tv.tv_usec = timeout % 1000;  // Not init'ing this can cause strange errors
+                if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(struct timeval)) != 0) {
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not create socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // set the port number (assuming it is an AF_INET we got...
+                //
+                struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
+
+                auto start = get_time::now(); // start elapsed time timer...
+
+                //
+                // connect the socket
+                //
+                serv_addr->sin_port = htons(port);
+                if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    string err = string("Could not connect socket! ") + string(strerror(errno));
+                    throw _HttpError(__LINE__, err);
+                }
+
+                //
+                // create the C++ streams
+                //
+                SockStream sockstream(socketfd);
+                istream ins(&sockstream);
+                ostream os(&sockstream);
+
+                //
+                // send the request header
+                //
+                os << "GET " << path << " HTTP/1.1\r\n";
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                }
+                if (!host.empty()) {
+                    os << "Host: " << host << "\r\n";
+                    if (os.fail() || os.eof()) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                    }
+                }
+                for (auto const &iterator : outheader) {
+                    os << iterator.first << ": " << iterator.second << "\r\n";
+                    if (os.fail() || os.eof()) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Connection dropped by peer!");
+
+                    }
+                }
+
+                os << "\r\n";
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+                }
+                os.flush();
+                if (os.fail() || os.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Connection dropped by peer!");
+                }
+
+                //
+                // let's process the header of the return HTTP-message
+                //
+                int content_length;
+                map <string, string> header = process_http_header(&ins, content_length);
+                if (ins.fail() || ins.eof()) {
+                    close(socketfd);
+                    lua_pop(L, top);
+                    freeaddrinfo(ai);
+                    throw _HttpError(__LINE__, "Couldn't read HTTP header: Connection dropped by peer!");
+                }
+
+                //
+                // now we read the data from the body of the HTTP-message
+                //
+                char *bodybuf = NULL;
+                if (content_length == -1) { // we expect chunked data
+                    try {
+                        ChunkReader ckrd(&ins);
+                        size_t n = ckrd.readAll(&bodybuf);
+                    }
+                    catch (int ierr) { // i/o error
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
+                    }
+                    catch (Error err) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        string errstr = string("Couldn't read HTTP data: ") + err.to_string();
+                        throw _HttpError(__LINE__, errstr);
+                    }
+                }
+                else {
+                    if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                        close(socketfd);
+                        lua_pop(L, top);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: malloc failed!");
+                    }
+                    ins.read(bodybuf, content_length);
+                    if (ins.fail() || ins.eof()) {
+                        free(bodybuf);
+                        close(socketfd);
+                        freeaddrinfo(ai);
+                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
+                    }
+                    bodybuf[content_length] = '\0';
+                }
+
+                auto end = get_time::now();
+                auto diff = end - start;
+                int duration = chrono::duration_cast<ms>(diff).count();
+                //
+                // now let's build the Lua-table that's being returned
+                //
+                lua_createtable(L, 0, 2); // table
+
+                lua_pushstring(L, "success"); // table - "success"
+                lua_pushboolean(L, true); // table - "body" - true
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "header"); // table1 - "header"
+                lua_createtable(L, 0, header.size()); // table - "header" - table2
+                for (auto const &iterator : header) {
+                    lua_pushstring(L, iterator.first.c_str()); // table - "header" - table2 - headername
+                    lua_pushstring(L, iterator.second.c_str()); // table - "header" - table2 - headername - headervalue
+                    lua_rawset(L, -3); // table - "header" - table2
+                }
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "body"); // table - "body"
+                lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "duration"); // table - "duration"
+                lua_pushinteger(L, duration); // table - "duration" - duration
+                lua_rawset(L, -3); // table
+
+                //
+                // free resources used
+                //
+                free(bodybuf);
+                close(socketfd);
+                freeaddrinfo(ai);
+
+                return 1; // we return one table...
+            }
+            else {
+                lua_pushstring(L, "'server.http(method, url, [header])': unknown method");
+                lua_error(L);
+            }
+        }
+        catch (_HttpError &err) {
+            lua_createtable(L, 0, 2); // table
+
+            lua_pushstring(L, "success"); // table - "success"
+            lua_pushboolean(L, false); // table - "success" - true
+            lua_rawset(L, -3); // table
+
+            lua_pushstring(L, "errmsg"); // table - "errmsg"
+            lua_pushstring(L, err.what().c_str()); // table - "errmsg" - errormsg
+            lua_rawset(L, -3); // table
+
+            return 1;
+        }
+        return 0;
     }
     //=========================================================================
-#endif
+
 
     static cJSON *subtable(lua_State *L) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
@@ -700,7 +1034,7 @@ namespace shttps {
                 // we have a string as key
                 skey = lua_tostring(L, -2);
                 if (arrayobj != NULL) {
-                    lua_pushstring(L, "server.table_to_json(table): Cannot mix int and strings as key");
+                    lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
                 }
                 if (tableobj == NULL) {
@@ -709,7 +1043,7 @@ namespace shttps {
             }
             else if (lua_isinteger(L, -2)) {
                 if (tableobj != NULL) {
-                    lua_pushstring(L, "server.table_to_json(table): Cannot mix int and strings as key");
+                    lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
                 }
                 if (arrayobj == NULL) {
@@ -718,7 +1052,7 @@ namespace shttps {
             }
             else {
                 // something else as key....
-                lua_pushstring(L, "server.table_to_json(table): Cannot convert key to JSON object field");
+                lua_pushstring(L, "'server.table_to_json(table)': Cannot convert key to JSON object field");
                 lua_error(L);
             }
 
@@ -792,15 +1126,19 @@ namespace shttps {
     }
     //=========================================================================
 
+   /*!
+    * Converts a Lua table into a JSON string
+    * LUA: jsonstr = server.table_to_json(table)
+    */
     static int lua_table_to_json(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pushstring(L, "Lua-error 'server.table_to_json(table): table parameter missing!");
+            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
             lua_error(L);
             return 0;
         }
         if (!lua_istable(L, 1)) {
-            lua_pushstring(L, "Lua-error 'server.table_to_json(table): table is not a lua-table!");
+            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
             lua_error(L);
             return 0;
         }
@@ -812,6 +1150,94 @@ namespace shttps {
         return 1;
     }
     //=========================================================================
+
+    static void lua_jsonobj(lua_State *L, cJSON *subobj) {
+
+        if ((subobj->type != cJSON_Object) && (subobj->type != cJSON_Array)) {
+            return;
+        }
+
+        lua_createtable(L, 0, 0);
+
+        cJSON *next = subobj->child;
+        int i = 0;
+        while (next != NULL) {
+            if (subobj->type == cJSON_Object) {
+                lua_pushstring(L, next->string); // index
+            }
+            else if (subobj->type == cJSON_Array) {
+                lua_pushinteger(L, i); // index
+            }
+            switch (next->type) {
+                case cJSON_False: {
+                    lua_pushboolean(L, false);
+                    break;
+                }
+                case cJSON_True: {
+                    lua_pushboolean(L, true);
+                    break;
+                }
+                case cJSON_NULL: {
+                    lua_pushstring(L, "NIL"); // ToDo: we should create a custom Lua object named NULL!
+                    break;
+                }
+                case cJSON_Number: {
+                    lua_pushnumber (L, next->valuedouble);
+                    break;
+                }
+                case cJSON_String: {
+                    lua_pushstring(L, next->valuestring);
+                    break;
+                }
+                case cJSON_Array:
+                case cJSON_Object: {
+                    lua_jsonobj(L, next);
+                    break;
+                }
+            }
+            lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+
+            next = next->next;
+            i++;
+        }
+    }
+    //=========================================================================
+
+    /*!
+     * Converts a json string into a possibly nested Lua table
+     * LUA: table = server.json_to_table(jsonstr)
+     */
+    static int lua_json_to_table (lua_State *L) {
+        int top = lua_gettop(L);
+        if (top < 1) {
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr parameter missing!");
+            lua_error(L);
+            return 0;
+        }
+        if (!lua_isstring(L, 1)) {
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr is not a string!");
+            lua_error(L);
+            return 0;
+        }
+
+        const char *jsonstr = lua_tostring(L, 1);
+
+        cJSON *jsonobj = cJSON_Parse(jsonstr);
+        if (jsonobj == NULL) {
+            const char *errmsg = cJSON_GetErrorPtr();
+            stringstream ss;
+            ss <<  "'server.json_to_table(jsonstr)': Error parsing JSON: " << errmsg;
+            lua_pushstring(L, ss.str().c_str());
+            lua_error(L);
+            return 0;
+        }
+        lua_jsonobj(L, jsonobj);
+        cJSON_Delete(jsonobj);
+
+        return 1;
+    }
+    //=========================================================================
+
 
     /*!
      * Stops the HTTP server and exits everything
@@ -842,7 +1268,7 @@ namespace shttps {
         int top = lua_gettop(L);
 
         if (top != 2) {
-            lua_pushstring(L, "Lua-error 'server.header(key,val): Invalid number of parameters!");
+            lua_pushstring(L, "'server.header(key,val)': Invalid number of parameters!");
             lua_error(L);
             return 0;
         }
@@ -927,6 +1353,14 @@ namespace shttps {
                 lua_pushstring(L, "OTHER");
                 break;
         }
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "client_ip"); // table1 - "index_L1"
+        lua_pushstring(L, conn.peer_ip().c_str()); // table1 - "index_L1" - "value_L1"
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "client_port"); // table1 - "index_L1"
+        lua_pushinteger(L, conn.peer_port()); // table1 - "index_L1" - "value_L1"
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "header"); // table1 - "index_L1"
@@ -1039,6 +1473,10 @@ namespace shttps {
         lua_pushcfunction(L, lua_table_to_json); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
+        lua_pushstring(L, "json_to_table"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_json_to_table); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
         //
         // server.print (var[, var...])
         //
@@ -1077,6 +1515,10 @@ namespace shttps {
 
         lua_pushstring(L, "shutdown"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_exitserver); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "http"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_http_client); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_setglobal(L, servertablename);
