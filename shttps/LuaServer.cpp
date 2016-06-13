@@ -1026,6 +1026,7 @@ namespace shttps {
                 lua_pushboolean(L, true); // table - "body" - true
                 lua_rawset(L, -3); // table
 
+#ifdef SHTTPS_ENABLE_SSL
                 if (!certificate_issuer.empty() || certificate_subject.empty()) {
                     lua_pushstring(L, "certificate");
                     lua_createtable(L, 0, header.size()); // table - "header" - table2
@@ -1040,6 +1041,7 @@ namespace shttps {
 
                     lua_rawset(L, -3); // table
                 }
+#endif
 
                 lua_pushstring(L, "header"); // table1 - "header"
                 lua_createtable(L, 0, header.size()); // table - "header" - table2
