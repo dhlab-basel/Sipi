@@ -371,7 +371,7 @@ namespace shttps {
         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
         * \param[in] peer_port Port number of peer/client
         */
-        bool processRequest(int sock, std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port);
+        bool processRequest(int sock, std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure);
 
         /*!
         * Return the user data that has been added previously

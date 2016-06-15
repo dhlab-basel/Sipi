@@ -234,6 +234,7 @@ namespace shttps {
         std::string _peer_ip;           //!< IP number of client (peer)
         int _peer_port;            //!< Port of peer/client
         std::string http_version; //!< Holds the HTTP version of the request
+        bool _secure;             //!< true if SSL used
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
         std::string _uri;         //!< uri of the request
@@ -356,6 +357,15 @@ namespace shttps {
         inline void peer_port(int port) { _peer_port = port; }
 
 
+       /*!
+        * Return true if a secure (SSL) connection is used
+        */
+        inline bool secure(void) { return _secure; }
+
+       /*!
+        * Set the secure connection status
+        */
+        inline void secure(bool sec) { _secure = sec; }
        /*!
          * Get the request URI
          *

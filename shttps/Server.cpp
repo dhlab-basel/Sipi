@@ -456,7 +456,17 @@ namespace shttps {
         istream ins(sockstream);
         ostream os(sockstream);
 
-        bool do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port);
+        bool do_close;
+#ifdef SHTTPS_ENABLE_SSL
+        if (tdata->cSSL != NULL) {
+            do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, true);
+        }
+        else {
+            do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
+        }
+#else
+        do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
+#endif
 
         delete sockstream;
 
@@ -724,7 +734,7 @@ namespace shttps {
     //=========================================================================
 
 
-    bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port)
+    bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure)
     {
         int n;
 
@@ -764,6 +774,7 @@ namespace shttps {
             conn.setupKeepAlive(sock, _keep_alive_timeout);
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
+            conn.secure(secure);
 
             if (conn.resetConnection()) {
                 if (conn.keepAlive()) {

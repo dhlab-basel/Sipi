@@ -337,6 +337,7 @@ namespace shttps {
 
     Connection::Connection(void) {
         _server = NULL;
+        _secure = false;
         ins = NULL;
         os = NULL;
         cachefile = NULL;
@@ -360,6 +361,7 @@ namespace shttps {
         : ins(ins_p), os(os_p), _tmpdir(tmpdir_p), outbuf_size(buf_size), outbuf_inc(buf_inc)
     {
         _server = server_p;
+        _secure = false;
         cachefile = NULL;
         header_sent = false;
         _keep_alive = false;
