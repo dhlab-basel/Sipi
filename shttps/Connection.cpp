@@ -1321,7 +1321,8 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
         else {
-            *os << "\r\n";
+            *os << "Content-Length: " << n << "\r\n\r\n";
+            //*os << "\r\n";
             if (os->eof() || os->fail()) throw -1;
         }
 

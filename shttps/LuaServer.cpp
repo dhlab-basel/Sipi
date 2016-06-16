@@ -88,6 +88,127 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*
+     * base64.cpp and base64.h
+     *
+     * Copyright (C) 2004-2008 René Nyffenegger
+     *
+     * This source code is provided 'as-is', without any express or implied
+     * warranty. In no event will the author be held liable for any damages
+     * arising from the use of this software.
+     *
+     * Permission is granted to anyone to use this software for any purpose,
+     * including commercial applications, and to alter it and redistribute it
+     * freely, subject to the following restrictions:
+     *
+     * 1. The origin of this source code must not be misrepresented; you must not
+     * claim that you wrote the original source code. If you use this source code
+     * in a product, an acknowledgment in the product documentation would be
+     * appreciated but is not required.
+     *
+     * 2. Altered source versions must be plainly marked as such, and must not be
+     * misrepresented as being the original source code.
+     *
+     * 3. This notice may not be removed or altered from any source distribution.
+     *
+     * René Nyffenegger rene.nyffenegger@adp-gmbh.ch
+     *
+     *
+     */
+
+    static const std::string base64_chars =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz"
+                    "0123456789+/";
+
+
+    static inline bool is_base64(unsigned char c) {
+        return (isalnum(c) || (c == '+') || (c == '/'));
+    }
+
+    static std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
+        std::string ret;
+        int i = 0;
+        int j = 0;
+        unsigned char char_array_3[3];
+        unsigned char char_array_4[4];
+
+        while (in_len--) {
+            char_array_3[i++] = *(bytes_to_encode++);
+            if (i == 3) {
+                char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+                char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+                char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+                char_array_4[3] = char_array_3[2] & 0x3f;
+
+                for(i = 0; (i <4) ; i++)
+                    ret += base64_chars[char_array_4[i]];
+                i = 0;
+            }
+        }
+
+        if (i)
+        {
+            for(j = i; j < 3; j++)
+                char_array_3[j] = '\0';
+
+            char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+            char_array_4[1] = ((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4);
+            char_array_4[2] = ((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6);
+            char_array_4[3] = char_array_3[2] & 0x3f;
+
+            for (j = 0; (j < i + 1); j++)
+                ret += base64_chars[char_array_4[j]];
+
+            while((i++ < 3))
+                ret += '=';
+
+        }
+
+        return ret;
+
+    }
+
+    static std::string base64_decode(std::string const& encoded_string) {
+        int in_len = encoded_string.size();
+        int i = 0;
+        int j = 0;
+        int in_ = 0;
+        unsigned char char_array_4[4], char_array_3[3];
+        std::string ret;
+
+        while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
+            char_array_4[i++] = encoded_string[in_]; in_++;
+            if (i ==4) {
+                for (i = 0; i <4; i++)
+                    char_array_4[i] = base64_chars.find(char_array_4[i]);
+
+                char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+                char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+                char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+                for (i = 0; (i < 3); i++)
+                    ret += char_array_3[i];
+                i = 0;
+            }
+        }
+
+        if (i) {
+            for (j = i; j <4; j++)
+                char_array_4[j] = 0;
+
+            for (j = 0; j <4; j++)
+                char_array_4[j] = base64_chars.find(char_array_4[j]);
+
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (j = 0; (j < i - 1); j++) ret += char_array_3[j];
+        }
+
+        return ret;
+    }
 
     /*!
      * Instantiates a Lua server
@@ -613,6 +734,68 @@ namespace shttps {
     }
     //=========================================================================
 
+    static int lua_require_auth(lua_State *L) {
+        lua_getglobal(L, luaconnection); // push onto stack
+        Connection *conn = (Connection *) lua_touserdata(L, -1); // does not change the stack
+        lua_remove(L, -1); // remove from stack
+
+        string auth = conn->header("authorization");
+
+
+        lua_createtable(L, 0, 3); // table
+
+        if (auth.empty()) {
+            lua_pushstring(L, "status"); // table - "username"
+            lua_pushstring(L, "NOAUTH"); // table - "username" - <username>
+            lua_rawset(L, -3); // table
+        }
+        else {
+            size_t npos = auth.find(" ");
+            if (npos != string::npos) {
+               string auth_type = auth.substr(0, npos);
+                string auth_secret = auth.substr(npos + 1);
+                string auth_string = base64_decode(auth_secret);
+                npos = auth_string.find(":");
+                if (npos != string::npos) {
+                    string username = auth_string.substr(0, npos);
+                    string password = auth_string.substr(npos + 1);
+
+                    lua_pushstring(L, "status"); // table - "username"
+                    lua_pushstring(L, "OK"); // table - "username" - <username>
+                    lua_rawset(L, -3); // table
+
+                    lua_pushstring(L, "username"); // table - "username"
+                    lua_pushstring(L, username.c_str()); // table - "username" - <username>
+                    lua_rawset(L, -3); // table
+
+                    lua_pushstring(L, "password"); // table - "password"
+                    lua_pushstring(L, password.c_str()); // table - "password" - <password>
+                    lua_rawset(L, -3); // table
+                }
+                else {
+                    lua_pushstring(L, "status"); // table - "username"
+                    lua_pushstring(L, "ERROR"); // table - "username" - <username>
+                    lua_rawset(L, -3); // table
+
+                    lua_pushstring(L, "message"); // table - "username"
+                    lua_pushstring(L, "Auth-string not valid!"); // table - "username" - <username>
+                    lua_rawset(L, -3); // table
+                }
+            }
+            else {
+                lua_pushstring(L, "status"); // table - "username"
+                lua_pushstring(L, "ERROR"); // table - "username" - <username>
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "message"); // table - "username"
+                lua_pushstring(L, "Auth-type not \"Basic\"!"); // table - "username" - <username>
+                lua_rawset(L, -3); // table
+            }
+        }
+
+        return 1;
+    }
+    //=========================================================================
 
     static map<string,string> process_http_header(istream *ins, int &content_length)
     {
@@ -1331,7 +1514,7 @@ namespace shttps {
      * Adds a new HTTP header field
      * LUA: server.sendHeader(key, value)
      */
-    static int lua_header(lua_State *L) {
+    static int lua_send_header(lua_State *L) {
         lua_getglobal(L, luaconnection);
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
@@ -1345,12 +1528,32 @@ namespace shttps {
         }
         const char *hkey = lua_tostring(L, 1);
         const char *hval = lua_tostring(L, 2);
+        lua_pop(L, 2);
 
         conn->header(hkey, hval);
 
         return 0;
     }
     //=========================================================================
+
+    static int lua_send_status(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+
+        int top = lua_gettop(L);
+        int istatus = 200;
+        if (top == 1) {
+            istatus = lua_tointeger(L, 1);
+            lua_pop(L, 1);
+        }
+        Connection::StatusCodes status = static_cast<Connection::StatusCodes>(istatus);
+        conn->status(status);
+
+        return 0;
+    }
+    //=========================================================================
+
 
     /*!
      * Copy an uploaded file to another location
@@ -1582,7 +1785,7 @@ namespace shttps {
 
 
         lua_pushstring(L, "sendHeader"); // table1 - "index_L1"
-        lua_pushcfunction(L, lua_header); // table1 - "index_L1" - function
+        lua_pushcfunction(L, lua_send_header); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "copyTmpfile"); // table1 - "index_L1"
@@ -1595,6 +1798,14 @@ namespace shttps {
 
         lua_pushstring(L, "http"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_http_client); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "sendStatus"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_send_status); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "requireAuth"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_require_auth); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_setglobal(L, servertablename);
@@ -1780,11 +1991,18 @@ namespace shttps {
     //=========================================================================
 
 
-    void LuaServer::executeChunk(const string &luastr) {
+    int LuaServer::executeChunk(const string &luastr) {
         if (luaL_dostring(L, luastr.c_str()) != 0) {
             const char *luaerror = lua_tostring(L, -1);
             throw Error(__file__, __LINE__, string("Lua error: ") + luaerror);
         }
+        int top = lua_gettop(L);
+        if (top == 1) {
+            int status = lua_tointeger(L, 1);
+            lua_pop(L, 1);
+            return status;
+        }
+        return 1;
     }
     //=========================================================================
 

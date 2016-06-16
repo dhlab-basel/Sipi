@@ -226,6 +226,23 @@ Sipi provides the following functions`and preset variables:
 - `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
 - `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
 - `server.sendHeader(key, value)` : Adds a new HTTP header field.
+- `server.requireAuth()` : Gets Basic HTTP authentification data. Usage is as follows:
+  ```lua
+  auth = server.requireAuth()
+  
+  if auth.status == 'OK' then
+      username = auth.username
+      password = auth.password
+  elseif auth.status == 'NOAUTH' then
+      server.setBuffer()
+      server.sendStatus(401);
+      server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+      return -1
+  else
+      server.status(401)
+      server.header('WWW-Authenticate', 'Basic realm="SIPI"')
+  end
+  ```
 - `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
 - `server.host` : The hostname of the SIPI server that was used in the request.
 - `server.client_ip` : IP-Address of the client connecting to SIPI (IP4 or IP6).

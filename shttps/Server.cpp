@@ -126,7 +126,10 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    lua.executeChunk(luacode);
+                    if (lua.executeChunk(luacode) != 1) {
+                        conn.flush();
+                        return;
+                    }
                 }
                 catch (Error &err) {
                     try {
@@ -159,7 +162,7 @@ namespace shttps {
                     string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
 
-                    conn << htmlcode; // send html...
+                    if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     string luastr;
                     if ((end = eluacode.find("</lua>", pos)) != string::npos) { // we found end;
@@ -171,7 +174,10 @@ namespace shttps {
                     }
 
                     try {
-                        lua.executeChunk(luastr);
+                        if (lua.executeChunk(luastr) != 1) {
+                            conn.flush();
+                            return;
+                        }
                     }
                     catch (Error &err) {
                         try {
@@ -299,7 +305,10 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    lua.executeChunk(luacode);
+                    if (lua.executeChunk(luacode) != 1) {
+                        conn.flush();
+                        return;
+                    }
                 }
                 catch (Error &err) {
                     try {
@@ -331,7 +340,7 @@ namespace shttps {
                     string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
 
-                    conn << htmlcode; // send html...
+                    if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     string luastr;
                     if ((end = eluacode.find("</lua>", pos)) != string::npos) { // we found end;
@@ -343,7 +352,10 @@ namespace shttps {
                     }
 
                     try {
-                        lua.executeChunk(luastr);
+                        if (lua.executeChunk(luastr) != 1) {
+                            conn.flush();
+                            return;
+                        }
                     }
                     catch (Error &err) {
                         try {
@@ -654,7 +666,6 @@ namespace shttps {
                     }
                }
                 catch (SSLError &err) {
-                    cerr << "OpenSSL Error: Couldn't create secure socket!" << endl;
                     _logger->error(err.to_string());
                     SSL_shutdown(cSSL);
                     SSL_free(cSSL);

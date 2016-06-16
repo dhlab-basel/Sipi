@@ -154,8 +154,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-message(STATUS "****************** = ${OPENSSL_ROOT_DIR}")
-
 
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)

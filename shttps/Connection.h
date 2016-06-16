@@ -340,7 +340,7 @@ namespace shttps {
         *
         * \param ip String containing peer ip
         */
-        inline void peer_ip(std::string &ip) { _peer_ip = ip; }
+        inline void peer_ip(const std::string &ip) { _peer_ip = ip; }
 
        /*!
         * Get port number of peer
@@ -421,7 +421,7 @@ namespace shttps {
         * Sets the response status code
         *
         * \param[in] status_code_p Status code as defined in \typedef StatusCodes
-        * \param[in] status_string_p Additional status ocde description that is added
+        * \param[in] status_string_p Additional status code description that is added
         */
         void status(StatusCodes status_code_p, const std::string status_string_p = "");
 

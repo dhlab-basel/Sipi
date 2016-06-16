@@ -90,7 +90,7 @@ namespace shttps {
         float configFloat(const std::string table, const std::string variable, const float defval);
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
-        void executeChunk(const std::string &luastr);
+        int executeChunk(const std::string &luastr);
         std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, ...);
         std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, LuaValstruct *lv);
         bool luaFunctionExists(const std::string *funcname);

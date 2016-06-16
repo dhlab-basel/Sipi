@@ -1,3 +1,21 @@
+<lua>
+
+auth = server.requireAuth()
+
+if auth.status == 'OK' then
+    username = auth.username
+    password = auth.password
+elseif auth.status == 'NOAUTH' then
+    server.setBuffer()
+    server.sendStatus(401);
+    server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+    return -1
+else
+    server.status(401)
+    server.header('WWW-Authenticate', 'Basic realm="SIPI"')
+end
+
+</lua>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -30,7 +48,14 @@ end
 
 server.print("Client-ip: ", server.client_ip, "<br/>")
 server.print("Client-port: ", server.client_port, "<br/>")
+if server.secure then
+    server.print("Secure: TRUE<br/>")
+else
+    server.print("Secure: FALSE<br/>")
+end
 server.print("Host: ", server.host, "<br/><hr/>")
+server.print("Username: ", username, "<br/>")
+server.print("Password: ", password, "<br/><hr/>")
 
 
 -- result = server.http("GET", "http://www.salsah.org/api/resources/1", 5000)
