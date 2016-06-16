@@ -5,4 +5,6 @@
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_ST_ATIMESPEC
 
+#define SIPI_VERSION "${SIPI_VERSION}"
+
 #endif

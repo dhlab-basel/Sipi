@@ -38,7 +38,6 @@
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
 
-#include "shttps/LuaServer.h"
 #include "shttps/cJSON.h"
 #include "shttps/GetMimetype.h"
 #include "SipiConf.h"
@@ -103,6 +102,7 @@ static std::string fileType_string(FileType f_type) {
 };
 
 static void sighandler(int sig) {
+    std::cerr << std::endl << "Got SIGINT, stopping server gracefully...." << std::endl;
     if (serverptr != NULL) {
         auto logger = spdlog::get(shttps::loggername);
         logger->info("Got SIGINT, stopping server");
@@ -158,7 +158,7 @@ static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCod
 }
 //=========================================================================
 
-void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
+static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
 
     lua_createtable(L, 0, 13); // table1
@@ -226,6 +226,7 @@ void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     lua_setglobal(L, "config");
 }
 
+
 int main (int argc, char *argv[]) {
 
     //
@@ -264,6 +265,7 @@ int main (int argc, char *argv[]) {
         std::string configfile = (params["config"])[0].getValue(SipiStringType);
         try {
 
+            std::cout << std::endl << SIPI_VERSION << std::endl;
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
@@ -271,8 +273,7 @@ int main (int argc, char *argv[]) {
             sipiConf = Sipi::SipiConf(luacfg);
 
             //Create object SipiHttpServer
-            Sipi::SipiHttpServer server(sipiConf.getPort(),
-                                        sipiConf.getNThreads());
+            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads());
 
 #ifdef SHTTPS_ENABLE_SSL
             server.ssl_port(sipiConf.getSSLPort()); // set the secure connection port (-1 means no ssl socket)
@@ -286,8 +287,8 @@ int main (int argc, char *argv[]) {
 
             server.scriptdir(sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
             server.luaRoutes(sipiConf.getRoutes());
-            server.add_lua_globals_func(Sipi::sipiGlobals); // add new lua function "gaga"
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
+            server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add new lua function "gaga"
             server.prefix_as_path(sipiConf.getPrefixAsPath());
 
 

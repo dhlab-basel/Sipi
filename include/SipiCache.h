@@ -47,6 +47,7 @@ namespace Sipi {
             time_t access_time;     //!< last access in seconds
             off_t fsize;
         } FileCacheRecord;
+
         typedef struct {
             std::string origpath;
             std::string cachepath;
@@ -80,6 +81,10 @@ namespace Sipi {
         std::string check(const std::string &origpath_p, const std::string &canonical_p);
         std::string getNewCacheName(void);
         void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p);
+        inline unsigned long long getCachesize(void) { return cachesize; }
+        inline unsigned long long getMaxCachesize(void) { return max_cachesize; }
+        inline unsigned getNfiles(void) { return nfiles; }
+        inline unsigned getMaxNfiles(void) { return max_nfiles; }
     };
 }
 

@@ -161,8 +161,8 @@ namespace shttps {
         int port; //!< listening Port for server
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
-#ifdef SHTTPS_ENABLE_SSL
         int _ssl_sockfd; //!< SSL socket id
+#ifdef SHTTPS_ENABLE_SSL
         std::string _ssl_certificate; //!< Path to SSL certificate
         std::string _ssl_key; //!< Path to SSL certificate
 #endif
@@ -200,11 +200,11 @@ namespace shttps {
 
         inline int ssl_port(void) { return _ssl_port; }
 
-        inline void ssl_certificate(std::string &path) { _ssl_certificate = path; }
+        inline void ssl_certificate(const std::string &path) { _ssl_certificate = path; }
 
         inline std::string ssl_certificate(void) { return _ssl_certificate; }
 
-        inline void ssl_key(std::string &path) { _ssl_key = path; }
+        inline void ssl_key(const std::string &path) { _ssl_key = path; }
 
         inline std::string ssl_key(void) { return _ssl_key; }
 

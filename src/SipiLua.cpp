@@ -32,10 +32,14 @@
 
 #include "SipiImage.h"
 #include "SipiLua.h"
+#include "SipiHttpServer.h"
+#include "SipiCache.h"
 
 
 
 namespace Sipi {
+
+    char sipiserver[] = "__sipiserver";
 
     static const char SIMAGE[] = "SipiImage";
 
@@ -43,6 +47,47 @@ namespace Sipi {
         SipiImage *image;
         std::string *filename;
     } SImage;
+
+
+    /*!
+     * gets the current working directory
+     * LUA: curdir = server.fs.getcwd()
+     */
+    static int lua_cache_size(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+
+        SipiCache *cache = server->cache();
+        unsigned long long size = cache->getCachesize();
+
+        lua_pushinteger(L, size);
+        return 1;
+    }
+    //=========================================================================
+
+    /*!
+     * gets the current working directory
+     * LUA: curdir = server.fs.getcwd()
+     */
+    static int lua_cache_max_size(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+
+        SipiCache *cache = server->cache();
+        unsigned long long maxsize = cache->getMaxCachesize();
+
+        lua_pushinteger(L, maxsize);
+        return 1;
+    }
+    //=========================================================================
+
+    static const luaL_Reg cache_methods[] = {
+            {"size", lua_cache_size},
+            {"max_size", lua_cache_max_size},
+            {0,     0}
+    };
+    //=========================================================================
+
 
     static SImage *toSImage(lua_State *L, int index) {
         SImage *img = (SImage *) lua_touserdata(L, index);
@@ -431,6 +476,16 @@ namespace Sipi {
 
 
     void sipiGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
+        SipiHttpServer *server = (SipiHttpServer *) user_data;
+
+        //
+        // filesystem functions
+        //
+        //lua_pushstring(L, "cache"); // table1 - "fs"
+        lua_newtable(L); // table
+        luaL_setfuncs(L, cache_methods, 0);
+        //lua_rawset(L, -3); // table
+        lua_setglobal(L, "cache");
 
         lua_getglobal(L, SIMAGE);
         if (lua_isnil(L, -1)) {
@@ -469,6 +524,10 @@ namespace Sipi {
 
         lua_setglobal(L, SIMAGE);
         // stack: empty
+
+        lua_pushlightuserdata(L, server);
+        lua_setglobal(L, sipiserver);
+
     }
     //=========================================================================
 

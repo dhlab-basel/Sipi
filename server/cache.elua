@@ -1,0 +1,16 @@
+<html>
+<head><title>SIPI Cache Control</title></head>
+<body>
+<h1>SIPI Cache Control</h1>
+</hr>
+<table>
+<lua>
+--server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
+--server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
+server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
+server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
+</lua>
+</table>
+</body>
+</html>
+

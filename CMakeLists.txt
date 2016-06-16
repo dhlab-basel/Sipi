@@ -29,6 +29,9 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
+string(TIMESTAMP VERSION "%Y-%m-%d %H:%M")
+set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
+
 #
 # Usually SIPI is compiled with all static libraries
 #
@@ -65,7 +68,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     SET(KDU_MAKE "Makefile-MAC-x86-all-gcc")
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
-    SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+    SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE FILEPATH "openssl")
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     message(STATUS "Compiling for Linux64...")
     message(STATUS ${CMAKE_SYSTEM_NAME})
@@ -107,6 +110,8 @@ if(OPENSSL_FOUND)
     message(STATUS "Found OpenSSL at ${OPENSSL_INCLUDE_DIR}")
     add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
     add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
 else()
     message(STATUS "No SSL support found!")
 endif()
@@ -148,6 +153,8 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
+message(STATUS "****************** = ${OPENSSL_ROOT_DIR}")
 
 
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
@@ -259,9 +266,6 @@ add_executable(
         src/SipiParamValue.cpp include/SipiParamValue.h
         src/SipiParam.cpp include/SipiParam.h
         src/SipiCmdParams.cpp include/SipiCmdParams.h
-#        src/PhpSession.cpp include/PhpSession.h
-#        src/Salsah.cpp include/Salsah.h
-#        src/Template.cpp include/Template.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
