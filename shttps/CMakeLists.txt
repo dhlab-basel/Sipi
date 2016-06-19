@@ -79,19 +79,35 @@ find_package(Threads REQUIRED)
 #
 # get lua
 #
-ExternalProject_Add(project_lua
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
-    CONFIGURE_COMMAND ls
-    BUILD_COMMAND make ${LUA_ARCH}
-    INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_IN_SOURCE 1
+ExternalProject_Add(
+        project_lua
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
+        CONFIGURE_COMMAND ls
+        BUILD_COMMAND make ${LUA_ARCH}
+        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_lua install_dir)
 add_library(lua STATIC IMPORTED)
 set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
 add_dependencies(lua project_lua)
+
+#
+# get jansson
+#
+ExternalProject_Add(
+        project_jansson
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        GIT_REPOSITORY https://github.com/akheron/jansson.git
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/jansson
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
+)
+ExternalProject_Get_Property(project_jansson install_dir)
+add_library(jansson STATIC IMPORTED)
+set_property(TARGET jansson PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjansson${CMAKE_STATIC_LIBRARY_SUFFIX})
+add_dependencies(jansson project_jansson)
 
 #
 # get libmagic
@@ -121,7 +137,6 @@ message(STATUS " SERVER-DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(AFTER ${CMAKE_CURRENT_SOURCE_DIR}/local/include ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 add_library(
         shttpobj OBJECT
-        cJSON.c cJSON.h
         Error.cpp Error.h
         SockStream.cpp SockStream.h
         ChunkReader.cpp ChunkReader.h
@@ -143,7 +158,7 @@ install(FILES ${luaincs} DESTINATION include)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/spdlog DESTINATION include)
 
 add_executable(shttp-test Shttp.cpp $<TARGET_OBJECTS:shttpobj>)
-target_link_libraries(shttp-test ${LIBS} lua magic z dl pthread)
+target_link_libraries(shttp-test ${LIBS} lua jansson magic z dl pthread)
 if(OPENSSL_FOUND)
     target_link_libraries(shttp-test ${OPENSSL_LIBRARIES})
 endif()

@@ -5,11 +5,12 @@ include(ExternalProject)
 #
 # get png
 #
-ExternalProject_Add(project_png
-    INSTALL_DIR ${COMMON_LOCAL}
-    URL http://sourceforge.net/projects/libpng/files/libpng16/1.6.23/libpng-1.6.23.tar.xz/download
-    SOURCE_DIR ${COMMON_LIB}/libpng-1.6.23
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+ExternalProject_Add(
+        project_png
+        INSTALL_DIR ${COMMON_LOCAL}
+        URL http://sourceforge.net/projects/libpng/files/libpng16/1.6.23/libpng-1.6.23.tar.xz/download
+        SOURCE_DIR ${COMMON_LIB}/libpng-1.6.23
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
 )
 ExternalProject_Get_Property(project_png install_dir)
 if(MAKE_SHARED_SIPI)

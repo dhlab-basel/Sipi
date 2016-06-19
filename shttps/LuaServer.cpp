@@ -44,7 +44,7 @@
 #include "ChunkReader.h"
 
 #include "sole.hpp"
-#include "cJSON.h"
+#include <jansson.h>
 
 using namespace std;
 using  ms = chrono::milliseconds;
@@ -1275,10 +1275,10 @@ namespace shttps {
     //=========================================================================
 
 
-    static cJSON *subtable(lua_State *L) {
+    static json_t *subtable(lua_State *L) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
-        cJSON *tableobj = NULL;
-        cJSON *arrayobj = NULL;
+        json_t *tableobj = NULL;
+        json_t *arrayobj = NULL;
         const char *skey;
         lua_pushnil(L);  /* first key */
         while (lua_next(L, 1) != 0) {
@@ -1292,7 +1292,7 @@ namespace shttps {
                     lua_error(L);
                 }
                 if (tableobj == NULL) {
-                    tableobj = cJSON_CreateObject();
+                    tableobj = json_object();
                 }
             }
             else if (lua_isinteger(L, -2)) {
@@ -1301,7 +1301,7 @@ namespace shttps {
                     lua_error(L);
                 }
                 if (arrayobj == NULL) {
-                    arrayobj = cJSON_CreateArray();
+                    arrayobj = json_array();
                 }
             }
             else {
@@ -1320,10 +1320,10 @@ namespace shttps {
                 // a number value
                 double val = lua_tonumber(L, -1);
                 if (tableobj != NULL) {
-                    cJSON_AddItemToObject(tableobj, skey, cJSON_CreateNumber(val));
+                    json_object_set_new(tableobj, skey, json_real(val));
                 }
                 else if (arrayobj != NULL) {
-                    cJSON_AddItemToArray(arrayobj, cJSON_CreateNumber(val));
+                    json_array_append_new(tableobj, json_real(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1334,10 +1334,10 @@ namespace shttps {
                 // a string value
                 const char *val = lua_tostring(L, -1);
                 if (tableobj != NULL) {
-                    cJSON_AddItemToObject(tableobj, skey, cJSON_CreateString(val));
+                    json_object_set_new(tableobj, skey, json_string(val));
                 }
                 else if (arrayobj != NULL) {
-                    cJSON_AddItemToArray(arrayobj, cJSON_CreateString(val));
+                    json_array_append_new(tableobj, json_string(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1348,10 +1348,10 @@ namespace shttps {
                 // a boolean value
                 bool val = lua_toboolean(L, -1);
                 if (tableobj != NULL) {
-                    cJSON_AddItemToObject(tableobj, skey, cJSON_CreateBool(val));
+                    json_object_set_new(tableobj, skey, json_boolean(val));
                 }
                 else if (arrayobj != NULL) {
-                    cJSON_AddItemToArray(arrayobj, cJSON_CreateBool(val));
+                    json_array_append_new(tableobj, json_boolean(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1360,10 +1360,10 @@ namespace shttps {
             }
             else if (lua_istable(L, -1)) {
                 if (tableobj != NULL) {
-                    cJSON_AddItemToObject(tableobj, skey, subtable(L));
+                    json_object_set_new(tableobj, skey, subtable(L));
                 }
                 else if (arrayobj != NULL) {
-                    cJSON_AddItemToArray(arrayobj, subtable(L));
+                    json_array_append_new(tableobj, subtable(L));
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1385,77 +1385,129 @@ namespace shttps {
     * LUA: jsonstr = server.table_to_json(table)
     */
     static int lua_table_to_json(lua_State *L) {
-        int top = lua_gettop(L);
-        if (top < 1) {
-            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
-            lua_error(L);
-            return 0;
-        }
-        if (!lua_istable(L, 1)) {
-            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
-            lua_error(L);
-            return 0;
-        }
+       int top = lua_gettop(L);
+       if (top < 1) {
+           lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
+           lua_error(L);
+           return 0;
+       }
+       if (!lua_istable(L, 1)) {
+           lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
+           lua_error(L);
+           return 0;
+       }
 
-        cJSON *root = subtable(L);
-        char *jsonstr = cJSON_Print(root);
-        lua_pushstring(L, jsonstr);
-        free(jsonstr);
-        return 1;
+       json_t *root = subtable(L);
+       char *jsonstr = json_dumps(root, JSON_INDENT(3));
+       lua_pushstring(L, jsonstr);
+       free(jsonstr);
+       json_decref(root);
+       return 1;
     }
     //=========================================================================
 
-    static void lua_jsonobj(lua_State *L, cJSON *subobj) {
+    //
+    // forward declaration is needed here
+    //
+    static void lua_jsonarr(lua_State *L, json_t *obj);
 
-        if ((subobj->type != cJSON_Object) && (subobj->type != cJSON_Array)) {
-            return;
-        }
+    static void lua_jsonobj(lua_State *L, json_t *obj) {
+        if (!json_is_object(obj)) return;
 
         lua_createtable(L, 0, 0);
 
-        cJSON *next = subobj->child;
-        int i = 0;
-        while (next != NULL) {
-            if (subobj->type == cJSON_Object) {
-                lua_pushstring(L, next->string); // index
-            }
-            else if (subobj->type == cJSON_Array) {
-                lua_pushinteger(L, i); // index
-            }
-            switch (next->type) {
-                case cJSON_False: {
-                    lua_pushboolean(L, false);
-                    break;
-                }
-                case cJSON_True: {
-                    lua_pushboolean(L, true);
-                    break;
-                }
-                case cJSON_NULL: {
+        const char *key;
+        json_t *value;
+        json_object_foreach(obj, key, value) {
+            lua_pushstring(L, key); // index
+            switch(json_typeof(value)) {
+                case JSON_NULL: {
                     lua_pushstring(L, "NIL"); // ToDo: we should create a custom Lua object named NULL!
                     break;
                 }
-                case cJSON_Number: {
-                    lua_pushnumber (L, next->valuedouble);
+                case JSON_FALSE: {
+                    lua_pushboolean(L, false);
                     break;
                 }
-                case cJSON_String: {
-                    lua_pushstring(L, next->valuestring);
+                case JSON_TRUE: {
+                    lua_pushboolean(L, true);
                     break;
                 }
-                case cJSON_Array:
-                case cJSON_Object: {
-                    lua_jsonobj(L, next);
+                case JSON_REAL: {
+                    lua_pushnumber(L, json_real_value(value));
+                    break;
+                }
+                case JSON_INTEGER: {
+                    lua_pushinteger(L, json_integer_value(value));
+                    break;
+                }
+                case JSON_STRING: {
+                    lua_pushstring(L, json_string_value(value));
+                    break;
+                }
+                case JSON_ARRAY: {
+                    lua_jsonarr(L, value);
+                    break;
+                }
+                case JSON_OBJECT: {
+                    lua_jsonobj(L, value);
                     break;
                 }
             }
-            lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
-
-            next = next->next;
-            i++;
+            lua_rawset(L, -3);
         }
     }
     //=========================================================================
+
+
+    static void lua_jsonarr(lua_State *L, json_t *arr) {
+        if (!json_is_array(arr)) return;
+
+        lua_createtable(L, 0, 0);
+
+        size_t index;
+        json_t *value;
+        json_array_foreach(arr, index, value) {
+            lua_pushinteger(L, index);
+            switch(json_typeof(value)) {
+                case JSON_NULL: {
+                    lua_pushstring(L, "NIL"); // ToDo: we should create a custom Lua object named NULL!
+                    break;
+                }
+                case JSON_FALSE: {
+                    lua_pushboolean(L, false);
+                    break;
+                }
+                case JSON_TRUE: {
+                    lua_pushboolean(L, true);
+                    break;
+                }
+                case JSON_REAL: {
+                    lua_pushnumber(L, json_real_value(value));
+                    break;
+                }
+                case JSON_INTEGER: {
+                    lua_pushinteger(L, json_integer_value(value));
+                    break;
+                }
+                case JSON_STRING: {
+                    lua_pushstring(L, json_string_value(value));
+                    break;
+                }
+                case JSON_ARRAY: {
+                    lua_jsonarr(L, value);
+                    break;
+                }
+                case JSON_OBJECT: {
+                    lua_jsonobj(L, value);
+                    break;
+                }
+            }
+            lua_rawset(L, -3);
+        }
+    }
+    //=========================================================================
+
 
     /*!
      * Converts a json string into a possibly nested Lua table
@@ -1475,18 +1527,21 @@ namespace shttps {
         }
 
         const char *jsonstr = lua_tostring(L, 1);
+        json_error_t jsonerror;
 
-        cJSON *jsonobj = cJSON_Parse(jsonstr);
+        json_t *jsonobj = json_loads(jsonstr, JSON_REJECT_DUPLICATES, &jsonerror);
+
         if (jsonobj == NULL) {
-            const char *errmsg = cJSON_GetErrorPtr();
             stringstream ss;
-            ss <<  "'server.json_to_table(jsonstr)': Error parsing JSON: " << errmsg;
+            ss << "'server.json_to_table(jsonstr)': Error parsing JSON: " << jsonerror.text << endl;
+            ss << "JSON-source: " << jsonerror.source << endl;
+            ss << "Line: " << jsonerror.line << " Column: " << jsonerror.column << " Pos: " << jsonerror.position << endl;
             lua_pushstring(L, ss.str().c_str());
             lua_error(L);
             return 0;
         }
         lua_jsonobj(L, jsonobj);
-        cJSON_Delete(jsonobj);
+        json_decref(jsonobj);
 
         return 1;
     }

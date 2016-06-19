@@ -49,7 +49,7 @@
 #include "SipiHttpServer.h"
 #include "Connection.h"
 
-#include "shttps/cJSON.h"
+#include "jansson.h"
 #include "favicon.h"
 
 #include "spdlog/spdlog.h"  // logging...
@@ -292,47 +292,53 @@ namespace Sipi {
             conobj.header("Content-Type", "application/json");
             conobj.header("Link", "<http://iiif.io/api/image/2/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         }
-        cJSON *root = cJSON_CreateObject();
+        json_t *root = json_object();
 
-        cJSON_AddItemToObject(root, "@context", cJSON_CreateString("http://iiif.io/api/image/2/context.json"));
+        json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/2/context.json"));
 
         std::string host = conobj.header("host");
         std::string id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier]; //// ?????????????????????????????????????
-        cJSON_AddItemToObject(root, "@id", cJSON_CreateString(id.c_str()));
+        json_object_set_new(root, "@id", json_string(id.c_str()));
 
-        cJSON_AddItemToObject(root, "protocol", cJSON_CreateString("http://iiif.io/api/image"));
+        json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
         Sipi::SipiImage img;
         int width, height;
         img.getDim(infile, width, height);
-        cJSON_AddItemToObject(root, "width", cJSON_CreateNumber(width));
-        cJSON_AddItemToObject(root, "height", cJSON_CreateNumber(height));
+        json_object_set_new(root, "width", json_integer(width));
+        json_object_set_new(root, "height", json_integer(height));
 
-        cJSON *sizes = cJSON_CreateArray();
+        json_t *sizes = json_array();
         for (int i = 1; i < 5; i++) {
             SipiSize size(i);
             int w, h, r;
             bool ro;
             size.get_size(width, height, w, h, r, ro);
             if ((w < 128) && (h < 128)) break;
-            cJSON *sobj = cJSON_CreateObject();
-            cJSON_AddItemToObject(sobj, "width", cJSON_CreateNumber(w));
-            cJSON_AddItemToObject(sobj, "height", cJSON_CreateNumber(h));
-            cJSON_AddItemToArray(sizes, sobj);
+            json_t *sobj = json_object();
+            json_object_set_new(sobj, "width", json_integer(w));
+            json_object_set_new(sobj, "height", json_integer(h));
+            json_array_append_new(sizes, sobj);
         }
-        cJSON_AddItemToObject(root, "sizes", sizes);
+        json_object_set_new(root, "sizes", sizes);
 
-        cJSON *profile_arr = cJSON_CreateArray();
-        cJSON_AddItemToArray(profile_arr, cJSON_CreateString("http://iiif.io/api/image/2/level2.json"));
-        cJSON *profile = cJSON_CreateObject();
+        json_t *profile_arr = json_array();
+        json_array_append_new(profile_arr, json_string("http://iiif.io/api/image/2/level2.json"));
+        json_t *profile = json_object();
 
         const char * formats_str[] = {"tif", "jpg", "png", "jp2"};
-        cJSON *formats = cJSON_CreateStringArray(formats_str, sizeof(formats_str)/sizeof(char*));
-        cJSON_AddItemToObject(profile, "formats", formats);
+        json_t *formats = json_array();
+        for (int i = 0; i < sizeof(formats_str)/sizeof(char*); i++) {
+            json_array_append_new(formats, json_string(formats_str[i]));
+        }
+        json_object_set_new(profile, "formats", formats);
 
-        const char * qualities_str[] = {"color", "gray"};
-        cJSON *qualities = cJSON_CreateStringArray(qualities_str, sizeof(qualities_str)/sizeof(char*));
-        cJSON_AddItemToObject(profile, "qualities", qualities);
+        const char *qualities_str[] = {"color", "gray"};
+        json_t *qualities = json_array();
+        for (int i = 0; i < sizeof(qualities_str)/sizeof(char*); i++) {
+            json_array_append_new(qualities, json_string(qualities_str[i]));
+        }
+        json_object_set_new(profile, "qualities", qualities);
 
         const char * supports_str[] = {
             "color",
@@ -351,21 +357,24 @@ namespace Sipi {
             "sizeByW",
             "sizeByWh"
         };
-        cJSON *supports = cJSON_CreateStringArray(supports_str, sizeof(supports_str)/sizeof(char*));
-        cJSON_AddItemToObject(profile, "supports", supports);
+        json_t *supports = json_array();
+        for (int i = 0; i < sizeof(supports_str)/sizeof(char*); i++) {
+            json_array_append_new(supports, json_string(supports_str[i]));
+        }
+        json_object_set_new(profile, "supports", supports);
 
-        cJSON_AddItemToArray(profile_arr, profile);
+        json_array_append_new(profile_arr, profile);
 
-        cJSON_AddItemToObject(root, "profile", profile_arr);
+        json_object_set_new(root, "profile", profile_arr);
 
-        char *json_str = cJSON_Print(root);
+        char *json_str = json_dumps(root, JSON_INDENT(3));
 
         conobj.sendAndFlush(json_str, strlen(json_str));
 
         free (json_str);
 
         //TODO and all the other CJSON obj?
-        cJSON_Delete(root);
+        json_decref(root);
 
         logger->info("info.json created from: ") << infile;
     }

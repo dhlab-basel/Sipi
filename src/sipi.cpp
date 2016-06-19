@@ -38,7 +38,7 @@
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
 
-#include "shttps/cJSON.h"
+#include "jansson.h"
 #include "shttps/GetMimetype.h"
 #include "SipiConf.h"
 
@@ -129,14 +129,14 @@ static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCod
     conobj.status(code);
     conobj.header("Content-Type", "application/json");
 
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "status", cJSON_CreateNumber(1));
-    cJSON_AddItemToObject(root, "message", cJSON_CreateString(msg.c_str()));
+    json_t *root = json_object();
+    json_object_set_new(root, "status", json_integer(1));
+    json_object_set_new(root, "message", json_string(msg.c_str()));
 
-    char *json_str = cJSON_Print(root);
+    char *json_str = json_dumps(root, JSON_INDENT(3));
     conobj << json_str << shttps::Connection::flush_data;
     free (json_str);
-    cJSON_Delete(root);
+    json_decref(root);
 }
 //=========================================================================
 
@@ -146,15 +146,15 @@ static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCod
     conobj.status(code);
     conobj.header("Content-Type", "application/json");
 
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "status", cJSON_CreateNumber(1));
+    json_t *root = json_object();
+    json_object_set_new(root, "status", json_integer(1));
     std::stringstream ss;
     ss << err;
-	cJSON_AddItemToObject(root, "message", cJSON_CreateString(ss.str().c_str()));
-    char *json_str = cJSON_Print(root);
+    json_object_set_new(root, "message", json_string(ss.str().c_str()));
+    char *json_str = json_dumps(root, JSON_INDENT(3));
     conobj << json_str << shttps::Connection::flush_data;
     free (json_str);
-    cJSON_Delete(root);
+    json_decref(root);
 }
 //=========================================================================
 
