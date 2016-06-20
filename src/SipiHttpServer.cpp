@@ -257,7 +257,7 @@ namespace Sipi {
                 qualifier = permission.substr(pos + 1);
                 permission = permission.substr(0, pos);
             }
-            if (permission != "view") {
+            if (permission != "allow") {
                 if (permission == "restricted") {
                     cerr << "Qualifier=" << qualifier << endl;
                 }

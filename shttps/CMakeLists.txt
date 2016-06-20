@@ -144,6 +144,7 @@ add_library(
         LuaServer.cpp LuaServer.h
         GetMimetype.cpp GetMimetype.h
         Server.cpp Server.h
+        jwt.c jwt.h
 )
 
 add_library(shttp STATIC $<TARGET_OBJECTS:shttpobj>)

@@ -44,6 +44,11 @@
 #include "ChunkReader.h"
 
 #include "sole.hpp"
+
+#ifdef SHTTPS_ENABLE_SSL
+#include "jwt.h"
+#endif
+
 #include <jansson.h>
 
 using namespace std;
@@ -1644,6 +1649,31 @@ namespace shttps {
         return 0;
     }
     //=========================================================================
+
+
+#ifdef SHTTPS_ENABLE_SSL
+    //
+    // reserved claims (IntDate: The number of seconds from 1970-01-01T0:0:0Z):
+    // - iss (string => StringOrURI) OPT: principal that issued the JWT.
+    // - exp (number => IntDate) OPT: expiration time on or after which the token
+    //   MUST NOT be accepted for processing.
+    // - nbf  (number => IntDate) OPT: identifies the time before which the token
+    //   MUST NOT be accepted for processing.
+    // - iat (number => IntDate) OPT: identifies the time at which the JWT was issued.
+    // - aud (string => StringOrURI) OPT: identifies the audience that the JWT is intended for.
+    //   The audience value is a string -- typically, the base address of the resource
+    //   being accessed, such as "https://contoso.com"
+    // - prn (string => StringOrURI) OPT: identifies the subject of the JWT.
+    // - jti (string => String) OPT: provides a unique identifier for the JWT.
+    //
+    // The following SIPI/Knora claims are supported
+    //
+    static int lua_generate_jwt(lua_State *L) {
+                int top = lua_gettop(L);
+
+    }
+    //=========================================================================
+#endif
 
     /*!
      * This function registers all variables and functions in the server table
