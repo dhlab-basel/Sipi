@@ -478,6 +478,15 @@ namespace shttps {
                             (void) ckrd.readAll(&bodybuf);
                         }
                         else {
+                            if ((bodybuf = (char *) malloc((content_length + 1)*sizeof(char))) == NULL) {
+                                throw Error(__file__, __LINE__, "malloc failed!", errno);
+                            }
+                            ins->read(bodybuf, content_length);
+                            if (ins->fail() ||ins->eof()) {
+                                free(bodybuf);
+                                throw -1;
+                            }
+                            bodybuf[content_length] = '\0';
                         }
                         string body = bodybuf;
                         post_params = parse_query_string(body, true);
