@@ -1596,6 +1596,118 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Adds Set-Cookie header field
+     * LUA: server.sendCookie(name, value [, options-table])
+     * options-table: {
+     *    path = "path allowd",
+     *    domain = "domain allowed",
+     *    expires = seconds,
+     *    secure = true | false,
+     *    http_only = true | false
+     * }
+     */
+    static int lua_send_cookie(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+
+        int top = lua_gettop(L);
+
+        if ((top < 2) || (top > 3)) {
+            lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid number of parameters!");
+            lua_error(L);
+            return 0;
+        }
+        const char *ckey = lua_tostring(L, 1);
+        const char *cval = lua_tostring(L, 2);
+
+        Cookie cookie(ckey, cval);
+
+        if (top == 3) {
+            if (!lua_istable(L, 3)) {
+                lua_pushstring(L, "'server.sendCookie(name, value[, options])': options is not a lua-table!");
+                lua_error(L);
+                return 0;
+            }
+            lua_pushnil(L);  /* first key */
+            while (lua_next(L, 3) != 0) {
+                // key is at index -2
+                // value is at index -1
+                try {
+                    string optname;
+                    if (lua_isstring(L, -2)) {
+                        // we have a string as key
+                        optname = lua_tostring(L, -2);
+                    }
+                    else {
+                        throw (1);
+                    }
+                    if (optname == "path") {
+                        if (lua_isstring(L, -1)) {
+                            string path = lua_tostring(L, -1);
+                            cookie.path(path);
+                        }
+                        else {
+                            throw (1);
+                        }
+                    }
+                    else if (optname == "domain") {
+                        if (lua_isstring(L, -1)) {
+                            string domain = lua_tostring(L, -1);
+                            cookie.domain(domain);
+                        }
+                        else {
+                            throw (1);
+                        }
+                    }
+                    else if (optname == "expires") {
+                        if (lua_isinteger(L, -1)) {
+                            int expires = lua_tointeger(L, -1);
+                            cookie.expires(expires);
+                        }
+                        else {
+                            throw (1);
+                        }
+                    }
+                    else if (optname == "secure") {
+                        if (lua_isboolean(L, -1)) {
+                            bool secure = lua_toboolean(L, -1);
+                            if (secure) cookie.secure(secure);
+                        }
+                        else {
+                            throw (1);
+                        }
+                    }
+                    else if (optname == "http_only") {
+                        if (lua_isboolean(L, -1)) {
+                            bool http_only = lua_toboolean(L, -1);
+                            if (http_only) cookie.httpOnly(http_only);
+                        }
+                        else {
+                            throw (1);
+                        }
+                    }
+                    else {
+
+                    }
+                }
+                catch (int err) {
+                    lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid options!");
+                    lua_error(L);
+                    return 0;
+                }
+                lua_pop(L, 1);
+            }
+        }
+        lua_pop(L, top);
+
+        conn->cookies(cookie);
+
+        return 0;
+    }
+    //=========================================================================
+
     static int lua_send_status(lua_State *L) {
         lua_getglobal(L, luaconnection);
         Connection *conn = (Connection *) lua_touserdata(L, -1);
@@ -1651,6 +1763,7 @@ namespace shttps {
     //=========================================================================
 
 
+
 #ifdef SHTTPS_ENABLE_SSL
     //
     // reserved claims (IntDate: The number of seconds from 1970-01-01T0:0:0Z):
@@ -1669,8 +1782,33 @@ namespace shttps {
     // The following SIPI/Knora claims are supported
     //
     static int lua_generate_jwt(lua_State *L) {
-                int top = lua_gettop(L);
+        jwt_t *jwt;
+        int top = lua_gettop(L);
+        if (top < 1) {
+            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
+            lua_error(L);
+            return 0;
+        }
+        if (!lua_istable(L, 1)) {
+            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
+            lua_error(L);
+            return 0;
+        }
 
+        json_t *root = subtable(L);
+        char *jsonstr = json_dumps(root, JSON_INDENT(3));
+
+        if (jwt_new(&jwt) != 0) {
+            //error!!
+        }
+        jwt_set_alg(jwt, JWT_ALG_HS256, (unsigned char *) "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456", 32);
+        jwt_add_grants_json(jwt, jsonstr);
+
+        char *token = jwt_encode_str(jwt);
+
+        lua_pushstring(L, token);
+
+        return 1;
     }
     //=========================================================================
 #endif
@@ -1679,7 +1817,7 @@ namespace shttps {
      * This function registers all variables and functions in the server table
      */
     void LuaServer::createGlobals(Connection &conn) {
-        lua_createtable(L, 0, 24); // table1
+        lua_createtable(L, 0, 32); // table1
         //lua_newtable(L); // table1
 
         Connection::HttpMethod method = conn.method();
@@ -1735,6 +1873,17 @@ namespace shttps {
             lua_pushstring(L,
                            conn.header(headers[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
             lua_rawset(L, -3); // table1 - "index_L1" - table2
+        }
+        lua_rawset(L, -3); // table1
+
+        std::map<std::string,std::string> cookies = conn.cookies();
+        lua_pushstring(L, "cookies"); // table1 - "index_L1"
+        lua_createtable(L, 0, cookies.size()); // table1 - "index_L1" - table2
+        for (auto cookie : cookies) {
+            cerr << "++++++>" << cookie.first << "--" << cookie.second << endl;
+            lua_pushstring(L, cookie.first.c_str());
+            lua_pushstring(L, cookie.second.c_str());
+            lua_rawset(L, -3);
         }
         lua_rawset(L, -3); // table1
 
@@ -1873,6 +2022,11 @@ namespace shttps {
         lua_pushcfunction(L, lua_send_header); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
+
+        lua_pushstring(L, "sendCookie"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_send_cookie); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
         lua_pushstring(L, "copyTmpfile"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_copytmpfile); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
@@ -1893,6 +2047,12 @@ namespace shttps {
         lua_pushcfunction(L, lua_require_auth); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
+#ifdef SHTTPS_ENABLE_SSL
+        lua_pushstring(L, "generate_jwt"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_generate_jwt); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+#endif
         lua_setglobal(L, servertablename);
 
         lua_pushlightuserdata(L, &conn);

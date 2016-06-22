@@ -112,6 +112,44 @@ namespace shttps {
      */
     inline void asciitoupper(std::string &str) { std::transform(str.begin(), str.end(), str.begin(), ::toupper); }
 
+    class Cookie {
+    private:
+        std::string _name;
+        std::string _value;
+        std::string _path;
+        std::string _domain;
+        std::string _expires;
+        bool _secure;
+        bool _http_only;
+    public:
+        inline Cookie(const std::string &name_p, const std::string value_p) : _name(name_p), _value(value_p) {}
+        inline std::string name(void) const { return _name; }
+        inline void name(const std::string &name_p) { _name = name_p; }
+
+        inline std::string value(void) const { return _value; }
+        inline void value(const std::string &value_p) { _value = value_p; }
+
+        inline std::string path(void) const { return _path; }
+        inline void path(const std::string &path_p) { _path = path_p; }
+
+        inline std::string domain(void) const { return _domain; }
+        inline void domain(const std::string &domain_p) { _domain = domain_p; }
+
+        inline std::string expires(void) const { return _expires; }
+        inline void expires(int seconds_from_now = 0) {
+            char buf[100];
+            time_t now = time(0);
+            now += seconds_from_now;
+            struct tm tm = *gmtime(&now);
+            strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+            _expires = buf;
+        }
+        inline bool secure(void) const { return _secure; }
+        inline void secure(bool secure_p) { _secure = secure_p; }
+        inline bool httpOnly(void) const {return _http_only; }
+        inline void httpOnly(bool http_only_p) { _http_only = http_only_p; }
+    };
+
    /*!
     * For each request, the server creates a new instance of this class which is then passed
     * to the user supplied handler. It implements the basic features of the HTTP protocol
@@ -243,6 +281,7 @@ namespace shttps {
         std::map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
         std::map<std::string,std::string> header_in;      //!< Input header fields
         std::map<std::string,std::string> header_out;     //!< Output header fields
+        std::map<std::string,std::string> _cookies;        //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
         std::string _tmpdir;        //!< directory used to temporary storage of files (e.g. uploads)
         StatusCodes status_code;    //!< Status code of response
@@ -366,11 +405,12 @@ namespace shttps {
         * Set the secure connection status
         */
         inline void secure(bool sec) { _secure = sec; }
+
        /*!
-         * Get the request URI
-         *
-         * \returns std::string containig the hostname given
-         */
+        * Get the request URI
+        *
+        * \returns std::string containig the hostname given
+        */
         inline std::string host() { return _host; }
 
         /*!
@@ -469,6 +509,19 @@ namespace shttps {
         void corsHeader(const std::string &origin);
 
        /*!
+        * Returns a map of cookies
+        */
+        inline std::map<std::string,std::string> cookies (void) { return _cookies; };
+
+       /*!
+        * Set a cookie
+        *
+        * \param[in] cookie_p An instance of the cookie data
+        */
+        void cookies(const Cookie &cookie_p);
+
+
+       /*!
         * Get the directory for temporary files
         *
         * \returns path of temporary directory
@@ -481,6 +534,7 @@ namespace shttps {
         * \param[in] tmpdir_p String with the path to the directory to be used for temporary uploads
         */
         inline void tmpdir(const std::string &tmpdir_p) { _tmpdir = tmpdir_p; }
+
        /*!
         * Return a list of the get parameter names
         *

@@ -1,5 +1,11 @@
 <lua>
 
+
+if server.cookies['sipi'] then
+    intoken = server.cookies['sipi']
+    print('INTOKEN=', intoken)
+end
+
 auth = server.requireAuth()
 
 if auth.status == 'OK' then
@@ -12,8 +18,19 @@ elseif auth.status == 'NOAUTH' then
     return -1
 else
     server.status(401)
-    server.header('WWW-Authenticate', 'Basic realm="SIPI"')
+    server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
 end
+
+tokendata = {
+    iss = "sipi.unibas.ch",
+    aud = "knora.org",
+    user = username
+}
+token = server.generate_jwt(tokendata)
+print("NEW TOKEN=", token)
+
+server.sendCookie('sipi', token, {path = '/', expires = 3600})
+
 
 </lua>
 <html>

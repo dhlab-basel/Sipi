@@ -93,7 +93,7 @@ namespace shttps {
         vector<string> params;
         size_t pos = 0;
         size_t old_pos = 0;
-        while ((pos = options.find(';', pos)) != string::npos) {
+        while ((pos = options.find(sep, pos)) != string::npos) {
             pos++;
             if (pos == 1) { // if first char is a token skip it!
                 old_pos = pos;
@@ -286,6 +286,7 @@ namespace shttps {
                 asciitolower(name);
                 string value = line.substr(pos + 1);
                 value = header_in[name] = trim(value);
+                cerr << name << "<::::>" << value << endl;
                 if (name == "connection") {
                     map<string,string> opts = parse_header_options(value, true);
                     if (opts.count("keep-alive") == 1) {
@@ -294,6 +295,10 @@ namespace shttps {
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
+                }
+                else if (name == "cookie") {
+                    _cookies = parse_header_options(value, true);
+
                 }
                 else if (name == "keep-alive") {
                     map<string,string> opts = parse_header_options(value, true, ',');
@@ -942,6 +947,19 @@ namespace shttps {
         header_out[name] = value;
     }
     //=============================================================================
+
+
+    void Connection::cookies(const Cookie &cookie_p) {
+        string str = cookie_p.name() + "=" + cookie_p.value();
+        if (!cookie_p.path().empty()) str += "; Path=" + cookie_p.path();
+        if (!cookie_p.domain().empty()) str += "; Domain=" + cookie_p.domain();
+        if (!cookie_p.expires().empty()) str += "; Expires=" +cookie_p.expires();
+        if (cookie_p.secure()) str += "; Secure";
+        if (cookie_p.httpOnly()) str += "; HttpOnly";
+        header("Set-Cookie", str);
+    }
+    //=============================================================================
+
 
     void Connection::corsHeader(const char *origin)
     {
