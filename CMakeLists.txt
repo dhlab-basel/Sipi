@@ -303,7 +303,7 @@ add_dependencies(exiv2 project_exiv2)
 #
 ExternalProject_Add(project_png
     INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://sourceforge.net/projects/libpng/files/libpng16/1.6.20/libpng-1.6.20.tar.gz/download
+    URL http://sourceforge.net/projects/libpng/files/libpng16/older-releases/1.6.20/libpng-1.6.20.tar.gz/download
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libpng-1.6.20
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
 )
