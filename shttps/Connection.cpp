@@ -286,7 +286,6 @@ namespace shttps {
                 asciitolower(name);
                 string value = line.substr(pos + 1);
                 value = header_in[name] = trim(value);
-                cerr << name << "<::::>" << value << endl;
                 if (name == "connection") {
                     map<string,string> opts = parse_header_options(value, true);
                     if (opts.count("keep-alive") == 1) {

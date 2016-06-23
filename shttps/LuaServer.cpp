@@ -1782,6 +1782,10 @@ namespace shttps {
     // The following SIPI/Knora claims are supported
     //
     static int lua_generate_jwt(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+
         jwt_t *jwt;
         int top = lua_gettop(L);
         if (top < 1) {
@@ -1801,7 +1805,7 @@ namespace shttps {
         if (jwt_new(&jwt) != 0) {
             //error!!
         }
-        jwt_set_alg(jwt, JWT_ALG_HS256, (unsigned char *) "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456", 32);
+        jwt_set_alg(jwt, JWT_ALG_HS256, (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size());
         jwt_add_grants_json(jwt, jsonstr);
 
         char *token = jwt_encode_str(jwt);
@@ -1811,6 +1815,50 @@ namespace shttps {
         return 1;
     }
     //=========================================================================
+
+    static int lua_decode_jwt(lua_State *L) {
+
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+
+        int top = lua_gettop(L);
+        if (top != 1) {
+            lua_pushstring(L, "'server.decode_jwt(token)': error in parameter list!");
+            lua_error(L);
+            return 0;
+        }
+
+        string token = lua_tostring(L, 1);
+        lua_pop(L, 1);
+
+        jwt_t *jwt;
+
+        if (jwt_decode(&jwt, token.c_str(), (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size()) != 0) {
+            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token!");
+            lua_error(L);
+            return 0;
+        }
+        char *tokendata;
+        if ((tokendata = jwt_dump_str(jwt, false)) == NULL) {
+            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token!");
+            lua_error(L);
+            return 0;
+        }
+        string tokenstr = tokendata;
+        free(tokendata);
+        size_t pos = tokenstr.find(".");
+        string jsonstr = tokenstr.substr(pos + 1);
+
+        json_error_t jsonerror;
+        json_t *jsonobj = json_loads(jsonstr.c_str(), JSON_REJECT_DUPLICATES, &jsonerror);
+
+        lua_jsonobj(L, jsonobj);
+        json_decref(jsonobj);
+
+        return 1;
+    }
+
 #endif
 
     /*!
@@ -1880,7 +1928,6 @@ namespace shttps {
         lua_pushstring(L, "cookies"); // table1 - "index_L1"
         lua_createtable(L, 0, cookies.size()); // table1 - "index_L1" - table2
         for (auto cookie : cookies) {
-            cerr << "++++++>" << cookie.first << "--" << cookie.second << endl;
             lua_pushstring(L, cookie.first.c_str());
             lua_pushstring(L, cookie.second.c_str());
             lua_rawset(L, -3);
@@ -2048,11 +2095,17 @@ namespace shttps {
         lua_rawset(L, -3); // table1
 
 #ifdef SHTTPS_ENABLE_SSL
+
         lua_pushstring(L, "generate_jwt"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_generate_jwt); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1 lua_decode_jwt
+
+        lua_pushstring(L, "decode_jwt"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_decode_jwt); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
 #endif
+
         lua_setglobal(L, servertablename);
 
         lua_pushlightuserdata(L, &conn);

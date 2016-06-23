@@ -60,6 +60,11 @@ shttps = {
     ssl_key = './certificate/key.pem',
 
     --
+    -- The secret for generating JWT's (JSON Web Tokens)
+    --
+    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
+    --            12345678901234567890123456789012
+    --
     -- Path to the scripts directory, where Lua-scripts are used to process requests using
     -- given routes
     --

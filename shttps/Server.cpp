@@ -412,6 +412,7 @@ namespace shttps {
         _logger = spdlog::rotating_logger_mt(loggername, logfile_p, 1048576 * 5, 3, true);
 
         spdlog::set_level(spdlog::level::debug);
+
 #ifdef SHTTPS_ENABLE_SSL
         SSL_load_error_strings();
         SSL_library_init();
@@ -421,6 +422,18 @@ namespace shttps {
     }
     //=========================================================================
 
+#ifdef SHTTPS_ENABLE_SSL
+    void Server::jwt_secret(const string &jwt_secret_p) {
+        _jwt_secret = jwt_secret_p;
+        int l;
+        if ((l = _jwt_secret.size()) < 32) {
+            for (int i = 0; i < (32 - l); i++) {
+            _jwt_secret.push_back('A' + i);
+            }
+        }
+    }
+    //=========================================================================
+#endif
 
     RequestHandler Server::getHandler(Connection &conn, void **handler_data_p)
     {

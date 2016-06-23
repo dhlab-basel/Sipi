@@ -165,6 +165,7 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
         std::string _ssl_certificate; //!< Path to SSL certificate
         std::string _ssl_key; //!< Path to SSL certificate
+        std::string _jwt_secret;
 #endif
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
@@ -195,19 +196,65 @@ namespace shttps {
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
         Server(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "shttps.log");
+
 #ifdef SHTTPS_ENABLE_SSL
+
+        /*!
+         * Sets the port number for the SSL socket
+         *
+         * \param[in] ssl_port_p Port number
+         */
         inline void ssl_port(int ssl_port_p) { _ssl_port = ssl_port_p; }
 
+        /*!
+         * Gets the port number of the SSL socket
+         *
+         * \returns SSL socket portnumber
+         */
         inline int ssl_port(void) { return _ssl_port; }
 
+        /*!
+         * Sets the file path to the SSL certficate necessary for OpenSSL to work
+         *
+         * \param[in] path File path to th SSL certificate
+         */
         inline void ssl_certificate(const std::string &path) { _ssl_certificate = path; }
 
+        /*!
+         * Returns the path of the SSL certificate
+         *
+         * \returns Path to the SSL certificate
+         */
         inline std::string ssl_certificate(void) { return _ssl_certificate; }
 
+        /*!
+         * Sets the path to the SSP key
+         *
+         * \param[in] path Path to the SSL key necessary for OpenSSL to work
+         */
         inline void ssl_key(const std::string &path) { _ssl_key = path; }
 
+        /*!
+         * Returns the path of the OpenSSL key
+         *
+         * \returns Path to the OpenSSL key
+         */
         inline std::string ssl_key(void) { return _ssl_key; }
 
+        /*!
+         * Sets the secret for the generation JWT's (JSON Web Token). It must be a string
+         * of length 32, since we're using currently SHA256 encoding.
+         *
+         * \param[in] jwt_secret_p String with 32 characters for the key for JWT's
+         */
+        void jwt_secret(const std::string &jwt_secret_p);
+
+        /*!
+         * Returns the secret used for JWT's
+         *
+         * \returns String of length 32 with the secret used for JWT's
+         */
+        inline std::string jwt_secret(void) { return _jwt_secret; }
 #endif
         /*!
          * Returns the maximum number of parallel threads allowed

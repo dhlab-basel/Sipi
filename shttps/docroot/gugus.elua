@@ -3,7 +3,11 @@
 
 if server.cookies['sipi'] then
     intoken = server.cookies['sipi']
-    print('INTOKEN=', intoken)
+    jwt = server.decode_jwt(intoken)
+    for k,v in pairs(jwt) do
+       print(k, " : ", v)
+    end
+
 end
 
 auth = server.requireAuth()
@@ -27,7 +31,6 @@ tokendata = {
     user = username
 }
 token = server.generate_jwt(tokendata)
-print("NEW TOKEN=", token)
 
 server.sendCookie('sipi', token, {path = '/', expires = 3600})
 

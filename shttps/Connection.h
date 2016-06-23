@@ -112,6 +112,9 @@ namespace shttps {
      */
     inline void asciitoupper(std::string &str) { std::transform(str.begin(), str.end(), str.begin(), ::toupper); }
 
+    /*!
+     * This is a class used to represent the possible options of a HTTP cookie
+     */
     class Cookie {
     private:
         std::string _name;
@@ -122,8 +125,24 @@ namespace shttps {
         bool _secure;
         bool _http_only;
     public:
+        /*!
+         * Constructor of the cookie class
+         *
+         * \param[in] name_p Name of the cookie
+         * \param[in] value_p Value of the Cookie
+         */
         inline Cookie(const std::string &name_p, const std::string value_p) : _name(name_p), _value(value_p) {}
+
+        /*!
+         * Getter for the name
+         */
         inline std::string name(void) const { return _name; }
+
+        /*!
+         * Setter for the name
+         *
+         * \param[in] name_p Name of the Cookie
+         */
         inline void name(const std::string &name_p) { _name = name_p; }
 
         inline std::string value(void) const { return _value; }
@@ -269,8 +288,8 @@ namespace shttps {
 
     private:
         Server *_server;          //!< Pointer to the server class
-        std::string _peer_ip;           //!< IP number of client (peer)
-        int _peer_port;            //!< Port of peer/client
+        std::string _peer_ip;     //!< IP number of client (peer)
+        int _peer_port;           //!< Port of peer/client
         std::string http_version; //!< Holds the HTTP version of the request
         bool _secure;             //!< true if SSL used
         HttpMethod _method;       //!< request method
@@ -281,7 +300,7 @@ namespace shttps {
         std::map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
         std::map<std::string,std::string> header_in;      //!< Input header fields
         std::map<std::string,std::string> header_out;     //!< Output header fields
-        std::map<std::string,std::string> _cookies;        //!< Incoming cookies
+        std::map<std::string,std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
         std::string _tmpdir;        //!< directory used to temporary storage of files (e.g. uploads)
         StatusCodes status_code;    //!< Status code of response
