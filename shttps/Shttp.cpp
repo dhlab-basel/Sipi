@@ -122,6 +122,7 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
 
 
 int main(int argc, char *argv[]) {
+    std::string userid;
     int port = 4711;
     int ssl_port = -1;
 #ifdef SHTTPS_ENABLE_SSL
@@ -178,6 +179,7 @@ int main(int argc, char *argv[]) {
     if (!configfile.empty()) {
         try {
             shttps::LuaServer luacfg = shttps::LuaServer(configfile);
+            userid = luacfg.configString("shttps", "userid", "");
             port = luacfg.configInteger("shttps", "port", 4711);
 #ifdef SHTTPS_ENABLE_SSL
             ssl_port = luacfg.configInteger("shttps", "ssl_port", -1);

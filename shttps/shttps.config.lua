@@ -22,6 +22,11 @@
 --
 shttps = {
     --
+    -- user under which the sipi server should run. Don't set (comment out) this configuration variable
+    -- if SIPI should use the user which launches SIPI.
+    userid = '_www',
+
+    --
     -- The path to the root of the documents (.elua, .lua, image files etc.)
     docroot = './docroot',
 
@@ -64,6 +69,8 @@ shttps = {
     --
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
+
+
     --
     -- Path to the scripts directory, where Lua-scripts are used to process requests using
     -- given routes

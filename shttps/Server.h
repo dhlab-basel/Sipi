@@ -158,6 +158,8 @@ namespace shttps {
     public:
 
     private:
+        int _userid; //!< real user id the server should run under
+        int _groupid; //!< real group id the server should use
         int port; //!< listening Port for server
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
@@ -256,6 +258,25 @@ namespace shttps {
          */
         inline std::string jwt_secret(void) { return _jwt_secret; }
 #endif
+
+        /*!
+         * Get the userid the server should use
+         */
+        inline uid_t userid(void) { return _userid; }
+
+        /*!
+         * set the numeric user id the server should use
+         *
+         * \param[in] uid The numner user id
+         */
+        inline void userid(uid_t uid) { _userid = uid; }
+
+
+        /*!
+         *
+         */
+        void userid(std:string username);
+
         /*!
          * Returns the maximum number of parallel threads allowed
          *

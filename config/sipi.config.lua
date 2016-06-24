@@ -21,6 +21,12 @@
 --
 sipi = {
     --
+    -- user under which the sipi server should run. Don't set (comment out) this configuration variable
+    -- if SIPI should use the user which launches SIPI!
+    --
+    userid = '_www',
+
+    --
     -- port number the server is listening to
     --
     port = 1024,
@@ -99,6 +105,13 @@ sipi = {
     -- If compiled with SSL support, the path to the key file (see above to create)
     --
     ssl_key = './certificate/key.pem',
+
+
+    --
+    -- The secret for generating JWT's (JSON Web Tokens)
+    --
+    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
+    --            12345678901234567890123456789012
 
 
 }

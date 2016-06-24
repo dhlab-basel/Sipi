@@ -32,6 +32,9 @@
 #include <cstring>      // Needed for memset
 #include <utility>
 
+#include <sys/types.h>
+#include <sys/select.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
@@ -39,9 +42,9 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/select.h>
-#include <sys/stat.h>
 #include <pthread.h>
+#include <pwd.h>
+
 
 //
 // openssl includes
@@ -402,6 +405,8 @@ namespace shttps {
     Server::Server(int port_p, unsigned nthreads_p, const std::string &logfile_p)
         : port(port_p), _nthreads(nthreads_p)
     {
+        _userid = -1;
+        _groupid = -1;
         _ssl_port = -1;
         semname = "shttps";
         semname += to_string(port);
@@ -434,6 +439,30 @@ namespace shttps {
     }
     //=========================================================================
 #endif
+
+
+    void userid(std:string username) {
+        struct passwd *pwd = calloc(1, sizeof(struct passwd));
+        if(pwd == NULL) {
+            throw Error(__file__, __LINE__, "Failed to allocate struct passwd for getpwnam_r");
+        }
+        size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
+        char *buffer = malloc(buffer_len);
+        if(buffer == NULL) {
+            throw Error(__file__, __LINE__, "Failed to allocate struct passwd for getpwnam_r");
+        }
+        getpwnam_r(username, pwd, buffer, buffer_len, &pwd);
+        if(pwd == NULL)
+        {
+            throw Error(__file__, __LINE__, "getpwnam_r failed to find requested entry");
+        }
+        _userid = pwd->pw_uid;
+        _groupid = pwd->pw_gid;
+        free(pwd);
+        free(buffer);
+    }
+    //=========================================================================
+
 
     RequestHandler Server::getHandler(Connection &conn, void **handler_data_p)
     {
