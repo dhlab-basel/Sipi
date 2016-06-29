@@ -1817,7 +1817,6 @@ namespace shttps {
     //=========================================================================
 
     static int lua_decode_jwt(lua_State *L) {
-cerr << "in lua_decode_jwt..." << endl;
         lua_getglobal(L, luaconnection);
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
@@ -1833,9 +1832,8 @@ cerr << "in lua_decode_jwt..." << endl;
         lua_pop(L, 1);
 
         jwt_t *jwt;
-cerr << ":>Token=" << token.c_str() << endl;
-cerr << ":>Secret=" << conn->server()->jwt_secret() << endl;
-        if (jwt_decode(&jwt, token.c_str(), (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size()) != 0) {
+       int err;
+        if ((err = jwt_decode(&jwt, token.c_str(), (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size())) != 0) {
             lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (1)");
             lua_error(L);
             return 0;

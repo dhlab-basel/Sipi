@@ -264,12 +264,13 @@ namespace Sipi {
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
-                logger->debug("Purging '") << cachetable[ele.canonical].cachepath << "'...";
+                logger->debug("Purging from cache '") << cachetable[ele.canonical].cachepath << "'...";
                 string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
                 ::remove(delpath.c_str());
                 cachetable.erase(ele.canonical);
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
+                ++n;
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
@@ -382,7 +383,7 @@ namespace Sipi {
         try {
             SipiCache::CacheRecord tmp_fr = cachetable.at(canonical_p);
             string toremove = _cachedir + "/" + tmp_fr.cachepath;
-            remove(toremove.c_str());
+            ::remove(toremove.c_str());
             cachesize -= tmp_fr.fsize;
             --nfiles;
         }
@@ -397,6 +398,31 @@ namespace Sipi {
         ++nfiles;
 
         locking.unlock();
+    }
+    //============================================================================
+
+    bool SipiCache::remove(const std::string &canonical_p) {
+        auto logger = spdlog::get(shttps::loggername);
+        SipiCache::CacheRecord fr;
+
+        locking.lock();
+        try {
+            fr = cachetable.at(canonical_p);
+        }
+        catch(const std::out_of_range& oor) {
+            locking.unlock();
+            return false; // return empty string, because we didn't find the file in cache
+        }
+
+        logger->debug("Delete from cache '") << cachetable[canonical_p].cachepath << "'...";
+        string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
+        ::remove(delpath.c_str());
+        cachesize -= cachetable[canonical_p].fsize;
+        cachetable.erase(canonical_p);
+        --nfiles;
+        locking.unlock();
+
+        return true;
     }
     //============================================================================
 

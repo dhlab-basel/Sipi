@@ -1,53 +1,89 @@
 <lua>
 
-print('GAGA')
-if server.cookies['sipi'] then
-    intoken = server.cookies['sipi']
-    print('INT1=', intoken);
-    jwt = server.decode_jwt(intoken)
-    print('INT2=', intoken);
-    if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
-        server.sendStatus(401)
-        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+--
+-- Check if we can have a secure connection
+--
+
+if server.has_open_ssh and not server.secure then
+    server.sendHeader('location', 'https://'  .. server.host .. server.uri)
+    return -1
+end
+
+if server.secure then
+    protocol = 'https://'
+else
+    protocol = 'http://'
+end
+
+--
+-- authentication
+--
+if server.has_openssl then
+    --
+    -- first we check if we get a cookie with a valid JWT
+    --
+    if server.cookies['sipi'] then
+        intoken = server.cookies['sipi']
+        jwt = server.decode_jwt(intoken)
+        if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
+            server.sendStatus(401)
+            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+            return -1
+        end
+    else
+        --
+        -- otherwise we require an authentification header
+        --
+        auth = server.requireAuth()
+
+        if auth.status == 'OK' then
+            --
+            -- everything OK, let's create the token for further calls and ad it to a cookie
+            --
+            if auth.username == config.adminuser and auth.password == config.password then
+                tokendata = {
+                    iss = "sipi.unibas.ch",
+                    aud = "knora.org",
+                    user = auth.username
+                }
+                token = server.generate_jwt(tokendata)
+                server.sendCookie('sipi', token, {path = '/', expires = 3600})
+            else
+                server.sendStatus(401)
+                server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+                server.print("Wrong credentials!")
+                return -1
+            end
+        elseif auth.status == 'NOAUTH' then
+            server.setBuffer()
+            server.sendStatus(401);
+            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+            return -1
+        else
+            server.status(401)
+            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+            return -1
+        end
     end
 else
+    --
+    -- no openssl, we just use insecure basic authentification
+    -- ATTENTION: This is a severe security hole and should only
+    -- used on private networks You can trust!!
+    --
     auth = server.requireAuth()
-
-    if auth.status == 'OK' then
-print('1111')
-        if auth.username == config.adminuser and auth.password == config.password then
-            tokendata = {
-                iss = "sipi.unibas.ch",
-                aud = "knora.org",
-                user = username
-            }
-print('2222')
-            token = server.generate_jwt(tokendata)
-            server.sendCookie('sipi', token, {path = '/', expires = 3600})
-print('3333')
-        else
-print('4444')
-            server.sendStatus(401)
-print('5555')
-print(auth.username, '=', config.adminuser, ' || ', auth.password, '=', config.password);
-            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-            server.print("Wrong credentials!")
-        end
-    elseif auth.status == 'NOAUTH' then
-        server.setBuffer()
-        server.sendStatus(401);
+    if auth.username ~= config.adminuser or auth.password ~= config.password then
+        server.sendStatus(401)
         server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+        server.print("Wrong credentials!")
         return -1
-    else
-        server.status(401)
-        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
     end
 end
 
 </lua>
 <html>
 <head>
-    <title>SIPI Cache Control</title>
+    <title>SIPI Admin Console</title>
     <script>
 
     function delete_selected() {
@@ -75,10 +111,10 @@ server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(
 server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
 server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
 
-url_sort_at_asc = 'https://' .. server.host .. '/server/cache.elua?sort=atasc'
-url_sort_at_desc = 'https://' .. server.host .. '/server/cache.elua?sort=atdesc'
-url_sort_fs_asc = 'https://' .. server.host .. '/server/cache.elua?sort=fsasc'
-url_sort_fs_desc = 'https://' .. server.host .. '/server/cache.elua?sort=fsdesc'
+url_sort_at_asc = protocol .. server.host .. '/server/cache.elua?sort=atasc'
+url_sort_at_desc = protocol .. server.host .. '/server/cache.elua?sort=atdesc'
+url_sort_fs_asc = protocol .. server.host .. '/server/cache.elua?sort=fsasc'
+url_sort_fs_desc = protocol .. server.host .. '/server/cache.elua?sort=fsdesc'
 
 </lua>
 </table>
