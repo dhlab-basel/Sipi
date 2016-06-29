@@ -45,7 +45,6 @@
 #include <pthread.h>
 #include <pwd.h>
 
-
 //
 // openssl includes
 //#include "openssl/applink.c"
@@ -402,21 +401,48 @@ namespace shttps {
     }
     //=========================================================================
 
-    Server::Server(int port_p, unsigned nthreads_p, const std::string &logfile_p)
-        : port(port_p), _nthreads(nthreads_p)
+    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p)
+        : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p)
     {
-        _userid = -1;
-        _groupid = -1;
         _ssl_port = -1;
         semname = "shttps";
         semname += to_string(port);
         _user_data = NULL;
         running = false;
         _keep_alive_timeout = 20;
-        spdlog::set_async_mode(1048576);
-        _logger = spdlog::rotating_logger_mt(loggername, logfile_p, 1048576 * 5, 3, true);
 
+        spdlog::set_async_mode(1048576);
+
+        //
+        // Her we check if we have to change to a different uid. This can only be done
+        // if the server runs originally as root!
+        //
+        bool setuid_done = false;
+        if (!userid_str.empty() && (getuid() == 0)) { // must be root to setuid() !!
+            struct passwd pwd, *res;
+
+            size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
+            char *buffer = new char[buffer_len];
+            getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
+            if (res != NULL) {
+                setuid(pwd.pw_uid);
+                setgid(pwd.pw_gid);
+                setuid_done = true;
+            }
+            else {
+                cerr << "Couldn't setuid() to " << userid_str << "!" << endl;
+                exit (-1);
+            }
+            delete [] buffer;
+        }
+
+        _logger = spdlog::rotating_logger_mt(loggername, _logfilename, 1048576 * 5, 3, true);
         spdlog::set_level(spdlog::level::debug);
+
+        if (setuid_done) {
+            _logger->info("Server will run as user ") << userid_str << " (" << getuid() << ")";
+        }
+
 
 #ifdef SHTTPS_ENABLE_SSL
         SSL_load_error_strings();
@@ -441,27 +467,6 @@ namespace shttps {
 #endif
 
 
-    void userid(std:string username) {
-        struct passwd *pwd = calloc(1, sizeof(struct passwd));
-        if(pwd == NULL) {
-            throw Error(__file__, __LINE__, "Failed to allocate struct passwd for getpwnam_r");
-        }
-        size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
-        char *buffer = malloc(buffer_len);
-        if(buffer == NULL) {
-            throw Error(__file__, __LINE__, "Failed to allocate struct passwd for getpwnam_r");
-        }
-        getpwnam_r(username, pwd, buffer, buffer_len, &pwd);
-        if(pwd == NULL)
-        {
-            throw Error(__file__, __LINE__, "getpwnam_r failed to find requested entry");
-        }
-        _userid = pwd->pw_uid;
-        _groupid = pwd->pw_gid;
-        free(pwd);
-        free(buffer);
-    }
-    //=========================================================================
 
 
     RequestHandler Server::getHandler(Connection &conn, void **handler_data_p)
@@ -585,6 +590,7 @@ namespace shttps {
 
     void Server::run()
     {
+
         _logger->info("Starting shttps server... with ") << to_string(_nthreads) << " threads";
 
         //
@@ -605,9 +611,7 @@ namespace shttps {
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
             _logger->info("Server listening on SSL port ") << to_string(_ssl_port);
-
         }
-
 
         pthread_t thread_id;
         running = true;

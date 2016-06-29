@@ -113,7 +113,18 @@ sipi = {
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
 
+}
 
+admin = {
+    --
+    -- username of admin user
+    --
+    user = 'admin',
+
+    --
+    -- Administration password
+    --
+    password = 'Sipi-Admin'
 }
 
 fileserver = {

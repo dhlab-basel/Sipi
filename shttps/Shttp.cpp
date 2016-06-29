@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    shttps::Server server(port, nthreads); // instantiate the server
+    shttps::Server server(port, nthreads, userid); // instantiate the server
 #ifdef SHTTPS_ENABLE_SSL
     server.ssl_port(ssl_port); // set the secure connection port (-1 means no ssl socket)
     if (!ssl_certificate.empty()) server.ssl_certificate(ssl_certificate);

@@ -1817,7 +1817,7 @@ namespace shttps {
     //=========================================================================
 
     static int lua_decode_jwt(lua_State *L) {
-
+cerr << "in lua_decode_jwt..." << endl;
         lua_getglobal(L, luaconnection);
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
@@ -1833,15 +1833,16 @@ namespace shttps {
         lua_pop(L, 1);
 
         jwt_t *jwt;
-
+cerr << ":>Token=" << token.c_str() << endl;
+cerr << ":>Secret=" << conn->server()->jwt_secret() << endl;
         if (jwt_decode(&jwt, token.c_str(), (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size()) != 0) {
-            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token!");
+            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (1)");
             lua_error(L);
             return 0;
         }
         char *tokendata;
         if ((tokendata = jwt_dump_str(jwt, false)) == NULL) {
-            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token!");
+            lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (2)");
             lua_error(L);
             return 0;
         }
@@ -1900,6 +1901,14 @@ namespace shttps {
                 break;
         }
         lua_rawset(L, -3); // table1
+
+#ifdef SHTTPS_ENABLE_SSL
+
+        lua_pushstring(L, "has_openssl"); // table1 - "index_L1"
+        lua_pushboolean(L, true); // table1 - "index_L1" - "value_L1"
+        lua_rawset(L, -3); // table1
+
+#endif
 
         lua_pushstring(L, "client_ip"); // table1 - "index_L1"
         lua_pushstring(L, conn.peer_ip().c_str()); // table1 - "index_L1" - "value_L1"

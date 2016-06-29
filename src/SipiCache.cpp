@@ -57,9 +57,19 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    typedef struct {
+    typedef struct _AListEle {
         string canonical;
         time_t access_time;
+        off_t fsize;
+        bool operator < (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) < 0.);
+        }
+        bool operator > (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) < 0.);
+        }
+        bool operator == (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) == 0.);
+        }
     } AListEle;
 
 
@@ -207,14 +217,31 @@ namespace Sipi {
     }
     //============================================================================
 
-    static bool _compare(const AListEle &e1, const AListEle &e2)
+    static bool _compare_access_time_asc(const AListEle &e1, const AListEle &e2)
     {
-        if (e1.access_time <= e2.access_time) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        double d = difftime(e1.access_time, e2.access_time);
+
+        return (d < 0.0);
+    }
+    //============================================================================
+
+    static bool _compare_access_time_desc(const AListEle &e1, const AListEle &e2)
+    {
+        double d = difftime(e1.access_time, e2.access_time);
+
+        return (d > 0.0);
+    }
+    //============================================================================
+
+    static bool _compare_fsize_asc(const AListEle &e1, const AListEle &e2)
+    {
+        return (e1.fsize < e2.fsize);
+    }
+    //============================================================================
+
+    static bool _compare_fsize_desc(const AListEle &e1, const AListEle &e2)
+    {
+        return (e1.fsize > e2.fsize);
     }
     //============================================================================
 
@@ -227,24 +254,26 @@ namespace Sipi {
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
             vector<AListEle> alist(cachetable.size());
 
+            locking.lock();
             for (const auto &ele : cachetable) {
-                AListEle al = { ele.first, ele.second.access_time };
+                AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
                 alist.push_back(al);
             }
-            sort(alist.begin(), alist.end(), _compare);
+            sort(alist.begin(), alist.end(), _compare_access_time_asc);
 
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
                 logger->debug("Purging '") << cachetable[ele.canonical].cachepath << "'...";
                 string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
-                remove(delpath.c_str());
+                ::remove(delpath.c_str());
                 cachetable.erase(ele.canonical);
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
+            locking.unlock();
         }
         return n;
     }
@@ -368,6 +397,41 @@ namespace Sipi {
         ++nfiles;
 
         locking.unlock();
+    }
+    //============================================================================
+
+    void SipiCache::loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm) {
+        vector<AListEle> alist(cachetable.size());
+
+        for (const auto &ele : cachetable) {
+            AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
+            alist.push_back(al);
+        }
+
+        switch (sm) {
+            case SORT_ATIME_ASC: {
+                sort(alist.begin(), alist.end(), _compare_access_time_asc);
+                break;
+            }
+            case SORT_ATIME_DESC: {
+                sort(alist.begin(), alist.end(), _compare_access_time_desc);
+                break;
+            }
+            case SORT_FSIZE_ASC: {
+                sort(alist.begin(), alist.end(), _compare_fsize_asc);
+                break;
+            }
+            case SORT_FSIZE_DESC: {
+                sort(alist.begin(), alist.end(), _compare_fsize_desc);
+                break;
+            }
+        }
+
+        int i = 1;
+        for (const auto& ele : alist) {
+            worker(i, ele.canonical, cachetable[ele.canonical], userdata);
+            i++;
+        }
     }
     //============================================================================
 

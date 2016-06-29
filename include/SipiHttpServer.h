@@ -66,7 +66,7 @@ namespace Sipi {
         * \param port_p Portnumber on which the server should listen
         * \param root_p Path to the root of directory containing the images
         */
-        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "sipi.log");
+        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "sipi.log");
         ~SipiHttpServer();
         void run();
 

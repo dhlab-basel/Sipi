@@ -35,6 +35,14 @@ namespace Sipi {
 
     class SipiCache {
     public:
+
+        typedef enum {
+            SORT_ATIME_ASC,
+            SORT_ATIME_DESC,
+            SORT_FSIZE_ASC,
+            SORT_FSIZE_DESC,
+        } SortMethod
+        ;
         typedef struct {
             char canonical[256];
             char origpath[256];
@@ -59,6 +67,8 @@ namespace Sipi {
             time_t access_time;     //!< last access in seconds
             off_t fsize;
         } CacheRecord;
+
+        typedef void (*ProcessOneCacheFile)(int index, const std::string&, const SipiCache::CacheRecord&, void *userdata);
 
     private:
         std::mutex locking;
@@ -85,6 +95,8 @@ namespace Sipi {
         inline unsigned long long getMaxCachesize(void) { return max_cachesize; }
         inline unsigned getNfiles(void) { return nfiles; }
         inline unsigned getMaxNfiles(void) { return max_nfiles; }
+        inline std::string getCacheDir(void) { return _cachedir; }
+        void loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm = SORT_ATIME_ASC);
     };
 }
 

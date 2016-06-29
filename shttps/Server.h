@@ -146,7 +146,7 @@ namespace shttps {
                 BIO *bio = BIO_new(BIO_s_mem());
                 ERR_print_errors (bio);
                 char *buf = NULL;
-                size_t len = BIO_get_mem_data (bio, &buf);
+                (void) BIO_get_mem_data (bio, &buf);
                 ss << buf << " : ";
                 BIO_free (bio);
                 ss << "Description: " << message;
@@ -158,8 +158,6 @@ namespace shttps {
     public:
 
     private:
-        int _userid; //!< real user id the server should run under
-        int _groupid; //!< real group id the server should use
         int port; //!< listening Port for server
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
@@ -187,7 +185,7 @@ namespace shttps {
         std::vector<GlobalFunc> lua_globals;
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
-
+        std::string _logfilename;
     protected:
         std::shared_ptr<spdlog::logger> _logger;
     public:
@@ -197,7 +195,7 @@ namespace shttps {
         * \param[in] port_p Listening port of HTTP server
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
-        Server(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "shttps.log");
+        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log");
 
 #ifdef SHTTPS_ENABLE_SSL
 
@@ -258,24 +256,6 @@ namespace shttps {
          */
         inline std::string jwt_secret(void) { return _jwt_secret; }
 #endif
-
-        /*!
-         * Get the userid the server should use
-         */
-        inline uid_t userid(void) { return _userid; }
-
-        /*!
-         * set the numeric user id the server should use
-         *
-         * \param[in] uid The numner user id
-         */
-        inline void userid(uid_t uid) { _userid = uid; }
-
-
-        /*!
-         *
-         */
-        void userid(std:string username);
 
         /*!
          * Returns the maximum number of parallel threads allowed

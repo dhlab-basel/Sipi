@@ -223,6 +223,14 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushstring(L, conf->getKnoraPort().c_str());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "adminuser"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getAdminUser().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "password"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getPassword().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_setglobal(L, "config");
 }
 
@@ -264,7 +272,6 @@ int main (int argc, char *argv[]) {
     if ((params["config"]).isSet()) {
         std::string configfile = (params["config"])[0].getValue(SipiStringType);
         try {
-
             std::cout << std::endl << SIPI_VERSION << std::endl;
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
@@ -273,7 +280,7 @@ int main (int argc, char *argv[]) {
             sipiConf = Sipi::SipiConf(luacfg);
 
             //Create object SipiHttpServer
-            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads());
+            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(), sipiConf.getUseridStr());
 
 #ifdef SHTTPS_ENABLE_SSL
             server.ssl_port(sipiConf.getSSLPort()); // set the secure connection port (-1 means no ssl socket)
@@ -281,7 +288,9 @@ int main (int argc, char *argv[]) {
             server.ssl_certificate(tmps);
             tmps = sipiConf.getSSLKey();
             server.ssl_key(tmps);
+            server.jwt_secret(sipiConf.getJwtSecret());
 #endif
+
             // set tmpdir for uploads (defined in sipi.config.lua)
             server.tmpdir(sipiConf.getTmpDir());
 

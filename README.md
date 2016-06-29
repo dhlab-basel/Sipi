@@ -244,10 +244,14 @@ Sipi provides the following functions`and preset variables:
   end
   ```
 - `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
+- `server.has_openssl` : True if openssl is available
+- `server.secure` : True, if we are an a secure https connection
 - `server.host` : The hostname of the SIPI server that was used in the request.
 - `server.client_ip` : IP-Address of the client connecting to SIPI (IP4 or IP6).
 - `server.client_port`: Portnumber of client socket.
 - `server.uri` : The URL used to access SIPI (exclusive the hostname/dns).
+- `server.header` : Table with all HTTP header files. Please note that the names are all lowercase!
+- `server.cookies` : Table of cookies.
 - `server.get` : Table of GET parameters.
 - `server.post` : Table of POST parameter.
 - `server.uploads`: Àrray of upload params, for each file a table with:

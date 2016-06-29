@@ -1,14 +1,132 @@
+<lua>
+
+print('GAGA')
+if server.cookies['sipi'] then
+    intoken = server.cookies['sipi']
+    print('INT1=', intoken);
+    jwt = server.decode_jwt(intoken)
+    print('INT2=', intoken);
+    if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
+        server.sendStatus(401)
+        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+    end
+else
+    auth = server.requireAuth()
+
+    if auth.status == 'OK' then
+print('1111')
+        if auth.username == config.adminuser and auth.password == config.password then
+            tokendata = {
+                iss = "sipi.unibas.ch",
+                aud = "knora.org",
+                user = username
+            }
+print('2222')
+            token = server.generate_jwt(tokendata)
+            server.sendCookie('sipi', token, {path = '/', expires = 3600})
+print('3333')
+        else
+print('4444')
+            server.sendStatus(401)
+print('5555')
+print(auth.username, '=', config.adminuser, ' || ', auth.password, '=', config.password);
+            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+            server.print("Wrong credentials!")
+        end
+    elseif auth.status == 'NOAUTH' then
+        server.setBuffer()
+        server.sendStatus(401);
+        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+        return -1
+    else
+        server.status(401)
+        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+    end
+end
+
+</lua>
 <html>
-<head><title>SIPI Cache Control</title></head>
+<head>
+    <title>SIPI Cache Control</title>
+    <script>
+
+    function delete_selected() {
+        var todels = document.getElementsByClassName('delete');
+        var ntodels = todels.length;
+        for (var i = 0; i < ntodels; i++) {
+            if (todels[i].checked) {
+                alert(todels[i].dataset.canonical);
+            }
+        }
+    }
+
+    </script>
+</head>
 <body>
-<h1>SIPI Cache Control</h1>
+<h1>SIPI Cache Control on <lua>server.print(server.host)</lua></h1>
 </hr>
 <table>
 <lua>
---server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
---server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
+if server.has_openssl then
+    server.print("has openssl<br/>")
+end
+server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
+server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
 server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
 server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
+
+url_sort_at_asc = 'https://' .. server.host .. '/server/cache.elua?sort=atasc'
+url_sort_at_desc = 'https://' .. server.host .. '/server/cache.elua?sort=atdesc'
+url_sort_fs_asc = 'https://' .. server.host .. '/server/cache.elua?sort=fsasc'
+url_sort_fs_desc = 'https://' .. server.host .. '/server/cache.elua?sort=fsdesc'
+
+</lua>
+</table>
+<hr/>
+<input type="button" value="Delete Selected" onClick="delete_selected();">
+<input type="button" value="Delete All">
+<hr/>
+<h2>Filelist</h2>
+<table border="1">
+<tr>
+    <th>&nbsp;</th>
+    <th>Last Access <a href="<lua>server.print(url_sort_at_asc)</lua>">^</a> <a href="<lua>server.print(url_sort_at_desc)</lua>">v</a></th>
+    <th>Canonical</th>
+    <th>Original Path</th>
+    <th>Cache Path</th>
+    <th>Size<a href="<lua>server.print(url_sort_fs_asc)</lua>">^</a> <a href="<lua>server.print(url_sort_fs_desc)</lua>">v</a></th>
+    <th>&nbsp</th>
+</tr>
+<lua>
+
+
+if server.get.sort == 'atasc' then
+    for index,finfo in pairs(cache.filelist('AT_ASC')) do
+        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+    end
+elseif server.get.sort == 'atdesc' then
+    for index,finfo in pairs(cache.filelist('AT_DESC')) do
+        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+    end
+elseif server.get.sort == 'fsasc' then
+    for index,finfo in pairs(cache.filelist('FS_ASC')) do
+        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+    end
+elseif server.get.sort == 'fsdesc' then
+    for index,finfo in pairs(cache.filelist('FS_DESC')) do
+        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+    end
+else
+    for index,finfo in pairs(cache.filelist()) do
+        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+    end
+end
+
 </lua>
 </table>
 </body>
