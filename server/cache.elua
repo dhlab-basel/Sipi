@@ -1,11 +1,19 @@
 <lua>
-
 --
 -- Check if we can have a secure connection
 --
-
-if server.has_open_ssh and not server.secure then
-    server.sendHeader('location', 'https://'  .. server.host .. server.uri)
+if server.has_openssl and not server.secure then
+    pos = string.find(server.host, ':', 1, true)
+    if (pos ~= nil) then
+        host = string.sub(server.host, 1, pos - 1)
+    else
+        host = server.host
+    end
+    if config.sslport ~= 443 then
+        host = host .. ':' .. config.sslport
+    end
+    server.sendHeader('location', 'https://'  .. host .. server.uri)
+    server.sendStatus(301)
     return -1
 end
 

@@ -161,11 +161,19 @@ static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCod
 static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
 
-    lua_createtable(L, 0, 13); // table1
+    lua_createtable(L, 0, 14); // table1
 
     lua_pushstring(L, "port"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getPort());
     lua_rawset(L, -3); // table1
+
+#ifdef SHTTPS_ENABLE_SSL
+
+    lua_pushstring(L, "sslport"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getSSLPort());
+    lua_rawset(L, -3); // table1
+
+#endif
 
     lua_pushstring(L, "imgroot"); // table1 - "index_L1"
     lua_pushstring(L, conf->getImgRoot().c_str());
