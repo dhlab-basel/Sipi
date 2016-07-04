@@ -755,35 +755,48 @@ namespace shttps {
             lua_rawset(L, -3); // table
         }
         else {
-            size_t npos = auth.find(" ");
-            if (npos != string::npos) {
-               string auth_type = auth.substr(0, npos);
-                string auth_secret = auth.substr(npos + 1);
-                string auth_string = base64_decode(auth_secret);
-                npos = auth_string.find(":");
-                if (npos != string::npos) {
-                    string username = auth_string.substr(0, npos);
-                    string password = auth_string.substr(npos + 1);
+            size_t npos;
+            if ((npos = auth.find(" ")) != string::npos) {
+                string auth_type = auth.substr(0, npos);
+                if (auth_type == "Basic") {
+                    string auth_secret = auth.substr(npos + 1);
+                    string auth_string = base64_decode(auth_secret);
+                    npos = auth_string.find(":");
+                    if (npos != string::npos) {
+                        string username = auth_string.substr(0, npos);
+                        string password = auth_string.substr(npos + 1);
 
-                    lua_pushstring(L, "status"); // table - "username"
-                    lua_pushstring(L, "OK"); // table - "username" - <username>
-                    lua_rawset(L, -3); // table
+                        lua_pushstring(L, "status"); // table - "username"
+                        lua_pushstring(L, "BASIC"); // table - "username" - <username>
+                        lua_rawset(L, -3); // table
 
-                    lua_pushstring(L, "username"); // table - "username"
-                    lua_pushstring(L, username.c_str()); // table - "username" - <username>
-                    lua_rawset(L, -3); // table
+                        lua_pushstring(L, "username"); // table - "username"
+                        lua_pushstring(L, username.c_str()); // table - "username" - <username>
+                        lua_rawset(L, -3); // table
 
-                    lua_pushstring(L, "password"); // table - "password"
-                    lua_pushstring(L, password.c_str()); // table - "password" - <password>
-                    lua_rawset(L, -3); // table
+                        lua_pushstring(L, "password"); // table - "password"
+                        lua_pushstring(L, password.c_str()); // table - "password" - <password>
+                        lua_rawset(L, -3); // table
+                    }
+                    else {
+                        lua_pushstring(L, "status"); // table - "username"
+                        lua_pushstring(L, "ERROR"); // table - "username" - <username>
+                        lua_rawset(L, -3); // table
+
+                        lua_pushstring(L, "message"); // table - "username"
+                        lua_pushstring(L, "Auth-string not valid!"); // table - "username" - <username>
+                        lua_rawset(L, -3); // table
+                    }
                 }
-                else {
+                else if (auth_type == "Bearer") {
+                    string jwt_token = auth.substr(npos + 1);
+
                     lua_pushstring(L, "status"); // table - "username"
-                    lua_pushstring(L, "ERROR"); // table - "username" - <username>
+                    lua_pushstring(L, "BEARER"); // table - "username" - <username>
                     lua_rawset(L, -3); // table
 
-                    lua_pushstring(L, "message"); // table - "username"
-                    lua_pushstring(L, "Auth-string not valid!"); // table - "username" - <username>
+                    lua_pushstring(L, "token"); // table - "username"
+                    lua_pushstring(L, jwt_token.c_str()); // table - "username" - <username>
                     lua_rawset(L, -3); // table
                 }
             }
@@ -793,7 +806,7 @@ namespace shttps {
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "message"); // table - "username"
-                lua_pushstring(L, "Auth-type not \"Basic\"!"); // table - "username" - <username>
+                lua_pushstring(L, "Auth-type not known!"); // table - "username" - <username>
                 lua_rawset(L, -3); // table
             }
         }
@@ -1864,7 +1877,7 @@ namespace shttps {
      * This function registers all variables and functions in the server table
      */
     void LuaServer::createGlobals(Connection &conn) {
-        lua_createtable(L, 0, 32); // table1
+        lua_createtable(L, 0, 33); // table1
         //lua_newtable(L); // table1
 
         Connection::HttpMethod method = conn.method();
@@ -1951,79 +1964,98 @@ namespace shttps {
         lua_pushstring(L, uri.c_str()); // table1 - "index_L1" - "value_L1"
         lua_rawset(L, -3); // table1
 
-        lua_pushstring(L, "get"); // table1 - "index_L1"
         std::vector<std::string> get_params = conn.getParams();
-        lua_createtable(L, 0, get_params.size()); // table1 - "index_L1" - table2
-        for (unsigned i = 0; i < get_params.size(); i++) {
-            lua_pushstring(L, get_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
-            lua_pushstring(L, conn.getParams(
-                    get_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
-            lua_rawset(L, -3); // table1 - "index_L1" - table2
+        if (get_params.size() > 0) {
+            lua_pushstring(L, "get"); // table1 - "index_L1"
+            lua_createtable(L, 0, get_params.size()); // table1 - "index_L1" - table2
+            for (unsigned i = 0; i < get_params.size(); i++) {
+                lua_pushstring(L, get_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
+                lua_pushstring(L, conn.getParams(
+                        get_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
+                lua_rawset(L, -3); // table1 - "index_L1" - table2
+            }
+            lua_rawset(L, -3); // table1
         }
-        lua_rawset(L, -3); // table1
 
-        lua_pushstring(L, "post"); // table1 - "index_L1"
         std::vector<std::string> post_params = conn.postParams();
-        lua_createtable(L, 0, post_params.size()); // table1 - "index_L1" - table2
-        for (unsigned i = 0; i < post_params.size(); i++) {
-            lua_pushstring(L, post_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
-            lua_pushstring(L, conn.postParams(
-                    post_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
-            lua_rawset(L, -3); // table1 - "index_L1" - table2
+        if (post_params.size() > 0) {
+            lua_pushstring(L, "post"); // table1 - "index_L1"
+            lua_createtable(L, 0, post_params.size()); // table1 - "index_L1" - table2
+            for (unsigned i = 0; i < post_params.size(); i++) {
+                lua_pushstring(L, post_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
+                lua_pushstring(L, conn.postParams(
+                        post_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
+                lua_rawset(L, -3); // table1 - "index_L1" - table2
+            }
+            lua_rawset(L, -3); // table1
         }
-        lua_rawset(L, -3); // table1
 
         vector <Connection::UploadedFile> uploads = conn.uploads();
-        lua_pushstring(L, "uploads"); // table1 - "index_L1"
-        lua_createtable(L, 0, uploads.size());     // table1 - "index_L1" - table2
-        for (unsigned i = 0; i < uploads.size(); i++) {
-            lua_pushinteger(L, i + 1);             // table1 - "index_L1" - table2 - "index_L2"
-            lua_createtable(L, 0, uploads.size()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+        if (uploads.size() > 0) {
+            lua_pushstring(L, "uploads"); // table1 - "index_L1"
+            lua_createtable(L, 0, uploads.size());     // table1 - "index_L1" - table2
+            for (unsigned i = 0; i < uploads.size(); i++) {
+                lua_pushinteger(L, i + 1);             // table1 - "index_L1" - table2 - "index_L2"
+                lua_createtable(L, 0, uploads.size()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_pushstring(L,
-                           "fieldname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
-            lua_pushstring(L,
-                           uploads[i].fieldname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
-            lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+                lua_pushstring(L,
+                               "fieldname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
+                lua_pushstring(L,
+                               uploads[i].fieldname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
+                lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_pushstring(L,
-                           "origname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
-            lua_pushstring(L,
-                           uploads[i].origname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
-            lua_rawset(L, -3);                      // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+                lua_pushstring(L,
+                               "origname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
+                lua_pushstring(L,
+                               uploads[i].origname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
+                lua_rawset(L, -3);                      // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_pushstring(L,
-                           "tmpname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
-            lua_pushstring(L,
-                           uploads[i].tmpname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
-            lua_rawset(L, -3);                     // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+                lua_pushstring(L,
+                               "tmpname");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
+                lua_pushstring(L,
+                               uploads[i].tmpname.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
+                lua_rawset(L, -3);                     // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_pushstring(L,
-                           "mimetype");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
-            lua_pushstring(L,
-                           uploads[i].mimetype.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
-            lua_rawset(L, -3);                      // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+                lua_pushstring(L,
+                               "mimetype");          // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
+                lua_pushstring(L,
+                               uploads[i].mimetype.c_str()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
+                lua_rawset(L, -3);                      // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_pushstring(L,
-                           "filesize");           // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
-            lua_pushinteger(L,
-                            uploads[i].filesize); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
-            lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
+                lua_pushstring(L,
+                               "filesize");           // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3"
+                lua_pushinteger(L,
+                                uploads[i].filesize); // "table1" - "index_L1" - "table2" - "index_L2" - "table3" - "index_L3" - "value_L3"
+                lua_rawset(L, -3);                       // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
-            lua_rawset(L, -3); // table1 - "index_L1" - table2
+                lua_rawset(L, -3); // table1 - "index_L1" - table2
+            }
+            lua_rawset(L, -3); // table1
         }
-        lua_rawset(L, -3); // table1
 
-        lua_pushstring(L, "request"); // table1 - "index_L1"
         std::vector<std::string> request_params = conn.requestParams();
-        lua_createtable(L, 0, request_params.size()); // table1 - "index_L1" - table2
-        for (unsigned i = 0; i < request_params.size(); i++) {
-            lua_pushstring(L, request_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
-            lua_pushstring(L, conn.requestParams(
-                    request_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
+        if (request_params.size() > 0) {
+            lua_pushstring(L, "request"); // table1 - "index_L1"
+            lua_createtable(L, 0, request_params.size()); // table1 - "index_L1" - table2
+            for (unsigned i = 0; i < request_params.size(); i++) {
+                lua_pushstring(L, request_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
+                lua_pushstring(L, conn.requestParams(
+                        request_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
+                lua_rawset(L, -3); // table1 - "index_L1" - table2
+            }
+            lua_rawset(L, -3); // table1
+        }
+
+        if (conn.contentLength() > 0) {
+            lua_pushstring(L, "content");
+            lua_pushstring(L, "GAGAGAGAGGAG");
+            //lua_pushlstring(L, conn.content(), conn.contentLength());
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "content_type");
+            lua_pushstring(L, conn.contentType().c_str());
             lua_rawset(L, -3); // table1 - "index_L1" - table2
         }
-        lua_rawset(L, -3); // table1
 
         //
         // filesystem functions

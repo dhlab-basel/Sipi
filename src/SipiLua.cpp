@@ -60,6 +60,11 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
         unsigned long long size = cache->getCachesize();
 
         lua_pushinteger(L, size);
@@ -76,6 +81,11 @@ namespace Sipi {
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
 
         unsigned long long maxsize = cache->getMaxCachesize();
 
@@ -94,6 +104,11 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
         unsigned size = cache->getNfiles();
 
         lua_pushinteger(L, size);
@@ -110,6 +125,11 @@ namespace Sipi {
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
 
         unsigned size = cache->getMaxNfiles();
 
@@ -129,6 +149,10 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
         std::string cpath = cache->getCacheDir();
 
         lua_pushstring(L, cpath.c_str());
@@ -186,6 +210,11 @@ namespace Sipi {
         }
         SipiCache *cache = server->cache();
 
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
         lua_createtable(L, 0, 0); // table1
         if (sortmethod == "AT_ASC") {
             cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_ATIME_ASC);
@@ -207,6 +236,40 @@ namespace Sipi {
     }
     //=========================================================================
 
+
+    static int lua_delete_cache_file(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        int top = lua_gettop(L);
+
+        std::string canonical;
+        if (top == 1) {
+            canonical = std::string(lua_tostring(L, 1));
+            lua_pop(L, 1);
+            if (cache->remove(canonical)) {
+                lua_pushboolean(L, true);
+            }
+            else {
+                lua_pushboolean(L, false);
+            }
+        }
+        else {
+            lua_pushboolean(L, false);
+        }
+
+        return 1;
+    }
+    //=========================================================================
+
+
     static const luaL_Reg cache_methods[] = {
             {"size", lua_cache_size},
             {"max_size", lua_cache_max_size},
@@ -214,6 +277,7 @@ namespace Sipi {
             {"max_nfiles", lua_cache_max_nfiles},
             {"path", lua_cache_path},
             {"filelist", lua_cache_filelist},
+            {"delete", lua_delete_cache_file},
             {0,     0}
     };
     //=========================================================================

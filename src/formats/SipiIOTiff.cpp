@@ -1104,7 +1104,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_UINT8_PTR: {
                         uint8 *tmpbuf;
-                        unsigned int len;
+                        uint32 len;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
                         }
@@ -1112,7 +1112,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_UINT16_PTR: {
                         uint16 *tmpbuf;
-                        unsigned int len;
+                        uint32 len;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
                         }
@@ -1128,7 +1128,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_PTR: {
                         unsigned char *tmpbuf;
-                        unsigned int len;
+                        uint32 len;
                         if (exiftag_list[i].len == 0) {
                             if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                                 img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);

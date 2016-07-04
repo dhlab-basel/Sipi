@@ -252,7 +252,7 @@ namespace Sipi {
         int n = 0;
         if (((max_cachesize > 0) && (cachesize >= max_cachesize))
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
-            vector<AListEle> alist(cachetable.size());
+            vector<AListEle> alist;
 
             locking.lock();
             for (const auto &ele : cachetable) {
@@ -427,7 +427,7 @@ namespace Sipi {
     //============================================================================
 
     void SipiCache::loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm) {
-        vector<AListEle> alist(cachetable.size());
+        vector<AListEle> alist;
 
         for (const auto &ele : cachetable) {
             AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };

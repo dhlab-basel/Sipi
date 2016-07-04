@@ -313,7 +313,9 @@ namespace shttps {
         bool _finished;             //!< Transfer of response data finished
         std::istream *ins;          //!< incoming data stream
         std::ostream *os;           //!< outgoing data stream
+        char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
         unsigned content_length;    //!< length of body in octets (used if not chunked transfer)
+        std::string _content_type;   //!< Content-type (mime type of content)
         unsigned next_chunk;        //!< not used yet (for reading chunks from incoming stream)
         std::ofstream *cachefile;   //!< pointer to cache file
 
@@ -626,6 +628,26 @@ namespace shttps {
         */
         std::vector<std::string> process_header_value(const std::string &valstr);
 
+       /*!
+        * Returns the content length from PUT and DELETE requests
+        *
+        * \returns Content length
+        */
+        inline size_t contentLength(void) { return content_length; }
+
+       /*!
+        *  Get the content from PUT and DELETE requests
+        *
+        *  \returns Content as pointer to char
+        */
+        inline const char *content(void) const { return _content; }
+
+       /*!
+        * Get the content type for PUT and DELETE requests
+        *
+        * \returns Content type as string
+        */
+        inline std::string contentType(void) { return _content_type; }
 
        /*!
         * Add a Content-Length header. This method is used to add the size of the

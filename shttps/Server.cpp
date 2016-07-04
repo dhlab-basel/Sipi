@@ -852,7 +852,9 @@ namespace shttps {
             try {
                 RequestHandler handler = getHandler(conn, &hd);
                 _logger->debug("Calling user-supplied handler");
+                cerr << "Before handler..." << endl;
                 handler(conn, luaserver, _user_data, hd);
+                cerr << "After handler..." << endl;
             }
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
