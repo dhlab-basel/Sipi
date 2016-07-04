@@ -375,6 +375,10 @@ namespace shttps {
         */
         Connection(Server *server_p, std::istream *ins_p, std::ostream *os_p, const std::string &tmpdir_p, size_t buf_size = 0, size_t buf_inc = 8192);
 
+        Connection(const Connection &conn);
+
+        Connection& operator=(const Connection& other);
+
        /*!
         * Destructor which frees all resources
         */

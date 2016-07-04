@@ -34,6 +34,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>      // Needed for memset
+
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addrmktemp
 #include <unistd.h>    //write
@@ -407,8 +408,6 @@ namespace shttps {
         stringstream lineparse(line);
         lineparse >> method_in >> fulluri >> http_version;
 
-        cerr << "METHOD_IN: " << method_in << " fulluri=" << fulluri << " Version: " << http_version << endl;
-
         if(!lineparse.fail()) {
             size_t pos;
             if ((pos = fulluri.find('?')) != string::npos) {
@@ -621,7 +620,6 @@ namespace shttps {
                                     //
 
                                     if (_tmpdir.empty()) {
-                                        std::cerr << "'" << "_tmpdir is empty" << "'" << std::endl;
                                         throw Error(__file__, __LINE__, "_tmpdir is empty");
                                     }
 
@@ -744,23 +742,21 @@ namespace shttps {
                 }
             }
             else if ((method_in == "PUT") || (method_in == "DELETE")) {
-                cerr << "PUT/DELETE" << endl;
                 if (method_in == "DELETE") {
                     _method = DELETE;
                 }
                 else {
                     _method = PUT;
                 }
+
                 vector <string> content_type_opts = process_header_value(header_in["content-type"]);
-                cerr << "Content-Type: " << content_type_opts[0] << endl;
+
                 if ((content_type_opts[0] == "text/plain") ||
                     (content_type_opts[0] == "application/json") ||
                     (content_type_opts[0] == "application/ld+json") ||
                     (content_type_opts[0] == "application/xml")) {
                     _content_type = content_type_opts[0];
-                    cerr << "Passed: " << __LINE__ << endl;
                     if (_chunked_transfer_in) {
-                        cerr << "Chunked content!" << endl;
                         char *tmp;
                         ChunkReader ckrd(ins);
                         content_length = ckrd.readAll(&tmp);
@@ -772,8 +768,9 @@ namespace shttps {
                         _content[content_length] = '\0';
                     }
                     else if (content_length > 0) {
-                        cerr << "Content-length: " << content_length << endl;
-                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+
+                        _content = (char *) malloc(content_length + 1);
+                        if (_content == NULL) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
                         }
                         ins->read(_content, content_length);
@@ -783,12 +780,13 @@ namespace shttps {
                             throw -1;
                         }
                         _content[content_length] = '\0';
+
                     }
                 }
                 else {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
-                cerr << "Passed: " << __LINE__ << endl;
+
             }
             else if (method_in == "TRACE") {
                     _method = TRACE;
@@ -806,10 +804,18 @@ namespace shttps {
     }
     //=============================================================================
 
+    Connection::Connection(const Connection &conn) {
+        throw Error(__file__, __LINE__, "Copy constructor now allowed!");
+    }
+    //=============================================================================
+
+    Connection& Connection::operator=(const Connection& other) {
+        throw Error(__file__, __LINE__, "Assignment operator now allowed!");
+    }
+    //=============================================================================
 
     Connection::~Connection()
     {
-        cerr << "in ~Connection()" << endl;
         try {
             finalize();
         }

@@ -797,12 +797,49 @@ namespace shttps {
 
         bool do_close = true;
         while (!ins->eof() && !os->eof()) {
-            Connection conn;
+            if (_tmpdir.empty()) {
+                throw Error(__file__, __LINE__, "_tmpdir is empty");
+            }
             try {
-                if (_tmpdir.empty()) {
-                    throw Error(__file__, __LINE__, "_tmpdir is empty");
+                Connection conn(this, ins, os, _tmpdir);
+
+                conn.setupKeepAlive(sock, _keep_alive_timeout);
+                conn.peer_ip(peer_ip);
+                conn.peer_port(peer_port);
+                conn.secure(secure);
+
+                if (conn.resetConnection()) {
+                    if (conn.keepAlive()) {
+                        continue;
+                    }
+                    else {
+                        break;
+                    }
                 }
-                conn = Connection(this, ins, os, _tmpdir);
+
+                LuaServer luaserver(_initscript);
+                luaserver.createGlobals(conn);
+                for (auto &global_func : lua_globals) {
+                    global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
+                }
+
+                void *hd = NULL;
+                try {
+                    RequestHandler handler = getHandler(conn, &hd);
+                    _logger->debug("Calling user-supplied handler");
+                    handler(conn, luaserver, _user_data, hd);
+                }
+                catch (int i) {
+                    _logger->error("Possibly socket closed by peer!");
+                    break;
+                }
+                if (!conn.cleanupUploads()) {
+                    _logger->error("Cleanup of uploaded files failed!");
+                }
+
+                if (!conn.keepAlive()) {
+                    break;
+                }
             }
             catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
                 _logger->debug("Socket connection: timeout or socket closed from main");
@@ -827,60 +864,6 @@ namespace shttps {
                 }
                 break;
             }
-
-            conn.setupKeepAlive(sock, _keep_alive_timeout);
-            conn.peer_ip(peer_ip);
-            conn.peer_port(peer_port);
-            conn.secure(secure);
-
-            if (conn.resetConnection()) {
-                if (conn.keepAlive()) {
-                    continue;
-                }
-                else {
-                    break;
-                }
-            }
-
-            LuaServer luaserver(_initscript);
-            luaserver.createGlobals(conn);
-            for (auto & global_func : lua_globals) {
-                global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
-            }
-
-            void *hd = NULL;
-            try {
-                RequestHandler handler = getHandler(conn, &hd);
-                _logger->debug("Calling user-supplied handler");
-                cerr << "Before handler..." << endl;
-                handler(conn, luaserver, _user_data, hd);
-                cerr << "After handler..." << endl;
-            }
-            catch (int i) {
-                _logger->error("Possibly socket closed by peer!");
-                break;
-            }
-            catch(Error &err) {
-                try {
-                    *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
-                    *os << "Content-Type: text/plain\r\n";
-                    stringstream ss;
-                    ss << err;
-                    *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                    *os << ss.str();
-                }
-                catch (int i) {
-                    _logger->error("Possibly socket closed by peer!");
-                    break;
-                }
-                _logger->error("Internal server error! ") << err.to_string();
-                break;
-            }
-            if (!conn.cleanupUploads()) {
-                _logger->error("Cleanup of uploaded files failed!");
-            }
-
-            if (!conn.keepAlive()) break;
         }
 
         return do_close;

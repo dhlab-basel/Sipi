@@ -24,6 +24,7 @@ end
 ]]--
 
 if server.method == 'GET' then
+    print("GET method!!!!!")
     if server.get and (server.get.sort == 'atasc') then
         flist = cache.filelist('AT_ASC')
     elseif server.get and (server.get.sort == 'atdesc') then
@@ -33,19 +34,39 @@ if server.method == 'GET' then
     elseif server.get and (server.get.sort == 'fsdesc') then
         flist = cache.filelist('FS_DESC')
     else
+        print("Before getting filelist")
         flist = cache.filelist('AT_ASC')
+        print("After getting filelist")
+        for index,value in pairs(flist) do
+            print("index: ", index, " value: ")
+            for u,v in pairs(value) do
+                print("  ", u, "  ", v)
+            end
+        end
     end
+
+
     jsonstr = server.table_to_json(flist)
+
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(200)
     server.print(jsonstr)
 elseif server.method == 'DELETE' then
     if server.content and server.content_type == 'application/json' then
-        print(server.content)
-        --todel = json_to_table(server.content)
-        --for index,canonical in pairs(todel) do
+        todel = server.json_to_table(server.content)
+        print('TODEL=', todel)
+        for index,canonical in pairs(todel) do
         --    cache.delete(canonical)
-        --end
+            print('DELETING ', index, ' ', canonical)
+        end
+        result = {
+            status = 'OK'
+        }
+        jsonresult = server.table_to_json(result)
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(200);
+        server.print(jsonresult)
+
     end
 end
-server.sendStatus(200);
+

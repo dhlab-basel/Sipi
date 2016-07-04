@@ -1293,18 +1293,18 @@ namespace shttps {
     //=========================================================================
 
 
-    static json_t *subtable(lua_State *L) {
+    static json_t *subtable(lua_State *L, int index) {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
         json_t *tableobj = NULL;
         json_t *arrayobj = NULL;
         const char *skey;
         lua_pushnil(L);  /* first key */
-        while (lua_next(L, 1) != 0) {
+        while (lua_next(L, index) != 0) {
             // key is at index -2
             // value is at index -1
-            if (lua_isstring(L, -2)) {
+            if (lua_type(L, index + 1) == LUA_TSTRING) {
                 // we have a string as key
-                skey = lua_tostring(L, -2);
+                skey = lua_tostring(L, index + 1);
                 if (arrayobj != NULL) {
                     lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
@@ -1313,7 +1313,8 @@ namespace shttps {
                     tableobj = json_object();
                 }
             }
-            else if (lua_isinteger(L, -2)) {
+            else if (lua_type(L, index + 1) == LUA_TNUMBER) {
+                int dummy = lua_tointeger(L, index + 1);
                 if (tableobj != NULL) {
                     lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
@@ -1334,54 +1335,54 @@ namespace shttps {
             // Check for number first, because every number will be accepted as a string.
             // The lua-functions do not check for a variable's actual type, but if they are convertable to the expected type.
             //
-            if (lua_isnumber(L, -1)) {
+            if (lua_type(L, index + 2) == LUA_TNUMBER) {
                 // a number value
                 double val = lua_tonumber(L, -1);
                 if (tableobj != NULL) {
                     json_object_set_new(tableobj, skey, json_real(val));
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(tableobj, json_real(val));
+                    json_array_append_new(arrayobj, json_real(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
                     lua_error(L);
                 }
             }
-            else if (lua_isstring(L, -1)) {
+            else if (lua_type(L, index + 2) == LUA_TSTRING) {
                 // a string value
-                const char *val = lua_tostring(L, -1);
+                const char *val = lua_tostring(L, index + 2);
                 if (tableobj != NULL) {
                     json_object_set_new(tableobj, skey, json_string(val));
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(tableobj, json_string(val));
+                    json_array_append_new(arrayobj, json_string(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
                     lua_error(L);
                 }
             }
-            else if (lua_isboolean(L, -1)) {
+            else if (lua_type(L, index + 2) == LUA_TBOOLEAN) {
                 // a boolean value
-                bool val = lua_toboolean(L, -1);
+                bool val = lua_toboolean(L, index + 2);
                 if (tableobj != NULL) {
                     json_object_set_new(tableobj, skey, json_boolean(val));
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(tableobj, json_boolean(val));
+                    json_array_append_new(arrayobj, json_boolean(val));
                 }
                 else {
                     lua_pushstring(L, table_error);
                     lua_error(L);
                 }
             }
-            else if (lua_istable(L, -1)) {
+            else if (lua_type(L, index + 2) == LUA_TTABLE) {
                 if (tableobj != NULL) {
-                    json_object_set_new(tableobj, skey, subtable(L));
+                    json_object_set_new(tableobj, skey, subtable(L, index + 2));
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(tableobj, subtable(L));
+                    json_array_append_new(arrayobj, subtable(L, index + 2));
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1394,7 +1395,7 @@ namespace shttps {
             }
             lua_pop(L, 1);
         }
-        return tableobj;
+        return tableobj != NULL ? tableobj : (arrayobj != NULL ? arrayobj : NULL);
     }
     //=========================================================================
 
@@ -1415,7 +1416,7 @@ namespace shttps {
            return 0;
        }
 
-       json_t *root = subtable(L);
+       json_t *root = subtable(L, 1);
        char *jsonstr = json_dumps(root, JSON_INDENT(3));
        lua_pushstring(L, jsonstr);
        free(jsonstr);
@@ -1430,7 +1431,11 @@ namespace shttps {
     static void lua_jsonarr(lua_State *L, json_t *obj);
 
     static void lua_jsonobj(lua_State *L, json_t *obj) {
-        if (!json_is_object(obj)) return;
+        if (!json_is_object(obj)) {
+            lua_pushstring(L, "'lua_jsonobj expects object!");
+            lua_error(L);
+            return;
+        }
 
         lua_createtable(L, 0, 0);
 
@@ -1479,7 +1484,11 @@ namespace shttps {
 
 
     static void lua_jsonarr(lua_State *L, json_t *arr) {
-        if (!json_is_array(arr)) return;
+        if (!json_is_array(arr)) {
+            lua_pushstring(L, "'lua_jsonarr expects array!");
+            lua_error(L);
+            return;
+        }
 
         lua_createtable(L, 0, 0);
 
@@ -1545,6 +1554,8 @@ namespace shttps {
         }
 
         const char *jsonstr = lua_tostring(L, 1);
+        lua_pop(L, top);
+
         json_error_t jsonerror;
 
         json_t *jsonobj = json_loads(jsonstr, JSON_REJECT_DUPLICATES, &jsonerror);
@@ -1558,7 +1569,17 @@ namespace shttps {
             lua_error(L);
             return 0;
         }
-        lua_jsonobj(L, jsonobj);
+        if (json_is_object(jsonobj)) {
+            lua_jsonobj(L, jsonobj);
+        }
+        else if (json_is_array(jsonobj)) {
+            lua_jsonarr(L, jsonobj);
+        }
+        else {
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': Not a valid json string!");
+            lua_error(L);
+            return 0;
+        }
         json_decref(jsonobj);
 
         return 1;
@@ -1812,7 +1833,7 @@ namespace shttps {
             return 0;
         }
 
-        json_t *root = subtable(L);
+        json_t *root = subtable(L, 1);
         char *jsonstr = json_dumps(root, JSON_INDENT(3));
 
         if (jwt_new(&jwt) != 0) {
@@ -2048,8 +2069,7 @@ namespace shttps {
 
         if (conn.contentLength() > 0) {
             lua_pushstring(L, "content");
-            lua_pushstring(L, "GAGAGAGAGGAG");
-            //lua_pushlstring(L, conn.content(), conn.contentLength());
+            lua_pushlstring(L, conn.content(), conn.contentLength());
             lua_rawset(L, -3); // table1 - "index_L1" - table2
 
             lua_pushstring(L, "content_type");

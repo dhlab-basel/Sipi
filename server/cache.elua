@@ -150,26 +150,32 @@ url_sort_fs_desc = protocol .. server.host .. '/server/cache.elua?sort=fsdesc'
 </tr>
 <lua>
 
-
-if server.get.sort == 'atasc' then
-    for index,finfo in pairs(cache.filelist('AT_ASC')) do
-        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-    end
-elseif server.get.sort == 'atdesc' then
-    for index,finfo in pairs(cache.filelist('AT_DESC')) do
-        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-    end
-elseif server.get.sort == 'fsasc' then
-    for index,finfo in pairs(cache.filelist('FS_ASC')) do
-        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-    end
-elseif server.get.sort == 'fsdesc' then
-    for index,finfo in pairs(cache.filelist('FS_DESC')) do
-        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+if server.get and server.get.sort then
+    if server.get.sort == 'atasc' then
+        for index,finfo in pairs(cache.filelist('AT_ASC')) do
+            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+        end
+    elseif server.get.sort == 'atdesc' then
+        for index,finfo in pairs(cache.filelist('AT_DESC')) do
+            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+        end
+    elseif server.get.sort == 'fsasc' then
+        for index,finfo in pairs(cache.filelist('FS_ASC')) do
+            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+        end
+    elseif server.get.sort == 'fsdesc' then
+        for index,finfo in pairs(cache.filelist('FS_DESC')) do
+            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+        end
+    else
+        for index,finfo in pairs(cache.filelist()) do
+            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
+            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
+        end
     end
 else
     for index,finfo in pairs(cache.filelist()) do
