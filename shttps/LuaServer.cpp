@@ -815,7 +815,7 @@ namespace shttps {
     }
     //=========================================================================
 
-    static map<string,string> process_http_header(istream *ins, int &content_length)
+    static map<string,string> process_http_header(istream *ins, int &content_length, int &status_code)
     {
         //
         // process header files
@@ -829,18 +829,37 @@ namespace shttps {
             if (line.empty() || ins->fail() || ins->eof()) {
                 eoh = true;
             } else {
-                size_t pos = line.find(':');
-                string name = line.substr(0, pos);
-                name = trim(name);
-                asciitolower(name);
-                string value = line.substr(pos + 1);
-                value = header[name] = trim(value);
-                if (name == "content-length") {
-                    content_length = stoi(value);
+                size_t pos;
+                if ((line[0] == 'H') && (line[1] == 'T') && (line[2] == 'T') && (line[3] == 'P')) {
+                    //
+                    // we have the first line with the status code
+                    //
+                    pos = line.find(" ");
+                    if (pos == string::npos) {
+                        // TODO: process error!
+                    }
+                    string tmpstr = line.substr(pos + 1);
+                    pos = tmpstr.find(" ");
+                    if (pos == string::npos) {
+                        // TODO: process error!
+                    }
+                    string codestr = tmpstr.substr(0, pos);
+                    status_code = stoi(codestr);
                 }
-                else if (name == "transfer-encoding") {
-                    if (value == "chunked") {
-                        content_length = -1;
+                else {
+                    size_t pos = line.find(':');
+                    string name = line.substr(0, pos);
+                    name = trim(name);
+                    asciitolower(name);
+                    string value = line.substr(pos + 1);
+                    value = header[name] = trim(value);
+                    if (name == "content-length") {
+                        content_length = stoi(value);
+                    }
+                    else if (name == "transfer-encoding") {
+                        if (value == "chunked") {
+                            content_length = -1;
+                        }
                     }
                 }
             }
@@ -888,10 +907,7 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 2) {
-            lua_pushstring(L, "'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
-            lua_error(L);
-            return 0;
-        }
+re        }
 
         string errormsg; // filled in case of errors...
         bool success = true;
@@ -918,19 +934,8 @@ namespace shttps {
         int timeout = 500; // default is 500 ms
         for (int i = 3; i <= top; i++) {
             if (lua_istable(L, i)) { // process header table at position i
-                int index = i;
                 lua_pushnil(L);
-
-                // This is needed for it to even get the first value
-                index--;
-
-                while (lua_next(L, index) != 0) {
-                    // key is at index -2
-                    // value is at index -1
-                    if (!lua_isstring(L, -1) || !lua_isstring(L, -2)) {
-                        lua_pop(L, 1);
-                        continue;
-                    };
+                while (lua_next(L, i) != 0) {
                     const char *key = lua_tostring(L, -2);
                     const char *value = lua_tostring(L, -1);
                     outheader[key] = value;
@@ -1154,7 +1159,8 @@ namespace shttps {
                 // let's process the header of the return HTTP-message
                 //
                 int content_length;
-                map <string, string> header = process_http_header(&ins, content_length);
+                int status_code;
+                map <string, string> header = process_http_header(&ins, content_length, status_code);
                 if (ins.fail() || ins.eof()) {
                     close(socketfd);
                     lua_pop(L, top);
@@ -1222,9 +1228,14 @@ namespace shttps {
                 //
                 // now let's build the Lua-table that's being returned
                 //
-                lua_createtable(L, 0, 2); // table
+                lua_createtable(L, 0, 0); // table
+
                 lua_pushstring(L, "success"); // table - "success"
                 lua_pushboolean(L, true); // table - "body" - true
+                lua_rawset(L, -3); // table
+
+                lua_pushstring(L, "status_code"); // table - "success"
+                lua_pushinteger(L, status_code); // table - "body" - true
                 lua_rawset(L, -3); // table
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -1337,7 +1348,7 @@ namespace shttps {
             //
             if (lua_type(L, index + 2) == LUA_TNUMBER) {
                 // a number value
-                double val = lua_tonumber(L, -1);
+                double val = lua_tonumber(L, index + 2);
                 if (tableobj != NULL) {
                     json_object_set_new(tableobj, skey, json_real(val));
                 }
@@ -1665,7 +1676,8 @@ namespace shttps {
                 return 0;
             }
             lua_pushnil(L);  /* first key */
-            while (lua_next(L, 3) != 0) {
+            int index = 3;
+            while (lua_next(L, index) != 0) {
                 // key is at index -2
                 // value is at index -1
                 try {

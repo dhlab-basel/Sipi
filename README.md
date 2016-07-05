@@ -197,9 +197,14 @@ Sipi provides the following functions`and preset variables:
    ```lua
    result = {
       success = true | false
+      status_code = value -- HTTP status code returned
       erromsg = "error description" -- only if success is false
       header = {
         name = value [, name = value, ...]
+      },
+      certificate = { -- only, if HTTPS connection
+        subject = value,
+        issuer = value
       },
       body = data,
       duration = milliseconds
@@ -226,22 +231,56 @@ Sipi provides the following functions`and preset variables:
 - `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
 - `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
 - `server.sendHeader(key, value)` : Adds a new HTTP header field.
-- `server.requireAuth()` : Gets Basic HTTP authentification data. Usage is as follows:
+- `server.requireAuth()` : Gets Basic HTTP authentification data. The result is a table:
+  ```lua`
+  {
+    status = "BASIC" | "BEARER" | "NOAUTH" | "ERROR", -- NOAUTH means no athorization header
+    username = string, -- only if status = "BASIC"
+    password = string, -- only if status = "BASIC"
+    token = string, -- only if status = "BEARER"
+    message = string -- only if status = "ERROR"
+  }
+  ```
+  Usage is as follows (example):
   ```lua
-  auth = server.requireAuth()
+          auth = server.requireAuth()
   
-  if auth.status == 'OK' then
-      username = auth.username
-      password = auth.password
-  elseif auth.status == 'NOAUTH' then
-      server.setBuffer()
-      server.sendStatus(401);
-      server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-      return -1
-  else
-      server.status(401)
-      server.header('WWW-Authenticate', 'Basic realm="SIPI"')
-  end
+          if auth.status == 'BASIC' then
+              --
+              -- everything OK, let's create the token for further calls and ad it to a cookie
+              --
+              if auth.username == config.adminuser and auth.password == config.password then
+                  tokendata = {
+                      iss = "sipi.unibas.ch",
+                      aud = "knora.org",
+                      user = auth.username
+                  }
+                  token = server.generate_jwt(tokendata)
+                  server.sendCookie('sipi', token, {path = '/', expires = 3600})
+              else
+                  server.sendStatus(401)
+                  server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+                  server.print("Wrong credentials!")
+                  return -1
+              end
+          elseif auth.status == 'BEARER' then
+              jwt = server.decode_jwt(auth.token)
+              if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
+                  server.sendStatus(401)
+                  server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+                  return -1
+              end
+         elseif auth.status == 'NOAUTH' then
+              server.setBuffer()
+              server.sendStatus(401);
+              server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+              return -1
+          else
+              server.status(401)
+              server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+              return -1
+          end
+
   ```
 - `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
 - `server.has_openssl` : True if openssl is available

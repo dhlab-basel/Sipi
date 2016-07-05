@@ -11,8 +11,11 @@ if server.cookies['sipi'] then
 end
 
 auth = server.requireAuth()
+    for k,v in pairs(auth) do
+       print("Auth: ", k, " : ", v)
+    end
 
-if auth.status == 'OK' then
+if auth.status == 'BASIC' then
     username = auth.username
     password = auth.password
 elseif auth.status == 'NOAUTH' then
@@ -21,7 +24,7 @@ elseif auth.status == 'NOAUTH' then
     server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
     return -1
 else
-    server.status(401)
+    server.sendStatus(401)
     server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
 end
 
@@ -79,7 +82,7 @@ server.print("Password: ", password, "<br/><hr/>")
 
 
 -- result = server.http("GET", "http://www.salsah.org/api/resources/1", 5000)
-result = server.http("GET", "https://services.groupkt.com/country/get/all", 5000)
+result = server.http("GET", "https://services.groupkt.com/country/get/all", {Test = 'gagaga'}, 5000)
 
 
 if (result.success) then
