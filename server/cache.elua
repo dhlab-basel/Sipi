@@ -101,13 +101,30 @@ end
     <title>SIPI Admin Console</title>
     <script>
 
+    var apiurl = '<lua>server.print(protocol .. server.host .. '/api/cache')</lua>';
+
     function delete_selected() {
         var todels = document.getElementsByClassName('delete');
         var ntodels = todels.length;
+        var delinfostr = "DELETE\n";
+        var dels = [];
         for (var i = 0; i < ntodels; i++) {
             if (todels[i].checked) {
-                alert(todels[i].dataset.canonical);
+                delinfostr += todels[i].dataset.canonical + "\n";
+                dels.push(todels[i].dataset.canonical);
             }
+        }
+
+        if (confirm(delinfostr)) {
+            xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (xhttp.readyState == 4 && xhttp.status == 200) {
+                    alert(xhttp.responseText);
+                }
+            };
+            xhttp.open('DELETE', apiurl, true);
+            xhttp.setRequestHeader("Content-type", "application/json");
+            xhttp.send(JSON.stringify(dels));
         }
     }
 

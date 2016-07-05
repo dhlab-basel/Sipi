@@ -56,7 +56,7 @@ elseif server.method == 'DELETE' then
         todel = server.json_to_table(server.content)
         print('TODEL=', todel)
         for index,canonical in pairs(todel) do
-        --    cache.delete(canonical)
+            cache.delete(canonical)
             print('DELETING ', index, ' ', canonical)
         end
         result = {

@@ -246,11 +246,11 @@ namespace shttps {
         if (!luafile.empty()) {
             if (luaL_loadfile(L, luafile.c_str()) != 0) {
                 const char *luaerror = lua_tostring(L, -1);
-                throw Error(__file__, __LINE__, string("Lua error: ") + luaerror);
+                throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
             }
             if (lua_pcall(L, 0, LUA_MULTRET, 0) != 0) {
                 const char *luaerror = lua_tostring(L, -1);
-                throw Error(__file__, __LINE__, string("Lua error: ") + luaerror);
+                throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
             }
         }
     }

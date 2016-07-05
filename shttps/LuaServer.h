@@ -75,6 +75,14 @@ namespace shttps {
         */
         LuaServer(const std::string &luafile);
 
+        inline LuaServer(const LuaServer &conn) {
+            throw Error(__FILE__, __LINE__, "Copy constructor not allowed!");
+        }
+
+        inline LuaServer& operator=(const LuaServer& other) {
+            throw Error(__FILE__, __LINE__, "Assigment operator not allowed!");
+        }
+
        /*!
         * Destroys the lua interpreter and all associated resources
         */
