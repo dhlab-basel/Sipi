@@ -507,6 +507,7 @@ namespace shttps {
                         request_params.insert(post_params.begin(), post_params.end());
 
                         free(bodybuf);
+                        content_length = 0;
                     }
                     else if (content_type_opts[0] == "multipart/form-data") {
                         string boundary;

@@ -146,10 +146,12 @@ namespace shttps {
                 BIO *bio = BIO_new(BIO_s_mem());
                 ERR_print_errors (bio);
                 char *buf = NULL;
-                (void) BIO_get_mem_data (bio, &buf);
-                ss << buf << " : ";
+                long n =  BIO_get_mem_data (bio, &buf);
+                if (n > 0) {
+                    ss << buf << " : ";
+                }
                 BIO_free (bio);
-                ss << "Description: " << message;
+                //ss << "Description: " << message;
                 return ss.str();
             };
         };
