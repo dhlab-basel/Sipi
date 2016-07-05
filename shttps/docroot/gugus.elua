@@ -82,11 +82,12 @@ server.print("Password: ", password, "<br/><hr/>")
 
 
 -- result = server.http("GET", "http://www.salsah.org/api/resources/1", 5000)
-result = server.http("GET", "https://services.groupkt.com/country/get/all", {Test = 'gagaga'}, 5000)
+result = server.http("GET", "https://services.groupkt.com/country/get/all", {Cookie = 'gagaga'}, 5000)
 
 
 if (result.success) then
-    server.print("Duration: ", result.duration, " ms<br/><hr/>")
+    server.print("Duration: ", result.duration, " ms<br/>")
+    server.print("Status: ", result.status_code, "<br/><hr/>")
 
     server.print("<h2>Header variables</h2>")
     print_table(server.header)

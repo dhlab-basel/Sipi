@@ -907,7 +907,10 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 2) {
-re        }
+            lua_pushstring(L, "'server.http(method, url [, header] [, timeout])' requires at least 2 parameters");
+            lua_error(L);
+            return 0;
+        }
 
         string errormsg; // filled in case of errors...
         bool success = true;
@@ -1311,8 +1314,8 @@ re        }
         const char *skey;
         lua_pushnil(L);  /* first key */
         while (lua_next(L, index) != 0) {
-            // key is at index -2
-            // value is at index -1
+            // key is at index -2  // index + 1
+            // value is at index -1 // index + 2
             if (lua_type(L, index + 1) == LUA_TSTRING) {
                 // we have a string as key
                 skey = lua_tostring(L, index + 1);

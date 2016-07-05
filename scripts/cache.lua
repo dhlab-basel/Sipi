@@ -54,10 +54,8 @@ if server.method == 'GET' then
 elseif server.method == 'DELETE' then
     if server.content and server.content_type == 'application/json' then
         todel = server.json_to_table(server.content)
-        print('TODEL=', todel)
         for index,canonical in pairs(todel) do
             cache.delete(canonical)
-            print('DELETING ', index, ' ', canonical)
         end
         result = {
             status = 'OK'
