@@ -37,9 +37,6 @@
 -------------------------------------------------------------------------------
 function pre_flight(prefix,identifier,cookie)
 
-    -- use Sipi's luarocks to install these modules
-    requests = require "requests"
-    json = require "json"
 
     if config.prefix_as_path then
         filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
@@ -59,8 +56,8 @@ function pre_flight(prefix,identifier,cookie)
 
 
     -- comment this in if you do not want to do a preflight request
-    --print("ignoring permissions")
-    --do return 'allow', filepath end
+    -- print("ignoring permissions")
+    -- do return 'allow', filepath end
 
     if cookie == '' then
         -- unset cookie if it is empty, so it does not get sent to Knora
@@ -79,28 +76,28 @@ function pre_flight(prefix,identifier,cookie)
 
     end
 
-    status, ret = pcall(
-    function ()
-        return requests.get{url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier, cookies = cookie}
-    end
-    )
+    header = {
+        Cookie = cookie
+    }
+    result = server.http("GET", 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier, header)
+
     -- check HTTP request was successful
-    if not status then
+    if not result.success then
         print("An error occurred when making the request to Knora.")
         print("Err: ", ret)
         -- deny request
         return 'deny'
     end
 
-    if ret.status_code ~= 200 then
-        print("Knora returned an unsuccessful HTTP status code " .. ret.status)
-        print(ret.text)
-        return 'deny'
-    end
+    -- if result.success ~= 200 then
+    --     print("Knora returned an unsuccessful HTTP status code " .. ret.status)
+    --     print(ret.text)
+    --     return 'deny'
+    -- end
 
-    response_json = json.decode(ret.text)
+    response_json = server.json_to_table(result.body)
 
-    print(ret.text)
+    print(result.body)
 
     --print("status: " .. response_json.status)
     --print("permission code: " .. response_json.permissionCode)
