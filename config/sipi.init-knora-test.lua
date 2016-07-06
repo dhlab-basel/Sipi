@@ -45,7 +45,77 @@ function pre_flight(prefix,identifier,cookie)
 
     print("serving test image " .. filepath)
 
-    return 'allow', filepath
+    if prefix == "thumbs" then
+        -- always allow thumbnails
+        return 'allow', filepath
+    end
+
+    if prefix == "tmp" then
+        -- always deny access to tmp folder
+        return 'deny'
+    end
+
+
+    -- comment this in if you do not want to do a preflight request
+    -- print("ignoring permissions")
+    -- do return 'allow', filepath end
+
+    knora_cookie_header = nil
+
+    if cookie ~='' then
+        key = string.sub(cookie, 0, 4)
+
+        if (key ~= "sid=") then
+            -- cookie key is not valid
+            print("cookie key is invalid")
+        else
+            session_id = string.sub(cookie, 5)
+            knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
+        end
+    end
+
+    knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
+    print("knora_url: " .. knora_url)
+
+    result = server.http("GET", knora_url, knora_cookie_header, 5000)
+
+    -- check HTTP request was successful
+    if not result.success then
+        print("Request to Knora failed: " .. result.errmsg)
+        -- deny request
+        return 'deny'
+    end
+
+    if result.status_code ~= 200 then
+        print("Knora returned HTTP status code " .. ret.status)
+        print(result.body)
+        return 'deny'
+    end
+
+    response_json = server.json_to_table(result.body)
+
+    print("status: " .. response_json.status)
+    print("permission code: " .. response_json.permissionCode)
+
+    if response_json.status ~= 0 then
+        -- something went wrong with the request, Knora returned a non zero status
+        return 'deny'
+    end
+
+    if response_json.permissionCode == 0 then
+        -- no view permission on file
+        return 'deny'
+    elseif response_json.permissionCode == 1 then
+        -- restricted view permission on file
+        -- either watermark or size (depends on project, should be returned with permission code by Sipi responder)
+        return 'restrict:size=' .. config.thumb_size, filepath
+    elseif response_json.permissionCode >= 2 then
+        -- full view permissions on file
+        return 'allow', filepath
+    else
+        -- invalid permission code
+        return 'deny'
+    end
 
 end
 -------------------------------------------------------------------------------
