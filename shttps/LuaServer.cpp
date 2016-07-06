@@ -982,10 +982,19 @@ namespace shttps {
                 host = url.substr(0, pos);
                 if (url[pos] == ':') { // we have a portnumber
                     try {
-                        port = stoi(url.substr(0, pos));
+                        string rest_of_url = url.substr(pos + 1);
+                        size_t endpos = rest_of_url.find("/");
+                        string portstr;
+                        if (endpos == string::npos) {
+                            portstr = rest_of_url;
+                        }
+                        else {
+                            portstr = rest_of_url.substr(0, endpos);
+                        }
+                        port = stoi(portstr);
                     }
                     catch (const std::invalid_argument &ia) {
-                        string err = string("server.http: invalid portnumber!) ") + string(ia.what());
+                        string err = string("server.http: invalid portnumber! ") + string(ia.what());
                         throw _HttpError(__LINE__, err);
                     }
                     pos = url.find("/");
