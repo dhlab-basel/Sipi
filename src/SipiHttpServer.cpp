@@ -740,7 +740,13 @@ namespace Sipi {
         //
         int img_w, img_h;
         Sipi::SipiImage tmpimg;
-        tmpimg.getDim(infile, img_w, img_h);
+        try {
+            tmpimg.getDim(infile, img_w, img_h);
+        }
+        catch(SipiImageError &err) {
+            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+            return;
+        }
 
         int tmp_r_w, tmp_r_h, tmp_red;
         bool tmp_ro;
@@ -871,8 +877,8 @@ namespace Sipi {
         try {
             img.read(infile, &region, &size, quality_format.format() == SipiQualityFormat::JPG);
         }
-        catch(const Sipi::SipiError &err) {
-            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err);
+        catch(const SipiImageError &err) {
+            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
             return;
         }
 

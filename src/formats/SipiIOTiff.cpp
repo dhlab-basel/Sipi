@@ -1,4 +1,4 @@
-    /*
+/*
  * Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
  * Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
  * This file is part of Sipi.
@@ -29,10 +29,12 @@
 #include <cmath>
 
 #include <stdlib.h>
+#include <errno.h>
 
 #include "Connection.h"
 #include "SipiError.h"
 #include "SipiIOTiff.h"
+#include "SipiImage.h"
 
 #include "tif_dir.h"  // libtiff internals; for _TIFFFieldArray
 
@@ -45,6 +47,8 @@ static const char __file__[] = __FILE__;
 #define TIFF_GET_FIELD(file,tag,var,default) {\
 if (0 == TIFFGetField ((file), (tag), (var)))*(var) = (default); }
 
+using namespace std;
+using namespace Sipi;
 
 extern "C" {
 
@@ -60,13 +64,13 @@ extern "C" {
     {
         MEMTIFF *memtif;
         if ((memtif = (MEMTIFF *) malloc(sizeof(MEMTIFF))) == NULL) {
-            throw Sipi::SipiError(__file__, __LINE__, "malloc failed", errno);
+            throw SipiImageError("malloc failed", errno);
         }
         memtif->incsiz = incsiz;
         if (initsiz == 0) initsiz = incsiz;
         if ((memtif->data = (unsigned char *) malloc(initsiz*sizeof(unsigned char))) == NULL) {
             free (memtif);
-            throw Sipi::SipiError(__file__, __LINE__, "malloc failed", errno);
+            throw SipiImageError("malloc failed", errno);
         }
         memtif->size = initsiz;
         memtif->flen = 0;
@@ -97,7 +101,7 @@ extern "C" {
         MEMTIFF *memtif = (MEMTIFF *) handle;
         if (((tsize_t) memtif->fptr + size) > memtif->size) {
             if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + size)) == NULL) {
-                throw Sipi::SipiError(__file__, __LINE__, "realloc failed", errno);
+                throw SipiImageError("realloc failed", errno);
             }
             memtif->size = memtif->fptr + memtif->incsiz + size;
         }
@@ -116,7 +120,7 @@ extern "C" {
             case SEEK_SET: {
                 if ((tsize_t) off > memtif->size) {
                     if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == NULL) {
-                        throw Sipi::SipiError(__file__, __LINE__, "realloc failed", errno);
+                        throw SipiImageError("realloc failed", errno);
                     }
                     memtif->size = memtif->size + memtif->incsiz + off;
                 }
@@ -126,7 +130,7 @@ extern "C" {
             case SEEK_CUR: {
                 if ((tsize_t)(memtif->fptr + off) > memtif->size) {
                     if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + off)) == NULL) {
-                        throw Sipi::SipiError(__file__, __LINE__, "realloc failed", errno);
+                        throw SipiImageError("realloc failed", errno);
                     }
                     memtif->size = memtif->fptr + memtif->incsiz + off;
                 }
@@ -136,7 +140,7 @@ extern "C" {
             case SEEK_END: {
                 if ((tsize_t) (memtif->size + off) > memtif->size) {
                     if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == NULL) {
-                        throw Sipi::SipiError(__file__, __LINE__, "realloc failed", errno);
+                        throw SipiImageError("realloc failed", errno);
                     }
                     memtif->size = memtif->size + memtif->incsiz + off;
                 }
@@ -192,8 +196,6 @@ extern "C" {
     /*===========================================================================*/
 
 }
-
-using namespace std;
 
 
 //
@@ -321,24 +323,24 @@ namespace Sipi {
 
         if (TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &nx) == 0) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + wmfile);
+            throw SipiImageError("ERROR in read_watermark: TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + wmfile);
         }
 
         if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &ny) == 0) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + wmfile);
+            throw SipiImageError("ERROR in read_watermark: TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + wmfile);
         }
 
         TIFF_GET_FIELD (tif, TIFFTAG_SAMPLESPERPIXEL, &spp, 1);
         if (spp != 1) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: ssp ≠ 1: " + wmfile);
+            throw SipiImageError("ERROR in read_watermark: ssp ≠ 1: " + wmfile);
         }
 
         TIFF_GET_FIELD (tif, TIFFTAG_BITSPERSAMPLE, &bps, 1);
         if (bps != 8) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: bps ≠ 8: " + wmfile);
+            throw SipiImageError("ERROR in read_watermark: bps ≠ 8: " + wmfile);
         }
 
         TIFF_GET_FIELD (tif, TIFFTAG_PHOTOMETRIC, &pmi, PHOTOMETRIC_MINISBLACK);
@@ -353,14 +355,14 @@ namespace Sipi {
             wmbuf = new byte[ny*sll];
         }
         catch (std::bad_alloc& ba){
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: Could not allocate memory: "); // + ba.what());
+            throw SipiImageError("ERROR in read_watermark: Could not allocate memory: "); // + ba.what());
         }
 
         int cnt = 0;
         for (int i = 0; i < ny; i++) {
             if (TIFFReadScanline (tif, wmbuf + i*sll, i) == -1) {
                 delete [] wmbuf;
-                throw SipiError(__file__, __LINE__, "ERROR in read_watermark: TIFFReadScanline failed on scanline" + to_string(i) + " File: " + wmfile);
+                throw SipiImageError("ERROR in read_watermark: TIFFReadScanline failed on scanline" + to_string(i) + " File: " + wmfile);
             }
             for (int ii = 0; ii < sll; ii++) {
                 if (wmbuf[i*sll + ii] > 0) {
@@ -436,12 +438,12 @@ namespace Sipi {
                 cerr << "TIFF image file \"" << filepath << "\" Error getting TIFFTAG_IMAGEWIDTH !" << endl;
                 TIFFClose(tif);
                 string msg = "TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + filepath;
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(msg);
             }
             if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &(img->ny)) == 0) {
                 TIFFClose(tif);
                 string msg = "TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + filepath;
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(msg);
             }
             unsigned int sll = (unsigned int) TIFFScanlineSize (tif);
             TIFF_GET_FIELD (tif, TIFFTAG_SAMPLESPERPIXEL, &stmp, 1);
@@ -654,7 +656,7 @@ namespace Sipi {
                             delete [] dataptr;
                             TIFFClose(tif);
                             string msg = "TIFFReadScanline failed on scanline" + to_string(i) + " File: " + filepath;
-                            throw SipiError(__file__, __LINE__, msg);
+                            throw SipiImageError(msg);
                         }
                     }
                     img->pixels = dataptr;
@@ -667,7 +669,7 @@ namespace Sipi {
                                 delete [] dataptr;
                                 TIFFClose(tif);
                                 string msg = "TIFFReadScanline failed on scanline" + to_string(i) + " File: " + filepath;
-                                throw SipiError(__file__, __LINE__, msg);
+                                throw SipiImageError(msg);
                             }
                         }
                     }
@@ -686,7 +688,7 @@ namespace Sipi {
                 switch (img->bps) {
                     case 1: {
                         string msg = "Images with 1 bit/sample not supported! File: " + filepath;
-                        throw SipiError(__file__, __LINE__, msg);
+                        throw SipiImageError(msg);
                     }
                     case 8: {
                         ps = 1;
@@ -706,7 +708,7 @@ namespace Sipi {
                             delete [] inbuf;
                             TIFFClose(tif);
                             string msg = "TIFFReadScanline failed on scanline" + to_string(i) + " File: " + filepath;
-                            throw SipiError(__file__, __LINE__, msg);
+                            throw SipiImageError(msg);
                         }
                         memcpy (inbuf + ps*i*roi_w*img->nc, dataptr + ps*roi_x*img->nc, ps*roi_w*img->nc);
                     }
@@ -722,7 +724,7 @@ namespace Sipi {
                                 delete [] inbuf;
                                 TIFFClose(tif);
                                 string msg = "TIFFReadScanline failed on scanline" + to_string(i) + " File: " + filepath;
-                                throw SipiError(__file__, __LINE__, msg);
+                                throw SipiImageError(msg);
                             }
                             memcpy (inbuf + ps*roi_w*(j*roi_h + i), dataptr + ps*roi_x, ps*roi_w);
                         }
@@ -766,7 +768,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiError(__file__, __LINE__, "Unsupported photometric interpretation (" + to_string(img->photo) + ")!");
+                        throw SipiImageError("Unsupported photometric interpretation (" + to_string(img->photo) + ")!");
                     }
                 }
             }
@@ -783,7 +785,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiError(__file__, __LINE__, "Unsupported bits/sample (" + to_string(bps) + ")!");
+                        throw SipiImageError("Unsupported bits/sample (" + to_string(bps) + ")!");
                     }
                 }
             }
@@ -799,7 +801,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiError(__file__, __LINE__, "Unsupported bits/sample (" + to_string(bps) + ")!");
+                        throw SipiImageError("Unsupported bits/sample (" + to_string(bps) + ")!");
                     }
                 }
             }
@@ -819,7 +821,7 @@ namespace Sipi {
 
             if (force_bps_8) {
                 if (!img->to8bps()) {
-                    throw SipiError(__file__, __LINE__, "Cannont convert to 8 Bits(sample");
+                    throw SipiImageError("Cannont convert to 8 Bits(sample");
                 }
             }
 
@@ -848,12 +850,12 @@ namespace Sipi {
                 cerr << "TIFF image file \"" << filepath << "\" Error getting TIFFTAG_IMAGEWIDTH !" << endl;
                 TIFFClose(tif);
                 string msg = "TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + filepath;
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(msg);
             }
             if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &height) == 0) {
                 TIFFClose(tif);
                 string msg = "TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + filepath;
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(msg);
             }
             TIFFClose(tif);
             return true;
@@ -892,7 +894,7 @@ namespace Sipi {
             if ((tif = TIFFOpen (filepath.c_str(), "wb")) == NULL) {
                 if (memtif != NULL) memTiffFree(memtif);
                 string msg = "TIFFopen of \"" + filepath + "\" failed!";
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(msg);
             }
         }
         TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
@@ -1035,12 +1037,12 @@ namespace Sipi {
                 }
                 catch (int i) {
                     memTiffFree(memtif);
-                    throw SipiError(__file__, __LINE__, "Sending data failed! Broken pipe?: " + filepath + " !");
+                    throw SipiImageError("Sending data failed! Broken pipe?: " + filepath + " !");
                 }
             }
             else {
                 memTiffFree(memtif);
-                throw SipiError(__file__, __LINE__, "Unknown output method: " + filepath + " !");
+                throw SipiImageError("Unknown output method: " + filepath + " !");
             }
             memTiffFree(memtif);
         }
@@ -1325,7 +1327,7 @@ namespace Sipi {
         }
         else  {
             string msg = "Bits per sample not supported: " + to_string(-img->bps);
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiImageError(msg);
         }
     }
     //============================================================================
@@ -1342,7 +1344,7 @@ namespace Sipi {
 
         if (img->bps != 1) {
             string msg = "Bits per sample is not 1 but: " + to_string(img->bps);
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiImageError(msg);
         }
 
         outbuf = new byte[img->nx*img->ny];
