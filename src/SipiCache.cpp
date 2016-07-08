@@ -43,6 +43,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <SipiCache.h>
 
 #include "spdlog/spdlog.h"
 
@@ -110,6 +111,8 @@ namespace Sipi {
                     continue;
                 }
                 CacheRecord cr;
+                cr.img_w = fr.img_w;
+                cr.img_h = fr.img_h;
                 cr.origpath = fr.origpath;
                 cr.cachepath = fr.cachepath;
                 cr.mtime = fr.mtime;
@@ -147,6 +150,16 @@ namespace Sipi {
             }
             free(namelist);
         }
+
+        for (const auto &ele : cachetable) {
+            try {
+                (void) sizetable.at(ele.second.origpath);
+            }
+            catch(const std::out_of_range& oor) {
+                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h};
+                sizetable[ele.second.origpath] = tmp_cr;
+            }
+        }
     }
     //============================================================================
 
@@ -161,6 +174,8 @@ namespace Sipi {
         if (!cachefile.fail()) {
             for (const auto &ele : cachetable) {
                 SipiCache::FileCacheRecord fr;
+                fr.img_w = ele.second.img_w;
+                fr.img_h = ele.second.img_h;
                 (void) snprintf(fr.canonical, 256, "%s", ele.first.c_str());
                 (void) snprintf(fr.origpath, 256, "%s", ele.second.origpath.c_str());
                 (void) snprintf(fr.cachepath, 256, "%s", ele.second.cachepath.c_str());
@@ -341,7 +356,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiCache::add(const string &origpath_p, const string &canonical_p, const string &cachepath_p)
+    void SipiCache::add(const string &origpath_p, const string &canonical_p, const string &cachepath_p, int img_w_p, int img_h_p)
     {
         size_t pos = cachepath_p.rfind('/');
         string cachepath;
@@ -353,7 +368,10 @@ namespace Sipi {
         }
         struct stat fileinfo;
         SipiCache::CacheRecord fr;
+        SipiCache::SizeRecord sr;
 
+        fr.img_w = sr.img_w = img_w_p;
+        fr.img_h = sr.img_h = img_h_p;
         fr.origpath = origpath_p;
         fr.cachepath = cachepath;
 
@@ -395,6 +413,15 @@ namespace Sipi {
 
         cachetable[canonical_p] = fr;
         cachesize += fr.fsize;
+
+        try {
+            (void) sizetable.at(origpath_p);
+        }
+        catch(const std::out_of_range& oor) {
+            SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p};
+            sizetable[origpath_p] = tmp_cr;
+        }
+
         ++nfiles;
 
         locking.unlock();
@@ -461,4 +488,16 @@ namespace Sipi {
     }
     //============================================================================
 
+    bool SipiCache::getSize(const string &origname_p, int &img_w, int &img_h) {
+        try {
+            SipiCache::SizeRecord sr =  sizetable.at(origname_p);
+            img_w = sr.img_w;
+            img_h = sr.img_h;
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
+        return true;
+    }
+    //============================================================================
 }

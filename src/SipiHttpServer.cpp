@@ -302,9 +302,22 @@ namespace Sipi {
 
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
-        Sipi::SipiImage img;
         int width, height;
-        img.getDim(infile, width, height);
+        //
+        // get cache info
+        //
+        SipiCache *cache = serv->cache();
+        if ((cache == NULL) || !cache->getSize(infile, width, height)) {
+            Sipi::SipiImage tmpimg;
+            try {
+                tmpimg.getDim(infile, width, height);
+            }
+            catch(SipiImageError &err) {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+                return;
+            }
+        }
+
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
 
@@ -736,16 +749,23 @@ namespace Sipi {
         bool mirror = rotation.get_rotation(angle);
 
         //
+        // get cache info
+        //
+        SipiCache *cache = serv->cache();
+
+        //
         // get image dimensions, needed for get_canonical...
         //
         int img_w, img_h;
-        Sipi::SipiImage tmpimg;
-        try {
-            tmpimg.getDim(infile, img_w, img_h);
-        }
-        catch(SipiImageError &err) {
-            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
-            return;
+        if ((cache == NULL) || !cache->getSize(infile, img_w, img_h)) {
+            Sipi::SipiImage tmpimg;
+            try {
+                tmpimg.getDim(infile, img_w, img_h);
+            }
+            catch(SipiImageError &err) {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+                return;
+            }
         }
 
         int tmp_r_w, tmp_r_h, tmp_red;
@@ -825,7 +845,6 @@ namespace Sipi {
 
         logger->debug("Checking for cache...");
 
-        SipiCache *cache = serv->cache();
         if (cache != NULL) {
             logger->debug("Cache found, testing for canonical '") << canonical << "'";
             string cachefile = cache->check(infile, canonical);
@@ -946,7 +965,7 @@ namespace Sipi {
                     if (cache != NULL) {
                         conobj.closeCacheFile();
                         logger->debug("Adding cachefile '") << cachefile << "' to internal list";
-                        cache->add(infile, canonical, cachefile);
+                        cache->add(infile, canonical, cachefile, img_w, img_h);
                         logger->debug("DONE");
                     }
                     break;
@@ -981,7 +1000,7 @@ namespace Sipi {
                     if (cache != NULL) {
                         conobj.closeCacheFile();
                         logger->debug("Adding cachefile '") << cachefile << "' to internal list";
-                        cache->add(infile, canonical, cachefile);
+                        cache->add(infile, canonical, cachefile, img_w, img_h);
                         logger->debug("DONE");
                     }
                     break;
