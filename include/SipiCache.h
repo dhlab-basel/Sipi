@@ -56,6 +56,7 @@ namespace Sipi {
          * server start or server shutdown.
          */
         typedef struct {
+            int img_w, img_h;
             char canonical[256];
             char origpath[256];
             char cachepath[256];
@@ -74,6 +75,7 @@ namespace Sipi {
          * server shutdown, the in-memory representation is again ritten to a file.
          */
         typedef struct {
+            int img_w, img_h;
             std::string origpath;
             std::string cachepath;
 #if defined(HAVE_ST_ATIMESPEC)
@@ -86,6 +88,15 @@ namespace Sipi {
         } CacheRecord;
 
         /*!
+         * SizeRecord is used to create a map of the original filenames in the image
+         * directory and the sizes of the full images.
+         */
+        typedef struct {
+            int img_w;
+            int img_h;
+        } SizeRecord;
+
+        /*!
          * This is the prototype function to used as parameter for the method SipiCache::loop
          * which is applied to all cached files.
          */
@@ -95,6 +106,7 @@ namespace Sipi {
         std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
         std::string _cachedir; //!< path to the cache directory
         std::map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
+        std::map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size
         unsigned long long cachesize; //!< number of bytes in the cache
         unsigned long long max_cachesize; //!< maximum number of bytes that can be cached
         unsigned nfiles; //!< number of files in cache
@@ -170,7 +182,7 @@ namespace Sipi {
          * \param[in] canonical_p Canonical IIIF URL
          * \param[in] cachepath_p Path of the cache file
          */
-        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p);
+        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, int img_w_p, int img_h_p);
 
         /*!
          * Remove one file from the cache
@@ -203,13 +215,13 @@ namespace Sipi {
          */
         inline unsigned getMaxNfiles(void) { return max_nfiles; }
 
-        /*
+        /*!
          * get the path to the cache directory
          * \returns Path of the cache directory
          */
         inline std::string getCacheDir(void) { return _cachedir; }
 
-        /*
+        /*!
          * Loop over all cached files and apply the worker function (e.g. to collect furter
          * information about the cached files.
          *
@@ -218,6 +230,15 @@ namespace Sipi {
          * \param[in] Sort method used to determine the sequence how the cache is processed.
          */
         void loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm = SORT_ATIME_ASC);
+
+        /*!
+         * Returns the sie of the image, if the file has ben cached
+         *
+         * \param[in] original filename
+         * \param[out] img_w Width of original image in pixels
+         * \param[out] img_h Height of original image in pixels
+         */
+        bool getSize(const std::string &origname_p, int &img_w, int &img_h);
     };
 }
 
