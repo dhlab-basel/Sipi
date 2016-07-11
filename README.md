@@ -63,15 +63,17 @@ Also, note that code inspection in the CLion editor may not work until it has ru
 In order to get `gcc-5.1.1`, an additional repository has to added since it is not part of CentOS. Add Fedora repository as follows (see <http://serverfault.com/questions/720558/how-to-install-gcc-5-2-on-centos-7-1> for the original post):
 
 - create the file `/etc/yum.repos.d/FedoraRepo.repo`
+
 - add the following lines to it:
-    ```
-    [warning:fedora]
-    name=fedora
-    mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-23&arch=$basearch
-    enabled=1
-    gpgcheck=1
-    gpgkey=https://getfedora.org/static/34EC9CBA.txt
-    ```
+```
+        [warning:fedora]
+        name=fedora
+        mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-23&arch=$basearch
+        enabled=1
+        gpgcheck=1
+        gpgkey=https://getfedora.org/static/34EC9CBA.txt
+```
+
 - `yum update gcc g++`
 - run `gcc --version` and it should say `gcc (GCC) 5.1.1`
 - then remove the config file, otherwise you will get into trouble because library versions are mixed
