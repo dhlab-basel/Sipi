@@ -20,7 +20,8 @@ The build process relies on cmake.
 ### General
 - a working c++11 compiler (gcc >= v5.3 or clang)
 - cmake > 2.8.0 (for Mac, see below)
-- java openjdk devel (set environment variable `JAVA_HOME`)
+- java 8 openjdk devel (set environment variable `JAVA_HOME`)
+- openssl devel
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - xz-5.2.1
    - libjpeg-v9a
@@ -47,12 +48,34 @@ Build, Execution, Deployment -> CMake -> Build options, to prevent CMake from bu
 Also, note that code inspection in the CLion editor may not work until it has run CMake.
 
 ### CentOS
-- `yum install package gcc-c++`
-- `yum install package readline-devel`
-- `yum install package zlib-devel`
-- `yum install package doxygen`
-- `yum install package unzip`
-- `yum install package patch`
+
+- `yum install gcc-c++`
+- `yum install java-1.8.0-openjdk-devel`
+- `yum sinatll openssl-devel`
+- `yum install readline-devel`
+- `yum install zlib-devel`
+- `yum install doxygen`
+- `yum install unzip`
+- `yum install patch`
+- `yum install cmake`
+
+
+In order to get `gcc-5.1.1`, an additional repository has to added since it is not part of CentOS. Add Fedora repository as follows (see <http://serverfault.com/questions/720558/how-to-install-gcc-5-2-on-centos-7-1> for the original post):
+
+- create the file `/etc/yum.repos.d/FedoraRepo.repo`
+- add the following lines to it:
+    ```
+[warning:fedora]
+name=fedora
+mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-23&arch=$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://getfedora.org/static/34EC9CBA.txt
+    ```
+- `yum update gcc g++`
+- run `gcc --version` and it should say `gcc (GCC) 5.1.1`
+- then remove the config file, otherwise you will get into trouble because library versions are mixed
+
 
 ### Ubuntu
 - `sudo apt-get install libreadline-dev`
@@ -197,7 +220,7 @@ Sipi provides the following functions`and preset variables:
    An example of usage:
    ```lua
    result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
-   
+
    if (result.success) then
        server.print("<table>")
        server.print("<tr><th>Field</th><th>Value</th></tr>")
@@ -205,7 +228,7 @@ Sipi provides the following functions`and preset variables:
            server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
        end
        server.print("</table><hr/>")
-   
+
        server.print("Duration: ", result.duration, " ms<br/><hr/>")
        server.print("Body:<br/>", result.body)
    else
