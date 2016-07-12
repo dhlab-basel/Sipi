@@ -73,7 +73,7 @@ namespace shttps {
         *
         * \param[in] luafile A script containing lua commands
         */
-        LuaServer(const std::string &luafile);
+        LuaServer(const std::string &luafile, bool iscode = false);
 
         inline LuaServer(const LuaServer &conn) {
             throw Error(__FILE__, __LINE__, "Copy constructor not allowed!");

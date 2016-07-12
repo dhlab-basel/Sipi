@@ -613,6 +613,7 @@ namespace shttps {
             _logger->info("Server listening on SSL port ") << to_string(_ssl_port);
         }
 
+        pipe(stoppipe); // ToDo: Errorcheck
         pthread_t thread_id;
         running = true;
         while(running) {
@@ -620,33 +621,40 @@ namespace shttps {
             struct sockaddr_storage cli_addr;
             socklen_t cli_size = sizeof(cli_addr);
 
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(_sockfd, &readfds);
+            FD_SET(stoppipe[0], &readfds);
+            maxfd = (stoppipe[0] > _sockfd) ? stoppipe[0] : _sockfd;
             if (_ssl_port > 0) {
-                fd_set readfds;
-                FD_ZERO(&readfds);
-                FD_SET(_sockfd, &readfds);
                 FD_SET(_ssl_sockfd, &readfds);
-                maxfd = (_sockfd > _ssl_sockfd) ? _sockfd : _ssl_sockfd;
-                if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
-                    _logger->debug("select failed (1)");
-                    break; // accept returned something strange – probably we want to shutdown the server
-                }
+                maxfd = (maxfd > _ssl_sockfd) ? maxfd : _ssl_sockfd;
+            }
+            if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
+                _logger->debug("select failed (1)");
+                break; // accept returned something strange – probably we want to shutdown the server
+            }
 
-                if (FD_ISSET(_sockfd, &readfds)) {
-                    sock = _sockfd;
-                }
-                else if (FD_ISSET(_ssl_sockfd, &readfds)) {
-                    sock = _ssl_sockfd;
-                }
-                else {
-                    _logger->debug("select failed (2)");
-                    break; // accept returned something strange – probably we want to shutdown the server
-                }
+            if (FD_ISSET(_sockfd, &readfds)) {
+                sock = _sockfd;
+            }
+            else if (FD_ISSET(stoppipe[0], &readfds)) {
+                sock = stoppipe[0];
+            }
+            else if ((_ssl_port > 0) && FD_ISSET(_ssl_sockfd, &readfds)) {
+                sock = _ssl_sockfd;
             }
             else {
-                sock = _sockfd;
+                _logger->debug("select failed (2)");
+                break; // accept returned something strange – probably we want to shutdown the server
             }
 
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+
+            if (sock == stoppipe[0]) {
+                running = false;
+                continue;
+            }
 
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
@@ -771,6 +779,10 @@ namespace shttps {
             thread_ids[ptid[i]].sid = -1;
             threadlock.unlock();
         }
+
+        close(stoppipe[0]);
+        close(stoppipe[1]);
+
         //
         // we have closed all sockets, now we can wait for the threads to terminate
         //
@@ -817,7 +829,7 @@ namespace shttps {
                     }
                 }
 
-                LuaServer luaserver(_initscript);
+                LuaServer luaserver(_initscript, true);
                 luaserver.createGlobals(conn);
                 for (auto &global_func : lua_globals) {
                     global_func.func(luaserver.lua(), conn, global_func.func_dataptr);

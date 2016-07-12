@@ -1,30 +1,27 @@
---
--- Created by IntelliJ IDEA.
--- User: rosenth
--- Date: 01/07/16
--- Time: 23:00
--- To change this template use File | Settings | File Templates.
---
+-- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
+-- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
+-- This file is part of Sipi.
+-- Sipi is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU Affero General Public License as published
+-- by the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+-- Sipi is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+-- Additional permission under GNU AGPL version 3 section 7:
+-- If you modify this Program, or any covered work, by linking or combining
+-- it with Kakadu (or a modified version of that library), containing parts
+-- covered by the terms of the Kakadu Software Licence, the licensors of this
+-- Program grant you additional permission to convey the resulting work.
+-- See the GNU Affero General Public License for more details.
+-- You should have received a copy of the GNU Affero General Public
+-- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
---[[
-auth = server.requireAuth()
-if (auth.status ~= 'BEARER') then
-    server.sendStatus(401)
-    server.sendHeader('WWW-Authenticate', 'Bearer')
-    server.print("Wrong credentials!")
-    return -1
+if not authorize_api('admin.sipi.org', 'administrator', config.adminuser) then
+    return
 end
-jwt = auth.token
-jwt = server.decode_jwt(intoken)
-if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
-    server.sendStatus(401)
-    server.sendHeader('WWW-Authenticate', 'Bearer')
-    return -1
-end
-]]--
 
 if server.method == 'GET' then
-    print("GET method!!!!!")
     if server.get and (server.get.sort == 'atasc') then
         flist = cache.filelist('AT_ASC')
     elseif server.get and (server.get.sort == 'atdesc') then
@@ -34,15 +31,7 @@ if server.method == 'GET' then
     elseif server.get and (server.get.sort == 'fsdesc') then
         flist = cache.filelist('FS_DESC')
     else
-        print("Before getting filelist")
-        flist = cache.filelist('AT_ASC')
-        print("After getting filelist")
-        for index,value in pairs(flist) do
-            print("index: ", index, " value: ")
-            for u,v in pairs(value) do
-                print("  ", u, "  ", v)
-            end
-        end
+       flist = cache.filelist('AT_ASC')
     end
 
 
@@ -64,7 +53,16 @@ elseif server.method == 'DELETE' then
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(200);
         server.print(jsonresult)
-
+    else
+        n = cache.purge()
+        result = {
+            status = 'OK',
+            n = n
+        }
+        jsonresult = server.table_to_json(result)
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(200);
+        server.print(jsonresult)
     end
 end
 

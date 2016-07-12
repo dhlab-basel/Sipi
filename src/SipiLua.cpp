@@ -269,6 +269,23 @@ namespace Sipi {
     }
     //=========================================================================
 
+    static int lua_purge_cache(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        int n = cache->purge();
+        lua_pushinteger(L, n);
+
+        return 1;
+    }
+    //=========================================================================
 
     static const luaL_Reg cache_methods[] = {
             {"size", lua_cache_size},
@@ -278,6 +295,7 @@ namespace Sipi {
             {"path", lua_cache_path},
             {"filelist", lua_cache_filelist},
             {"delete", lua_delete_cache_file},
+            {"purge", lua_purge_cache},
             {0,     0}
     };
     //=========================================================================

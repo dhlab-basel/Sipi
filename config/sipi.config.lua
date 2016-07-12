@@ -150,6 +150,11 @@ routes = {
     },
     {
         method = 'GET',
+        route = '/api/exit',
+        script = 'exit.lua'
+    },
+    {
+        method = 'GET',
         route = '/luaexe/test1',
         script = 'test1.lua'
     },

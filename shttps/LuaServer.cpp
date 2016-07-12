@@ -233,7 +233,7 @@ namespace shttps {
      *
      * \param[in] luafile A file containing a Lua script or a Lua code chunk
      */
-    LuaServer::LuaServer(const string &luafile) {
+    LuaServer::LuaServer(const string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
@@ -244,9 +244,17 @@ namespace shttps {
 
 
         if (!luafile.empty()) {
-            if (luaL_loadfile(L, luafile.c_str()) != 0) {
-                const char *luaerror = lua_tostring(L, -1);
-                throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+            if (iscode) {
+                if (luaL_loadstring(L, luafile.c_str()) != 0) {
+                    const char *luaerror = lua_tostring(L, -1);
+                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                }
+            }
+            else {
+                if (luaL_loadfile(L, luafile.c_str()) != 0) {
+                    const char *luaerror = lua_tostring(L, -1);
+                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                }
             }
             if (lua_pcall(L, 0, LUA_MULTRET, 0) != 0) {
                 const char *luaerror = lua_tostring(L, -1);
@@ -745,8 +753,6 @@ namespace shttps {
         lua_remove(L, -1); // remove from stack
 
         string auth = conn->header("authorization");
-
-
         lua_createtable(L, 0, 3); // table
 
         if (auth.empty()) {
@@ -758,7 +764,8 @@ namespace shttps {
             size_t npos;
             if ((npos = auth.find(" ")) != string::npos) {
                 string auth_type = auth.substr(0, npos);
-                if (auth_type == "Basic") {
+                asciitolower(auth_type);
+                if (auth_type == "basic") {
                     string auth_secret = auth.substr(npos + 1);
                     string auth_string = base64_decode(auth_secret);
                     npos = auth_string.find(":");
@@ -788,7 +795,7 @@ namespace shttps {
                         lua_rawset(L, -3); // table
                     }
                 }
-                else if (auth_type == "Bearer") {
+                else if (auth_type == "bearer") {
                     string jwt_token = auth.substr(npos + 1);
 
                     lua_pushstring(L, "status"); // table - "username"

@@ -169,6 +169,7 @@ namespace shttps {
         std::string _ssl_key; //!< Path to SSL certificate
         std::string _jwt_secret;
 #endif
+        int stoppipe[2];
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
@@ -327,8 +328,16 @@ namespace shttps {
          * cache file is updated.
          */
         inline void stop(void) {
+            write(stoppipe[1], "@", 1);
+            /*
             running = false;
             close(_sockfd);
+#ifdef SHTTPS_ENABLE_SSL
+            if (_ssl_port > 0) {
+                //close(_ssl_sockfd);
+            }
+#endif
+             */
         }
 
         /*!
@@ -383,7 +392,16 @@ namespace shttps {
          *
          * \param[in] initscript_p Path of initialization script
          */
-        inline void initscript(const std::string &initscript_p) { _initscript = initscript_p; }
+        inline void initscript(const std::string &initscript_p) {
+            std::ifstream t(initscript_p);
+
+            t.seekg(0, std::ios::end);
+            _initscript.reserve(t.tellg());
+            t.seekg(0, std::ios::beg);
+
+            _initscript.assign((std::istreambuf_iterator<char>(t)),
+                       std::istreambuf_iterator<char>());
+        }
 
         /*!
          * adds a function which is called before processing each request to initialize

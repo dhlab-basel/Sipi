@@ -1,207 +1,50 @@
 <lua>
---
--- Check if we can have a secure connection
---
-if server.has_openssl and not server.secure then
-    pos = string.find(server.host, ':', 1, true)
-    if (pos ~= nil) then
-        host = string.sub(server.host, 1, pos - 1)
-    else
-        host = server.host
-    end
-    if config.sslport ~= 443 then
-        host = host .. ':' .. config.sslport
-    end
-    server.sendHeader('location', 'https://'  .. host .. server.uri)
-    server.sendStatus(301)
-    return -1
-end
 
-if server.secure then
-    protocol = 'https://'
-else
-    protocol = 'http://'
-end
-
---
--- authentication
---
-if server.has_openssl then
-    --
-    -- first we check if we get a cookie with a valid JWT
-    --
-    if server.cookies['sipi'] then
-        intoken = server.cookies['sipi']
-        jwt = server.decode_jwt(intoken)
-        if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
-            server.sendStatus(401)
-            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-            return -1
-        end
-    else
-        --
-        -- otherwise we require an authentification header
-        --
-        auth = server.requireAuth()
-
-        if auth.status == 'BASIC' then
-            --
-            -- everything OK, let's create the token for further calls and ad it to a cookie
-            --
-            if auth.username == config.adminuser and auth.password == config.password then
-                tokendata = {
-                    iss = "sipi.unibas.ch",
-                    aud = "knora.org",
-                    user = auth.username
-                }
-                token = server.generate_jwt(tokendata)
-                server.sendCookie('sipi', token, {path = '/', expires = 3600})
-            else
-                server.sendStatus(401)
-                server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-                server.print("Wrong credentials!")
-                return -1
-            end
-        elseif auth.status == 'BEARER' then
-            jwt = server.decode_jwt(auth.token)
-            if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
-                server.sendStatus(401)
-                server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-                return -1
-            end
-       elseif auth.status == 'NOAUTH' then
-            server.setBuffer()
-            server.sendStatus(401);
-            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-            return -1
-        else
-            server.status(401)
-            server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-            return -1
-        end
-    end
-else
-    --
-    -- no openssl, we just use insecure basic authentification
-    -- ATTENTION: This is a severe security hole and should only
-    -- used on private networks You can trust!!
-    --
-    auth = server.requireAuth()
-    if auth.username ~= config.adminuser or auth.password ~= config.password then
-        server.sendStatus(401)
-        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
-        server.print("Wrong credentials!")
-        return -1
-    end
+success,token = authorize_page('admin.sipi.org', 'administrator', config.adminuser, config.password)
+if not success then
+    return
 end
 
 </lua>
 <html>
 <head>
     <title>SIPI Admin Console</title>
-    <script>
-
-    var apiurl = '<lua>server.print(protocol .. server.host .. '/api/cache')</lua>';
-
-    function delete_selected() {
-        var todels = document.getElementsByClassName('delete');
-        var ntodels = todels.length;
-        var delinfostr = "DELETE\n";
-        var dels = [];
-        for (var i = 0; i < ntodels; i++) {
-            if (todels[i].checked) {
-                delinfostr += todels[i].dataset.canonical + "\n";
-                dels.push(todels[i].dataset.canonical);
-            }
-        }
-
-        if (confirm(delinfostr)) {
-            xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (xhttp.readyState == 4 && xhttp.status == 200) {
-                    alert(xhttp.responseText);
-                }
-            };
-            xhttp.open('DELETE', apiurl, true);
-            xhttp.setRequestHeader("Content-type", "application/json");
-            xhttp.send(JSON.stringify(dels));
-        }
-    }
-
+    <script type="text/javascript" src="jquery-3.0.0.min.js"></script>
+    <script type="text/javascript">
+    var apiurl = '<lua>server.print(protocol .. server.host .. '/api/')</lua>';
+    var token = '<lua>server.print(token)</lua>';
     </script>
+    <script type="text/javascript" src="cache.js"></script>
 </head>
 <body>
-<h1>SIPI Cache Control on <lua>server.print(server.host)</lua></h1>
-</hr>
-<table>
+<h1>SIPI Admin on <lua>server.print(server.host)</lua></h1>
+<div id="msgbox" style="display:none">GAGA</div>
+<h2>Server</h2>
 <lua>
 if server.has_openssl then
-    server.print("has openssl<br/>")
+    server.print("Sipi has been compiled with OpenSSL support<br/>")
+else
+    server.print("Sipi has been compiled <b>without</b> OpenSSL support!!<br/>")
 end
-server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
+</lua>
+<input id="stop" type="button" value="Stop server">
+<hr/>
+<h2>Cache</h2>
+<table>
+<lua>
+
 server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
 server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
 server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
 
-url_sort_at_asc = protocol .. server.host .. '/server/cache.elua?sort=atasc'
-url_sort_at_desc = protocol .. server.host .. '/server/cache.elua?sort=atdesc'
-url_sort_fs_asc = protocol .. server.host .. '/server/cache.elua?sort=fsasc'
-url_sort_fs_desc = protocol .. server.host .. '/server/cache.elua?sort=fsdesc'
-
 </lua>
 </table>
-<hr/>
-<input type="button" value="Delete Selected" onClick="delete_selected();">
-<input type="button" value="Delete All">
-<hr/>
-<h2>Filelist</h2>
-<table border="1">
-<tr>
-    <th>&nbsp;</th>
-    <th>Last Access <a href="<lua>server.print(url_sort_at_asc)</lua>">^</a> <a href="<lua>server.print(url_sort_at_desc)</lua>">v</a></th>
-    <th>Canonical</th>
-    <th>Original Path</th>
-    <th>Cache Path</th>
-    <th>Size<a href="<lua>server.print(url_sort_fs_asc)</lua>">^</a> <a href="<lua>server.print(url_sort_fs_desc)</lua>">v</a></th>
-    <th>&nbsp</th>
-</tr>
-<lua>
+<h3>Filelist</h3>
+<input id="delsel" type="button" value="Delete Selected">
+<input id="purge" type="button" value="Purge">
+<br/>
+<table id="list" border="1">
 
-if server.get and server.get.sort then
-    if server.get.sort == 'atasc' then
-        for index,finfo in pairs(cache.filelist('AT_ASC')) do
-            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-        end
-    elseif server.get.sort == 'atdesc' then
-        for index,finfo in pairs(cache.filelist('AT_DESC')) do
-            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-        end
-    elseif server.get.sort == 'fsasc' then
-        for index,finfo in pairs(cache.filelist('FS_ASC')) do
-            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-        end
-    elseif server.get.sort == 'fsdesc' then
-        for index,finfo in pairs(cache.filelist('FS_DESC')) do
-            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-        end
-    else
-        for index,finfo in pairs(cache.filelist()) do
-            checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-            server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-        end
-    end
-else
-    for index,finfo in pairs(cache.filelist()) do
-        checkbox = string.format('<input type="checkbox" class="delete" data-canonical="%s" />', finfo.canonical)
-        server.print('<tr><td>', index, '</td><td>', finfo.last_access, '</td><td>', finfo.canonical, '</td><td>', finfo.origpath, '</td><td>', finfo.cachepath, '</td><td>', finfo.size, '</td><td>', checkbox, '</td></tr>')
-    end
-end
-
-</lua>
 </table>
 </body>
 </html>
