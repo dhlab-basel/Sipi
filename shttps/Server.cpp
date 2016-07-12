@@ -499,6 +499,8 @@ namespace shttps {
     {
         signal(SIGPIPE, SIG_IGN);
 
+        auto logger = spdlog::get(loggername);
+
         TData *tdata = (TData *) arg;
         SockStream *sockstream;
 
@@ -532,7 +534,11 @@ namespace shttps {
         if (do_close) {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
-                SSL_shutdown(tdata->cSSL);
+                int sstat;
+                while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
+                if (stat < 0) {
+                    logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+                }
                 SSL_free(tdata->cSSL);
             }
 #endif
@@ -649,12 +655,15 @@ namespace shttps {
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
-            int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (sock == stoppipe[0]) {
+                char buf[2];
+                read(stoppipe[0], buf, 1);
                 running = false;
-                continue;
+                break;
             }
+
+            int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
@@ -721,7 +730,11 @@ namespace shttps {
                }
                 catch (SSLError &err) {
                     _logger->error(err.to_string());
-                    SSL_shutdown(cSSL);
+                    int sstat;
+                    while ((sstat = SSL_shutdown(cSSL)) == 0);
+                    if (stat < 0) {
+                        _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
+                    }
                     SSL_free(cSSL);
                     cSSL = NULL;
                 }
@@ -764,12 +777,17 @@ namespace shttps {
             threadlock.lock();
 #ifdef SHTTPS_ENABLE_SSL
             if (sid[i].ssl_sid != NULL) {
-                SSL_shutdown(sid[i].ssl_sid);
+                int sstat;
+                while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0);
+                if (stat < 0) {
+                    _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(sid[i].ssl_sid, sstat);
+                }
                 SSL_free(sid[i].ssl_sid);
                 sid[i].ssl_sid = NULL;
             }
 #endif
             close(sid[i].sid);
+
             //
             // we indicate to the thread that the socked has been closed (and it's not a timeout)
             // by setting the socked_id in the thread_ids-table to -1. This leads the thread
@@ -789,6 +807,7 @@ namespace shttps {
         for (int i = 0; i < num_active_threads; i++) {
             pthread_join(ptid[i], NULL);
         }
+
         delete [] ptid;
         delete [] sid;
     }

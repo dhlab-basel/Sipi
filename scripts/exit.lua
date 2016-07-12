@@ -26,6 +26,6 @@ result = {
 }
 jsonresult = server.table_to_json(result)
 server.sendHeader('Content-type', 'application/json')
-server.sendStatus(200);
+server.sendStatus(200)
 server.print(jsonresult)
 server.shutdown()
