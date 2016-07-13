@@ -19,9 +19,12 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SipiError.h"
-#include "SipiXmp.h"
+ */
+#include <mutex>
 #include <pthread.h>
+
+#include "SipiError.h"
+#include "SipiXmp.h"
 
 static const char __file__[] = __FILE__;
 
@@ -75,8 +78,13 @@ namespace Sipi {
 
     char * SipiXmp::xmpBytes(unsigned int &len) {
         std::string xmpPacket;
-        if (0 != Exiv2::XmpParser::encode(xmpPacket, xmpData)) {
-            throw SipiError(__file__, __LINE__, "Failed to serialize XMP data!");
+        try {
+            if (0 != Exiv2::XmpParser::encode(xmpPacket, xmpData)) {
+                throw SipiError(__file__, __LINE__, "Failed to serialize XMP data!");
+            }
+        }
+        catch(Exiv2::BasicError<char> &err) {
+            throw SipiError(__file__, __LINE__, err.what());
         }
         Exiv2::XmpParser::terminate();
 

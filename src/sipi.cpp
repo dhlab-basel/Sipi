@@ -123,6 +123,23 @@ static void broken_pipe_handler(int sig) {
 }
 //=========================================================================
 
+typedef struct {
+    std::mutex lock;
+} XmpMutex;
+
+static XmpMutex xmp_mutex;
+
+static void xmplock_func(void *pLockData, bool lockUnlock) {
+    XmpMutex *m = (XmpMutex *) pLockData;
+    if (lockUnlock) {
+        m->lock.lock();
+    }
+    else {
+        m->lock.unlock();
+    }
+}
+//=========================================================================
+
 
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
 {
@@ -249,6 +266,10 @@ int main (int argc, char *argv[]) {
     // register namespace sipi in xmp. Since this part of the XMP library is
     // not reentrant, it must be done here in the main thread!
     //
+    if (!Exiv2::XmpParser::initialize(xmplock_func, &xmp_mutex)) {
+        std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
+    }
+
     Exiv2::XmpProperties::registerNs("http://rosenthaler.org/sipi/1.0/", "sipi");
 
 

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Show Big</title>
+    <script src="openseadragon.min.js"></script>
+    <script type="text/javascript">
+        var viewer = OpenSeadragon({
+            id: "openseadragon1",
+            prefixUrl: "/images/",
+            preserveViewport: true,
+            visibilityRatio:    1,
+            minZoomLevel:       1,
+            defaultZoomLevel:   1,
+            sequenceMode:       true,
+            tileSources:   [{
+                "@context": "http://iiif.io/api/image/2/context.json",
+                "@id": "http://localhost:1024/images/bigimage.jp2",
+                "height": 3010,
+                "width": 9486,
+                "profile": [ "http://iiif.io/api/image/2/level2.json" ],
+                "protocol": "http://iiif.io/api/image",
+                "tiles": [{
+                    "scaleFactors": [ 1, 2, 4, 8, 16, 32 ],
+                    "width": 1024
+                }]
+            }]
+        });
+    </script>
+</head>
+<body>
+
+<div id="openseadragon1" style="width: 800px; height: 600px;"></div>
+<script type="text/javascript">
+    var viewer = OpenSeadragon({
+        id: "openseadragon1",
+        prefixUrl: "/server/images/",
+        preserveViewport: true,
+        visibilityRatio:    1,
+        minZoomLevel:       1,
+        defaultZoomLevel:   1,
+        sequenceMode:       true,
+        tileSources:   [{
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage.jp2",
+            "height": 4010,
+            "width": 10680,
+            "profile": [ "http://iiif.io/api/image/2/level2.json" ],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [ 1, 2, 4, 8, 16, 32 ],
+                "width": 1024
+            }]
+        }]
+    });
+</script>
+
+</body>
+</html>
