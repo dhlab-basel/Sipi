@@ -94,6 +94,11 @@ namespace Sipi {
         typedef struct {
             int img_w;
             int img_h;
+#if defined(HAVE_ST_ATIMESPEC)
+            struct timespec mtime; //!< entry time into cache
+#else
+            time_t mtime;
+#endif
         } SizeRecord;
 
         /*!

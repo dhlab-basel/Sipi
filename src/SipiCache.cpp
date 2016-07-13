@@ -156,7 +156,7 @@ namespace Sipi {
                 (void) sizetable.at(ele.second.origpath);
             }
             catch(const std::out_of_range& oor) {
-                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h};
+                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h, ele.second.mtime};
                 sizetable[ele.second.origpath] = tmp_cr;
             }
         }
@@ -489,8 +489,26 @@ namespace Sipi {
     //============================================================================
 
     bool SipiCache::getSize(const string &origname_p, int &img_w, int &img_h) {
+        struct stat fileinfo;
+        if (stat(origname_p.c_str(), &fileinfo) != 0) {
+            throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origname_p + "\"!", errno);
+        }
+#if defined(HAVE_ST_ATIMESPEC)
+        struct timespec mtime = fileinfo.st_mtimespec;
+#else
+        time_t mtime = fileinfo.st_mtime;
+#endif
+
+
         try {
             SipiCache::SizeRecord sr =  sizetable.at(origname_p);
+            if (tcompare(mtime, sr.mtime) > 0) { // original file is newer than cache, we have to replace it..
+                locking.lock();
+                sizetable.erase(origname_p);
+                locking.unlock();
+                return false; // return empty string, means "replace the file in the cache!"
+            }
+
             img_w = sr.img_w;
             img_h = sr.img_h;
         }

@@ -103,16 +103,18 @@ namespace Sipi {
             x = 0;
         }
         else if (x >= nx) {
-            string msg = "Invalid croping region outside of image!";
-            throw SipiError(__file__, __LINE__, msg);
+            stringstream msg;
+            msg << "Invalid croping region outside of image! (x=" << x << " nx=" << nx << ")";
+            throw SipiError(__file__, __LINE__, msg.str());
         }
         if (y < 0) {
             h += y;
             y = 0;
         }
         else if (y >= ny) {
-            string msg = "Invalid croping region outside of image!";
-            throw SipiError(__file__, __LINE__, msg);
+            stringstream msg;
+            msg << "Invalid croping region outside of image! (y=" << y << " ny=" << ny << ")";
+            throw SipiError(__file__, __LINE__, msg.str());
         }
 
         if (w == 0) {
