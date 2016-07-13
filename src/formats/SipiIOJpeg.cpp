@@ -732,7 +732,7 @@ namespace Sipi {
             }
             delete [] exifchunk;
         }
-/*
+
         if (img->xmp != NULL) {
             unsigned int len;
             const char *buf;
@@ -761,7 +761,7 @@ namespace Sipi {
             }
             delete [] xmpchunk;
         }
-*/
+
         if (img->icc != NULL) {
             unsigned int len;
             const unsigned char *buf = img->icc->iccBytes(len);

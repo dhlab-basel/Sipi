@@ -202,10 +202,10 @@ namespace Sipi {
                             char *buf = new char[len];
                             box.read((kdu_byte *) buf, len);
                             try {
-                                img->xmp = new SipiXmp(buf, len);
+                                img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                logger != NULL ? logger << err : cerr << "*** " << err;
                             }
                             delete [] buf;
                         }
