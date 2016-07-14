@@ -38,8 +38,7 @@
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
 
-#include "shttps/LuaServer.h"
-#include "shttps/cJSON.h"
+#include "jansson.h"
 #include "shttps/GetMimetype.h"
 #include "SipiConf.h"
 
@@ -103,6 +102,7 @@ static std::string fileType_string(FileType f_type) {
 };
 
 static void sighandler(int sig) {
+    std::cerr << std::endl << "Got SIGINT, stopping server gracefully...." << std::endl;
     if (serverptr != NULL) {
         auto logger = spdlog::get(shttps::loggername);
         logger->info("Got SIGINT, stopping server");
@@ -124,19 +124,21 @@ static void broken_pipe_handler(int sig) {
 //=========================================================================
 
 
+
+
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
 {
     conobj.status(code);
     conobj.header("Content-Type", "application/json");
 
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "status", cJSON_CreateNumber(1));
-    cJSON_AddItemToObject(root, "message", cJSON_CreateString(msg.c_str()));
+    json_t *root = json_object();
+    json_object_set_new(root, "status", json_integer(1));
+    json_object_set_new(root, "message", json_string(msg.c_str()));
 
-    char *json_str = cJSON_Print(root);
+    char *json_str = json_dumps(root, JSON_INDENT(3));
     conobj << json_str << shttps::Connection::flush_data;
     free (json_str);
-    cJSON_Delete(root);
+    json_decref(root);
 }
 //=========================================================================
 
@@ -146,26 +148,34 @@ static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCod
     conobj.status(code);
     conobj.header("Content-Type", "application/json");
 
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddItemToObject(root, "status", cJSON_CreateNumber(1));
+    json_t *root = json_object();
+    json_object_set_new(root, "status", json_integer(1));
     std::stringstream ss;
     ss << err;
-	cJSON_AddItemToObject(root, "message", cJSON_CreateString(ss.str().c_str()));
-    char *json_str = cJSON_Print(root);
+    json_object_set_new(root, "message", json_string(ss.str().c_str()));
+    char *json_str = json_dumps(root, JSON_INDENT(3));
     conobj << json_str << shttps::Connection::flush_data;
     free (json_str);
-    cJSON_Delete(root);
+    json_decref(root);
 }
 //=========================================================================
 
-void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
+static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
 
-    lua_createtable(L, 0, 13); // table1
+    lua_createtable(L, 0, 14); // table1
 
     lua_pushstring(L, "port"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getPort());
     lua_rawset(L, -3); // table1
+
+#ifdef SHTTPS_ENABLE_SSL
+
+    lua_pushstring(L, "sslport"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getSSLPort());
+    lua_rawset(L, -3); // table1
+
+#endif
 
     lua_pushstring(L, "imgroot"); // table1 - "index_L1"
     lua_pushstring(L, conf->getImgRoot().c_str());
@@ -223,8 +233,17 @@ void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     lua_pushstring(L, conf->getKnoraPort().c_str());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "adminuser"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getAdminUser().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "password"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getPassword().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_setglobal(L, "config");
 }
+
 
 int main (int argc, char *argv[]) {
 
@@ -232,7 +251,9 @@ int main (int argc, char *argv[]) {
     // register namespace sipi in xmp. Since this part of the XMP library is
     // not reentrant, it must be done here in the main thread!
     //
-    Exiv2::XmpProperties::registerNs("http://rosenthaler.org/sipi/1.0/", "sipi");
+    if (!Exiv2::XmpParser::initialize(Sipi::xmplock_func, &Sipi::xmp_mutex)) {
+        std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
+    }
 
 
     //
@@ -263,7 +284,7 @@ int main (int argc, char *argv[]) {
     if ((params["config"]).isSet()) {
         std::string configfile = (params["config"])[0].getValue(SipiStringType);
         try {
-
+            std::cout << std::endl << SIPI_VERSION << std::endl;
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
@@ -271,16 +292,24 @@ int main (int argc, char *argv[]) {
             sipiConf = Sipi::SipiConf(luacfg);
 
             //Create object SipiHttpServer
-            Sipi::SipiHttpServer server(sipiConf.getPort(),
-                                        sipiConf.getNThreads());
+            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(), sipiConf.getUseridStr());
+
+#ifdef SHTTPS_ENABLE_SSL
+            server.ssl_port(sipiConf.getSSLPort()); // set the secure connection port (-1 means no ssl socket)
+            std::string tmps = sipiConf.getSSLCertificate();
+            server.ssl_certificate(tmps);
+            tmps = sipiConf.getSSLKey();
+            server.ssl_key(tmps);
+            server.jwt_secret(sipiConf.getJwtSecret());
+#endif
 
             // set tmpdir for uploads (defined in sipi.config.lua)
             server.tmpdir(sipiConf.getTmpDir());
 
             server.scriptdir(sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
             server.luaRoutes(sipiConf.getRoutes());
-            server.add_lua_globals_func(Sipi::sipiGlobals); // add new lua function "gaga"
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
+            server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add new lua function "gaga"
             server.prefix_as_path(sipiConf.getPrefixAsPath());
 
 

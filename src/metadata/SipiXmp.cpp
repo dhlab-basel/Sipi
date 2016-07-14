@@ -19,50 +19,86 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SipiError.h"
-#include "SipiXmp.h"
+ */
+#include <mutex>
 #include <pthread.h>
+
+#include "SipiError.h"
+#include "SipiXmp.h"
 
 static const char __file__[] = __FILE__;
 
+/*!
+ * ToDo: remove provisional code as soon as Exiv2::Xmp is thread safe (expected v.26)
+ * ATTENTION!!!!!!!!!
+ * Since the Xmp-Part of Exiv2 Version 0.25 is not thread safe, we omiz for the moment
+ * the use of Exiv2::Xmp for processing XMP. We just transfer the XMP string as is. This
+ * is bad, since we are not able to modifiy it. But we'll try again with Exiv2 v0.26!
+ */
 using namespace std;
 
 namespace Sipi {
 
+    XmpMutex xmp_mutex;
 
-    SipiXmp::SipiXmp(string xmp) {
-        if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
-            Exiv2::XmpParser::terminate();
-            throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+
+    void xmplock_func(void *pLockData, bool lockUnlock) {
+        XmpMutex *m = (XmpMutex *) pLockData;
+        if (lockUnlock) {
+            std::cerr << "XMP-LOCK!" << std::endl;
+            m->lock.lock();
         }
-        Exiv2::XmpParser::terminate();
+        else {
+            std::cerr << "XMP-UNLOCK!" << std::endl;
+            m->lock.unlock();
+        }
+    }
+    //=========================================================================
 
-        //xmpData["Xmp.sipi.software"] = "sipi 1.0.0";
+    SipiXmp::SipiXmp(const string &xmp) {
+        __xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
+        try {
+            if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
+                Exiv2::XmpParser::terminate();
+                throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+            }
+        }
+        catch(Exiv2::BasicError<char> &err) {
+            throw SipiError(__file__, __LINE__, err.what());
+        }
     }
     //============================================================================
 
     SipiXmp::SipiXmp(const char *xmp) {
-        if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
-            Exiv2::XmpParser::terminate();
-            throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+        __xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
+        try {
+            if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
+                Exiv2::XmpParser::terminate();
+                throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+            }
         }
-        //xmpData["Xmp.sipi.version"] = "sipi 1.0.0";
+        catch(Exiv2::BasicError<char> &err) {
+            throw SipiError(__file__, __LINE__, err.what());
+        }
     }
     //============================================================================
 
     SipiXmp::SipiXmp(const char *xmp, int len) {
-        char *buf = new char[len + 1];
-        memcpy (buf, xmp, len);
-        buf[len] = '\0';
+        string buf(xmp, len);
+        __xmpstr = buf; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
 
-        if (Exiv2::XmpParser::decode(xmpData, buf) != 0) {
-            Exiv2::XmpParser::terminate();
-            delete [] buf;
-            throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+        try {
+            if (Exiv2::XmpParser::decode(xmpData, buf) != 0) {
+                Exiv2::XmpParser::terminate();
+                throw SipiError(__file__, __LINE__, "Could not parse XMP!");
+            }
         }
-        delete [] buf;
-
-        //xmpData["Xmp.sipi.version"] = "sipi 1.0.0";
+        catch(Exiv2::BasicError<char> &err) {
+            throw SipiError(__file__, __LINE__, err.what());
+        }
     }
     //============================================================================
 
@@ -74,9 +110,19 @@ namespace Sipi {
 
 
     char * SipiXmp::xmpBytes(unsigned int &len) {
+        char *__buf = new char[__xmpstr.length() + 1];
+        memcpy (__buf, __xmpstr.c_str(), __xmpstr.length());
+        __buf[__xmpstr.length()] = '\0';
+        return __buf; // provisional code until Exiv2::Xmp is threadsafe
+
         std::string xmpPacket;
-        if (0 != Exiv2::XmpParser::encode(xmpPacket, xmpData)) {
-            throw SipiError(__file__, __LINE__, "Failed to serialize XMP data!");
+        try {
+            if (0 != Exiv2::XmpParser::encode(xmpPacket, xmpData, Exiv2::XmpParser::useCompactFormat)) {
+                throw SipiError(__file__, __LINE__, "Failed to serialize XMP data!");
+            }
+        }
+        catch(Exiv2::BasicError<char> &err) {
+            throw SipiError(__file__, __LINE__, err.what());
         }
         Exiv2::XmpParser::terminate();
 

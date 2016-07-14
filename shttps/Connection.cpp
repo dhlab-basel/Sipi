@@ -34,6 +34,7 @@
 #include <fstream>
 #include <string>
 #include <cstring>      // Needed for memset
+
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addrmktemp
 #include <unistd.h>    //write
@@ -93,7 +94,7 @@ namespace shttps {
         vector<string> params;
         size_t pos = 0;
         size_t old_pos = 0;
-        while ((pos = options.find(';', pos)) != string::npos) {
+        while ((pos = options.find(sep, pos)) != string::npos) {
             pos++;
             if (pos == 1) { // if first char is a token skip it!
                 old_pos = pos;
@@ -295,6 +296,10 @@ namespace shttps {
                         // upgrade connection, e.g. to websockets...
                     }
                 }
+                else if (name == "cookie") {
+                    _cookies = parse_header_options(value, true);
+
+                }
                 else if (name == "keep-alive") {
                     map<string,string> opts = parse_header_options(value, true, ',');
                     if (opts.count("timeout") == 1) {
@@ -337,6 +342,7 @@ namespace shttps {
 
     Connection::Connection(void) {
         _server = NULL;
+        _secure = false;
         ins = NULL;
         os = NULL;
         cachefile = NULL;
@@ -348,6 +354,7 @@ namespace shttps {
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
+        _content = NULL;
         content_length = 0;
         _finished = false;
         _reset_connection = false;
@@ -360,12 +367,14 @@ namespace shttps {
         : ins(ins_p), os(os_p), _tmpdir(tmpdir_p), outbuf_size(buf_size), outbuf_inc(buf_inc)
     {
         _server = server_p;
+        _secure = false;
         cachefile = NULL;
         header_sent = false;
         _keep_alive = false;
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
+        _content = NULL;
         content_length = 0;
         _finished = false;
         _reset_connection = false;
@@ -468,25 +477,42 @@ namespace shttps {
             else if (method_in == "POST") {
                 _method = POST;
                 if (content_length > 0) {
-                    vector<string> content_type_opts = process_header_value(header_in["content-type"]);
+                    vector <string> content_type_opts = process_header_value(header_in["content-type"]);
                     if (content_type_opts[0] == "application/x-www-form-urlencoded") {
                         char *bodybuf = NULL;
                         if (_chunked_transfer_in) {
+                            char *tmp;
                             ChunkReader ckrd(ins);
-                            (void) ckrd.readAll(&bodybuf);
+                            content_length = ckrd.readAll(&tmp);
+                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                                throw Error(__file__, __LINE__, "malloc failed!", errno);
+                            }
+                            memcpy(_content, tmp, content_length);
+                            free (tmp);
                         }
                         else {
+                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                                throw Error(__file__, __LINE__, "malloc failed!", errno);
+                            }
+                            ins->read(bodybuf, content_length);
+                            if (ins->fail() || ins->eof()) {
+                                free(bodybuf);
+                                bodybuf = NULL;
+                                throw -1;
+                            }
                         }
+                        bodybuf[content_length] = '\0';
                         string body = bodybuf;
                         post_params = parse_query_string(body, true);
                         request_params.insert(post_params.begin(), post_params.end());
 
                         free(bodybuf);
+                        content_length = 0;
                     }
                     else if (content_type_opts[0] == "multipart/form-data") {
                         string boundary;
                         for (int i = 1; i < content_type_opts.size(); ++i) {
-                            pair<string,string> p = strsplit(content_type_opts[i], '=');
+                            pair <string, string> p = strsplit(content_type_opts[i], '=');
                             if (p.first == "boundary") {
                                 boundary = string("--") + p.second;
                             }
@@ -505,7 +531,7 @@ namespace shttps {
                         ChunkReader ckrd(ins); // if we need it, we have it...
 
                         n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                        if (ins->fail() ||ins->eof()) {
+                        if (ins->fail() || ins->eof()) {
                             throw -1;
                         }
                         while (line != lastboundary) {
@@ -517,7 +543,7 @@ namespace shttps {
                                 string mimetype;
                                 string encoding;
                                 n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                if (ins->fail() ||ins->eof()) {
+                                if (ins->fail() || ins->eof()) {
                                     throw -1;
                                 }
                                 while (!line.empty()) {
@@ -528,10 +554,9 @@ namespace shttps {
                                     string value = line.substr(pos + 1);
                                     value = trim(value);
                                     if (name == "content-disposition") {
-                                        map <string,string> opts = parse_header_options(value, true);
-                                        map<string,string>::iterator it;
-                                        for (it = opts.begin(); it != opts.end(); it++)
-                                        {
+                                        map <string, string> opts = parse_header_options(value, true);
+                                        map<string, string>::iterator it;
+                                        for (it = opts.begin(); it != opts.end(); it++) {
                                             //cerr << "OPTS: " << it->first << "=" << it->second << endl;
                                             //How do I access each element without knowing any of its string-int values?
                                         }
@@ -551,9 +576,9 @@ namespace shttps {
                                             // we have an upload of a file ...
                                             filename = opts["filename"];
 
-                                            if (filename[0] == '"' && filename[filename.size()-1] == '"') {
+                                            if (filename[0] == '"' && filename[filename.size() - 1] == '"') {
                                                 // filename is inside quotes, remove them
-                                                filename = filename.substr(1, filename.size()-2);
+                                                filename = filename.substr(1, filename.size() - 2);
                                             }
 
                                             mimetype = "text/plain";
@@ -566,20 +591,20 @@ namespace shttps {
                                         encoding = value;
                                     }
                                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                    if (ins->fail() ||ins->eof()) {
+                                    if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
                                 } // while
                                 if (filename.empty()) {
                                     // we read a normal value
                                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                    if (ins->fail() ||ins->eof()) {
+                                    if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
                                     while ((line != boundary) && (line != lastboundary)) {
                                         fieldvalue += line;
                                         n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                        if (ins->fail() ||ins->eof()) {
+                                        if (ins->fail() || ins->eof()) {
                                             throw -1;
                                         }
                                     }
@@ -596,12 +621,11 @@ namespace shttps {
                                     //
 
                                     if (_tmpdir.empty()) {
-                                            std::cerr << "'" << "_tmpdir is empty" << "'" << std::endl;
-                                            throw Error(__file__, __LINE__, "_tmpdir is empty");
+                                        throw Error(__file__, __LINE__, "_tmpdir is empty");
                                     }
 
                                     tmpname = _tmpdir + "/sipi_XXXXXXXX";
-                                    char * writable = new char[tmpname.size() + 1];
+                                    char *writable = new char[tmpname.size() + 1];
                                     std::copy(tmpname.begin(), tmpname.end(), writable);
                                     writable[tmpname.size()] = '\0'; // don't forget the terminating 0
 
@@ -622,7 +646,7 @@ namespace shttps {
                                     //
                                     string nlboundary = "\r\n" + boundary;
                                     while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
-                                        if (ins->fail() ||ins->eof()) {
+                                        if (ins->fail() || ins->eof()) {
                                             throw -1;
                                         }
                                         if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
@@ -650,12 +674,12 @@ namespace shttps {
                                     UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
                                     _uploads.push_back(uf);
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '-' or '\r'
-                                    if (ins->fail() ||ins->eof()) {
+                                    if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
                                     if (inbyte == '-') { // we have a last boundary!
                                         inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
-                                        if (ins->fail() ||ins->eof()) {
+                                        if (ins->fail() || ins->eof()) {
                                             throw -1;
                                         }
                                         line = lastboundary;
@@ -664,14 +688,14 @@ namespace shttps {
                                         line = boundary;
                                     }
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
-                                    if (ins->fail() ||ins->eof()) {
+                                    if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
                                     continue; // break loop;
                                 }
                             }
                             n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                            if (ins->fail() ||ins->eof()) {
+                            if (ins->fail() || ins->eof()) {
                                 throw -1;
                             }
                         }
@@ -679,20 +703,94 @@ namespace shttps {
                         // now we get the last, empty line...
                         //
                         n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                        if (ins->fail() ||ins->eof()) {
+                        if (ins->fail() || ins->eof()) {
                             throw -1;
                         }
+                        content_length = 0;
+                    }
+                    else if ((content_type_opts[0] == "text/plain") ||
+                             (content_type_opts[0] == "application/json") ||
+                             (content_type_opts[0] == "application/ld+json") ||
+                             (content_type_opts[0] == "application/xml")) {
+                        _content_type = content_type_opts[0];
+                        if (_chunked_transfer_in) {
+                            char *tmp;
+                            ChunkReader ckrd(ins);
+                            content_length = ckrd.readAll(&tmp);
+                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                                throw Error(__file__, __LINE__, "malloc failed!", errno);
+                            }
+                            memcpy(_content, tmp, content_length);
+                            free(tmp);
+                            _content[content_length] = '\0';
+                        }
+                        else if (content_length > 0) {
+                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                                throw Error(__file__, __LINE__, "malloc failed!", errno);
+                            }
+                            ins->read(_content, content_length);
+                            if (ins->fail() || ins->eof()) {
+                                free(_content);
+                                _content = NULL;
+                                throw -1;
+                            }
+                            _content[content_length] = '\0';
+                        }
+                    }
+                    else {
+                        throw Error(__file__, __LINE__, "Content type not supported!");
                     }
                 }
             }
-            else if (method_in == "PUT") {
-                _method = PUT;
-            }
-            else if (method_in == "DELETE") {
-                _method = DELETE;
+            else if ((method_in == "PUT") || (method_in == "DELETE")) {
+                if (method_in == "DELETE") {
+                    _method = DELETE;
+                }
+                else {
+                    _method = PUT;
+                }
+
+                vector <string> content_type_opts = process_header_value(header_in["content-type"]);
+
+                if ((content_type_opts[0] == "text/plain") ||
+                    (content_type_opts[0] == "application/json") ||
+                    (content_type_opts[0] == "application/ld+json") ||
+                    (content_type_opts[0] == "application/xml")) {
+                    _content_type = content_type_opts[0];
+                    if (_chunked_transfer_in) {
+                        char *tmp;
+                        ChunkReader ckrd(ins);
+                        content_length = ckrd.readAll(&tmp);
+                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                            throw Error(__file__, __LINE__, "malloc failed!", errno);
+                        }
+                        memcpy(_content, tmp, content_length);
+                        free(tmp);
+                        _content[content_length] = '\0';
+                    }
+                    else if (content_length > 0) {
+
+                        _content = (char *) malloc(content_length + 1);
+                        if (_content == NULL) {
+                            throw Error(__file__, __LINE__, "malloc failed!", errno);
+                        }
+                        ins->read(_content, content_length);
+                        if (ins->fail() || ins->eof()) {
+                            free(_content);
+                            _content = NULL;
+                            throw -1;
+                        }
+                        _content[content_length] = '\0';
+
+                    }
+                }
+                else {
+                    throw Error(__file__, __LINE__, "Content type not supported!");
+                }
+
             }
             else if (method_in == "TRACE") {
-                _method = TRACE;
+                    _method = TRACE;
             }
             else if (method_in == "CONNECT") {
                 _method = CONNECT;
@@ -702,11 +800,20 @@ namespace shttps {
             }
         }
         else {
-            // unkown header or no header, send error message!
+            throw Error(__file__, __LINE__, "Invalid HTTP header!");
         }
     }
     //=============================================================================
 
+    Connection::Connection(const Connection &conn) {
+        throw Error(__file__, __LINE__, "Copy constructor now allowed!");
+    }
+    //=============================================================================
+
+    Connection& Connection::operator=(const Connection& other) {
+        throw Error(__file__, __LINE__, "Assignment operator now allowed!");
+    }
+    //=============================================================================
 
     Connection::~Connection()
     {
@@ -715,6 +822,9 @@ namespace shttps {
         }
         catch (int i) {
             // do nothing....
+        }
+        if (_content != NULL) {
+            free(_content);
         }
         if (outbuf != NULL) {
             free (outbuf);
@@ -931,6 +1041,19 @@ namespace shttps {
         header_out[name] = value;
     }
     //=============================================================================
+
+
+    void Connection::cookies(const Cookie &cookie_p) {
+        string str = cookie_p.name() + "=" + cookie_p.value();
+        if (!cookie_p.path().empty()) str += "; Path=" + cookie_p.path();
+        if (!cookie_p.domain().empty()) str += "; Domain=" + cookie_p.domain();
+        if (!cookie_p.expires().empty()) str += "; Expires=" +cookie_p.expires();
+        if (cookie_p.secure()) str += "; Secure";
+        if (cookie_p.httpOnly()) str += "; HttpOnly";
+        header("Set-Cookie", str);
+    }
+    //=============================================================================
+
 
     void Connection::corsHeader(const char *origin)
     {
@@ -1319,7 +1442,8 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
         else {
-            *os << "\r\n";
+            *os << "Content-Length: " << n << "\r\n\r\n";
+            //*os << "\r\n";
             if (os->eof() || os->fail()) throw -1;
         }
 

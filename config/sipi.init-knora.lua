@@ -35,11 +35,8 @@
 --       'deny' : no access!
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
-function pre_flight(prefix,identifier,cookie)
+function pre_flight(prefix, identifier, cookie)
 
-    -- use Sipi's luarocks to install these modules
-    requests = require "requests"
-    json = require "json"
 
     if config.prefix_as_path then
         filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
@@ -59,51 +56,45 @@ function pre_flight(prefix,identifier,cookie)
 
 
     -- comment this in if you do not want to do a preflight request
-    --print("ignoring permissions")
-    --do return 'allow', filepath end
+    -- print("ignoring permissions")
+    -- do return 'allow', filepath end
 
-    if cookie == '' then
-        -- unset cookie if it is empty, so it does not get sent to Knora
-        cookie = nil
-    else
+    knora_cookie_header = nil
+
+    if cookie ~='' then
         key = string.sub(cookie, 0, 4)
+
         if (key ~= "sid=") then
             -- cookie key is not valid
-            print("cookie key is not valid")
-            cookie = nil
+            print("cookie key is invalid")
         else
-            sessionId = string.sub(cookie, 5)
-            cookie = "KnoraAuthentication=" .. sessionId
+            session_id = string.sub(cookie, 5)
+            knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
         end
-
-
     end
 
-    status, ret = pcall(
-    function ()
-        return requests.get{url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier, cookies = cookie}
-    end
-    )
+    knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
+    print("knora_url: " .. knora_url)
+
+    result = server.http("GET", knora_url, knora_cookie_header, 5000)
+
     -- check HTTP request was successful
-    if not status then
-        print("An error occurred when making the request to Knora.")
-        print("Err: ", ret)
+    if not result.success then
+        print("Request to Knora failed: " .. result.errmsg)
         -- deny request
         return 'deny'
     end
 
-    if ret.status_code ~= 200 then
-        print("Knora returned an unsuccessful HTTP status code " .. ret.status)
-        print(ret.text)
+    if result.status_code ~= 200 then
+        print("Knora returned HTTP status code " .. ret.status)
+        print(result.body)
         return 'deny'
     end
 
-    response_json = json.decode(ret.text)
+    response_json = server.json_to_table(result.body)
 
-    print(ret.text)
-
-    --print("status: " .. response_json.status)
-    --print("permission code: " .. response_json.permissionCode)
+    print("status: " .. response_json.status)
+    print("permission code: " .. response_json.permissionCode)
 
     if response_json.status ~= 0 then
         -- something went wrong with the request, Knora returned a non zero status

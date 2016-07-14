@@ -90,7 +90,8 @@ namespace Sipi {
     class SipiImageError : public std::runtime_error {
     public:
         inline SipiImageError() : runtime_error("SipiImageError") {}
-        inline SipiImageError(const char *msg) : runtime_error(msg) {}
+        inline SipiImageError(const char *msg, int errnum = 0) : runtime_error(msg) {}
+        inline SipiImageError(const std::string &msg, int errnum = 0) : runtime_error(msg.c_str()) {}
         inline const char* what() const noexcept {
             return runtime_error::what();
         }

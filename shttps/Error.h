@@ -40,7 +40,7 @@ namespace shttps {
     * description and, if available, the system error message.
     */
     class Error: public std::runtime_error  {
-    private:
+    protected:
         int line;            //!< Linenumber where the exception has been throwns
         std::string file;    //!< Name of source code file where the exception has been thrown
         std::string message; //!< Description of the problem

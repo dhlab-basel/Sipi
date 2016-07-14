@@ -37,10 +37,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	message(STATUS ${CMAKE_SYSTEM_NAME})
     SET(CMAKE_MACOSX_RPATH 1)
     SET(LUA_ARCH "macosx")
+    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
 	message(STATUS "Compiling for Linux64...")
 	message(STATUS ${CMAKE_SYSTEM_NAME})
     SET(LUA_ARCH "linux")
+#    set(OPENSSL_ROOT_DIR "/usr/local/Cellar/openssl/1.0.2g")
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -59,9 +61,12 @@ set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS}")
 
 include(FindOpenSSL)
 if(OPENSSL_FOUND)
-    add_definitions(${CMAKE_C_FLAGS} " -DMG_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+else()
+    message(STATUS "No SSL support found!")
 endif()
-add_definitions(${CMAKE_C_FLAGS} " -DMG_ENABLE_THREADS")
+#add_definitions(${CMAKE_C_FLAGS} " -DMG_ENABLE_THREADS")
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_MACOSX_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -74,19 +79,35 @@ find_package(Threads REQUIRED)
 #
 # get lua
 #
-ExternalProject_Add(project_lua
-    INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-    URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
-    CONFIGURE_COMMAND ls
-    BUILD_COMMAND make ${LUA_ARCH}
-    INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-    BUILD_IN_SOURCE 1
+ExternalProject_Add(
+        project_lua
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/lua-5.3.1
+        CONFIGURE_COMMAND ls
+        BUILD_COMMAND make ${LUA_ARCH}
+        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_lua install_dir)
 add_library(lua STATIC IMPORTED)
 set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
 add_dependencies(lua project_lua)
+
+#
+# get jansson
+#
+ExternalProject_Add(
+        project_jansson
+        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+        GIT_REPOSITORY https://github.com/akheron/jansson.git
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/jansson
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_SOURCE_DIR}/local
+)
+ExternalProject_Get_Property(project_jansson install_dir)
+add_library(jansson STATIC IMPORTED)
+set_property(TARGET jansson PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libjansson${CMAKE_STATIC_LIBRARY_SUFFIX})
+add_dependencies(jansson project_jansson)
 
 #
 # get libmagic
@@ -116,7 +137,6 @@ message(STATUS " SERVER-DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(AFTER ${CMAKE_CURRENT_SOURCE_DIR}/local/include ${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 add_library(
         shttpobj OBJECT
-        cJSON.c cJSON.h
         Error.cpp Error.h
         SockStream.cpp SockStream.h
         ChunkReader.cpp ChunkReader.h
@@ -124,6 +144,7 @@ add_library(
         LuaServer.cpp LuaServer.h
         GetMimetype.cpp GetMimetype.h
         Server.cpp Server.h
+        jwt.c jwt.h
 )
 
 add_library(shttp STATIC $<TARGET_OBJECTS:shttpobj>)
@@ -138,6 +159,9 @@ install(FILES ${luaincs} DESTINATION include)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/spdlog DESTINATION include)
 
 add_executable(shttp-test Shttp.cpp $<TARGET_OBJECTS:shttpobj>)
-target_link_libraries(shttp-test ${LIBS} lua magic z dl pthread)
+target_link_libraries(shttp-test ${LIBS} lua jansson magic z dl pthread)
+if(OPENSSL_FOUND)
+    target_link_libraries(shttp-test ${OPENSSL_LIBRARIES})
+endif()
 
 

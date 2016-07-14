@@ -32,13 +32,19 @@
 
 namespace Sipi {
 
-   /*!
-    * This class is used to read the sipi server configuration from
-    * a Lua configuration file.
-    */
+    /*!
+     * This class is used to read the sipi server configuration from
+     * a Lua configuration file.
+     */
     class SipiConf {
     private:
+        std::string userid_str;
         int port; //<! port number for server
+#ifdef SHTTPS_ENABLE_SSL
+        int ssl_port = -1;
+        std::string ssl_certificate;
+        std::string ssl_key;
+#endif
         std::string img_root; //<! path to root of image repository
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         std::string init_script;
@@ -56,11 +62,27 @@ namespace Sipi {
         std::string knora_port;
         std::string docroot;
         std::string docroute;
+        std::string jwt_secret;
+        std::string adminuser;
+        std::string password;
     public:
         SipiConf();
-        SipiConf(shttps::LuaServer& luacfg);
+
+        SipiConf(shttps::LuaServer &luacfg);
+
+        inline std::string getUseridStr(void) { return userid_str; }
 
         inline int getPort(void) { return port; }
+
+#ifdef SHTTPS_ENABLE_SSL
+
+        inline int getSSLPort(void) { return ssl_port; }
+
+        inline std::string getSSLCertificate(void) { return ssl_certificate; }
+
+        inline std::string getSSLKey(void) { return ssl_key; }
+
+#endif
 
         inline std::string getImgRoot(void) { return img_root; }
 
@@ -98,6 +120,11 @@ namespace Sipi {
 
         inline std::string getDocRoute(void) { return docroute; }
 
+        inline std::string getJwtSecret(void) { return jwt_secret; }
+
+        inline std::string getAdminUser(void) { return adminuser; }
+
+        inline std::string getPassword(void) { return password; }
     };
 
 }

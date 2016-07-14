@@ -28,14 +28,19 @@
 #include <cstring>
 
 #include <stdio.h>
+#include <SipiCache.h>
 
 
 #include "SipiImage.h"
 #include "SipiLua.h"
+#include "SipiHttpServer.h"
+#include "SipiCache.h"
 
 
 
 namespace Sipi {
+
+    char sipiserver[] = "__sipiserver";
 
     static const char SIMAGE[] = "SipiImage";
 
@@ -43,6 +48,258 @@ namespace Sipi {
         SipiImage *image;
         std::string *filename;
     } SImage;
+
+
+    /*!
+     * Get the size of the cache
+     * LUA: cache_size = cache.size()
+     */
+    static int lua_cache_size(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        unsigned long long size = cache->getCachesize();
+
+        lua_pushinteger(L, size);
+        return 1;
+    }
+    //=========================================================================
+
+    /*!
+     * Get the maximal size of the cache
+     * LUA: cache.max_size = cache.max_size()
+     */
+    static int lua_cache_max_size(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        unsigned long long maxsize = cache->getMaxCachesize();
+
+        lua_pushinteger(L, maxsize);
+        return 1;
+    }
+    //=========================================================================
+
+    /*!
+     * Get the size of the cache
+     * LUA: cache_size = cache.size()
+     */
+    static int lua_cache_nfiles(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        unsigned size = cache->getNfiles();
+
+        lua_pushinteger(L, size);
+        return 1;
+    }
+    //=========================================================================
+
+    /*!
+     * Get the size of the cache
+     * LUA: cache_size = cache.size()
+     */
+    static int lua_cache_max_nfiles(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        unsigned size = cache->getMaxNfiles();
+
+        lua_pushinteger(L, size);
+
+        return 1;
+    }
+    //=========================================================================
+
+    /*!
+     * Get path to cache dir
+     * LUA: cache_path = cache.path()
+     */
+    static int lua_cache_path(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+        std::string cpath = cache->getCacheDir();
+
+        lua_pushstring(L, cpath.c_str());
+        return 1;
+    }
+    //=========================================================================
+
+    static void add_one_cache_file(int index, const std::string &canonical, const SipiCache::CacheRecord &cr, void *userdata) {
+        lua_State *L = (lua_State *) userdata;
+
+        lua_pushinteger(L, index);
+        lua_createtable(L, 0, 4); // table1
+
+        lua_pushstring(L, "canonical");
+        lua_pushstring(L, canonical.c_str());
+        lua_rawset(L, -3);
+
+        lua_pushstring(L, "origpath");
+        lua_pushstring(L, cr.origpath.c_str());
+        lua_rawset(L, -3);
+
+        lua_pushstring(L, "cachepath");
+        lua_pushstring(L, cr.cachepath.c_str());
+        lua_rawset(L, -3);
+
+        lua_pushstring(L, "size");
+        lua_pushinteger(L, cr.fsize);
+        lua_rawset(L, -3);
+
+        struct tm *tminfo;
+        tminfo = localtime(&cr.access_time);
+        char timestr[100];
+        strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tminfo);
+        lua_pushstring(L, "last_access");
+        lua_pushstring(L, timestr);
+        lua_rawset(L, -3);
+
+        lua_rawset(L, -3);
+
+        return;
+    }
+    //=========================================================================
+
+    static int lua_cache_filelist(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+
+        int top = lua_gettop(L);
+
+        std::string sortmethod;
+        if (top == 1) {
+            sortmethod = std::string(lua_tostring(L, 1));
+            lua_pop(L, 1);
+        }
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        lua_createtable(L, 0, 0); // table1
+        if (sortmethod == "AT_ASC") {
+            cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_ATIME_ASC);
+        }
+        else if (sortmethod == "AT_DESC") {
+            cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_ATIME_DESC);
+        }
+        else if (sortmethod == "FS_ASC") {
+            cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_FSIZE_ASC);
+        }
+        else if (sortmethod == "FS_DESC") {
+            cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_FSIZE_DESC);
+        }
+        else {
+            cache->loop(add_one_cache_file, (void *) L);
+        }
+
+        return 1;
+    }
+    //=========================================================================
+
+
+    static int lua_delete_cache_file(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        int top = lua_gettop(L);
+
+        std::string canonical;
+        if (top == 1) {
+            canonical = std::string(lua_tostring(L, 1));
+            lua_pop(L, 1);
+            if (cache->remove(canonical)) {
+                lua_pushboolean(L, true);
+            }
+            else {
+                lua_pushboolean(L, false);
+            }
+        }
+        else {
+            lua_pushboolean(L, false);
+        }
+
+        return 1;
+    }
+    //=========================================================================
+
+    static int lua_purge_cache(lua_State *L) {
+        lua_getglobal(L, sipiserver);
+        SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        SipiCache *cache = server->cache();
+
+        if (cache == NULL) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        int n = cache->purge(true);
+        lua_pushinteger(L, n);
+
+        return 1;
+    }
+    //=========================================================================
+
+    static const luaL_Reg cache_methods[] = {
+            {"size", lua_cache_size},
+            {"max_size", lua_cache_max_size},
+            {"nfiles", lua_cache_nfiles},
+            {"max_nfiles", lua_cache_max_nfiles},
+            {"path", lua_cache_path},
+            {"filelist", lua_cache_filelist},
+            {"delete", lua_delete_cache_file},
+            {"purge", lua_purge_cache},
+            {0,     0}
+    };
+    //=========================================================================
+
 
     static SImage *toSImage(lua_State *L, int index) {
         SImage *img = (SImage *) lua_touserdata(L, index);
@@ -431,6 +688,16 @@ namespace Sipi {
 
 
     void sipiGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
+        SipiHttpServer *server = (SipiHttpServer *) user_data;
+
+        //
+        // filesystem functions
+        //
+        //lua_pushstring(L, "cache"); // table1 - "fs"
+        lua_newtable(L); // table
+        luaL_setfuncs(L, cache_methods, 0);
+        //lua_rawset(L, -3); // table
+        lua_setglobal(L, "cache");
 
         lua_getglobal(L, SIMAGE);
         if (lua_isnil(L, -1)) {
@@ -469,6 +736,10 @@ namespace Sipi {
 
         lua_setglobal(L, SIMAGE);
         // stack: empty
+
+        lua_pushlightuserdata(L, server);
+        lua_setglobal(L, sipiserver);
+
     }
     //=========================================================================
 

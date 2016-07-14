@@ -32,6 +32,9 @@
 #include <cstring>      // Needed for memset
 #include <utility>
 
+#include <sys/types.h>
+#include <sys/select.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
@@ -39,9 +42,13 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/select.h>
-#include <sys/stat.h>
 #include <pthread.h>
+#include <pwd.h>
+
+//
+// openssl includes
+//#include "openssl/applink.c"
+
 
 #include "Global.h"
 #include "SockStream.h"
@@ -51,6 +58,10 @@
 
 static const char __file__[] = __FILE__;
 
+static std::mutex threadlock;
+
+static std::mutex debugio;
+
 using namespace std;
 
 namespace shttps {
@@ -59,6 +70,9 @@ namespace shttps {
 
     typedef struct {
         int sock;
+#ifdef SHTTPS_ENABLE_SSL
+        SSL *cSSL;
+#endif
         string peer_ip;
         int peer_port;
         Server *serv;
@@ -118,7 +132,10 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    lua.executeChunk(luacode);
+                    if (lua.executeChunk(luacode) != 1) {
+                        conn.flush();
+                        return;
+                    }
                 }
                 catch (Error &err) {
                     try {
@@ -151,7 +168,7 @@ namespace shttps {
                     string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
 
-                    conn << htmlcode; // send html...
+                    if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     string luastr;
                     if ((end = eluacode.find("</lua>", pos)) != string::npos) { // we found end;
@@ -163,7 +180,10 @@ namespace shttps {
                     }
 
                     try {
-                        lua.executeChunk(luastr);
+                        if (lua.executeChunk(luastr) != 1) {
+                            conn.flush();
+                            return;
+                        }
                     }
                     catch (Error &err) {
                         try {
@@ -291,7 +311,10 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    lua.executeChunk(luacode);
+                    if (lua.executeChunk(luacode) != 1) {
+                        conn.flush();
+                        return;
+                    }
                 }
                 catch (Error &err) {
                     try {
@@ -323,7 +346,7 @@ namespace shttps {
                     string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
 
-                    conn << htmlcode; // send html...
+                    if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     string luastr;
                     if ((end = eluacode.find("</lua>", pos)) != string::npos) { // we found end;
@@ -335,7 +358,10 @@ namespace shttps {
                     }
 
                     try {
-                        lua.executeChunk(luastr);
+                        if (lua.executeChunk(luastr) != 1) {
+                            conn.flush();
+                            return;
+                        }
                     }
                     catch (Error &err) {
                         try {
@@ -379,20 +405,72 @@ namespace shttps {
     }
     //=========================================================================
 
-    Server::Server(int port_p, unsigned nthreads_p, const std::string &logfile_p)
-        : port(port_p), _nthreads(nthreads_p)
+    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p)
+        : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p)
     {
+        _ssl_port = -1;
         semname = "shttps";
         semname += to_string(port);
         _user_data = NULL;
         running = false;
         _keep_alive_timeout = 20;
-        spdlog::set_async_mode(1048576);
-        _logger = spdlog::rotating_logger_mt(loggername, logfile_p, 1048576 * 5, 3, true);
 
+        spdlog::set_async_mode(1048576);
+
+        //
+        // Her we check if we have to change to a different uid. This can only be done
+        // if the server runs originally as root!
+        //
+        bool setuid_done = false;
+        if (!userid_str.empty() && (getuid() == 0)) { // must be root to setuid() !!
+            struct passwd pwd, *res;
+
+            size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
+            char *buffer = new char[buffer_len];
+            getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
+            if (res != NULL) {
+                setuid(pwd.pw_uid);
+                setgid(pwd.pw_gid);
+                setuid_done = true;
+            }
+            else {
+                cerr << "Couldn't setuid() to " << userid_str << "!" << endl;
+                exit (-1);
+            }
+            delete [] buffer;
+        }
+
+        _logger = spdlog::rotating_logger_mt(loggername, _logfilename, 1048576 * 5, 3, true);
         spdlog::set_level(spdlog::level::debug);
+
+        if (setuid_done) {
+            _logger->info("Server will run as user ") << userid_str << " (" << getuid() << ")";
+        }
+
+
+#ifdef SHTTPS_ENABLE_SSL
+        SSL_load_error_strings();
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+#endif
+
     }
     //=========================================================================
+
+#ifdef SHTTPS_ENABLE_SSL
+    void Server::jwt_secret(const string &jwt_secret_p) {
+        _jwt_secret = jwt_secret_p;
+        int l;
+        if ((l = _jwt_secret.size()) < 32) {
+            for (int i = 0; i < (32 - l); i++) {
+            _jwt_secret.push_back('A' + i);
+            }
+        }
+    }
+    //=========================================================================
+#endif
+
+
 
 
     RequestHandler Server::getHandler(Connection &conn, void **handler_data_p)
@@ -423,17 +501,106 @@ namespace shttps {
 
     static void *process_request(void *arg)
     {
+        signal(SIGPIPE, SIG_IGN);
+
+        auto logger = spdlog::get(loggername);
+
         TData *tdata = (TData *) arg;
-        tdata->serv->processRequest(tdata->sock, tdata->peer_ip, tdata->peer_port);
+        SockStream *sockstream;
+
+#ifdef SHTTPS_ENABLE_SSL
+        if (tdata->cSSL != NULL) {
+            sockstream = new SockStream(tdata->cSSL);
+        }
+        else {
+            sockstream = new SockStream(tdata->sock);
+        }
+#else
+        sockstream = new SockStream(tdata->sock);
+#endif
+        istream ins(sockstream);
+        ostream os(sockstream);
+
+        bool do_close;
+#ifdef SHTTPS_ENABLE_SSL
+        if (tdata->cSSL != NULL) {
+            do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, true);
+        }
+        else {
+            do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
+        }
+#else
+        do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
+#endif
+
+        delete sockstream;
+
+        if (do_close) {
+#ifdef SHTTPS_ENABLE_SSL
+            if (tdata->cSSL != NULL) {
+                int sstat;
+                while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
+                if (stat < 0) {
+                    logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+                }
+                SSL_free(tdata->cSSL);
+            }
+#endif
+            close(tdata->sock);
+        }
+
         tdata->serv->remove_thread(pthread_self());
         ::sem_post(tdata->serv->semaphore());
-        free(tdata);
+
+        delete tdata;
         return NULL;
+    }
+    //=========================================================================
+
+    static int prepare_socket(int port) {
+        int sockfd;
+        struct sockaddr_in serv_addr;
+
+        sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            perror("ERROR on socket");
+            //_logger->error("Could not create socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        int optval = 1;
+        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
+            perror("ERROR on setsocketopt");
+            //_logger->error("Could not set socket option: ") << strerror(errno);
+            exit(1);
+        }
+
+        /* Initialize socket structure */
+        bzero((char *) &serv_addr, sizeof(serv_addr));
+
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
+        serv_addr.sin_port = htons(port);
+
+        /* Now bind the host address using bind() call.*/
+        if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+            perror("ERROR on binding");
+            //_logger->error("Could not bind socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        if (::listen(sockfd, SOMAXCONN) < 0) {
+            perror("ERROR on listen");
+            //_logger->error("Could not listen on socket: ") << strerror(errno);
+            exit (1);
+        }
+        return sockfd;
     }
     //=========================================================================
 
     void Server::run()
     {
+
         _logger->info("Starting shttps server... with ") << to_string(_nthreads) << " threads";
 
         //
@@ -445,54 +612,63 @@ namespace shttps {
             _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
         }
 
-        struct sockaddr_in serv_addr, cli_addr;
 
         ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
         _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
 
-        socklen_t cli_size = sizeof(cli_addr);
-
-        _sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-        if (_sockfd < 0) {
-            perror("ERROR on socket");
-            _logger->error("Could not create socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        int optval = 1;
-        if (::setsockopt(_sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
-            perror("ERROR on setsocketopt");
-            _logger->error("Could not set socket option: ") << strerror(errno);
-            exit(1);
-        }
-
-
-        /* Initialize socket structure */
-        bzero((char *) &serv_addr, sizeof(serv_addr));
-
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(port);
-
-        /* Now bind the host address using bind() call.*/
-        if (::bind(_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            perror("ERROR on binding");
-            _logger->error("Could not bind socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        if (::listen(_sockfd, SOMAXCONN) < 0) {
-            perror("ERROR on listen");
-            _logger->error("Could not listen on socket: ") << strerror(errno);
-            exit (1);
-        }
-
+        _sockfd = prepare_socket(port);
         _logger->info("Server listening on port ") << to_string(port);
+        if (_ssl_port > 0) {
+            _ssl_sockfd = prepare_socket(_ssl_port);
+            _logger->info("Server listening on SSL port ") << to_string(_ssl_port);
+        }
 
+        pipe(stoppipe); // ToDo: Errorcheck
         pthread_t thread_id;
         running = true;
         while(running) {
-            int newsockfs = ::accept(_sockfd, (struct sockaddr *) &cli_addr, &cli_size);
+            int sock, maxfd;
+            struct sockaddr_storage cli_addr;
+            socklen_t cli_size = sizeof(cli_addr);
+
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(_sockfd, &readfds);
+            FD_SET(stoppipe[0], &readfds);
+            maxfd = (stoppipe[0] > _sockfd) ? stoppipe[0] : _sockfd;
+            if (_ssl_port > 0) {
+                FD_SET(_ssl_sockfd, &readfds);
+                maxfd = (maxfd > _ssl_sockfd) ? maxfd : _ssl_sockfd;
+            }
+            if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
+                _logger->debug("select failed (1)");
+                break; // accept returned something strange – probably we want to shutdown the server
+            }
+
+            if (FD_ISSET(_sockfd, &readfds)) {
+                sock = _sockfd;
+            }
+            else if (FD_ISSET(stoppipe[0], &readfds)) {
+                sock = stoppipe[0];
+            }
+            else if ((_ssl_port > 0) && FD_ISSET(_ssl_sockfd, &readfds)) {
+                sock = _ssl_sockfd;
+            }
+            else {
+                _logger->debug("select failed (2)");
+                break; // accept returned something strange – probably we want to shutdown the server
+            }
+
+
+            if (sock == stoppipe[0]) {
+                char buf[2];
+                read(stoppipe[0], buf, 1);
+                running = false;
+                break;
+            }
+
+            int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
                 break; // accept returned something strange – probably we want to shutdown the server
@@ -501,36 +677,91 @@ namespace shttps {
             //
             // get peer address
             //
-            struct sockaddr_storage peer_addr;
-            socklen_t peer_addr_size = sizeof(struct sockaddr_storage);
-            int res = getpeername(newsockfs, (struct sockaddr *) &peer_addr, &peer_addr_size);
             char client_ip[INET6_ADDRSTRLEN];
             int peer_port;
 
-            if (peer_addr.ss_family == AF_INET) {
-                struct sockaddr_in *s = (struct sockaddr_in *)&peer_addr;
+
+            if (cli_addr.ss_family == AF_INET) {
+                struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
                 peer_port = ntohs(s->sin_port);
                 inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            } else if (peer_addr.ss_family == AF_INET6) { // AF_INET6
-                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &peer_addr;
+            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             }
+            _logger->info("Accepted connection from: ") << client_ip;
 
-           _logger->info("Accepted connection from: ") << client_ip;
-
-            TData *tmp = (TData *) malloc(sizeof(TData));
+            TData *tmp = new TData;
             tmp->sock = newsockfs;
             tmp->peer_ip = client_ip;
             tmp->peer_port = peer_port;
             tmp->serv = this;
+
+#ifdef SHTTPS_ENABLE_SSL
+            SSL *cSSL = NULL;
+            if (sock == _ssl_sockfd) {
+                SSL_CTX *sslctx;
+                try {
+                    if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == NULL) {
+                        _logger->error("OpenSSL error: 'SSL_CTX_new()' failed!");
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_new()' failed!");
+                    }
+                    SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+                    if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
+                        string msg = "OpenSSL error: 'SSL_CTX_use_certificate_file(\"" + _ssl_certificate + "\")' failed!";
+                        throw SSLError(__file__, __LINE__, msg);
+                    }
+                    if (SSL_CTX_use_PrivateKey_file(sslctx, _ssl_key.c_str(), SSL_FILETYPE_PEM) != 1) {
+                        string msg = "OpenSSL error: 'SSL_CTX_use_PrivateKey_file(\"" + _ssl_certificate + "\")' failed!";
+                        throw SSLError(__file__, __LINE__, msg);
+                    }
+                    if (!SSL_CTX_check_private_key(sslctx)) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_check_private_key()' failed!");
+                    }
+                    if ((cSSL = SSL_new(sslctx)) == NULL) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_new()' failed!");
+                    }
+                    if (SSL_set_fd(cSSL, newsockfs) != 1) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_set_fd()' failed!");
+                    }
+
+                    //Here is the SSL Accept portion.  Now all reads and writes must use SS
+                    int suc;
+                    if ((suc = SSL_accept(cSSL)) <= 0) {
+                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_accept()' failed!");
+                    }
+               }
+                catch (SSLError &err) {
+                    _logger->error(err.to_string());
+                    int sstat;
+                    while ((sstat = SSL_shutdown(cSSL)) == 0);
+                    if (stat < 0) {
+                        _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
+                    }
+                    SSL_free(cSSL);
+                    cSSL = NULL;
+                }
+            }
+            tmp->cSSL = cSSL;
+#endif
+
             ::sem_wait(_semaphore) ;
-            if( pthread_create( &thread_id, NULL,  process_request , (void *) tmp) < 0) {
+            if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
                 perror("could not create thread");
                 _logger->error("Could not create thread") << strerror(errno);
                 exit (1);
             }
+#ifdef SHTTPS_ENABLE_SSL
+            if (tmp->cSSL != NULL) {
+                add_thread(thread_id, newsockfs, cSSL);
+            }
+            else {
+                add_thread(thread_id, newsockfs);
+            }
+#else
             add_thread(thread_id, newsockfs);
+#endif
         }
         _logger->debug("Server shutting down!");
 
@@ -539,7 +770,7 @@ namespace shttps {
         //
         int num_active_threads = thread_ids.size();
         pthread_t *ptid = new pthread_t[num_active_threads];
-        int *sid = new int[num_active_threads];
+        GenericSockId *sid = new GenericSockId[num_active_threads];
         int i = 0;
         for(auto const &tid : thread_ids) {
             ptid[i] = tid.first;
@@ -548,22 +779,39 @@ namespace shttps {
         }
         for (int i = 0; i < num_active_threads; i++) {
             threadlock.lock();
-            close(sid[i]);
+#ifdef SHTTPS_ENABLE_SSL
+            if (sid[i].ssl_sid != NULL) {
+                int sstat;
+                while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0);
+                if (stat < 0) {
+                    _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(sid[i].ssl_sid, sstat);
+                }
+                SSL_free(sid[i].ssl_sid);
+                sid[i].ssl_sid = NULL;
+            }
+#endif
+            close(sid[i].sid);
+
             //
             // we indicate to the thread that the socked has been closed (and it's not a timeout)
             // by setting the socked_id in the thread_ids-table to -1. This leads the thread
             // not to close it again. In case of a timeout the socket is being closed
             // by the thread.
             //
-            thread_ids[ptid[i]] = -1;
+            thread_ids[ptid[i]].sid = -1;
             threadlock.unlock();
         }
+
+        close(stoppipe[0]);
+        close(stoppipe[1]);
+
         //
         // we have closed all sockets, now we can wait for the threads to terminate
         //
         for (int i = 0; i < num_active_threads; i++) {
             pthread_join(ptid[i], NULL);
         }
+
         delete [] ptid;
         delete [] sid;
     }
@@ -578,27 +826,59 @@ namespace shttps {
     //=========================================================================
 
 
-    void Server::processRequest(int sock, string &peer_ip, int peer_port)
+    bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure)
     {
         int n;
-        SockStream sockstream(sock);
-        istream ins(&sockstream);
-        ostream os(&sockstream);
-
 
         bool do_close = true;
-        while (!ins.eof() && !os.eof()) {
-            LuaServer luaserver(_initscript);
-            Connection conn;
+        while (!ins->eof() && !os->eof()) {
+            if (_tmpdir.empty()) {
+                throw Error(__file__, __LINE__, "_tmpdir is empty");
+            }
             try {
-                if (_tmpdir.empty()) {
-                    throw Error(__file__, __LINE__, "_tmpdir is empty");
+                Connection conn(this, ins, os, _tmpdir);
+
+                conn.setupKeepAlive(sock, _keep_alive_timeout);
+                conn.peer_ip(peer_ip);
+                conn.peer_port(peer_port);
+                conn.secure(secure);
+
+                if (conn.resetConnection()) {
+                    if (conn.keepAlive()) {
+                        continue;
+                    }
+                    else {
+                        break;
+                    }
                 }
-                conn = Connection(this, &ins, &os, _tmpdir);
+
+                LuaServer luaserver(_initscript, true);
+                luaserver.createGlobals(conn);
+                for (auto &global_func : lua_globals) {
+                    global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
+                }
+
+                void *hd = NULL;
+                try {
+                    RequestHandler handler = getHandler(conn, &hd);
+                    _logger->debug("Calling user-supplied handler");
+                    handler(conn, luaserver, _user_data, hd);
+                }
+                catch (int i) {
+                    _logger->error("Possibly socket closed by peer!");
+                    break;
+                }
+                if (!conn.cleanupUploads()) {
+                    _logger->error("Cleanup of uploaded files failed!");
+                }
+
+                if (!conn.keepAlive()) {
+                    break;
+                }
             }
             catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
                 _logger->debug("Socket connection: timeout or socket closed from main");
-                if (thread_ids[pthread_self()] == -1) {
+                if (thread_ids[pthread_self()].sid == -1) {
                     _logger->debug("Socket is closed – no not close anymore");
                     do_close = false;
                 }
@@ -606,12 +886,12 @@ namespace shttps {
             }
             catch(Error &err) {
                 try {
-                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
-                    os << "Content-Type: text/plain\r\n";
+                    *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
+                    *os << "Content-Type: text/plain\r\n";
                     stringstream ss;
                     ss << err;
-                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                    os << ss.str();
+                    *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
+                    *os << ss.str();
                     _logger->error("Internal server error!");
                 }
                 catch (int i) {
@@ -619,63 +899,44 @@ namespace shttps {
                 }
                 break;
             }
-
-            conn.setupKeepAlive(sock, _keep_alive_timeout);
-            conn.peer_ip(peer_ip);
-            conn.peer_port(peer_port);
-
-            if (conn.resetConnection()) {
-                if (conn.keepAlive()) {
-                    continue;
-                }
-                else {
-                    break;
-                }
-            }
-
-            luaserver.createGlobals(conn);
-            for (auto & global_func : lua_globals) {
-                global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
-            }
-
-            void *hd = NULL;
-            try {
-                RequestHandler handler = getHandler(conn, &hd);
-                _logger->debug("Calling user-supplied handler");
-                handler(conn, luaserver, _user_data, hd);
-            }
-            catch (int i) {
-                _logger->error("Possibly socket closed by peer!");
-                break;
-            }
-            catch(Error &err) {
-                try {
-                    os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n\r\n";
-                    os << "Content-Type: text/plain\r\n";
-                    stringstream ss;
-                    ss << err;
-                    os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
-                    os << ss.str();
-                }
-                catch (int i) {
-                    _logger->error("Possibly socket closed by peer!");
-                    break;
-                }
-                _logger->error("Internal server error! ") << err.to_string();
-                break;
-            }
-            if (!conn.cleanupUploads()) {
-                _logger->error("Cleanup of uploaded files failed!");
-            }
-
-            if (!conn.keepAlive()) break;
-
         }
 
-        if (do_close) {
-            _logger->debug("Socket was not closed, closing...");
-            close (sock);
+        return do_close;
+    }
+    //=========================================================================
+
+    void Server::add_thread(pthread_t thread_id_p, int sock_id) {
+        threadlock.lock();
+        GenericSockId sid;
+        sid.sid = sock_id;
+#ifdef SHTTPS_ENABLE_SSL
+        sid.ssl_sid = NULL;
+#endif
+        thread_ids[thread_id_p] = sid;
+        threadlock.unlock();
+    }
+    //=========================================================================
+
+#ifdef SHTTPS_ENABLE_SSL
+    void Server::add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL) {
+            threadlock.lock();
+            GenericSockId sid = {sock_id, cSSL};
+            thread_ids[thread_id_p] = sid;
+            threadlock.unlock();
         }
+#endif
+
+    void Server::remove_thread(pthread_t thread_id_p) {
+        threadlock.lock();
+        thread_ids.erase(thread_id_p);
+        threadlock.unlock();
+    }
+    //=========================================================================
+
+    void Server::debugmsg(const std::string &msg) {
+        debugio.lock();
+        std::cerr << msg << std::endl;
+        debugio.unlock();
     }
     //=========================================================================
 

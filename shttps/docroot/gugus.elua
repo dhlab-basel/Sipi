@@ -1,3 +1,44 @@
+<lua>
+
+
+if server.cookies['sipi'] then
+    intoken = server.cookies['sipi']
+    jwt = server.decode_jwt(intoken)
+    for k,v in pairs(jwt) do
+       print(k, " : ", v)
+    end
+
+end
+
+auth = server.requireAuth()
+    for k,v in pairs(auth) do
+       print("Auth: ", k, " : ", v)
+    end
+
+if auth.status == 'BASIC' then
+    username = auth.username
+    password = auth.password
+elseif auth.status == 'NOAUTH' then
+    server.setBuffer()
+    server.sendStatus(401);
+    server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+    return -1
+else
+    server.sendStatus(401)
+    server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+end
+
+tokendata = {
+    iss = "sipi.unibas.ch",
+    aud = "knora.org",
+    user = username
+}
+token = server.generate_jwt(tokendata)
+
+server.sendCookie('sipi', token, {path = '/', expires = 3600})
+
+
+</lua>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -30,13 +71,23 @@ end
 
 server.print("Client-ip: ", server.client_ip, "<br/>")
 server.print("Client-port: ", server.client_port, "<br/>")
+if server.secure then
+    server.print("Secure: TRUE<br/>")
+else
+    server.print("Secure: FALSE<br/>")
+end
 server.print("Host: ", server.host, "<br/><hr/>")
+server.print("Username: ", username, "<br/>")
+server.print("Password: ", password, "<br/><hr/>")
 
-result = server.http("GET", "http://www.salsah.org/api/resources/1", 2000)
+
+-- result = server.http("GET", "http://www.salsah.org/api/resources/1", 5000)
+result = server.http("GET", "https://services.groupkt.com/country/get/all", {Cookie = 'gagaga'}, 5000)
 
 
 if (result.success) then
-    server.print("Duration: ", result.duration, " ms<br/><hr/>")
+    server.print("Duration: ", result.duration, " ms<br/>")
+    server.print("Status: ", result.status_code, "<br/><hr/>")
 
     server.print("<h2>Header variables</h2>")
     print_table(server.header)

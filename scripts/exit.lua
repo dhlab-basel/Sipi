@@ -17,10 +17,15 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
--- This is a test
---
-require "socket"
+if not authorize_api('admin.sipi.org', 'administrator', config.adminuser) then
+    return
+end
 
-server.sendHeader("Content-Type", "text/text")
-server.print("Exitus")
+result = {
+    status = 'OK'
+}
+jsonresult = server.table_to_json(result)
+server.sendHeader('Content-type', 'application/json')
+server.sendStatus(200)
+server.print(jsonresult)
 server.shutdown()

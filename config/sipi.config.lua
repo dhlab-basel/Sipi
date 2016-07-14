@@ -21,6 +21,12 @@
 --
 sipi = {
     --
+    -- user under which the sipi server should run. Don't set (comment out) this configuration variable
+    -- if SIPI should use the user which launches SIPI!
+    --
+    userid = '_www',
+
+    --
     -- port number the server is listening to
     --
     port = 1024,
@@ -57,14 +63,23 @@ sipi = {
     cachedir = './cache',
 
     --
-    -- maxcimal size of the cache
+    -- maximal size of the cache
+    -- The cache will be purged if either the maximal size or maximal number
+    -- of files is reached
     --
-    cachesize = '100M',
+    cachesize = '200M',
+
+    --
+    -- maximal number of files to be cached
+    -- The cache will be purged if either the maximal size or maximal number
+    -- of files is reached
+    --
+    cache_nfiles = 250,
 
     --
     -- if the cache becomes full, the given percentage of file space is marked for reuse
     --
-    cache_hysteresis = 0.1,
+    cache_hysteresis = 0.15,
 
     --
     -- Path to the directory where the scripts for the routes defined below are to be found
@@ -81,7 +96,44 @@ sipi = {
     --
     tmpdir = '/tmp',
 
+    --
+    -- If compiled with SSL support, the port the server is listening for secure connections
+    --
+    ssl_port = 1025,
 
+    --
+    -- If compiled with SSL support, the path to the certificate (must be .pem file)
+    -- The follow commands can be used to generate a self-signed certificate
+    -- # openssl genrsa -out key.pem 2048
+    -- # openssl req -new -key key.pem -out csr.pem
+    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+    --
+    ssl_certificate = './certificate/certificate.pem',
+
+    --
+    -- If compiled with SSL support, the path to the key file (see above to create)
+    --
+    ssl_key = './certificate/key.pem',
+
+
+    --
+    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
+    --
+    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
+    --            12345678901234567890123456789012
+
+}
+
+admin = {
+    --
+    -- username of admin user
+    --
+    user = 'admin',
+
+    --
+    -- Administration password
+    --
+    password = 'Sipi-Admin'
 }
 
 fileserver = {
@@ -95,6 +147,21 @@ fileserver = {
 -- executes the given script defined below
 --
 routes = {
+    {
+        method = 'DELETE',
+        route = '/api/cache',
+        script = 'cache.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/cache',
+        script = 'cache.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/exit',
+        script = 'exit.lua'
+    },
     {
         method = 'GET',
         route = '/luaexe/test1',

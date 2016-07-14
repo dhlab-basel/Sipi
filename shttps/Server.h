@@ -37,8 +37,15 @@
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
 #include <netdb.h>      // Needed for the socket functions
+#include <sstream>      // std::stringstream
 
 #include "spdlog/spdlog.h"  // logging...
+
+#ifdef SHTTPS_ENABLE_SSL
+#include "openssl/bio.h"
+#include "openssl/ssl.h"
+#include "openssl/err.h"
+#endif
 
 #include "Global.h"
 #include "Connection.h"
@@ -46,6 +53,13 @@
 
 #include "lua.hpp"
 
+/*
+ * How to create a self-signed certificate
+ *
+ * openssl genrsa -out key.pem 2048
+ * openssl req -new -key key.pem -out csr.pem
+ * openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+ */
 
 namespace shttps {
 
@@ -96,23 +110,72 @@ namespace shttps {
      *
      */
     class Server {
+        /*!
+         * Struct to hold Global Lua function and associated userdata
+         */
         typedef struct {
             LuaSetGlobalsFunc func;
             void *func_dataptr;
         } GlobalFunc;
+
+        /*!
+         * Struct to hold the information about threads and open sockets, used for proper shutdown
+         */
+        typedef struct {
+            int sid;    //!< socket id
+#ifdef SHTTPS_ENABLE_SSL
+            SSL *ssl_sid; //!< Pointer to SLL socket struct
+#endif
+        } GenericSockId;
+
+#ifdef SHTTPS_ENABLE_SSL
+        /*!
+         * Error handling class for SSL functions
+         */
+        class SSLError : Error {
+        protected:
+            SSL *cSSL;
+        public:
+            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = NULL)
+                : Error(file, line, msg), cSSL(cSSL_p) {};
+            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = NULL)
+                : Error(file, line, msg), cSSL(cSSL_p) {};
+            inline std::string to_string(void) {
+                std::stringstream ss;
+                ss << "SSL-ERROR at [" << file << ": " << line << "] ";
+                BIO *bio = BIO_new(BIO_s_mem());
+                ERR_print_errors (bio);
+                char *buf = NULL;
+                long n =  BIO_get_mem_data (bio, &buf);
+                if (n > 0) {
+                    ss << buf << " : ";
+                }
+                BIO_free (bio);
+                //ss << "Description: " << message;
+                return ss.str();
+            };
+        };
+#endif
+
     public:
 
     private:
         int port; //!< listening Port for server
+        int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
+        int _ssl_sockfd; //!< SSL socket id
+#ifdef SHTTPS_ENABLE_SSL
+        std::string _ssl_certificate; //!< Path to SSL certificate
+        std::string _ssl_key; //!< Path to SSL certificate
+        std::string _jwt_secret;
+#endif
+        int stoppipe[2];
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
-        std::map<pthread_t, int> thread_ids;
-        std::mutex threadlock;
-        std::mutex debugio;
+        std::map<pthread_t,GenericSockId> thread_ids;
         int _keep_alive_timeout;
         bool running;
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
@@ -123,7 +186,7 @@ namespace shttps {
         std::vector<GlobalFunc> lua_globals;
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
-
+        std::string _logfilename;
     protected:
         std::shared_ptr<spdlog::logger> _logger;
     public:
@@ -133,7 +196,67 @@ namespace shttps {
         * \param[in] port_p Listening port of HTTP server
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
-        Server(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "shttps.log");
+        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log");
+
+#ifdef SHTTPS_ENABLE_SSL
+
+        /*!
+         * Sets the port number for the SSL socket
+         *
+         * \param[in] ssl_port_p Port number
+         */
+        inline void ssl_port(int ssl_port_p) { _ssl_port = ssl_port_p; }
+
+        /*!
+         * Gets the port number of the SSL socket
+         *
+         * \returns SSL socket portnumber
+         */
+        inline int ssl_port(void) { return _ssl_port; }
+
+        /*!
+         * Sets the file path to the SSL certficate necessary for OpenSSL to work
+         *
+         * \param[in] path File path to th SSL certificate
+         */
+        inline void ssl_certificate(const std::string &path) { _ssl_certificate = path; }
+
+        /*!
+         * Returns the path of the SSL certificate
+         *
+         * \returns Path to the SSL certificate
+         */
+        inline std::string ssl_certificate(void) { return _ssl_certificate; }
+
+        /*!
+         * Sets the path to the SSP key
+         *
+         * \param[in] path Path to the SSL key necessary for OpenSSL to work
+         */
+        inline void ssl_key(const std::string &path) { _ssl_key = path; }
+
+        /*!
+         * Returns the path of the OpenSSL key
+         *
+         * \returns Path to the OpenSSL key
+         */
+        inline std::string ssl_key(void) { return _ssl_key; }
+
+        /*!
+         * Sets the secret for the generation JWT's (JSON Web Token). It must be a string
+         * of length 32, since we're using currently SHA256 encoding.
+         *
+         * \param[in] jwt_secret_p String with 32 characters for the key for JWT's
+         */
+        void jwt_secret(const std::string &jwt_secret_p);
+
+        /*!
+         * Returns the secret used for JWT's
+         *
+         * \returns String of length 32 with the secret used for JWT's
+         */
+        inline std::string jwt_secret(void) { return _jwt_secret; }
+#endif
 
         /*!
          * Returns the maximum number of parallel threads allowed
@@ -203,8 +326,16 @@ namespace shttps {
          * cache file is updated.
          */
         inline void stop(void) {
+            write(stoppipe[1], "@", 1);
+            /*
             running = false;
             close(_sockfd);
+#ifdef SHTTPS_ENABLE_SSL
+            if (_ssl_port > 0) {
+                //close(_ssl_sockfd);
+            }
+#endif
+             */
         }
 
         /*!
@@ -228,24 +359,29 @@ namespace shttps {
          */
         inline sem_t *semaphore(void) { return _semaphore; }
 
-        inline void add_thread(pthread_t thread_id_p, int sock_id) {
-            threadlock.lock();
-            thread_ids[thread_id_p] = sock_id;
-            threadlock.unlock();
-        }
+        void add_thread(pthread_t thread_id_p, int sock_id);
 
-        inline void remove_thread(pthread_t thread_id_p) {
-            threadlock.lock();
-            thread_ids.erase(thread_id_p);
-            threadlock.unlock();
-        }
+#ifdef SHTTPS_ENABLE_SSL
+        void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL);
+#endif
+
+        void remove_thread(pthread_t thread_id_p);
 
         /*!
          * Sets the path to the initialization script (lua script) which is executed for each request
          *
          * \param[in] initscript_p Path of initialization script
          */
-        inline void initscript(const std::string &initscript_p) { _initscript = initscript_p; }
+        inline void initscript(const std::string &initscript_p) {
+            std::ifstream t(initscript_p);
+
+            t.seekg(0, std::ios::end);
+            _initscript.reserve(t.tellg());
+            t.seekg(0, std::ios::beg);
+
+            _initscript.assign((std::istreambuf_iterator<char>(t)),
+                       std::istreambuf_iterator<char>());
+        }
 
         /*!
          * adds a function which is called before processing each request to initialize
@@ -259,15 +395,6 @@ namespace shttps {
             gf.func_dataptr = user_data;
             lua_globals.push_back(gf);
         }
-
-        /*!
-         * Process a request... (Eventually should be private method)
-         *
-         * \param[in] sock Socket id
-         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
-         * \param[in] peer_port Port number of peer/client
-         */
-        void processRequest(int sock, std::string &peer_ip, int peer_port);
 
         /*!
          * Add a request handler for the given request method and route
@@ -285,6 +412,15 @@ namespace shttps {
         void addRoute(Connection::HttpMethod method_p, const std::string &path, RequestHandler handler_p,
                       void *handler_data_p = NULL);
 
+       /*!
+        * Process a request... (Eventually should be private method)
+        *
+        * \param[in] sock Socket id
+        * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
+        * \param[in] peer_port Port number of peer/client
+        */
+        bool processRequest(int sock, std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure);
+
         /*!
         * Return the user data that has been added previously
         */
@@ -297,11 +433,7 @@ namespace shttps {
         */
         inline void user_data(void *user_data_p) { _user_data = user_data_p; }
 
-        inline void debugmsg(const std::string &msg) {
-            debugio.lock();
-            std::cerr << msg << std::endl;
-            debugio.unlock();
-        }
+        void debugmsg(const std::string &msg);
     };
 
 }

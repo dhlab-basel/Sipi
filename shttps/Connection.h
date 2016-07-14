@@ -112,6 +112,63 @@ namespace shttps {
      */
     inline void asciitoupper(std::string &str) { std::transform(str.begin(), str.end(), str.begin(), ::toupper); }
 
+    /*!
+     * This is a class used to represent the possible options of a HTTP cookie
+     */
+    class Cookie {
+    private:
+        std::string _name;
+        std::string _value;
+        std::string _path;
+        std::string _domain;
+        std::string _expires;
+        bool _secure;
+        bool _http_only;
+    public:
+        /*!
+         * Constructor of the cookie class
+         *
+         * \param[in] name_p Name of the cookie
+         * \param[in] value_p Value of the Cookie
+         */
+        inline Cookie(const std::string &name_p, const std::string value_p) : _name(name_p), _value(value_p) {}
+
+        /*!
+         * Getter for the name
+         */
+        inline std::string name(void) const { return _name; }
+
+        /*!
+         * Setter for the name
+         *
+         * \param[in] name_p Name of the Cookie
+         */
+        inline void name(const std::string &name_p) { _name = name_p; }
+
+        inline std::string value(void) const { return _value; }
+        inline void value(const std::string &value_p) { _value = value_p; }
+
+        inline std::string path(void) const { return _path; }
+        inline void path(const std::string &path_p) { _path = path_p; }
+
+        inline std::string domain(void) const { return _domain; }
+        inline void domain(const std::string &domain_p) { _domain = domain_p; }
+
+        inline std::string expires(void) const { return _expires; }
+        inline void expires(int seconds_from_now = 0) {
+            char buf[100];
+            time_t now = time(0);
+            now += seconds_from_now;
+            struct tm tm = *gmtime(&now);
+            strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+            _expires = buf;
+        }
+        inline bool secure(void) const { return _secure; }
+        inline void secure(bool secure_p) { _secure = secure_p; }
+        inline bool httpOnly(void) const {return _http_only; }
+        inline void httpOnly(bool http_only_p) { _http_only = http_only_p; }
+    };
+
    /*!
     * For each request, the server creates a new instance of this class which is then passed
     * to the user supplied handler. It implements the basic features of the HTTP protocol
@@ -231,9 +288,10 @@ namespace shttps {
 
     private:
         Server *_server;          //!< Pointer to the server class
-        std::string _peer_ip;           //!< IP number of client (peer)
-        int _peer_port;            //!< Port of peer/client
+        std::string _peer_ip;     //!< IP number of client (peer)
+        int _peer_port;           //!< Port of peer/client
         std::string http_version; //!< Holds the HTTP version of the request
+        bool _secure;             //!< true if SSL used
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
         std::string _uri;         //!< uri of the request
@@ -242,6 +300,7 @@ namespace shttps {
         std::map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
         std::map<std::string,std::string> header_in;      //!< Input header fields
         std::map<std::string,std::string> header_out;     //!< Output header fields
+        std::map<std::string,std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
         std::string _tmpdir;        //!< directory used to temporary storage of files (e.g. uploads)
         StatusCodes status_code;    //!< Status code of response
@@ -254,7 +313,9 @@ namespace shttps {
         bool _finished;             //!< Transfer of response data finished
         std::istream *ins;          //!< incoming data stream
         std::ostream *os;           //!< outgoing data stream
+        char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
         unsigned content_length;    //!< length of body in octets (used if not chunked transfer)
+        std::string _content_type;   //!< Content-type (mime type of content)
         unsigned next_chunk;        //!< not used yet (for reading chunks from incoming stream)
         std::ofstream *cachefile;   //!< pointer to cache file
 
@@ -314,6 +375,10 @@ namespace shttps {
         */
         Connection(Server *server_p, std::istream *ins_p, std::ostream *os_p, const std::string &tmpdir_p, size_t buf_size = 0, size_t buf_inc = 8192);
 
+        Connection(const Connection &conn);
+
+        Connection& operator=(const Connection& other);
+
        /*!
         * Destructor which frees all resources
         */
@@ -339,7 +404,7 @@ namespace shttps {
         *
         * \param ip String containing peer ip
         */
-        inline void peer_ip(std::string &ip) { _peer_ip = ip; }
+        inline void peer_ip(const std::string &ip) { _peer_ip = ip; }
 
        /*!
         * Get port number of peer
@@ -357,10 +422,20 @@ namespace shttps {
 
 
        /*!
-         * Get the request URI
-         *
-         * \returns std::string containig the hostname given
-         */
+        * Return true if a secure (SSL) connection is used
+        */
+        inline bool secure(void) { return _secure; }
+
+       /*!
+        * Set the secure connection status
+        */
+        inline void secure(bool sec) { _secure = sec; }
+
+       /*!
+        * Get the request URI
+        *
+        * \returns std::string containig the hostname given
+        */
         inline std::string host() { return _host; }
 
         /*!
@@ -411,7 +486,7 @@ namespace shttps {
         * Sets the response status code
         *
         * \param[in] status_code_p Status code as defined in \typedef StatusCodes
-        * \param[in] status_string_p Additional status ocde description that is added
+        * \param[in] status_string_p Additional status code description that is added
         */
         void status(StatusCodes status_code_p, const std::string status_string_p = "");
 
@@ -459,6 +534,19 @@ namespace shttps {
         void corsHeader(const std::string &origin);
 
        /*!
+        * Returns a map of cookies
+        */
+        inline std::map<std::string,std::string> cookies (void) { return _cookies; };
+
+       /*!
+        * Set a cookie
+        *
+        * \param[in] cookie_p An instance of the cookie data
+        */
+        void cookies(const Cookie &cookie_p);
+
+
+       /*!
         * Get the directory for temporary files
         *
         * \returns path of temporary directory
@@ -471,6 +559,7 @@ namespace shttps {
         * \param[in] tmpdir_p String with the path to the directory to be used for temporary uploads
         */
         inline void tmpdir(const std::string &tmpdir_p) { _tmpdir = tmpdir_p; }
+
        /*!
         * Return a list of the get parameter names
         *
@@ -543,6 +632,26 @@ namespace shttps {
         */
         std::vector<std::string> process_header_value(const std::string &valstr);
 
+       /*!
+        * Returns the content length from PUT and DELETE requests
+        *
+        * \returns Content length
+        */
+        inline size_t contentLength(void) { return content_length; }
+
+       /*!
+        *  Get the content from PUT and DELETE requests
+        *
+        *  \returns Content as pointer to char
+        */
+        inline const char *content(void) const { return _content; }
+
+       /*!
+        * Get the content type for PUT and DELETE requests
+        *
+        * \returns Content type as string
+        */
+        inline std::string contentType(void) { return _content_type; }
 
        /*!
         * Add a Content-Length header. This method is used to add the size of the

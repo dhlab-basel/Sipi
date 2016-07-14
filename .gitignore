@@ -36,3 +36,4 @@ cache/
 #ignore ICC headers
 *_icc.h
 /images/
+icc.zip

@@ -27,22 +27,31 @@
 
 #include <string>
 #include <exiv2/xmp.hpp> //!< Import xmp from the exiv2 library!
+#include <exiv2/error.hpp>
 
 namespace Sipi {
 
-   /*!
+    typedef struct {
+        std::mutex lock;
+    } XmpMutex;
+
+    extern XmpMutex xmp_mutex;
+
+    extern void xmplock_func(void *pLockData, bool lockUnlock);
+
+    /*!
     * This class handles XMP metadata. It uses the Exiv2 library
     */
     class SipiXmp {
         Exiv2::XmpData xmpData; //!< Private member variable holding the exiv2 XMP data
-
+        std::string __xmpstr;
     public:
        /*!
         * Constructor
         *
         * \param[in] xmp A std::string containing RDF/XML with XMP data
         */
-        SipiXmp(std::string xmp);
+        SipiXmp(const std::string &xmp);
 
        /*!
         * Constructor

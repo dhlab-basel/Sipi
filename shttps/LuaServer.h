@@ -73,7 +73,15 @@ namespace shttps {
         *
         * \param[in] luafile A script containing lua commands
         */
-        LuaServer(const std::string &luafile);
+        LuaServer(const std::string &luafile, bool iscode = false);
+
+        inline LuaServer(const LuaServer &conn) {
+            throw Error(__FILE__, __LINE__, "Copy constructor not allowed!");
+        }
+
+        inline LuaServer& operator=(const LuaServer& other) {
+            throw Error(__FILE__, __LINE__, "Assigment operator not allowed!");
+        }
 
        /*!
         * Destroys the lua interpreter and all associated resources
@@ -90,7 +98,7 @@ namespace shttps {
         float configFloat(const std::string table, const std::string variable, const float defval);
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
-        void executeChunk(const std::string &luastr);
+        int executeChunk(const std::string &luastr);
         std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, ...);
         std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, LuaValstruct *lv);
         bool luaFunctionExists(const std::string *funcname);

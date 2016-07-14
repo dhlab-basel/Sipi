@@ -29,10 +29,14 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
+string(TIMESTAMP VERSION "%Y-%m-%d %H:%M")
+set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
+
 #
 # Usually SIPI is compiled with all static libraries
 #
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
+option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
@@ -44,7 +48,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.1")
         message(FATAL_ERROR "Requires at leat gcc++ Version 5.3 or greater!")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")
@@ -65,6 +69,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     SET(KDU_MAKE "Makefile-MAC-x86-all-gcc")
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
+    SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE FILEPATH "openssl")
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     message(STATUS "Compiling for Linux64...")
     message(STATUS ${CMAKE_SYSTEM_NAME})
@@ -97,6 +102,21 @@ set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
 # needed packages
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIR})
+
+#
+# OpenSSL ??
+#
+include(FindOpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "Found OpenSSL at ${OPENSSL_INCLUDE_DIR}")
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
+else()
+    message(STATUS "No SSL support found!")
+endif()
+
 
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
@@ -144,6 +164,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/expat)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
@@ -245,9 +266,6 @@ add_executable(
         src/SipiParamValue.cpp include/SipiParamValue.h
         src/SipiParam.cpp include/SipiParam.h
         src/SipiCmdParams.cpp include/SipiCmdParams.h
-#        src/PhpSession.cpp include/PhpSession.h
-#        src/Salsah.cpp include/Salsah.h
-#        src/Template.cpp include/Template.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
@@ -262,10 +280,14 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua jansson dl pthread ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()
+if(OPENSSL_FOUND)
+    target_link_libraries(sipi ${OPENSSL_LIBRARIES})
+endif()
+
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin
