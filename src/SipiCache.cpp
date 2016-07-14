@@ -56,6 +56,8 @@ using namespace std;
 
 static const char __file__[] = __FILE__;
 
+static std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
+
 namespace Sipi {
 
     typedef struct _AListEle {
@@ -260,7 +262,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    int SipiCache::purge() {
+    int SipiCache::purge(bool use_lock) {
         auto logger = spdlog::get(shttps::loggername);
 
         if ((max_cachesize == 0) && (max_nfiles == 0)) return 0; // allow cache to grow indefinitely! dangerous!!
@@ -269,7 +271,8 @@ namespace Sipi {
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
             vector<AListEle> alist;
 
-            locking.lock();
+            if (use_lock) locking.lock();
+
             for (const auto &ele : cachetable) {
                 AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
                 alist.push_back(al);
@@ -282,14 +285,14 @@ namespace Sipi {
                 logger->debug("Purging from cache '") << cachetable[ele.canonical].cachepath << "'...";
                 string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
                 ::remove(delpath.c_str());
-                cachetable.erase(ele.canonical);
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
                 ++n;
+                (void) cachetable.erase(ele.canonical);
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
-            locking.unlock();
+            if (use_lock) locking.unlock();
         }
         return n;
     }
@@ -409,18 +412,20 @@ namespace Sipi {
             // do nothing...
         }
 
-        purge();
+        purge(false);
 
         cachetable[canonical_p] = fr;
         cachesize += fr.fsize;
 
+        /*
         try {
             (void) sizetable.at(origpath_p);
         }
         catch(const std::out_of_range& oor) {
+         */
             SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p};
             sizetable[origpath_p] = tmp_cr;
-        }
+        //}
 
         ++nfiles;
 

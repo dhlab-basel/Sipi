@@ -63,9 +63,18 @@ sipi = {
     cachedir = './cache',
 
     --
-    -- maxcimal size of the cache
+    -- maximal size of the cache
+    -- The cache will be purged if either the maximal size or maximal number
+    -- of files is reached
     --
-    cachesize = '100M',
+    cachesize = '200M',
+
+    --
+    -- maximal number of files to be cached
+    -- The cache will be purged if either the maximal size or maximal number
+    -- of files is reached
+    --
+    cache_nfiles = 250,
 
     --
     -- if the cache becomes full, the given percentage of file space is marked for reuse

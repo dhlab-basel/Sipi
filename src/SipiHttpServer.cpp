@@ -966,7 +966,6 @@ namespace Sipi {
                         conobj.closeCacheFile();
                         logger->debug("Adding cachefile '") << cachefile << "' to internal list";
                         cache->add(infile, canonical, cachefile, img_w, img_h);
-                        logger->debug("DONE");
                     }
                     break;
                 }
@@ -1001,7 +1000,6 @@ namespace Sipi {
                         conobj.closeCacheFile();
                         logger->debug("Adding cachefile '") << cachefile << "' to internal list";
                         cache->add(infile, canonical, cachefile, img_w, img_h);
-                        logger->debug("DONE");
                     }
                     break;
                 }

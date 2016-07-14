@@ -74,7 +74,7 @@ namespace Sipi {
          * the cached files are read from a file (being a serialization of FileCacheRecord). On
          * server shutdown, the in-memory representation is again ritten to a file.
          */
-        typedef struct {
+        typedef struct _CacheRecord {
             int img_w, img_h;
             std::string origpath;
             std::string cachepath;
@@ -108,7 +108,6 @@ namespace Sipi {
         typedef void (*ProcessOneCacheFile)(int index, const std::string&, const SipiCache::CacheRecord&, void *userdata);
 
     private:
-        std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
         std::string _cachedir; //!< path to the cache directory
         std::map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
         std::map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size
@@ -158,9 +157,11 @@ namespace Sipi {
          * Purge the cache to make room for more files. Uses the cache_hysteresis, max_cachesize and max_nfiles values
          * for the amount of files that should be purged.
          *
+         * \param[in] Use the cache-lock mutex
+         *
          * \returns Number of files being purged.
          */
-        int purge();
+        int purge(bool use_lock = true);
 
         /*!
          * check if a file is already in the cache and up-to-date
