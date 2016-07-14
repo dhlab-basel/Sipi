@@ -58,6 +58,10 @@
 
 static const char __file__[] = __FILE__;
 
+static std::mutex threadlock;
+
+static std::mutex debugio;
+
 using namespace std;
 
 namespace shttps {
@@ -898,6 +902,41 @@ namespace shttps {
         }
 
         return do_close;
+    }
+    //=========================================================================
+
+    void Server::add_thread(pthread_t thread_id_p, int sock_id) {
+        threadlock.lock();
+        GenericSockId sid;
+        sid.sid = sock_id;
+#ifdef SHTTPS_ENABLE_SSL
+        sid.ssl_sid = NULL;
+#endif
+        thread_ids[thread_id_p] = sid;
+        threadlock.unlock();
+    }
+    //=========================================================================
+
+#ifdef SHTTPS_ENABLE_SSL
+    void Server::add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL) {
+            threadlock.lock();
+            GenericSockId sid = {sock_id, cSSL};
+            thread_ids[thread_id_p] = sid;
+            threadlock.unlock();
+        }
+#endif
+
+    void Server::remove_thread(pthread_t thread_id_p) {
+        threadlock.lock();
+        thread_ids.erase(thread_id_p);
+        threadlock.unlock();
+    }
+    //=========================================================================
+
+    void Server::debugmsg(const std::string &msg) {
+        debugio.lock();
+        std::cerr << msg << std::endl;
+        debugio.unlock();
     }
     //=========================================================================
 

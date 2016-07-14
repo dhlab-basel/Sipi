@@ -36,6 +36,7 @@ set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
 # Usually SIPI is compiled with all static libraries
 #
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
+option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
@@ -47,7 +48,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.1")
         message(FATAL_ERROR "Requires at leat gcc++ Version 5.3 or greater!")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")

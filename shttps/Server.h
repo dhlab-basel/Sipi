@@ -176,8 +176,6 @@ namespace shttps {
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
         std::map<pthread_t,GenericSockId> thread_ids;
-        std::mutex threadlock;
-        std::mutex debugio;
         int _keep_alive_timeout;
         bool running;
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
@@ -361,31 +359,13 @@ namespace shttps {
          */
         inline sem_t *semaphore(void) { return _semaphore; }
 
-        inline void add_thread(pthread_t thread_id_p, int sock_id) {
-            threadlock.lock();
-            GenericSockId sid;
-            sid.sid = sock_id;
-#ifdef SHTTPS_ENABLE_SSL
-            sid.ssl_sid = NULL;
-#endif
-            thread_ids[thread_id_p] = sid;
-            threadlock.unlock();
-        }
+        void add_thread(pthread_t thread_id_p, int sock_id);
 
 #ifdef SHTTPS_ENABLE_SSL
-        inline void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL) {
-            threadlock.lock();
-            GenericSockId sid = {sock_id, cSSL};
-            thread_ids[thread_id_p] = sid;
-            threadlock.unlock();
-        }
+        void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL);
 #endif
 
-        inline void remove_thread(pthread_t thread_id_p) {
-            threadlock.lock();
-            thread_ids.erase(thread_id_p);
-            threadlock.unlock();
-        }
+        void remove_thread(pthread_t thread_id_p);
 
         /*!
          * Sets the path to the initialization script (lua script) which is executed for each request
@@ -453,11 +433,7 @@ namespace shttps {
         */
         inline void user_data(void *user_data_p) { _user_data = user_data_p; }
 
-        inline void debugmsg(const std::string &msg) {
-            debugio.lock();
-            std::cerr << msg << std::endl;
-            debugio.unlock();
-        }
+        void debugmsg(const std::string &msg);
     };
 
 }

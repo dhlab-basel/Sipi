@@ -280,7 +280,7 @@ namespace Sipi {
             return 1;
         }
 
-        int n = cache->purge();
+        int n = cache->purge(true);
         lua_pushinteger(L, n);
 
         return 1;

@@ -79,7 +79,7 @@ sipi = {
     --
     -- if the cache becomes full, the given percentage of file space is marked for reuse
     --
-    cache_hysteresis = 0.1,
+    cache_hysteresis = 0.15,
 
     --
     -- Path to the directory where the scripts for the routes defined below are to be found
@@ -117,7 +117,7 @@ sipi = {
 
 
     --
-    -- The secret for generating JWT's (JSON Web Tokens)
+    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
     --
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
