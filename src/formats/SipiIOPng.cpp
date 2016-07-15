@@ -91,6 +91,7 @@ namespace Sipi {
         tmp->key = key;
         tmp->text = (char *) data;
         tmp->text_length = len;
+        tmp->itxt_length = 0;
     }
     //=============================================
 
@@ -100,6 +101,7 @@ namespace Sipi {
         tmp->key = key;
         tmp->text = data;
         tmp->itxt_length = len;
+        tmp->text_length = 0;
     }
     //=============================================
 
@@ -448,6 +450,7 @@ namespace Sipi {
             xmp_buf = img->xmp->xmpBytes(len);
             chunk_ptr->add_iTXt(xmp_tag, xmp_buf, len);
         }
+
         if (chunk_ptr->num() > 0) {
             png_set_text(png_ptr, info_ptr, chunk_ptr->ptr(), chunk_ptr->num());
         }
