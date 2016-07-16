@@ -108,6 +108,7 @@ namespace Sipi {
         typedef void (*ProcessOneCacheFile)(int index, const std::string&, const SipiCache::CacheRecord&, void *userdata);
 
     private:
+        std::mutex locking;
         std::string _cachedir; //!< path to the cache directory
         std::map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
         std::map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size

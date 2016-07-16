@@ -56,7 +56,7 @@ using namespace std;
 
 static const char __file__[] = __FILE__;
 
-static std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
+//static std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
 
 namespace Sipi {
 
