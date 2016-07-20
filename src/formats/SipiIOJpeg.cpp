@@ -45,6 +45,17 @@ using namespace std;
 
 static const char __file__[] = __FILE__;
 
+
+
+void mymemcpy(void *to, const void *from, size_t len) {
+    register char *toptr = (char *) to;
+    register char *fromptr = (char *) from;
+    while (toptr < (char *) to + len) {
+        *toptr++ = *fromptr++;
+    }
+}
+
+
 namespace Sipi {
     static std::mutex inlock;
     //static std::mutex outlock;
@@ -407,7 +418,7 @@ namespace Sipi {
                 if (pos != NULL) {
                     int len = marker->data_length - (pos - (unsigned char *) marker->data) - 14;
                     icc_buffer = (unsigned char *) realloc(icc_buffer, icc_buffer_len + len);
-                    memcpy (icc_buffer + icc_buffer_len, pos + 14, len);
+                    mymemcpy (icc_buffer + icc_buffer_len, pos + 14, (size_t) len);
                     icc_buffer_len += len;
                 }
             }
@@ -475,7 +486,7 @@ namespace Sipi {
             linbuf = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
             for (int i = 0; i < img->ny; i++) {
                 jpeg_read_scanlines(&cinfo, linbuf, 1);
-                memcpy(&(img->pixels[i * sll]), linbuf[0], sll);
+                memcpy(&(img->pixels[i * sll]), linbuf[0], (size_t) sll);
             }
         }
         catch (JpegError &jpgerr) {
@@ -715,8 +726,8 @@ namespace Sipi {
             char start[] = "Exif\000\000";
             size_t start_l = sizeof(start) - 1;  // remove trailing '\0';
             unsigned char *exifchunk = new unsigned char[len + start_l];
-            memcpy(exifchunk, start, start_l);
-            memcpy(exifchunk + start_l, buf, len);
+            mymemcpy(exifchunk, start, (size_t) start_l);
+            mymemcpy(exifchunk + start_l, buf, (size_t) len);
             delete [] buf;
 
             try {
@@ -745,8 +756,8 @@ namespace Sipi {
             char start[] = "http://ns.adobe.com/xap/1.0/\000";
             size_t start_l = sizeof(start) - 1; // remove trailing '\0';
             char *xmpchunk = new char[len + start_l];
-            memcpy(xmpchunk, start, start_l);
-            memcpy(xmpchunk + start_l, buf, len);
+            mymemcpy(xmpchunk, start, (size_t) start_l);
+            mymemcpy(xmpchunk + start_l, buf, (size_t) len);
             delete [] buf;
             try {
                 jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk, start_l + len);
@@ -778,8 +789,8 @@ namespace Sipi {
                 start[12] = (unsigned char) (i + 1);
                 start[13] = (unsigned char) n;
                 if (n_nextwrite > n_towrite) n_nextwrite = n_towrite;
-                memcpy(iccchunk, start, start_l);
-                memcpy(iccchunk + start_l, buf + n_written, n_nextwrite);
+                mymemcpy(iccchunk, start, (size_t) start_l);
+                mymemcpy(iccchunk + start_l, buf + n_written, (size_t) n_nextwrite);
                 try {
                     jpeg_write_marker(&cinfo, ICC_MARKER, (JOCTET *) iccchunk, n_nextwrite + start_l);
                 }
@@ -815,9 +826,9 @@ namespace Sipi {
             siz[3] = (unsigned char) (len & 0x000000ff);
 
             char *iptcchunk = new char[start_l + 4 + len];
-            memcpy(iptcchunk, start, start_l);
-            memcpy(iptcchunk + start_l, siz, 4);
-            memcpy(iptcchunk + start_l + 4, buf, len);
+            mymemcpy(iptcchunk, start, (size_t) start_l);
+            mymemcpy(iptcchunk + start_l, siz, (size_t) 4);
+            mymemcpy(iptcchunk + start_l + 4, buf, (size_t) len);
 
             delete [] buf;
             try {
