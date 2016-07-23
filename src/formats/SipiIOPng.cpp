@@ -67,7 +67,7 @@ namespace Sipi {
         inline unsigned int num() {return num_text; };
         inline png_text* ptr() {return text_ptr; };
         png_text *next();
-        void add_zTXt(char *key, unsigned char *data, unsigned int len);
+        void add_zTXt(char *key, char *data, unsigned int len);
         void add_iTXt(char *key, char *data, unsigned int len);
     };
 
@@ -85,13 +85,15 @@ namespace Sipi {
     }
     //=============================================
 
-    void PngTextPtr::add_zTXt(char *key, unsigned char *data, unsigned int len) {
+    void PngTextPtr::add_zTXt(char *key, char *data, unsigned int len) {
         png_text *tmp = this->next();
         tmp->compression = PNG_TEXT_COMPRESSION_zTXt;
         tmp->key = key;
         tmp->text = (char *) data;
         tmp->text_length = len;
         tmp->itxt_length = 0;
+        tmp->lang = "";
+        tmp->lang_key = "";
     }
     //=============================================
 
@@ -100,8 +102,10 @@ namespace Sipi {
         tmp->compression = PNG_ITXT_COMPRESSION_zTXt;
         tmp->key = key;
         tmp->text = data;
-        tmp->itxt_length = len;
         tmp->text_length = 0;
+        tmp->itxt_length = len;
+        tmp->lang = "";
+        tmp->lang_key = "";
     }
     //=============================================
 
@@ -426,33 +430,33 @@ namespace Sipi {
             png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf, len);
         }
 
+        PngTextPtr chunk_ptr(4);
         //
         // other metadata comes here
         //
         unsigned char *exif_buf = NULL;
-        PngTextPtr *chunk_ptr = new PngTextPtr(4);
         if (img->exif) {
             unsigned int len;
             exif_buf = img->exif->exifBytes(len);
-            chunk_ptr->add_zTXt(exif_tag, exif_buf, len);
+            chunk_ptr.add_zTXt(exif_tag, (char *) exif_buf, len);
         }
 
         unsigned char *iptc_buf = NULL;
         if (img->iptc) {
             unsigned int len;
             iptc_buf = img->iptc->iptcBytes(len);
-            chunk_ptr->add_zTXt(iptc_tag, iptc_buf, len);
+            chunk_ptr.add_zTXt(iptc_tag, (char *) iptc_buf, len);
         }
 
         char *xmp_buf = NULL;
         if (img->xmp != NULL) {
             unsigned int len;
             xmp_buf = img->xmp->xmpBytes(len);
-            chunk_ptr->add_iTXt(xmp_tag, xmp_buf, len);
+            chunk_ptr.add_iTXt(xmp_tag, xmp_buf, len);
         }
 
-        if (chunk_ptr->num() > 0) {
-            png_set_text(png_ptr, info_ptr, chunk_ptr->ptr(), chunk_ptr->num());
+        if (chunk_ptr.num() > 0) {
+            png_set_text(png_ptr, info_ptr, chunk_ptr.ptr(), chunk_ptr.num());
         }
 
         png_bytep *row_pointers = (png_bytep *) png_malloc (png_ptr, img->ny * sizeof (png_byte *));

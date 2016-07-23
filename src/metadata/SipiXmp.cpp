@@ -31,7 +31,7 @@ static const char __file__[] = __FILE__;
 /*!
  * ToDo: remove provisional code as soon as Exiv2::Xmp is thread safe (expected v.26)
  * ATTENTION!!!!!!!!!
- * Since the Xmp-Part of Exiv2 Version 0.25 is not thread safe, we omiz for the moment
+ * Since the Xmp-Part of Exiv2 Version 0.25 is not thread safe, we omit for the moment
  * the use of Exiv2::Xmp for processing XMP. We just transfer the XMP string as is. This
  * is bad, since we are not able to modifiy it. But we'll try again with Exiv2 v0.26!
  */
@@ -113,6 +113,7 @@ namespace Sipi {
         char *__buf = new char[__xmpstr.length() + 1];
         memcpy (__buf, __xmpstr.c_str(), __xmpstr.length());
         __buf[__xmpstr.length()] = '\0';
+        len = __xmpstr.length();
         return __buf; // provisional code until Exiv2::Xmp is threadsafe
 
         std::string xmpPacket;
