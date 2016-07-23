@@ -168,6 +168,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
+add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
 
@@ -273,14 +274,14 @@ add_executable(
         src/iiifparser/SipiQualityFormat.cpp include/iiifparser/SipiQualityFormat.h
         src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
         src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
-)
+        src/SipiCommon.cpp include/SipiCommon.h)
 add_dependencies(sipi icc_profiles)
 
 
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua jansson dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua jansson sqlite3 dl pthread ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()
