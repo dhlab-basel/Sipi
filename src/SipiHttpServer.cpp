@@ -974,7 +974,19 @@ namespace Sipi {
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conobj.setChunkedTransfer();
-                    img.write("jpx", "HTTP");
+                    if (cache != NULL) {
+                        conobj.openCacheFile(cachefile);
+                    }
+                    try {
+                        img.write("jpx", "HTTP");
+                    }
+                    catch (SipiImageError &err) {
+                        if (cache != NULL) {
+                            conobj.closeCacheFile();
+                            unlink(cachefile.c_str());
+                        }
+                        break;
+                    }
                     break;
                 }
                 case SipiQualityFormat::TIF: {
@@ -982,7 +994,24 @@ namespace Sipi {
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
-                    img.write("tif", "HTTP");
+                    if (cache != NULL) {
+                        conobj.openCacheFile(cachefile);
+                    }
+                    try {
+                        img.write("tif", "HTTP");
+                    }
+                    catch (SipiImageError &err) {
+                        if (cache != NULL) {
+                            conobj.closeCacheFile();
+                            unlink(cachefile.c_str());
+                        }
+                        break;
+                    }
+                    if (cache != NULL) {
+                        conobj.closeCacheFile();
+                        logger->debug("Adding cachefile '") << cachefile << "' to internal list";
+                        cache->add(infile, canonical, cachefile, img_w, img_h);
+                    }
                     break;
                 }
                 case SipiQualityFormat::PNG: {
@@ -993,9 +1022,20 @@ namespace Sipi {
                     if (cache != NULL) {
                         conobj.openCacheFile(cachefile);
                     }
+                    if (cache != NULL) {
+                        conobj.openCacheFile(cachefile);
+                    }
                     logger->debug("Before writing PNG...");
-                    img.write("png", "HTTP");
-                    logger->debug("After writing PNG...");
+                    try {
+                        img.write("png", "HTTP");
+                    }
+                    catch (SipiImageError &err) {
+                        if (cache != NULL) {
+                            conobj.closeCacheFile();
+                            unlink(cachefile.c_str());
+                        }
+                        break;
+                    }
                     if (cache != NULL) {
                         conobj.closeCacheFile();
                         logger->debug("Adding cachefile '") << cachefile << "' to internal list";
