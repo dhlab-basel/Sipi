@@ -833,7 +833,6 @@ namespace Sipi {
             catch(int err) {
                 // -1 was thrown
                 logger->error("Browser unexpectedly closed connection");
-                cerr << "Browser unexpectedly closed connection" << endl;
                 return;
             }
             catch(Sipi::SipiError &err) {
@@ -880,7 +879,6 @@ namespace Sipi {
                 catch(int err) {
                     // -1 was thrown
                     logger->error("Browser unexpectedly closed connection");
-                    cerr << "Browser unexpectedly closed connection" << endl;
                     return;
                 }
                 catch(Sipi::SipiError &err) {
