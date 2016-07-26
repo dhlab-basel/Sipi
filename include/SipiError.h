@@ -37,10 +37,10 @@
 #include <exception>
 #include <stdexcept>
 
-#include "spdlog/spdlog.h"
+#include "shttps/spdlog/spdlog.h"
 
 
-#include "Error.h"
+#include "shttps/Error.h"
 
 /**
  * \namespace Sipi Used for all sipi things.

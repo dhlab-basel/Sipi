@@ -291,7 +291,7 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua jansson sqlite3 dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()

@@ -42,7 +42,7 @@
 #include "iiifparser/SipiRegion.h"
 #include "iiifparser/SipiSize.h"
 
-#include "Connection.h"
+#include "shttps/Connection.h"
 
 
 /*!

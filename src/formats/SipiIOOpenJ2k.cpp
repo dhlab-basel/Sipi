@@ -29,14 +29,14 @@
 
 #include <stdio.h>
 
-#include "Connection.h"
-#include "Global.h"
+#include "shttps/Connection.h"
+#include "shttps/Global.h"
 
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
 #include "SipiIOOpenJ2k.h"
-#include "spdlog/spdlog.h"  // logging...
+#include "shttps/spdlog/spdlog.h"  // logging...
 
 #include "openjpeg.h"
 

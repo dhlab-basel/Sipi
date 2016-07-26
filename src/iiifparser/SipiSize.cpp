@@ -34,9 +34,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "spdlog/spdlog.h"
+#include "shttps/spdlog/spdlog.h"
 
-#include "Global.h"
+#include "shttps/Global.h"
 #include "SipiError.h"
 #include "SipiSize.h"
 

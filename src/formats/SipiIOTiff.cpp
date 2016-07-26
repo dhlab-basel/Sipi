@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "Connection.h"
+#include "shttps/Connection.h"
 #include "SipiError.h"
 #include "SipiIOTiff.h"
 #include "SipiImage.h"
@@ -39,8 +39,8 @@
 #include "tif_dir.h"  // libtiff internals; for _TIFFFieldArray
 
 
-#include "Global.h"
-#include "spdlog/spdlog.h"
+#include "shttps/Global.h"
+#include "shttps/spdlog/spdlog.h"
 
 static const char __file__[] = __FILE__;
 

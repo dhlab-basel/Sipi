@@ -34,7 +34,7 @@
 #include "SipiError.h"
 #include "SipiIOJpeg.h"
 #include "SipiCommon.h"
-#include "Connection.h"
+#include "shttps/Connection.h"
 
 #include "jpeglib.h"
 

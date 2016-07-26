@@ -45,10 +45,10 @@
 #include <dirent.h>
 #include <SipiCache.h>
 
-#include "spdlog/spdlog.h"
+#include "shttps/spdlog/spdlog.h"
 
 #include "SipiCache.h"
-#include "Global.h"
+#include "shttps/Global.h"
 #include "SipiError.h"
 
 

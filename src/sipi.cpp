@@ -31,8 +31,8 @@
 #include <csignal>
 #include <utility>
 
-#include "Global.h"
-#include "LuaServer.h"
+#include "shttps/Global.h"
+#include "shttps/LuaServer.h"
 #include "SipiLua.h"
 #include "SipiCmdParams.h"
 #include "SipiImage.h"

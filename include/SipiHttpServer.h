@@ -34,7 +34,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "Server.h"
+#include "shttps/Server.h"
 #include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiQualityFormat.h"
 #include "SipiCache.h"

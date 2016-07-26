@@ -28,7 +28,7 @@
 #include <vector>
 #include <map>
 
-#include "LuaServer.h"
+#include "shttps/LuaServer.h"
 
 /*!
  * This module implements a new Lua datatype, "SipiImage"

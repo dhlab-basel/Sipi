@@ -45,14 +45,14 @@
 #include "PhpSession.h"
 // #include "Salsah.h"
 
-#include "Global.h"
+#include "shttps/Global.h"
 #include "SipiHttpServer.h"
-#include "Connection.h"
+#include "shttps/Connection.h"
 
 #include "jansson.h"
 #include "favicon.h"
 
-#include "spdlog/spdlog.h"  // logging...
+#include "shttps/spdlog/spdlog.h"  // logging...
 
 #include "lua.hpp"
 

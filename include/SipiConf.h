@@ -28,7 +28,7 @@
 #define __sipi_conf_h
 
 #include "shttps/LuaServer.h"
-#include "Connection.h"
+#include "shttps/Connection.h"
 
 namespace Sipi {
 
