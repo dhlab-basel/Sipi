@@ -287,8 +287,6 @@ namespace shttps {
             extension = uri.substr(extpos + 1);
         }
         try {
-            size_t start_at = 0;
-            size_t end_at = 0;
             if ((extension == "html") && (mime.first == "text/html")) {
                 conn.header("Content-Type", "text/html; charset=utf-8");
                 conn.sendFile(infile);
@@ -533,21 +531,23 @@ namespace shttps {
         do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
 #endif
 
-        delete sockstream;
 
         if (do_close) {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 int sstat;
                 while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
-                if (stat < 0) {
-                    logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+                if (sstat < 0) {
+                    logger->error("SSL socket error: shutdown (1) of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
                 }
                 SSL_free(tdata->cSSL);
+                tdata->cSSL = NULL;
             }
 #endif
             close(tdata->sock);
         }
+
+        delete sockstream;
 
         tdata->serv->remove_thread(pthread_self());
         ::sem_post(tdata->serv->semaphore());
@@ -642,6 +642,7 @@ namespace shttps {
             }
             if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
                 _logger->debug("select failed (1)");
+                running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
@@ -736,8 +737,8 @@ namespace shttps {
                     _logger->error(err.to_string());
                     int sstat;
                     while ((sstat = SSL_shutdown(cSSL)) == 0);
-                    if (stat < 0) {
-                        _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
+                    if (sstat < 0) {
+                        _logger->error("SSL socket error: shutdown (2) of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
                     }
                     SSL_free(cSSL);
                     cSSL = NULL;
@@ -771,6 +772,9 @@ namespace shttps {
         int num_active_threads = thread_ids.size();
         pthread_t *ptid = new pthread_t[num_active_threads];
         GenericSockId *sid = new GenericSockId[num_active_threads];
+
+        threadlock.lock();
+
         int i = 0;
         for(auto const &tid : thread_ids) {
             ptid[i] = tid.first;
@@ -778,13 +782,13 @@ namespace shttps {
             i++;
         }
         for (int i = 0; i < num_active_threads; i++) {
-            threadlock.lock();
 #ifdef SHTTPS_ENABLE_SSL
             if (sid[i].ssl_sid != NULL) {
+                _logger->debug(" Before SSL_shutdown ") << i << " of " << num_active_threads;
                 int sstat;
-                while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0);
-                if (stat < 0) {
-                    _logger->error("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(sid[i].ssl_sid, sstat);
+                while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0) _logger->debug("***");
+                if (sstat < 0) {
+                    _logger->error("SSL socket error: shutdown (3) of socket failed! Reason: ") << SSL_get_error(sid[i].ssl_sid, sstat);
                 }
                 SSL_free(sid[i].ssl_sid);
                 sid[i].ssl_sid = NULL;
@@ -799,8 +803,9 @@ namespace shttps {
             // by the thread.
             //
             thread_ids[ptid[i]].sid = -1;
-            threadlock.unlock();
         }
+
+        threadlock.unlock();
 
         close(stoppipe[0]);
         close(stoppipe[1]);
@@ -828,9 +833,7 @@ namespace shttps {
 
     bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure)
     {
-        int n;
-
-        bool do_close = true;
+        bool do_close = false;
         while (!ins->eof() && !os->eof()) {
             if (_tmpdir.empty()) {
                 throw Error(__file__, __LINE__, "_tmpdir is empty");
@@ -848,6 +851,7 @@ namespace shttps {
                         continue;
                     }
                     else {
+                        do_close = true;
                         break;
                     }
                 }
@@ -873,14 +877,14 @@ namespace shttps {
                 }
 
                 if (!conn.keepAlive()) {
+                    do_close = true;
                     break;
                 }
             }
             catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
                 _logger->debug("Socket connection: timeout or socket closed from main");
                 if (thread_ids[pthread_self()].sid == -1) {
-                    _logger->debug("Socket is closed – no not close anymore");
-                    do_close = false;
+                    _logger->debug("Socket is closed – no need not close anymore");
                 }
                 break;
             }
@@ -900,7 +904,6 @@ namespace shttps {
                 break;
             }
         }
-
         return do_close;
     }
     //=========================================================================

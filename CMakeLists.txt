@@ -170,7 +170,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
-add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
+#add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
 
 
 
@@ -218,10 +218,10 @@ add_custom_command(
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
         DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
         COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
@@ -274,7 +274,16 @@ add_executable(
         src/iiifparser/SipiQualityFormat.cpp include/iiifparser/SipiQualityFormat.h
         src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
         src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
-        src/SipiCommon.cpp include/SipiCommon.h)
+        src/SipiCommon.cpp include/SipiCommon.h
+        shttps/Error.cpp shttps/Error.h
+        shttps/SockStream.cpp shttps/SockStream.h
+        shttps/ChunkReader.cpp shttps/ChunkReader.h
+        shttps/Connection.cpp shttps/Connection.h
+        shttps/LuaServer.cpp shttps/LuaServer.h
+        shttps/GetMimetype.cpp shttps/GetMimetype.h
+        shttps/Server.cpp shttps/Server.h
+        shttps/jwt.c shttps/jwt.h
+)
 add_dependencies(sipi icc_profiles)
 
 

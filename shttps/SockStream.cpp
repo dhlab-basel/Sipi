@@ -92,7 +92,12 @@ streambuf::int_type SockStream::underflow(void)
         n = read(sock, start, in_bufsize);
     }
     else {
-        n = SSL_read(cSSL, start, in_bufsize);
+        if (SSL_get_shutdown(cSSL) == 0) {
+            n = SSL_read(cSSL, start, in_bufsize);
+        }
+        else {
+            n = 0;
+        }
     }
 #else
     n = read(sock, start, in_bufsize);
@@ -120,7 +125,12 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
                 tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
             }
             else {
-                tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+                if (SSL_get_shutdown(cSSL) == 0) {
+                    tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+                }
+                else {
+                    tmp_n = 0;
+                }
             }
 #else
             tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
@@ -156,7 +166,12 @@ int SockStream::sync(void)
             tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
         }
         else {
-            tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+            if (SSL_get_shutdown(cSSL) == 0) {
+                tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+            }
+            else {
+                tmp_n = 0;
+            }
         }
 #else
         tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
