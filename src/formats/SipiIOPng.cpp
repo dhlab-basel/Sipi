@@ -260,7 +260,7 @@ namespace Sipi {
 
         if (force_bps_8) {
             if (!img->to8bps()) {
-                throw SipiImageError("Cannont convert to 8 Bits(sample");
+                throw SipiImageError("Cannot convert to 8 Bits(sample");
             }
         }
 
@@ -352,10 +352,6 @@ namespace Sipi {
     /*==========================================================================*/
 
     void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
-        //
-        // TODO! Support incoming 16 bit images may be (!!) by converting the buffer to 8 bit!
-        //
-
         FILE *outfile = NULL;
         png_structp png_ptr;
         shttps::Connection *conobj = img->connection();
@@ -462,10 +458,7 @@ namespace Sipi {
         png_bytep *row_pointers = (png_bytep *) png_malloc (png_ptr, img->ny * sizeof (png_byte *));
         if (img->bps == 8) {
             for (int i = 0; i < img->ny; i++) {
-                //png_byte *row = (png_byte *) png_malloc(png_ptr, sizeof(unsigned char) * img->nx * img->nc);
-                //memcpy (row, img->pixels + i*img->nx*img->nc, img->nx*img->nc);
                 row_pointers[i] = (img->pixels + i*img->nx*img->nc);
-                //row_pointers[i] = row;
             }
         }
         else if (img->bps == 16) {
@@ -477,7 +470,7 @@ namespace Sipi {
         png_set_rows(png_ptr, info_ptr, row_pointers);
 
         png_write_info(png_ptr, info_ptr);
-        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_SWAP_ENDIAN, NULL); // we expect the data to be little endian...
         png_write_end(png_ptr, info_ptr);
 
         png_free (png_ptr, row_pointers);

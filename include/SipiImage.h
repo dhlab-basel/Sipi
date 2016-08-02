@@ -111,8 +111,8 @@ namespace Sipi {
         friend class SipiIcc;       //!< We need SipiIcc as friend class
         friend class SipiIOTiff;    //!< I/O class for the TIFF file format
         friend class SipiIOJ2k;     //!< I/O class for the JPEG2000 file format
-        friend class SipiIOOpenJ2k;     //!< I/O class for the JPEG2000 file format
-        friend class SipiIOJpeg;     //!< I/O class for the JPEG file format
+        friend class SipiIOOpenJ2k; //!< I/O class for the JPEG2000 file format
+        friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
         static std::map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
