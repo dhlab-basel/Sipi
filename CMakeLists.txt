@@ -99,10 +99,6 @@ set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
 
 
 
-# needed packages
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIR})
-
 #
 # OpenSSL ??
 #
@@ -157,6 +153,7 @@ find_package(Threads REQUIRED)
 
 
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
+add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
