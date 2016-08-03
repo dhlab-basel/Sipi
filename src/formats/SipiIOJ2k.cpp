@@ -659,7 +659,7 @@ namespace Sipi {
         //jpx_out.write_headers();
         jp2_output_box *out_box = jpx_stream.open_stream();
 
-        out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
+        //out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
 
         codestream.access_siz()->finalize_all();
 
