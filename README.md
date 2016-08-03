@@ -52,11 +52,6 @@ In the root directory, two additional directories must be created: `build` and `
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
 
-#### CLion
-If you are using the [CLion](https://www.jetbrains.com/clion/) IDE, put `-j 1` in Preferences ->
-Build, Execution, Deployment -> CMake -> Build options, to prevent CMake from building with multiple processes.
-Also, note that code inspection in the CLion editor may not work until it has run CMake.
-
 ### CentOS
 - `yum install package gcc-c++`
 - `yum install package readline-devel`
@@ -67,16 +62,12 @@ Also, note that code inspection in the CLion editor may not work until it has ru
 
 ### Ubuntu
 - `sudo apt-get install libreadline-dev`
-- `sudo apt-get install log4cpp`
+- `sudo apt-get install cmake`
+- `sudo apt-get install git`
+- `sudo apt-get install cmake`
+- `sudo apt-get install libssl-dev`
 - `gcc >= v5.3` (see below)
-
-#### Code::Blocks
-If you are using the [Code::Blocks](http://www.codeblocks.org/) IDE, you can build a cdb project:
-
-```bash
-cd build
-cmake .. -G "CodeBlocks - Unix Makefiles"
-```
+- `java sdk` (see below)
 
 #### Install GCC 5.3 and make it the default compiler:
 
@@ -97,6 +88,32 @@ sudo update-alternatives --set c++ /usr/bin/g++
 ```
 
 Then run `gcc -v` which should say `gcc version 5.3.0`
+
+#### Installing Java SDK
+```bash
+sudo apt-add-repository ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install oracle-java8-installer
+```
+Also ensure your JAVA_HOME variable has been set to: `/usr/lib/jvm/java-8-oracle`. If not, add to .login
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+```
+### IDE's
+
+#### CLion
+If you are using the [CLion](https://www.jetbrains.com/clion/) IDE, put `-j 1` in Preferences ->
+Build, Execution, Deployment -> CMake -> Build options, to prevent CMake from building with multiple processes.
+Also, note that code inspection in the CLion editor may not work until it has run CMake.
+
+
+#### Code::Blocks
+If you are using the [Code::Blocks](http://www.codeblocks.org/) IDE, you can build a cdb project:
+
+```bash
+cd build
+cmake .. -G "CodeBlocks - Unix Makefiles"
+```
 
 ## Running cmake and make
 
