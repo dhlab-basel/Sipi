@@ -1093,7 +1093,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_RATIONAL_PTR: {
                         float *tmpbuf;
-                        unsigned int len;
+                        uint16 len;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             Exiv2::Rational *r = new Exiv2::Rational[len];
                             for (int i; i < len; i++) {
@@ -1106,7 +1106,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_UINT8_PTR: {
                         uint8 *tmpbuf;
-                        uint32 len;
+                        uint16 len;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
                         }
@@ -1114,7 +1114,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_UINT16_PTR: {
                         uint16 *tmpbuf;
-                        uint32 len;
+                        uint16 len; // in bytes !!
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
                         }
@@ -1122,7 +1122,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_UINT32_PTR: {
                         uint32 *tmpbuf;
-                        unsigned int len;
+                        uint16 len;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
                         }
@@ -1130,7 +1130,7 @@ namespace Sipi {
                     }
                     case EXIF_DT_PTR: {
                         unsigned char *tmpbuf;
-                        uint32 len;
+                        uint16 len;
                         if (exiftag_list[i].len == 0) {
                             if (TIFFGetField (tif, exiftag_list[i].tag_id, &len, &tmpbuf)) {
                                 img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpbuf, len);
