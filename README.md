@@ -336,6 +336,19 @@ gdb build/sipi
 
 ```
 
+some useful command to debug from gdb are: 
+
+```bash
+
+bt (backtrace)  gives a call stack.
+
+frame <args> gives information about a specific frame from the stack.
+
+info locals gives you information about any local variables on the stack.
+
+```
+
+
 ## Commit Message Schema
 
 When writing commit messages, we stick to this schema:
