@@ -33,6 +33,7 @@ example "config/sipi.config.lua" for instructions.
 - cmake > 2.8.0 (for Mac, see below)
 - java openjdk devel (set environment variable `JAVA_HOME`)
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
+   - zlib-1.2.8
    - xz-5.2.1
    - libjpeg-v9a
    - jbigkit-2.1
@@ -64,7 +65,6 @@ In the root directory, two additional directories must be created: `build` and `
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install cmake`
 - `sudo apt-get install git`
-- `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
 - `gcc >= v5.3` (see below)
 - `java sdk` (see below)
@@ -99,6 +99,11 @@ Also ensure your JAVA_HOME variable has been set to: `/usr/lib/jvm/java-8-oracle
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 ```
+
+### Fedora Linux
+- `sudo yum install gcc-c++`
+- `sudo yum install java-1.8.0-openjdk-devel`
+
 ### IDE's
 
 #### CLion
