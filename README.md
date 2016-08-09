@@ -63,6 +63,7 @@ In the root directory, two additional directories must be created: `build` and `
 
 ### Ubuntu
 - `sudo apt-get install libreadline-dev`
+- `sudo apt-get install unzip`
 - `sudo apt-get install cmake`
 - `sudo apt-get install git`
 - `sudo apt-get install libssl-dev`
