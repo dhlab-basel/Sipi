@@ -45,16 +45,18 @@ fi
 
 PID_SIPI=$1
 
-FILENAME_DOWN="images/tif8tojp2.jp2"
+FILENAME_DOWN_8=$2
+FILENAME_DOWN_16=$3
 
-echo "$PID_SIPI"
 
-curl -sS -o "$FILENAME_DOWN" -O http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.jpg
+IMAGE_EXTENTION=$4
 
-test_check $1 $FILENAME_DOWN
+echo "http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.$IMAGE_EXTENTION"
 
-FILENAME_DOWN="images/tif16tojp2.jp2"
+curl -sS -o "$FILENAME_DOWN_8" -O "http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.$IMAGE_EXTENTION"
 
-curl -sS -o "$FILENAME_DOWN" -O http://localhost:1024/test_server/Leaves16.tif/full/full/0/default.jpg
+test_check $1 $FILENAME_DOWN_8
 
-test_check $1 $FILENAME_DOWN
+curl -sS -o "$FILENAME_DOWN_16" -O "http://localhost:1024/test_server/Leaves16.tif/full/full/0/default.$IMAGE_EXTENTION"
+
+test_check $1 $FILENAME_DOWN_16

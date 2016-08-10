@@ -22,39 +22,49 @@
 #
 #!/bin/bash
 
-function test_check {
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NOCOLOR='\033[0m'
-FILENAME_1=$2
+function find_and_delete {
 
-if ps -p $1 > /dev/null ;then
+FILENAME_RM = $1
 
-    if test -f "$FILENAME_1"; then
-        echo -e "${GREEN} file $FILENAME_1 created${NOCOLOR}"
-        rm "$FILENAME_1"
-
-    else
-        echo -e "${RED} file $FILENAME_1 not created${NOCOLOR}"
-    fi
-else
-    echo -e "${RED}SIPI Crashed${NOCOLOR}"
+if test -f "$FILENAME_RM"; then
+   echo -e "${GREEN} file $FILENAME_RM found - I will delete it${NOCOLOR}"
+   rm "$FILENAME_RM"
 fi
 }
 
+./local/bin/sipi -config config/sipi.test-config.lua &
 
-PID_SIPI=$1
+sleep 1.5
 
-FILENAME_DOWN="images/tif8tojpg.jpg"
+PID_SIPI=$!
+JPEG_EXTENTION="jpg"
+FILENAME_J8_DOWN="test_server/images/tif8tojpeg.jpeg"
+FILENAME_J16_DOWN="test_server/images/tif16tojpeg.jpeg"
 
-echo "$PID_SIPI"
 
-curl -sS -o "$FILENAME_DOWN" -O http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.jpg
+find_and_delete $FILENAME_J8_DOWN
+find_and_delete $FILENAME_J16_DOWN
 
-test_check $1 $FILENAME_DOWN
 
-FILENAME_DOWN="images/tif16tojpg.jpg"
+PNG_EXTENTION="png"
+FILENAME_P8_DOWN="test_server/images/tif8topng.png"
+FILENAME_P16_DOWN="test_server/images/tif16topng.png"
 
-curl -sS -o "$FILENAME_DOWN" -O http://localhost:1024/test_server/Leaves16.tif/full/full/0/default.jpg
+find_and_delete $FILENAME_P8_DOWN
+find_and_delete $FILENAME_P16_DOWN
 
-test_check $1 $FILENAME_DOWN
+
+J2_EXTENTION="jp2"
+FILENAME_J28_DOWN="test_server/images/tif8tojp2.jp2"
+FILENAME_J216_DOWN="test_server/images/tif16tojp2.jp2"
+
+find_and_delete $FILENAME_J28_DOWN
+find_and_delete $FILENAME_J216_DOWN
+
+
+bash test_server/test_generic.sh $PID_SIPI $FILENAME_J8_DOWN $FILENAME_J16_DOWN $JPEG_EXTENTION
+bash test_server/test_generic.sh $PID_SIPI $FILENAME_P8_DOWN $FILENAME_P16_DOWN $PNG_EXTENTION
+bash test_server/test_generic.sh $PID_SIPI $FILENAME_J28_DOWN $FILENAME_J216_DOWN $J2_EXTENTION
+
+
+kill $PID_SIPI
