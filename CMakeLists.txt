@@ -233,7 +233,7 @@ add_custom_target(
 link_directories(
         /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
+#        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
 )
 
 
