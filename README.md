@@ -54,7 +54,10 @@ In the root directory, two additional directories must be created: `build` and `
 
 ### CentOS
 - `yum install package gcc-c++`
+- `yum install package cmake`
 - `yum install package readline-devel`
+- `yum install package gettext`
+- `yum install package vim-common`
 - `yum install package zlib-devel`
 - `yum install package doxygen`
 - `yum install package unzip`
