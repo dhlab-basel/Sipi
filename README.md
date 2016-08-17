@@ -29,10 +29,8 @@ In order to use SIPI with secure connections, You need to install a certificate 
 example "config/sipi.config.lua" for instructions.
 
 ### General
-- a working c++11 compiler (gcc >= v5.3 or clang)
+- a working c++11 compiler (gcc >= v4.9 or clang)
 - cmake > 2.8.0 (for Mac, see below)
-- java 8 openjdk devel (set environment variable `JAVA_HOME`)
-- openssl devel
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - zlib-1.2.8
    - xz-5.2.1
@@ -56,37 +54,24 @@ In the root directory, two additional directories must be created: `build` and `
 
 ### CentOS
 
-- `yum install gcc-c++`
-- `yum install java-1.8.0-openjdk-devel`
-- `yum sinatll openssl-devel`
-- `yum install readline-devel`
-- `yum install zlib-devel`
-- `yum install doxygen`
-- `yum install unzip`
-- `yum install patch`
-- `yum install cmake`
+### Debian (>= V8.0 jessie)
+To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
+- `sudo apt-get install g++`
+- `sudo apt-get install cmake`
+- `sudo apt-get install git`
+- `sudo apt-get install gettext`
+- `sudo apt-get install libreadline6 libreadline6-dev`
+- `sudo apt-get install libssl-dev`
+- `sudo apt-get install doxigen`
+
+Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
+debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch,
+go to the Sipi dicrectory and run
+
+`sudo bash debian-cmake-patch.sh`
 
 
-In order to get `gcc-5.1.1`, an additional repository has to added since it is not part of CentOS. Add Fedora repository as follows (see <http://serverfault.com/questions/720558/how-to-install-gcc-5-2-on-centos-7-1> for the original post):
-
-- create the file `/etc/yum.repos.d/FedoraRepo.repo`
-
-- add the following lines to it:
-```
-        [warning:fedora]
-        name=fedora
-        mirrorlist=http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-23&arch=$basearch
-        enabled=1
-        gpgcheck=1
-        gpgkey=https://getfedora.org/static/34EC9CBA.txt
-```
-
-- `yum update gcc g++`
-- run `gcc --version` and it should say `gcc (GCC) 5.1.1`
-- then remove the config file, otherwise you will get into trouble because library versions are mixed
-
-
-### Ubuntu
+### Ubuntu (>= V14)
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install unzip`
 - `sudo apt-get install cmake`
@@ -115,20 +100,10 @@ sudo update-alternatives --set c++ /usr/bin/g++
 
 Then run `gcc -v` which should say `gcc version 5.3.0`
 
-#### Installing Java SDK
-```bash
-sudo apt-add-repository ppa:webupd8team/java
-sudo apt-get update
-sudo apt-get install oracle-java8-installer
-```
-Also ensure your JAVA_HOME variable has been set to: `/usr/lib/jvm/java-8-oracle`. If not, add to .login
-```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 ```
 
 ### Fedora Linux
 - `sudo yum install gcc-c++`
-- `sudo yum install java-1.8.0-openjdk-devel`
 
 ### IDE's
 
