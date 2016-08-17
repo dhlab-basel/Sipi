@@ -78,38 +78,37 @@ go to the Sipi dicrectory and run
 
 
 ### Ubuntu (>= V14)
-- `sudo apt-get install libreadline-dev`
+- `sudo apt-get update`
+- `sudo apt-get upgrade`
+- `sudo apt-get install g++`
 - `sudo apt-get install unzip`
-- `sudo apt-get install cmake`
 - `sudo apt-get install git`
+- `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
-- `gcc >= v5.3` (see below)
-- `java sdk` (see below)
+- `sudo apt-get install libreadline-dev`
 
-#### Install GCC 5.3 and make it the default compiler:
-
- The assumed current version of gcc is 4.8. Please adapt the version information for the code below if your current gcc version is different.
-
-```bash
-sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-sudo apt-get update
-sudo apt-get install gcc-5 g++-5
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 10
-sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 10
-sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 20
-sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 30
-sudo update-alternatives --set cc /usr/bin/gcc
-sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 30
-sudo update-alternatives --set c++ /usr/bin/g++
-```
-
-Then run `gcc -v` which should say `gcc version 5.3.0`
-
-```
 
 ### Fedora Linux
+- `sudo yum install vim-common`
+- `sudo yum install patch`
 - `sudo yum install gcc-c++`
+- `sudo yum install git`
+- `sudo yum install cmake`
+- `sudo yum install readline-devel`
+- `sudo yum install openssl-devel`
+
+### OpenSUSe
+NOTE: not yet ready ready problem with library names...
+- `sudo zypper install gcc-c++`
+- `zypper install git`
+- `zypper install cmake`
+- `sudo zypper install zlib-devel`
+- `sudo zypper install libexpat-devel`
+- `sudo zypper install patch`
+- `sudo zypper install readline-devel`
+- `sudo zypper install openssl-devel`
+
+
 
 ### IDE's
 
