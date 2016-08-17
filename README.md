@@ -29,9 +29,8 @@ In order to use SIPI with secure connections, You need to install a certificate 
 example "config/sipi.config.lua" for instructions.
 
 ### General
-- a working c++11 compiler (gcc >= v5.3 or clang)
+- a working c++11 compiler (gcc >= v4.9 or clang)
 - cmake > 2.8.0 (for Mac, see below)
-- java openjdk devel (set environment variable `JAVA_HOME`)
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - zlib-1.2.8
    - xz-5.2.1
@@ -61,7 +60,24 @@ In the root directory, two additional directories must be created: `build` and `
 - `yum install package unzip`
 - `yum install package patch`
 
-### Ubuntu
+### Debian (>= V8.0 jessie)
+To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
+- `sudo apt-get install g++`
+- `sudo apt-get install cmake`
+- `sudo apt-get install git`
+- `sudo apt-get install gettext`
+- `sudo apt-get install libreadline6 libreadline6-dev`
+- `sudo apt-get install libssl-dev`
+- `sudo apt-get install doxigen`
+
+Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
+debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch,
+go to the Sipi dicrectory and run
+
+`sudo bash debian-cmake-patch.sh`
+
+
+### Ubuntu (>= V14)
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install unzip`
 - `sudo apt-get install cmake`
@@ -90,20 +106,10 @@ sudo update-alternatives --set c++ /usr/bin/g++
 
 Then run `gcc -v` which should say `gcc version 5.3.0`
 
-#### Installing Java SDK
-```bash
-sudo apt-add-repository ppa:webupd8team/java
-sudo apt-get update
-sudo apt-get install oracle-java8-installer
-```
-Also ensure your JAVA_HOME variable has been set to: `/usr/lib/jvm/java-8-oracle`. If not, add to .login
-```bash
-export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 ```
 
 ### Fedora Linux
 - `sudo yum install gcc-c++`
-- `sudo yum install java-1.8.0-openjdk-devel`
 
 ### IDE's
 
