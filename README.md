@@ -85,6 +85,7 @@ go to the Sipi dicrectory and run
 - `sudo apt-get upgrade`
 - `sudo apt-get install g++`
 - `sudo apt-get install unzip`
+- `sudo apt-get install vim-common`
 - `sudo apt-get install git`
 - `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
