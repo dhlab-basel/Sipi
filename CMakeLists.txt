@@ -38,6 +38,16 @@ set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
 option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
+#SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+if(MAKE_SHARED_SIPI)
+    SET(BUILD_SHARED_LIBRARIES ON)
+    SET(CMAKE_EXE_LINKER_FLAGS "-shared")
+
+else()
+    SET(BUILD_SHARED_LIBRARIES OFF)
+    SET(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
+
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
@@ -84,7 +94,11 @@ message(STATUS "Compiling for ${KDU_ARCH}")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+if(MAKE_DEBUG)
+    set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+else()
+    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+endif()
 
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
