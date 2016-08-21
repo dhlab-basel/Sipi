@@ -38,16 +38,6 @@ set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
 option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
-#SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-if(MAKE_SHARED_SIPI)
-    SET(BUILD_SHARED_LIBRARIES ON)
-    SET(CMAKE_EXE_LINKER_FLAGS "-shared")
-
-else()
-    SET(BUILD_SHARED_LIBRARIES OFF)
-    SET(CMAKE_EXE_LINKER_FLAGS "-static")
-endif()
-
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
@@ -90,6 +80,19 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     SET(LUA_ARCH "linux")
 endif()
 message(STATUS "Compiling for ${KDU_ARCH}")
+
+#SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+if(MAKE_SHARED_SIPI)
+    SET(BUILD_SHARED_LIBRARIES ON)
+    SET(CMAKE_EXE_LINKER_FLAGS "-shared")
+
+else()
+    SET(BUILD_SHARED_LIBRARIES OFF)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL DARWIN)
+        SET(CMAKE_EXE_LINKER_FLAGS "-static")
+    endif()
+endif()
+
 
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
