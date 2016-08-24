@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(project_xz
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://tukaani.org/xz/xz-5.2.1.tar.gz
-    SOURCE_DIR ${COMMON_LIB}/xz-5.2.1
-    CONFIGURE_COMMAND ${COMMON_LIB}/xz-5.2.1/configure --prefix=${COMMON_LOCAL}
+    SOURCE_DIR ${COMMON_SRCS}/xz-5.2.1
+    CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.1/configure --prefix=${COMMON_LOCAL}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

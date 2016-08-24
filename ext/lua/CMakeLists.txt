@@ -9,7 +9,7 @@ include(ExternalProject)
 ExternalProject_Add(project_lua
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${COMMON_LIB}/lua-5.3.1
+    SOURCE_DIR ${COMMON_SRCS}/lua-5.3.1
     CONFIGURE_COMMAND ls
     BUILD_COMMAND make ${LUA_ARCH}
     INSTALL_COMMAND make install INSTALL_TOP=${COMMON_LOCAL}

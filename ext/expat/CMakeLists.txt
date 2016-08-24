@@ -5,8 +5,8 @@ include(ExternalProject)
 ExternalProject_Add(project_expat
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://sourceforge.net/projects/expat/files/expat/2.1.0/expat-2.1.0.tar.gz/download
-    SOURCE_DIR ${COMMON_LIB}/expat
-    CONFIGURE_COMMAND ${COMMON_LIB}/expat/configure --prefix=${COMMON_LOCAL}
+    SOURCE_DIR ${COMMON_SRCS}/expat
+    CONFIGURE_COMMAND ${COMMON_SRCS}/expat/configure --prefix=${COMMON_LOCAL}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

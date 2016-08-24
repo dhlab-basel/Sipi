@@ -11,7 +11,7 @@ ExternalProject_Add(
         URL https://sourceforge.net/projects/libpng/files/libpng16/1.6.23/libpng-1.6.23.tar.gz/download
         DOWNLOAD_NAME libpng-latest.tar.xz
         #URL https://sourceforge.net/projects/libpng/files/latest/download?source=files
-        SOURCE_DIR ${COMMON_LIB}/libpng-latest
+        SOURCE_DIR ${COMMON_SRCS}/libpng-latest
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
 )
 ExternalProject_Get_Property(project_png install_dir)
