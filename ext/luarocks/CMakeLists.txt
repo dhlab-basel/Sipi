@@ -16,7 +16,7 @@ ExternalProject_Add(project_luarocks
             --with-lua-include=${COMMON_LOCAL}/include
             --with-lua-lib=${COMMON_LOCAL}/lib
             --rocks-tree=${CMAKE_INSTALL_PREFIX}/luarocks
-	    --libdir=${CONFIGURE_LIBDIR}
+#    --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make build
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
