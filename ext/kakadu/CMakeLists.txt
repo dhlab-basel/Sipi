@@ -13,8 +13,8 @@ ExternalProject_Add(
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make --directory=${COMMON_LIB}/v7_8-01382N/make/ -f ${KDU_MAKE}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_LIB}/v7_8-01382N/lib/${KDU_ARCH} ${COMMON_LOCAL}/lib
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_LIB}/v7_8-01382N/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
-        INSTALL_COMMAND  ${CMAKE_COMMAND} -E copy_directory ${COMMON_LIB}/v7_8-01382N/managed/all_includes ${COMMON_LOCAL}/include
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_LIB}/v7_8-01382N/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
+        COMMAND  ${CMAKE_COMMAND} -E copy_directory ${COMMON_LIB}/v7_8-01382N/managed/all_includes ${COMMON_LOCAL}/include
 )
 ExternalProject_Get_Property(project_kakadu install_dir)
 if(MAKE_SHARED_SIPI)
