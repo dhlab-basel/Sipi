@@ -12,15 +12,15 @@ ExternalProject_Add(
         DOWNLOAD_NAME libpng-latest.tar.xz
         #URL https://sourceforge.net/projects/libpng/files/latest/download?source=files
         SOURCE_DIR ${COMMON_SRCS}/libpng-latest
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
 )
 ExternalProject_Get_Property(project_png install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(png SHARED IMPORTED GLOBAL)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpng${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
     add_library(png STATIC IMPORTED GLOBAL)
-    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libpng${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set_property(TARGET png PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpng${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 add_dependencies(png project_png)
 
