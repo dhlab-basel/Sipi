@@ -20,7 +20,7 @@ ExternalProject_Add(project_tiff
         URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/libtiff-4.0.6
         UPDATE_COMMAND patch ${COMMON_SRCS}/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
-        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} ${COMMON_LOCAL}/lib
+        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} ${CONFIGURE_LIBDIR}
         INSTALL_COMMAND make test
         COMMAND make install
         COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.0.6/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
@@ -29,12 +29,12 @@ ExternalProject_Add(project_tiff
 ExternalProject_Get_Property(project_tiff install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(tiff SHARED IMPORTED GLOBAL)
-    set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libtiff${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
     add_library(tiff STATIC IMPORTED GLOBAL)
     MESSAGE(STATUS "install dir" ${install_dir})
     if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-       set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
+       set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
     elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
 		if(CMAKE_DISTRO_NAME STREQUAL Ubuntu)
        		set_property(TARGET tiff PROPERTY IMPORTED_LOCATION ${install_dir}/lib/x86_64-linux-gnu/libtiff${CMAKE_STATIC_LIBRARY_SUFFIX})

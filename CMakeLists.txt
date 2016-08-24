@@ -81,6 +81,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
 endif()
 message(STATUS "Compiling for ${KDU_ARCH}")
 
+
 #SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 if(MAKE_SHARED_SIPI)
     SET(BUILD_SHARED_LIBRARIES ON)
@@ -112,7 +113,8 @@ set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
 set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
 set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
-
+set(CONFIGURE_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib${BITS})
+set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib${BITS})
 
 
 
@@ -250,7 +252,7 @@ add_custom_target(
 link_directories(
         /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-#        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
+        ${CONFIGURE_LIBDIR}
 )
 
 
