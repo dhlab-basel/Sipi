@@ -7,8 +7,8 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_shttps
     INSTALL_DIR ${COMMON_LOCAL}
-    DOWNLOAD_COMMAND cp -r ${SIPI_SOURCE_DIR}/shttps ${COMMON_LIB}
-    SOURCE_DIR ${COMMON_LIB}/shttps
+    DOWNLOAD_COMMAND cp -r ${SIPI_SOURCE_DIR}/shttps ${COMMON_SRCS}
+    SOURCE_DIR ${COMMON_SRCS}/shttps
     CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
     INSTALL_COMMAND make install
     BUILD_IN_SOURCE 1

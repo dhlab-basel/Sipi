@@ -10,8 +10,8 @@ Externalproject_Add(
         project_magic
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://github.com/threatstack/libmagic/archive/master.zip
-        SOURCE_DIR ${COMMON_LIB}/libmagic-master
-        CONFIGURE_COMMAND ${COMMON_LIB}/libmagic-master/configure --prefix=${COMMON_LOCAL}  --enable-shared --enable-static
+        SOURCE_DIR ${COMMON_SRCS}/libmagic-master
+        CONFIGURE_COMMAND ${COMMON_SRCS}/libmagic-master/configure --prefix=${COMMON_LOCAL}  --enable-shared --enable-static
         BUILD_COMMAND make
         INSTALL_COMMAND make install INSTALL_TOP=${COMMON_LOCAL}
         BUILD_IN_SOURCE 1

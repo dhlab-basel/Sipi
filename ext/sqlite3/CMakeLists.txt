@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(project_sqlite3
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://www.sqlite.org/2016/sqlite-autoconf-3130000.tar.gz
-        SOURCE_DIR ${COMMON_LIB}/sqlite-autoconf-3130000
-        CONFIGURE_COMMAND ${COMMON_LIB}/sqlite-autoconf-3130000/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static
+        SOURCE_DIR ${COMMON_SRCS}/sqlite-autoconf-3130000
+        CONFIGURE_COMMAND ${COMMON_SRCS}/sqlite-autoconf-3130000/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )

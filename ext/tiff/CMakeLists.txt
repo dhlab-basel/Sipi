@@ -18,12 +18,12 @@ ExternalProject_Add(project_tiff
         INSTALL_DIR ${COMMON_LOCAL}
         TEST_BEFORE_INSTALL 1
         URL http://download.osgeo.org/libtiff/tiff-4.0.6.tar.gz
-        SOURCE_DIR ${COMMON_LIB}/libtiff-4.0.6
-        UPDATE_COMMAND patch ${COMMON_LIB}/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
+        SOURCE_DIR ${COMMON_SRCS}/libtiff-4.0.6
+        UPDATE_COMMAND patch ${COMMON_SRCS}/libtiff-4.0.6/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
         CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} ${COMMON_LOCAL}/lib
         INSTALL_COMMAND make test
         COMMAND make install
-        COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_LIB}/libtiff-4.0.6/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
+        COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.0.6/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_tiff install_dir)

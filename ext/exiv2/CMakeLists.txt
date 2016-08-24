@@ -15,8 +15,8 @@ ExternalProject_Add(project_exiv2
 	DEPENDS expat
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://www.exiv2.org/exiv2-0.25.tar.gz
-    SOURCE_DIR ${COMMON_LIB}/exiv2-0.25
-    CONFIGURE_COMMAND ${COMMON_LIB}/exiv2-0.25/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL}
+    SOURCE_DIR ${COMMON_SRCS}/exiv2-0.25
+    CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-0.25/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

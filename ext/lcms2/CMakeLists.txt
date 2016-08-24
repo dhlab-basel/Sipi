@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(project_lcms2
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://sourceforge.net/projects/lcms/files/lcms/2.7/lcms2-2.7.tar.gz/download
-    SOURCE_DIR ${COMMON_LIB}/lcms2-2.6
-    CONFIGURE_COMMAND ${COMMON_LIB}/lcms2-2.6/configure --prefix=${COMMON_LOCAL} --with-jpeg=${COMMON_LOCAL} --with-tiff=${COMMON_LOCAL}
+    SOURCE_DIR ${COMMON_SRCS}/lcms2-2.6
+    CONFIGURE_COMMAND ${COMMON_SRCS}/lcms2-2.6/configure --prefix=${COMMON_LOCAL} --with-jpeg=${COMMON_LOCAL} --with-tiff=${COMMON_LOCAL}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

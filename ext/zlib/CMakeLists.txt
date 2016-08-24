@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(project_zlib
         INSTALL_DIR ${COMMON_LOCAL}
         URL http://zlib.net/zlib-1.2.8.tar.gz
-        SOURCE_DIR ${COMMON_LIB}/zlib-1.2.8
-        CONFIGURE_COMMAND ${COMMON_LIB}/zlib-1.2.8/configure --prefix=${COMMON_LOCAL} --static --shared
+        SOURCE_DIR ${COMMON_SRCS}/zlib-1.2.8
+        CONFIGURE_COMMAND ${COMMON_SRCS}/zlib-1.2.8/configure --prefix=${COMMON_LOCAL} --static --shared
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
