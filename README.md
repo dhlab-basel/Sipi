@@ -129,6 +129,16 @@ cmake ..
 make
 ```
 
+## Delete previous Build including Dependencies and start over from zero
+
+```bash
+cd build
+rm -rf * ../lib ../local
+cmake ..
+make
+
+```
+
 ## Running SIPI-Server
 
 Adapt the config file `sipi.config.lua` (port number and root dir for images `imgroot`).
