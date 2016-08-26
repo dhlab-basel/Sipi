@@ -68,3 +68,5 @@ bash test_server/test_generic.sh $PID_SIPI $FILENAME_J28_DOWN $FILENAME_J216_DOW
 
 
 kill $PID_SIPI
+
+exit $?
