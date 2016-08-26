@@ -53,15 +53,15 @@ In the root directory, two additional directories must be created: `build` and `
 - install doxygen: `brew install doxygen`
 
 ### CentOS
-- `yum install package gcc-c++`
-- `yum install package cmake`
-- `yum install package readline-devel`
-- `yum install package gettext`
-- `yum install package vim-common`
-- `yum install package zlib-devel`
-- `yum install package doxygen`
-- `yum install package unzip`
-- `yum install package patch`
+- `sudo yum install package gcc-c++`
+- `sudo yum install package cmake`
+- `sudo yum install package readline-devel`
+- `sudo yum install package gettext`
+- `sudo yum install package vim-common`
+- `sudo yum install package zlib-devel`
+- `sudo yum install package doxygen`
+- `sudo yum install package unzip`
+- `sudo yum install package patch`
 
 ### Debian (>= V8.0 jessie)
 To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -104,8 +104,8 @@ go to the Sipi dicrectory and run
 ### OpenSUSe
 NOTE: not yet ready ready problem with library names...
 - `sudo zypper install gcc-c++`
-- `zypper install git`
-- `zypper install cmake`
+- `sudo zypper install git`
+- `sudo zypper install cmake`
 - `sudo zypper install zlib-devel`
 - `sudo zypper install libexpat-devel`
 - `sudo zypper install patch`
