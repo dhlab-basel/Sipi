@@ -302,7 +302,7 @@ Sipi provides the following functions`and preset variables:
   Usage is as follows (example):
   ```lua
   auth = server.requireAuth()
-  
+
   if auth.status == 'BASIC' then
      --
      -- everything OK, let's create the token for further calls and ad it to a cookie
@@ -377,7 +377,7 @@ gdb build/sipi
 
 ```
 
-some useful command to debug from gdb are: 
+some useful command to debug from gdb are:
 
 ```bash
 
@@ -388,6 +388,18 @@ frame <args> gives information about a specific frame from the stack.
 info locals gives you information about any local variables on the stack.
 
 ```
+
+## Test Scripts (bash)
+
+to run the test, move to the main directory (where this README file is) and run:
+
+
+```
+bash test_launcher.sh
+```
+
+the bash scripts return 0 if everything went fine.
+
 
 
 ## Commit Message Schema
