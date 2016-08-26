@@ -24,10 +24,10 @@
 
 function find_and_delete {
 
-FILENAME_RM = $1
+FILENAME_RM=$1
 
 if test -f "$FILENAME_RM"; then
-   echo -e "${GREEN} file $FILENAME_RM found - I will delete it${NOCOLOR}"
+   echo -e "${GREEN} file ${FILENAME_RM} found - I will delete it${NOCOLOR}"
    rm "$FILENAME_RM"
 fi
 }
