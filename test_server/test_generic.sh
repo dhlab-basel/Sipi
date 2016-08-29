@@ -53,10 +53,10 @@ IMAGE_EXTENTION=$4
 
 echo "http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.$IMAGE_EXTENTION"
 
-curl -sS -o "$FILENAME_DOWN_8" -O "http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.$IMAGE_EXTENTION"
+curl -sSf -o "$FILENAME_DOWN_8" -O "http://localhost:1024/test_server/Leaves8.tif/full/full/0/default.$IMAGE_EXTENTION"
 
 test_check $1 $FILENAME_DOWN_8
 
-curl -sS -o "$FILENAME_DOWN_16" -O "http://localhost:1024/test_server/Leaves16.tif/full/full/0/default.$IMAGE_EXTENTION"
+curl -sSf -o "$FILENAME_DOWN_16" -O "http://localhost:1024/test_server/Leaves16.tif/full/full/0/default.$IMAGE_EXTENTION"
 
 test_check $1 $FILENAME_DOWN_16
