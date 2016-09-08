@@ -152,7 +152,7 @@ make
 ## Running SIPI-Server
 
 Adapt the config file `sipi.config.lua`:
-- check that the port numer is correct and make sure that your operating system's firewall does not block it
+- check that the port number is correct and make sure that your operating system's firewall does not block it
 - make sure that `imgroot` is set correctly (root dir for images)
 - create the directory `cache` in the main directory.
 
