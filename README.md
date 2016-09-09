@@ -22,14 +22,14 @@ The build process relies on cmake.
 SIPI supports secure connections (SSL). However, OpenSLL must be installed on the computer. On Linux,
 you just have to install the openssl RPMs (including the development version), on OS X use brew.
 
-** The OpenSSL libraries and includes are _not_ downloaded by cmake! **
+**The OpenSSL libraries and includes are _not_ downloaded by cmake!**
 
 Cmake checks if OpenSSL is installed and compiles the support for it automatically.
 In order to use SIPI with secure connections, You need to install a certificate (see the config file
 example "config/sipi.config.lua" for instructions.
 
 ### General
-- a working c++11 compiler (gcc >= v4.9 or clang)
+- a working c++11 compiler (gcc >= v4.8 or clang)
 - cmake > 2.8.0 (for Mac, see below)
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - zlib-1.2.8
@@ -44,7 +44,7 @@ example "config/sipi.config.lua" for instructions.
    - log4cpp-1.1.2rc1
    - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
 
-In the root directory, two additional directories must be created: `build` and `cache`.
+In the root directory, the directory `cache` must be created.
 
 ### Mac
 - xcode command line tools: `xcode-select --install`
@@ -52,16 +52,17 @@ In the root directory, two additional directories must be created: `build` and `
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
 
-### CentOS
-- `sudo yum install package gcc-c++`
-- `sudo yum install package cmake`
-- `sudo yum install package readline-devel`
-- `sudo yum install package gettext`
-- `sudo yum install package vim-common`
-- `sudo yum install package zlib-devel`
-- `sudo yum install package doxygen`
-- `sudo yum install package unzip`
-- `sudo yum install package patch`
+### CentOS (V7)
+- `sudo yum install gcc-c++`
+- `sudo yum install cmake`
+- `sudo yum install readline-devel`
+- `sudo yum install gettext`
+- `sudo yum install vim-common`
+- `sudo yum install zlib-devel`
+- `sudo yum install doxygen`
+- `sudo yum install unzip`
+- `sudo yum install patch`
+- `sudo yum install openssl-devel`
 
 ### Debian (>= V8.0 jessie)
 To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -79,7 +80,6 @@ go to the Sipi dicrectory and run
 
 `sudo bash debian-cmake-patch.sh`
 
-
 ### Ubuntu (>= V14)
 - `sudo apt-get update`
 - `sudo apt-get upgrade`
@@ -90,7 +90,6 @@ go to the Sipi dicrectory and run
 - `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
 - `sudo apt-get install libreadline-dev`
-
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -114,7 +113,7 @@ NOTE: not yet ready ready problem with library names...
 
 
 
-### IDE's
+### IDEs
 
 #### CLion
 If you are using the [CLion](https://www.jetbrains.com/clion/) IDE, put `-j 1` in Preferences ->
@@ -138,6 +137,8 @@ cmake ..
 make
 ```
 
+Then after the build, call `make install`.
+
 ## Delete previous Build including Dependencies and start over from zero
 
 ```bash
@@ -150,17 +151,19 @@ make
 
 ## Running SIPI-Server
 
-Adapt the config file `sipi.config.lua` (port number and root dir for images `imgroot`).
+Adapt the config file `sipi.config.lua`:
+- check that the port number is correct and make sure that your operating system's firewall does not block it
+- make sure that `imgroot` is set correctly (root dir for images)
+- create the directory `cache` in the main directory.
+
 For more information, please have a look at the comments in the config file.
 
 If you intend to use Sipi with Knora, use `sipi.knora-config.lua` (in that case, make sure that you install the required packages for lua, see below).
 
-Add the directory `cache` in the main directory.
-
 In the main directory, call:
 
 ```bash
-build/sipi -config config/sipi.config.lua
+local/bin/sipi -config config/sipi.config.lua
 ```
 
 All operations are written to the log file `sipi.log.file`.
@@ -173,9 +176,9 @@ After SIPI-Server has been started, images can be requested as follows: `http://
 
 The given prefix must exist as a folder in the SIPI `imgroot` (defined in the config file) when `prefix_as_path` is set to `true`.
 
-If SIPI is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `tmp_6931722432531834801.jpx` exists in `imgroot/images`, the URL looks as follows:
+If SIPI is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `myimage.jpx` exists in `imgroot/images`, the URL looks as follows:
 
-`http://localhost:1024/images/tmp_6931722432531834801.jpx/full/full/0/default.jpg`
+`http://localhost:1024/images/myimage.jpx/full/full/0/default.jpg`
 
 The URI complies with this pattern: `{scheme}://{server}{/prefix}/{identifier}/{region}/{size}/{rotation}/{quality}.{format}`
 
