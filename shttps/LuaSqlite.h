@@ -31,7 +31,7 @@
 #include "LuaServer.h"
 
 namespace shttps {
-
+    extern void sqliteGlobals(lua_State *L, shttps::Connection &conn, void *user_data);
 };
 
 #endif //SIPI_LUASQLITE_H

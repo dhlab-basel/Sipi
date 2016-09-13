@@ -81,7 +81,7 @@ namespace shttps {
     //
     static int Sqlite_gc(lua_State *L) {
         Sqlite *db = toSqlite(L, 1);
-        sqlite3_close_v2(db->sqlite_handle);
+        if (db->sqlite_handle != NULL) sqlite3_close_v2(db->sqlite_handle);
         delete db->dbame;
         return 0;
     }
@@ -105,11 +105,14 @@ namespace shttps {
 
 
 
-    //************************************
     static const char LUASQLSTMT[] = "Stmt";
 
-    static sqlite3_stmt *toStmt(lua_State *L, int index) {
-        sqlite3_stmt *stmt = (sqlite3_stmt *) lua_touserdata(L, index);
+    typedef struct {
+        sqlite3_stmt *stmt_handle;
+    } Stmt;
+
+    static Stmt *toStmt(lua_State *L, int index) {
+        Stmt *stmt = (Stmt *) lua_touserdata(L, index);
         if (stmt == NULL) {
             lua_pushstring(L, "Type error");
             lua_error(L);
@@ -118,10 +121,10 @@ namespace shttps {
     }
     //=========================================================================
 
-    static sqlite3_stmt *checkStmt(lua_State *L, int index) {
+    static Stmt *checkStmt(lua_State *L, int index) {
         luaL_checktype(L, index, LUA_TUSERDATA);
-        sqlite3_stmt *stmt;
-        stmt = (sqlite3_stmt *) luaL_checkudata(L, index, LUASQLSTMT);
+
+        Stmt *stmt = (Stmt *) luaL_checkudata(L, index, LUASQLSTMT);
         if (stmt == NULL) {
             lua_pushstring(L, "Type error");
             lua_error(L);
@@ -130,11 +133,11 @@ namespace shttps {
     }
     //=========================================================================
 
-    static sqlite3_stmt *pushStmt(lua_State *L) {
-        sqlite3_stmt *stmt = (sqlite3_stmt *) lua_newuserdata(L, sizeof(sqlite3_stmt));
+    static Stmt *pushStmt(lua_State *L) {
+        Stmt *stmt = (Stmt *) lua_newuserdata(L, sizeof(Stmt));
         luaL_getmetatable(L, LUASQLSTMT);
         lua_setmetatable(L, -2);
-        return img;
+        return stmt;
     }
     //=========================================================================
 
@@ -142,16 +145,16 @@ namespace shttps {
     // called by garbage collection
     //
     static int Stmt_gc(lua_State *L) {
-        sqlite3_stmt *stmt = toStmt(L, 1);
-        sqlite3_finalize(stmt);
+        Stmt *stmt = toStmt(L, 1);
+        if (stmt->stmt_handle != NULL) sqlite3_finalize(stmt->stmt_handle);
         return 0;
     }
     //=========================================================================
 
     static int Stmt_tostring(lua_State *L) {
-        sqlite3_stmt *stmt = toSqlite(L, 1);
+        Stmt *stmt = toSqlite(L, 1);
         std::stringstream ss;
-        ss << "SQL: " << sqlite3_expanded_sql(stmt);
+        ss << "SQL: " << sqlite3_expanded_sql(Stmt->stmt_handle);
         lua_pushstring(L, ss.str().c_str());
         return 1;
     }
@@ -164,7 +167,6 @@ namespace shttps {
     };
     //=========================================================================
 
-    //************************************
 
 
     //
@@ -212,6 +214,8 @@ namespace shttps {
 
         return 1;
     }
+    //=========================================================================
+
 
     //
     // usage
@@ -241,13 +245,80 @@ namespace shttps {
             lua_error(L);
             return 0;
         }
-        sqlite3_stmt *stmt;
-        int status =sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt, NULL);
+        sqlite3_stmt *stmt_handle;
+        int status = sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt_handle, NULL);
+        if (status !=  SQLITE_OK) {
+            lua_pushstring(L, sqlite3_errmsg(db->sqlite_handle));
+            lua_error(L);
+            return 0;
+        }
+
+        Stmt *stmt = pushSqlite(L);
+        stmt->stmt_handle = stmt_handle;
+        return 1;
     }
+    //=========================================================================
+
+    //
+    // usage
+    //
+    //   valtable = sqlite.next(res)
+    //
+    int lua_sqlite_next(lua_State *L) {
+        int top = lua_gettop(L);
+        if (top != 1) {
+            // throw an error!
+            lua_pushstring(L, "Incorrect number of arguments!");
+            lua_error(L);
+            return 0;
+        }
+        Stmt *stmt = checkStmt(L, 1);
+        if (stmt == NULL) {
+            lua_pushstring(L, "Ivalid prepard statment!");
+            lua_error(L);
+            return 0;
+        }
+        int status = sqlite3_step(stmt->stmt_handle);
+        if (status ==  SQLITE_ROW) {
+            int ncols = sqlite3_column_count(stmt->stmt_handle);
+
+            lua_createtable(L, 0, ncols); // table
+
+            for (int col = 0; col < ncols; col++) {
+                int ctype =  sqlite3_column_type(stmt->stmt_handle, int col);
+                switch (ctype) {
+                    case SQLITE_INTEGER: {
+                        break;
+                    }
+                    case SQLITE_FLOAT: {
+                        break;
+                    }
+                    case SQLITE_BLOB: {
+                        break;
+                    }
+                    case SQLITE_NULL: {
+                        break;
+                    }
+                    case SQLITE_TEXT: {
+                        break;
+                    }
+                }
+            }
+        }
+        else if (status == SQLITE_DONE) {
+
+        }
+        else {
+
+        }
+
+    }
+    //=========================================================================
 
     void sqliteGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
         SipiHttpServer *server = (SipiHttpServer *) user_data;
     }
+    //=========================================================================
 
 
 } // namespace
