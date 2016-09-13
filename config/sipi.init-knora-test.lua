@@ -63,13 +63,16 @@ function pre_flight(prefix,identifier,cookie)
     knora_cookie_header = nil
 
     if cookie ~='' then
-        key = string.sub(cookie, 0, 4)
 
-        if (key ~= "sid=") then
-            -- cookie key is not valid
+        -- tries to extract the Knora session id from the cookie:
+        -- gets the digits between "sid=" and the closing ";" (only given in case of several key value pairs)
+        -- returns nil if it cannot find it
+        session_id = string.match(cookie, "sid=(%d+);?")
+
+        if session_id == nil then
+            -- no session_id could be extracted
             print("cookie key is invalid")
         else
-            session_id = string.sub(cookie, 5)
             knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
         end
     end
