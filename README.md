@@ -51,6 +51,7 @@ In the root directory, the directory `cache` must be created.
 - install brew (apt-get like package manager for Mac): <http://brew.sh>
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
+- install openssl: `brew install openssl`
 
 ### CentOS (V7)
 - `sudo yum install gcc-c++`
