@@ -144,7 +144,7 @@ Then after the build, call `make install`.
 
 ```bash
 cd build
-rm -rf * ../lib ../local
+rm -rf * ../lib ../local  ../extsrcs
 cmake ..
 make
 
