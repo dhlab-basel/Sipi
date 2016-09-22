@@ -896,7 +896,7 @@ namespace shttps {
                     ss << err;
                     *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
                     *os << ss.str();
-                    _logger->error("Internal server error!");
+                    _logger->error("Internal server error: ") << err;
                 }
                 catch (int i) {
                     _logger->error("Possibly socket closed by peer!");

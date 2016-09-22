@@ -28,11 +28,12 @@
 #include <cstring>
 
 #include <stdio.h>
+#include <sqlite3.h>
 #include "LuaSqlite.h"
 
 #include "SipiHttpServer.h"
 
-use namespace std;
+using namespace std;
 
 namespace shttps {
 
@@ -72,7 +73,7 @@ namespace shttps {
         Sqlite *db = (Sqlite *) lua_newuserdata(L, sizeof(Sqlite));
         luaL_getmetatable(L, LUASQLITE);
         lua_setmetatable(L, -2);
-        return img;
+        return db;
     }
     //=========================================================================
 
@@ -82,7 +83,7 @@ namespace shttps {
     static int Sqlite_gc(lua_State *L) {
         Sqlite *db = toSqlite(L, 1);
         if (db->sqlite_handle != NULL) sqlite3_close_v2(db->sqlite_handle);
-        delete db->dbame;
+        delete db->dbname;
         return 0;
     }
     //=========================================================================
@@ -96,9 +97,12 @@ namespace shttps {
     }
     //=========================================================================
 
+    static int sqlite_query(lua_State *L);
+
     static const luaL_Reg Sqlite_meta[] = {
             {"__gc",       Sqlite_gc},
             {"__tostring", Sqlite_tostring},
+            {"__shl",      sqlite_query},
             {0,            0}
     };
     //=========================================================================
@@ -108,6 +112,7 @@ namespace shttps {
     static const char LUASQLSTMT[] = "Stmt";
 
     typedef struct {
+        sqlite3 *sqlite_handle;
         sqlite3_stmt *stmt_handle;
     } Stmt;
 
@@ -152,9 +157,9 @@ namespace shttps {
     //=========================================================================
 
     static int Stmt_tostring(lua_State *L) {
-        Stmt *stmt = toSqlite(L, 1);
+        Stmt *stmt = toStmt(L, 1);
         std::stringstream ss;
-        ss << "SQL: " << sqlite3_expanded_sql(Stmt->stmt_handle);
+        ss << "SQL: " << sqlite3_sql(stmt->stmt_handle);
         lua_pushstring(L, ss.str().c_str());
         return 1;
     }
@@ -172,8 +177,8 @@ namespace shttps {
     //
     // usage:
     //
-    //   sqlite.new(path [, "RO" | "RW" | "CRW"])
-    static int lua_sqlite(lua_State *L) {
+    //   Sqlite.new(path [, "RO" | "RW" | "CRW"])
+    static int sqlite_new(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
             // throw an error!
@@ -203,26 +208,27 @@ namespace shttps {
         sqlite3 *handle;
         int status = sqlite3_open_v2(dbpath, &handle, flags, NULL);
         if (status !=  SQLITE_OK) {
-            lua_pushstring(L, sqlite3_errmsg(hanlde));
+            lua_pushstring(L, sqlite3_errmsg(handle));
             lua_error(L);
             return 0;
         }
 
         Sqlite *db = pushSqlite(L);
         db->sqlite_handle = handle;
-        db->dbname = new std::string(dppath);
+        db->dbname = new std::string(dbpath);
 
         return 1;
     }
     //=========================================================================
 
-
     //
     // usage
     //    db = sqlite.new("/path/to/db/file", "RW")
-    //    res = sqlite.query(db, "SELECT * FROM test")
+    //    qry = sqlite.query(db, "SELECT * FROM test")
+    //    -- or --
+    //    qry = db << "SELECT * FROM test"
     //
-    static int lua_sqlite_query(lua_State *L) {
+    static int sqlite_query(lua_State *L) {
         int top = lua_gettop(L);
         if (top != 2) {
             // throw an error!
@@ -237,7 +243,7 @@ namespace shttps {
             return 0;
         }
         const char *sql = NULL;
-        if (lua_isstring(L, 1)) {
+        if (lua_isstring(L, 2)) {
             sql = lua_tostring(L, 2);
         }
         else {
@@ -253,7 +259,8 @@ namespace shttps {
             return 0;
         }
 
-        Stmt *stmt = pushSqlite(L);
+        Stmt *stmt = pushStmt(L);
+        stmt->sqlite_handle = db->sqlite_handle; // we save the handle of the database also here
         stmt->stmt_handle = stmt_handle;
         return 1;
     }
@@ -262,22 +269,41 @@ namespace shttps {
     //
     // usage
     //
-    //   valtable = sqlite.next(res)
+    //  db = sqlite.new("/path/to/db/file", "RW")
+    //  qry = sqlite.query(db, "SELECT * FROM test")
+    //  row = sqlite.next(qry)
+    //  while (row) do
+    //      ...
+    //      row = sqlite.next(db, res)
+    //  end
     //
-    int lua_sqlite_next(lua_State *L) {
+    // -- or --
+    //
+    // db = sqlite.new("/path/to/db/file", "RW")
+    // qry = db << "SELECT * FROM test"
+    // row = qry()
+    // while (row) do
+    //    ...
+    //    row = qry()
+    // end
+    //
+    int sqlite_next(lua_State *L) {
         int top = lua_gettop(L);
+
         if (top != 1) {
             // throw an error!
             lua_pushstring(L, "Incorrect number of arguments!");
             lua_error(L);
             return 0;
         }
+
         Stmt *stmt = checkStmt(L, 1);
         if (stmt == NULL) {
-            lua_pushstring(L, "Ivalid prepard statment!");
+            lua_pushstring(L, "Invalid prepared statment!");
             lua_error(L);
             return 0;
         }
+
         int status = sqlite3_step(stmt->stmt_handle);
         if (status ==  SQLITE_ROW) {
             int ncols = sqlite3_column_count(stmt->stmt_handle);
@@ -285,38 +311,119 @@ namespace shttps {
             lua_createtable(L, 0, ncols); // table
 
             for (int col = 0; col < ncols; col++) {
-                int ctype =  sqlite3_column_type(stmt->stmt_handle, int col);
+                lua_pushinteger(L, col); // table - col
+                int ctype =  sqlite3_column_type(stmt->stmt_handle, col);
                 switch (ctype) {
                     case SQLITE_INTEGER: {
+                        int val = sqlite3_column_int(stmt->stmt_handle, col);
+                        lua_pushinteger(L, val); // table - col - val
                         break;
                     }
                     case SQLITE_FLOAT: {
+                        double val = sqlite3_column_double(stmt->stmt_handle, col);
+                        lua_pushnumber(L, val); // table - col - val
                         break;
                     }
                     case SQLITE_BLOB: {
+                        size_t nval = sqlite3_column_bytes(stmt->stmt_handle, col);
+                        const char *val = (char *) sqlite3_column_blob(stmt->stmt_handle, col);
+                        lua_pushlstring(L, val, nval);
                         break;
                     }
                     case SQLITE_NULL: {
+                        lua_pushnil(L); // table - col - nil
                         break;
                     }
                     case SQLITE_TEXT: {
+                        const char *str = (char *) sqlite3_column_text(stmt->stmt_handle, col);
+                        lua_pushstring(L, str); // table - col - str
                         break;
                     }
                 }
+                lua_rawset(L, -3); // table
             }
         }
         else if (status == SQLITE_DONE) {
-
+            lua_pushnil(L);
         }
         else {
-
+            lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
+            lua_error(L);
+            return 0;
         }
-
+        return 1;
     }
     //=========================================================================
 
+    // map the method names exposed to Lua to the names defined here
+    static const luaL_Reg sqlite_methods[] = {
+            {"new", sqlite_new},
+            {"query", sqlite_query},
+            {"next", sqlite_next},
+            {0,     0}
+    };
+    //=========================================================================
+
+
     void sqliteGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
-        SipiHttpServer *server = (SipiHttpServer *) user_data;
+        //
+        // let's prepare the metatable for the stmt-object
+        //
+
+        luaL_newmetatable(L, LUASQLSTMT); // create metatable, and add it to the Lua registry
+        // stack: metatable
+
+
+        luaL_setfuncs(L, Stmt_meta, 0);
+        // stack: metatable  [with functions __gc and __tostring added]
+
+        lua_pop(L, 1);
+
+        //
+        // now let's create the Sqlite object. It's a table...
+        //
+        lua_getglobal(L, LUASQLITE);
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 1);
+            lua_newtable(L);
+        }
+        // stack:  table(LUASQLITE)
+
+        //
+        // now we add the function elements to the table
+        //
+        luaL_setfuncs(L, sqlite_methods, 0);
+        // stack:  table(LUASQLITE)
+
+        luaL_newmetatable(L, LUASQLITE); // create metatable, and add it to the Lua registry
+        // stack: table(LUASQLITE) - metatable
+
+        luaL_setfuncs(L, Sqlite_meta, 0);
+
+        lua_pushliteral(L, "__index");
+        // stack: table(LUASQLITE) - metatable - "__index"
+
+        lua_pushvalue(L, -3); // dup methods table
+        // stack: table(LUASQLITE) - metatable - "__index" - table(LUASQLITE)
+
+        lua_rawset(L, -3); // metatable.__index = methods
+        // stack: table(LUASQLITE) - metatable
+
+        lua_pushliteral(L, "__metatable");
+        // stack: table(LUASQLITE) - metatable - "__metatable"
+
+        lua_pushvalue(L, -3); // dup methods table
+        // stack: table(LUASQLITE) - metatable - "__metatable" - table(LUASQLITE)
+
+        lua_rawset(L, -3);
+        // stack: table(LUASQLITE) - metatable
+
+        lua_pop(L, 1); // drop metatable
+        // stack: table(LUASQLITE)
+
+        lua_setglobal(L, LUASQLITE);
+        // stack: empty
+
     }
     //=========================================================================
 
