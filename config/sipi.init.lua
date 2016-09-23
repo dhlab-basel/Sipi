@@ -210,15 +210,15 @@ function pre_flight(prefix,identifier,cookie)
         filepath = config.imgroot .. '/' .. identifier
     end
 
-    db = Sqlite.new('db/test.db')
-    --qry = Sqlite.query(db, 'SELECT * FROM image')
+    db = sqlite('db/test.db', 'RW')
     qry = db << 'SELECT * FROM image'
 
-    row = Sqlite.next(db, qry)
+    row = qry()
     while (row) do
         print(row[0], ' -> ', row[1])
-        row = Sqlite.next(db, qry)
+        row = qry()
     end
+    db = ~db
 
     return 'allow', filepath
 
