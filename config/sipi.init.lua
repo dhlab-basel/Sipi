@@ -218,6 +218,7 @@ function pre_flight(prefix,identifier,cookie)
         print(row[0], ' -> ', row[1])
         row = qry()
     end
+    qry = ~qry
     db = ~db
 
     return 'allow', filepath

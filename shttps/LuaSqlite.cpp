@@ -236,6 +236,8 @@ namespace shttps {
     //    row = qry()
     // end
     // qry = ~qry -- delete query and free prepared statment
+    // ...
+    // db = ~db -- delete the database connection
     //
     int Stmt_next(lua_State *L) {
         int top = lua_gettop(L);
