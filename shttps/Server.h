@@ -176,6 +176,7 @@ namespace shttps {
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
         std::map<pthread_t,GenericSockId> thread_ids;
+        std::vector<pthread_t> idle_thread_ids;
         int _keep_alive_timeout;
         bool running;
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods

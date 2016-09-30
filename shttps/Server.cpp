@@ -750,6 +750,23 @@ namespace shttps {
             tmp->cSSL = cSSL;
 #endif
 
+            if (idle_thread_ids.size() >= _nthreads) {
+                pthread_t tid = idle_thread_ids.front();
+#ifdef SHTTPS_ENABLE_SSL
+                if (thread_ids[tid].ssl_sid != NULL) {
+                    //_logger->debug(" Before SSL_shutdown of thread with id=") << tid;
+                    int sstat;
+                    while ((sstat = SSL_shutdown(thread_ids[tid].ssl_sid)) == 0) _logger->debug("***");
+                    if (sstat < 0) {
+                        _logger->error("SSL socket error: shutdown (3) of socket failed! Reason: ") << SSL_get_error(thread_ids[tid].ssl_sid, sstat);
+                    }
+                    SSL_free(thread_ids[tid].ssl_sid);
+                    thread_ids[tid].ssl_sid = NULL;
+                }
+#endif
+                close(thread_ids[tid].sid);
+            }
+
             ::sem_wait(_semaphore) ;
             if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
                 perror("could not create thread");
@@ -837,7 +854,29 @@ namespace shttps {
     bool Server::processRequest(int sock, istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure)
     {
         bool do_close = false;
+        pthread_t my_tid = pthread_self();
         while (!ins->eof() && !os->eof()) {
+            //
+            // first we check if the thread is in the idle vector
+            //
+            int index = 0;
+            bool in_idle = false;
+            threadlock.lock();
+            for (auto tid : idle_thread_ids) {
+                if (tid == my_tid) {
+                    in_idle = true;
+                    break;
+                }
+                index++;
+            }
+            if (in_idle) {
+                //
+                // the vector is in idle state, remove it from the idle vector
+                //
+                idle_thread_ids.erase(idle_thread_ids.begin() + index);
+            }
+            threadlock.unlock();
+
             if (_tmpdir.empty()) {
                 throw Error(__file__, __LINE__, "_tmpdir is empty");
             }
@@ -906,6 +945,9 @@ namespace shttps {
                 }
                 break;
             }
+            threadlock.lock();
+            idle_thread_ids.push_back(my_tid);
+            threadlock.unlock();
         }
         return do_close;
     }
@@ -931,9 +973,27 @@ namespace shttps {
             threadlock.unlock();
         }
 #endif
+    //=========================================================================
 
     void Server::remove_thread(pthread_t thread_id_p) {
+        int index = 0;
+        bool in_idle = false;
+
         threadlock.lock();
+        for (auto tid : idle_thread_ids) {
+            if (tid == thread_id_p) {
+                in_idle = true;
+                break;
+            }
+            index++;
+        }
+        if (in_idle) {
+            //
+            // the vector is in idle state, remove it from the idle vector
+            //
+            idle_thread_ids.erase(idle_thread_ids.begin() + index);
+        }
+
         thread_ids.erase(thread_id_p);
         threadlock.unlock();
     }
