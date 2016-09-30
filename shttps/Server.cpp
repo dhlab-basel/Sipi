@@ -563,6 +563,7 @@ namespace shttps {
         ostream os(sockstream);
 
         bool do_close;
+        logger->info("==> Before processrequest...");
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != NULL) {
             do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, true);
@@ -573,7 +574,7 @@ namespace shttps {
 #else
         do_close = tdata->serv->processRequest(tdata->sock, &ins, &os, tdata->peer_ip, tdata->peer_port, false);
 #endif
-
+        logger->info("==> After processrequest...");
 
         if (do_close) {
 #ifdef SHTTPS_ENABLE_SSL
@@ -749,7 +750,8 @@ namespace shttps {
             }
             tmp->cSSL = cSSL;
 #endif
-
+            threadlock.lock();
+            _logger->info("--> IDLE-SIZE=") << idle_thread_ids.size();
             if (idle_thread_ids.size() >= _nthreads) {
                 pthread_t tid = idle_thread_ids.front();
 #ifdef SHTTPS_ENABLE_SSL
@@ -761,13 +763,18 @@ namespace shttps {
                         _logger->error("SSL socket error: shutdown (3) of socket failed! Reason: ") << SSL_get_error(thread_ids[tid].ssl_sid, sstat);
                     }
                     SSL_free(thread_ids[tid].ssl_sid);
+                    _logger->info("--> Closing socket of idle thread to kill it");
                     thread_ids[tid].ssl_sid = NULL;
                 }
 #endif
                 close(thread_ids[tid].sid);
             }
+            _logger->info("--> Thread list size: ") << thread_ids.size();
+            threadlock.unlock();
 
+            _logger->info("==> Before sem_wait::");
             ::sem_wait(_semaphore) ;
+            _logger->info("==> After sem_wait::");
             if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
                 perror("could not create thread");
                 _logger->error("Could not create thread") << strerror(errno);
@@ -784,7 +791,7 @@ namespace shttps {
             add_thread(thread_id, newsockfs);
 #endif
         }
-        _logger->debug("Server shutting down!");
+        _logger->info("Server shutting down!");
 
         //
         // now we make all threads to terminate by closing their sockets
@@ -802,9 +809,10 @@ namespace shttps {
             i++;
         }
         for (int i = 0; i < num_active_threads; i++) {
+            threadlock.lock();
 #ifdef SHTTPS_ENABLE_SSL
             if (sid[i].ssl_sid != NULL) {
-                _logger->debug(" Before SSL_shutdown ") << i << " of " << num_active_threads;
+                _logger->info(" Before SSL_shutdown ") << i << " of " << num_active_threads;
                 int sstat;
                 while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0) _logger->debug("***");
                 if (sstat < 0) {
@@ -812,6 +820,7 @@ namespace shttps {
                 }
                 SSL_free(sid[i].ssl_sid);
                 sid[i].ssl_sid = NULL;
+                threadlock.unlock();
             }
 #endif
             close(sid[i].sid);
@@ -856,6 +865,7 @@ namespace shttps {
         bool do_close = false;
         pthread_t my_tid = pthread_self();
         while (!ins->eof() && !os->eof()) {
+            _logger->info("***> Starting processRequest...");
             //
             // first we check if the thread is in the idle vector
             //
@@ -874,6 +884,7 @@ namespace shttps {
                 // the vector is in idle state, remove it from the idle vector
                 //
                 idle_thread_ids.erase(idle_thread_ids.begin() + index);
+                _logger->info("--> Removing thread from idle, active again: ");
             }
             threadlock.unlock();
 
@@ -907,8 +918,10 @@ namespace shttps {
                 void *hd = NULL;
                 try {
                     RequestHandler handler = getHandler(conn, &hd);
-                    _logger->debug("Calling user-supplied handler");
+                    _logger->info("Calling user-supplied handler");
+                    _logger->info("***> Calling handler now");
                     handler(conn, luaserver, _user_data, hd);
+                    _logger->info("***> Finished handler now");
                 }
                 catch (int i) {
                     _logger->error("Possibly socket closed by peer!");
@@ -926,7 +939,7 @@ namespace shttps {
             catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
                 _logger->debug("Socket connection: timeout or socket closed from main");
                 if (thread_ids[pthread_self()].sid == -1) {
-                    _logger->debug("Socket is closed – no need not close anymore");
+                    _logger->info("Socket is closed – no need not close anymore");
                 }
                 break;
             }
@@ -947,7 +960,9 @@ namespace shttps {
             }
             threadlock.lock();
             idle_thread_ids.push_back(my_tid);
+            _logger->info("--> Setting thread to idle: ") << idle_thread_ids.size();
             threadlock.unlock();
+            _logger->info("***> Finishing processRequest...");
         }
         return do_close;
     }
@@ -980,6 +995,7 @@ namespace shttps {
         bool in_idle = false;
 
         threadlock.lock();
+        _logger->info("--> removing thread from thread list: ") << thread_ids.size();
         for (auto tid : idle_thread_ids) {
             if (tid == thread_id_p) {
                 in_idle = true;
