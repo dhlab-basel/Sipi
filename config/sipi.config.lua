@@ -32,6 +32,11 @@ sipi = {
     port = 1024,
 
     --
+    -- Number of threads to use
+    --
+    nthreads = 2,
+
+    --
     -- Number of seconds a connection (socket) remains open
     --
     keep_alive = 5,

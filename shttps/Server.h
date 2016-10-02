@@ -68,6 +68,8 @@ namespace shttps {
 
     extern void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *handler_data);
 
+    typedef enum { CONTINUE, CLOSE, CANCELED} ThreadStatus;
+
 
     /*!
      * \brief Implements a simple, even primitive HTTP server with routes and handlers
@@ -191,6 +193,7 @@ namespace shttps {
     protected:
         std::shared_ptr<spdlog::logger> _logger;
     public:
+        bool waiting;
         /*!
         * Create a server listening on the given port with the maximal number of threads
         *
@@ -366,6 +369,14 @@ namespace shttps {
         void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL);
 #endif
 
+        int get_thread_sock(pthread_t thread_id_p);
+
+#ifdef SHTTPS_ENABLE_SSL
+        SSL *get_thread_ssl(pthread_t thread_id_p);
+#endif
+
+        void close_thread_sock(pthread_t thread_id_p);
+
         void remove_thread(pthread_t thread_id_p);
 
         /*!
@@ -420,7 +431,7 @@ namespace shttps {
         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
         * \param[in] peer_port Port number of peer/client
         */
-        bool processRequest(int sock, std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure);
+        bool processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure, int &keep_alive);
 
         /*!
         * Return the user data that has been added previously

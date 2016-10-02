@@ -131,34 +131,25 @@ namespace shttps {
     {
         t.clear();
 
-        // The characters in the stream are read one-by-one using a std::streambuf.
-        // That is faster than reading them one-by-one using the std::istream.
-        // Code that uses streambuf this way must be guarded by a sentry object.
-        // The sentry object performs various tasks,
-        // such as thread synchronization and updating the stream state.
-
-        std::istream::sentry se(is, true);
-        std::streambuf* sb = is.rdbuf();
-
         size_t n = 0;
         for(;;) {
-            int c = sb->sbumpc();
-            n++;
+            int c;
+            c = is.get();
             switch (c) {
                 case '\n':
+                    n++;
                     return n;
                 case '\r':
-                    if(sb->sgetc() == '\n') {
-                        sb->sbumpc();
+                    n++;
+                    if(is.peek() == '\n') {
+                        is.get();
                         n++;
                     }
                     return n;
                 case EOF:
-                    // Also handle the case when the last line has no line ending
-                    if(t.empty())
-                        is.setstate(std::ios::eofbit);
                     return n;
                 default:
+                    n++;
                     t += (char) c;
             }
         }
@@ -393,12 +384,14 @@ namespace shttps {
         }
 
         string line;
+cerr << "Connection::Before safeGetline..." << endl;
         if ((safeGetline(*ins, line) == 0) || line.empty() ||ins->fail() || ins->eof()) {
             //
-            // we got either atimeout or a socket close (for shutdown of server)
+            // we got either a timeout or a socket close (for shutdown of server)
             //
             throw -1;
         }
+cerr << "Connection::After safeGetline..." << endl;
 
         //
         // Parse first line of request
@@ -836,7 +829,7 @@ namespace shttps {
     }
     //=============================================================================
 
-    void Connection::setupKeepAlive(int sock, int default_timeout)
+    int Connection::setupKeepAlive(int sock, int default_timeout)
     {
         if (_keep_alive) {
             header_out["Connection"] = "keep-alive";
@@ -844,16 +837,10 @@ namespace shttps {
                 _keep_alive_timeout = default_timeout;
             }
             if (_keep_alive_timeout > 0) {
-                struct timeval tv;
-                tv.tv_sec = _keep_alive_timeout;
-                tv.tv_usec = 0 ;
-                if (setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof tv)) {
-                    perror("setsockopt error");
-                    exit(2);
-                }
                 header_out["Keep-Alive"] = string("timeout=") + to_string(_keep_alive_timeout);
             }
         }
+        return _keep_alive_timeout;
     }
     //=============================================================================
 
@@ -1482,4 +1469,3 @@ namespace shttps {
     //=============================================================================
 
 }
-

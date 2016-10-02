@@ -466,7 +466,7 @@ namespace shttps {
         * \param[in] default_timeout Sets the default timeout of the
         * has not been a keep-alive header in the HTTP request.
         */
-        void setupKeepAlive(int sock, int default_timeout = 20);
+        int setupKeepAlive(int sock, int default_timeout = 20);
 
        /*!
         * Set the keep alive time (in seconds)
