@@ -914,7 +914,9 @@ debugmsg("---->force-closing idle thread...");
                     return CLOSE;
                 }
             }
-
+            //
+            // Setting up the Lua server
+            //
             LuaServer luaserver(_initscript, true);
             luaserver.createGlobals(conn);
             for (auto &global_func : lua_globals) {
