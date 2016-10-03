@@ -210,7 +210,16 @@ function pre_flight(prefix,identifier,cookie)
         filepath = config.imgroot .. '/' .. identifier
     end
 
+    db = sqlite('db/test.db', 'RW')
+    qry = db << 'SELECT * FROM image'
 
+    row = qry()
+    while (row) do
+        print(row[0], ' -> ', row[1])
+        row = qry()
+    end
+    qry = ~qry
+    db = ~db
 
     return 'allow', filepath
 

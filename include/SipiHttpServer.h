@@ -35,6 +35,8 @@
 #include <unistd.h>
 
 #include "shttps/Server.h"
+#include "iiifparser/SipiRegion.h"
+#include "iiifparser/SipiSize.h"
 #include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiQualityFormat.h"
 #include "SipiCache.h"

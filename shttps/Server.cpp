@@ -497,6 +497,49 @@ namespace shttps {
     }
     //=============================================================================
 
+
+    static int prepare_socket(int port) {
+        int sockfd;
+        struct sockaddr_in serv_addr;
+
+        sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            perror("ERROR on socket");
+            //_logger->error("Could not create socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        int optval = 1;
+        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
+            perror("ERROR on setsocketopt");
+            //_logger->error("Could not set socket option: ") << strerror(errno);
+            exit(1);
+        }
+
+        /* Initialize socket structure */
+        bzero((char *) &serv_addr, sizeof(serv_addr));
+
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
+        serv_addr.sin_port = htons(port);
+
+        /* Now bind the host address using bind() call.*/
+        if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+            perror("ERROR on binding");
+            //_logger->error("Could not bind socket: ") << strerror(errno);
+            exit(1);
+        }
+
+        if (::listen(sockfd, SOMAXCONN) < 0) {
+            perror("ERROR on listen");
+            //_logger->error("Could not listen on socket: ") << strerror(errno);
+            exit (1);
+        }
+        return sockfd;
+    }
+    //=========================================================================
+
+
     static void *process_request(void *arg)
     {
         signal(SIGPIPE, SIG_IGN);
@@ -557,46 +600,6 @@ namespace shttps {
     }
     //=========================================================================
 
-    static int prepare_socket(int port) {
-        int sockfd;
-        struct sockaddr_in serv_addr;
-
-        sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-        if (sockfd < 0) {
-            perror("ERROR on socket");
-            //_logger->error("Could not create socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        int optval = 1;
-        if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
-            perror("ERROR on setsocketopt");
-            //_logger->error("Could not set socket option: ") << strerror(errno);
-            exit(1);
-        }
-
-        /* Initialize socket structure */
-        bzero((char *) &serv_addr, sizeof(serv_addr));
-
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = INADDR_ANY;
-        serv_addr.sin_port = htons(port);
-
-        /* Now bind the host address using bind() call.*/
-        if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            perror("ERROR on binding");
-            //_logger->error("Could not bind socket: ") << strerror(errno);
-            exit(1);
-        }
-
-        if (::listen(sockfd, SOMAXCONN) < 0) {
-            perror("ERROR on listen");
-            //_logger->error("Could not listen on socket: ") << strerror(errno);
-            exit (1);
-        }
-        return sockfd;
-    }
-    //=========================================================================
 
     void Server::run()
     {
@@ -896,7 +899,7 @@ namespace shttps {
                     ss << err;
                     *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
                     *os << ss.str();
-                    _logger->error("Internal server error!");
+                    _logger->error("Internal server error: ") << err;
                 }
                 catch (int i) {
                     _logger->error("Possibly socket closed by peer!");

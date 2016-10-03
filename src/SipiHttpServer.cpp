@@ -39,8 +39,6 @@
 
 #include "SipiImage.h"
 #include "SipiError.h"
-#include "iiifparser/SipiRegion.h"
-#include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiQualityFormat.h"
 #include "PhpSession.h"
 // #include "Salsah.h"

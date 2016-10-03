@@ -297,6 +297,7 @@ add_executable(
         shttps/ChunkReader.cpp shttps/ChunkReader.h
         shttps/Connection.cpp shttps/Connection.h
         shttps/LuaServer.cpp shttps/LuaServer.h
+        shttps/LuaSqlite.cpp shttps/LuaSqlite.h
         shttps/GetMimetype.cpp shttps/GetMimetype.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
@@ -327,7 +328,3 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-
-
-

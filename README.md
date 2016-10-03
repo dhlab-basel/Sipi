@@ -215,6 +215,10 @@ Then run doxygen in the sipi main directory: `doxygen Doxygen.in`. You will the 
 
 Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpreter and pack manager `luarocks` as executables. **Sipi does not use your system's Lua interpreter or package manager.**
 
+**Note:** The Lua interepreter in Sipi runs in a multithreaded environment (each connection runs in its
+own thread and has it's own Lua interpreter). Thus only packages that are positivley known to be thread
+safe may be used!
+
 ### SIPI functions within Lua
 
 Sipi provides the following functions`and preset variables:
@@ -353,6 +357,56 @@ Sipi provides the following functions`and preset variables:
 To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>.
 
 For example, using `local/bin/luarocks install --local package` the package will be installed in `~/.luarocks/`. To include this path in the Lua's interpreter package search path, you can use an environment variable. Running `local/bin/luarocks path` outputs the code you can use to do so. Alternatively, you can build the package path at the beginning of a Lua file by setting `package.path` and `package.cpath` (see: <http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages>).
+
+## Sqlite3
+
+Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi:
+
+### Opening a sqlite databases
+
+```
+db = sqlite('db/test.db', 'RW')
+```
+This creates a new opaque database object. The first parameter is the path to the database file.
+The second parameter may be 'RO' for read-only access, 'RW' for read-write access, or 'CRW'
+for read-write access. If the database file does not exist, it will be created using this option.
+
+In order to destroy the database object and free all resources, You can use
+```
+db = ~db
+```
+However, also the normal garbage collection of Lua will destroy the database object and
+free all resources.
+
+### Preparing a query
+
+```
+qry = db << 'SELECT * FROM image'
+```
+or
+```
+qry = db << 'INSERT INTO image (id, description) VALUES (?,?)'
+```
+`qry` will be a query object containing a prepared query. If the query object
+is not needed anymore, it may be destroyed by
+```
+qry = ~qry
+```
+qry objects should be destroyed explicitely if not needed any longer.
+
+### Executing a query
+```
+row = qry()
+while (row) do
+    print(row[0], ' -> ', row[1])
+    row = qry()
+end
+```
+or
+```
+qry('SGV_1960_00315', 'This is an image of a steam engine...')
+```
+The second way is used for prepared queries that contain parameters.
 
 ## Starting Sipi from the GNU Debugger GDB
 

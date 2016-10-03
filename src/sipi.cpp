@@ -33,6 +33,7 @@
 
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
+#include "shttps/LuaSqlite.h"
 #include "SipiLua.h"
 #include "SipiCmdParams.h"
 #include "SipiImage.h"
@@ -309,7 +310,8 @@ int main (int argc, char *argv[]) {
             server.scriptdir(sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
             server.luaRoutes(sipiConf.getRoutes());
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
-            server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add new lua function "gaga"
+            server.add_lua_globals_func(shttps::sqliteGlobals); // add new lua function "gaga"
+            server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add Lua SImage functions
             server.prefix_as_path(sipiConf.getPrefixAsPath());
 
 
