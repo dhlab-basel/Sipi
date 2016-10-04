@@ -33,7 +33,9 @@
 #include <utility>
 
 #include <sys/types.h>
-#include <sys/poll.h>
+#include <sys/select.h>
+#include <signal.h>
+#include <poll.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
@@ -41,7 +43,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <pthread.h>
 #include <pwd.h>
 
@@ -583,6 +584,10 @@ namespace shttps {
 
         SockStream *sockstream;
 
+        //
+        // now we create the socket StreamSock
+        //
+        SockStream *sockstream;
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != NULL) {
             sockstream = new SockStream(tdata->cSSL);
@@ -664,7 +669,6 @@ namespace shttps {
 
     void Server::run()
     {
-
         _logger->info("Starting shttps server... with ") << to_string(_nthreads) << " threads";
 
         //
@@ -827,13 +831,13 @@ namespace shttps {
             }
 #ifdef SHTTPS_ENABLE_SSL
             if (tmp->cSSL != NULL) {
-                add_thread(thread_id, newsockfs, cSSL);
+                add_thread(thread_id, tmp->sock, tmp->cSSL);
             }
             else {
-                add_thread(thread_id, newsockfs);
+                add_thread(thread_id, tmp->sock);
             }
 #else
-            add_thread(thread_id, newsockfs);
+            add_thread(thread_id, tmp->sock);
 #endif
         }
         _logger->info("Server shutting down!");
@@ -855,7 +859,7 @@ namespace shttps {
         for (int i = 0; i < num_active_threads; i++) {
 #ifdef SHTTPS_ENABLE_SSL
             if (sid[i].ssl_sid != NULL) {
-                _logger->info(" Before SSL_shutdown ") << i << " of " << num_active_threads;
+                _logger->debug(" Before SSL_shutdown ") << i << " of " << num_active_threads;
                 int sstat;
                 while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0) _logger->debug("***");
                 if (sstat < 0) {
