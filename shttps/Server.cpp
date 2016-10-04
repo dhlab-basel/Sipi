@@ -33,7 +33,7 @@
 #include <utility>
 
 #include <sys/types.h>
-#include <sys/select.h>
+#include <sys/poll.h>
 #include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
@@ -574,12 +574,13 @@ namespace shttps {
 
     static void *process_request(void *arg)
     {
+        TData *tdata = (TData *) arg;
+        tdata->serv->debugmsg("process_request...");
         pthread_t my_tid = pthread_self();
         signal(SIGPIPE, SIG_IGN);
 
         auto logger = spdlog::get(loggername);
 
-        TData *tdata = (TData *) arg;
         SockStream *sockstream;
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -598,6 +599,7 @@ namespace shttps {
         ThreadStatus tstatus;
         do {
             int keep_alive;
+            tdata->serv->debugmsg("Start processRequest with sock=" + to_string(tdata->sock));
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
@@ -611,19 +613,26 @@ namespace shttps {
             if ((tstatus == CONTINUE) && (keep_alive > 0)) {
                 tdata->serv->debugmsg("idle add, keep alive=" + to_string(keep_alive));
                 idle_add(my_tid);
-
-                fd_set readfds;
-                FD_ZERO(&readfds);
-                FD_SET(tdata->sock, &readfds);
-                struct timeval tv = {keep_alive, 0};
-                if (select(tdata->sock + 1, &readfds, NULL, NULL, &tv) < 0) {
+                tdata->serv->debugmsg("idle size=" + to_string(idle_thread_ids.size()));
+                pollfd readfds[1];
+                int n_readfds = 0;
+                readfds[0] = { tdata->sock, POLLIN, 0}; n_readfds++;
+                if (poll(readfds, n_readfds, keep_alive*1000) < 0) {
                     tstatus = CLOSE;
                     tdata->serv->debugmsg("idle remove");
 
                     idle_remove(my_tid);
-                    tdata->serv->debugmsg("idle remove");
+                    tdata->serv->debugmsg("poll returned -1, idle removed, size=" + to_string(idle_thread_ids.size()));
                     break; // accept returned something strange – probably we want to shutdown the server
                 }
+                if (!(readfds[0].revents & POLLIN)) {
+                    tstatus = CLOSE;
+                    tdata->serv->debugmsg("idle remove");
+                    idle_remove(my_tid);
+                    tdata->serv->debugmsg("poll returned -1, idle removed, size=" + to_string(idle_thread_ids.size()));
+                    break; // accept returned something strange – probably we want to shutdown the server
+                }
+                tdata->serv->debugmsg("idle remove, poll found data on sock=" + to_string(tdata->sock));
                 idle_remove(my_tid);
             }
 
@@ -682,45 +691,42 @@ namespace shttps {
         pthread_t thread_id;
         running = true;
         while(running) {
-            int sock, maxfd;
+            int sock;
             struct sockaddr_storage cli_addr;
             socklen_t cli_size = sizeof(cli_addr);
 
-            fd_set readfds;
-            FD_ZERO(&readfds);
-            FD_SET(_sockfd, &readfds);
-            FD_SET(stoppipe[0], &readfds);
-            maxfd = (stoppipe[0] > _sockfd) ? stoppipe[0] : _sockfd;
+            pollfd readfds[3];
+            int n_readfds = 0;
+            readfds[0] = { _sockfd, POLLIN, 0}; n_readfds++;
+            readfds[1] = {stoppipe[0], POLLIN, 0}; n_readfds++;
             if (_ssl_port > 0) {
-                FD_SET(_ssl_sockfd, &readfds);
-                maxfd = (maxfd > _ssl_sockfd) ? maxfd : _ssl_sockfd;
+                readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
             }
-            if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
-                _logger->debug("select failed (1)");
+            if (poll(readfds, n_readfds, -1) < 0) {
+                switch(errno) {
+                    case EAGAIN: debugmsg("EAGAIN: try again..."); break;
+                }
                 running = false;
-                break; // accept returned something strange – probably we want to shutdown the server
+                break;
             }
-
-            if (FD_ISSET(_sockfd, &readfds)) {
+            if (readfds[0].revents & POLLIN) {
                 sock = _sockfd;
             }
-            else if (FD_ISSET(stoppipe[0], &readfds)) {
+            else if (readfds[1].revents & POLLIN) {
                 sock = stoppipe[0];
-            }
-            else if ((_ssl_port > 0) && FD_ISSET(_ssl_sockfd, &readfds)) {
-                sock = _ssl_sockfd;
-            }
-            else {
-                _logger->debug("select failed (2)");
-                break; // accept returned something strange – probably we want to shutdown the server
-            }
-
-            if (sock == stoppipe[0]) {
                 char buf[2];
                 read(stoppipe[0], buf, 1);
                 running = false;
                 break;
             }
+            else if ((_ssl_port > 0) && (readfds[2].revents & POLLIN)) {
+                sock = _ssl_sockfd;
+            }
+            else {
+                _logger->debug("poll failed (2)");
+                break; // accept returned something strange – probably we want to shutdown the server
+            }
+
 
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
