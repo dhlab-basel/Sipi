@@ -384,14 +384,12 @@ namespace shttps {
         }
 
         string line;
-cerr << "Connection::Before safeGetline..." << endl;
         if ((safeGetline(*ins, line) == 0) || line.empty() ||ins->fail() || ins->eof()) {
             //
             // we got either a timeout or a socket close (for shutdown of server)
             //
             throw -1;
         }
-cerr << "Connection::After safeGetline..." << endl;
 
         //
         // Parse first line of request

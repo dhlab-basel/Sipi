@@ -61,6 +61,8 @@ static const char __file__[] = __FILE__;
 static std::mutex threadlock;
 static std::mutex idlelock;
 
+static std::vector<pthread_t> idle_thread_ids;
+
 
 static std::mutex debugio;
 
@@ -542,8 +544,37 @@ namespace shttps {
     //=========================================================================
 
 
+    static void idle_add(pthread_t tid_p) {
+        idlelock.lock();
+        idle_thread_ids.push_back(tid_p);
+        idlelock.unlock();
+    }
+    //=========================================================================
+
+    static void idle_remove(pthread_t tid_p) {
+        int index = 0;
+        bool in_idle = false;
+        idlelock.lock();
+        for (auto tid : idle_thread_ids) {
+            if (tid == tid_p) {
+                in_idle = true;
+                break;
+            }
+            index++;
+        }
+        if (in_idle) {
+            //
+            // the vector is in idle state, remove it from the idle vector
+            //
+            idle_thread_ids.erase(idle_thread_ids.begin() + index);
+        }
+        idlelock.unlock();
+    }
+    //=========================================================================
+
     static void *process_request(void *arg)
     {
+        pthread_t my_tid = pthread_self();
         signal(SIGPIPE, SIG_IGN);
 
         auto logger = spdlog::get(loggername);
@@ -567,7 +598,6 @@ namespace shttps {
         ThreadStatus tstatus;
         do {
             int keep_alive;
-            if (select(maxfd + 1, &readfds, NULL, NULL, NULL) < 0) {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
@@ -578,18 +608,27 @@ namespace shttps {
 #else
             tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
 #endif
-            if ((status == CONTINUE) && (keep_alive > 0)) {
+            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
+                tdata->serv->debugmsg("idle add, keep alive=" + to_string(keep_alive));
+                idle_add(my_tid);
+
                 fd_set readfds;
                 FD_ZERO(&readfds);
                 FD_SET(tdata->sock, &readfds);
                 struct timeval tv = {keep_alive, 0};
                 if (select(tdata->sock + 1, &readfds, NULL, NULL, &tv) < 0) {
                     tstatus = CLOSE;
+                    tdata->serv->debugmsg("idle remove");
+
+                    idle_remove(my_tid);
+                    tdata->serv->debugmsg("idle remove");
                     break; // accept returned something strange – probably we want to shutdown the server
                 }
+                idle_remove(my_tid);
             }
+
         } while (tstatus == CONTINUE);
-        if (tstatus = CLOSE) {
+        if (tstatus == CLOSE) {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 int sstat;
@@ -675,7 +714,6 @@ namespace shttps {
                 _logger->debug("select failed (2)");
                 break; // accept returned something strange – probably we want to shutdown the server
             }
-
 
             if (sock == stoppipe[0]) {
                 char buf[2];
@@ -764,19 +802,17 @@ namespace shttps {
 #endif
 
             idlelock.lock();
-debugmsg("num of idle threads=" + idle_thread_ids.size());
+
+            debugmsg("IDLE=" + to_string(idle_thread_ids.size()));
             if (idle_thread_ids.size() >= _nthreads) {
+                debugmsg("=======>KILLING IDLE THREAD!");
+                exit(11);
                 pthread_t tid = idle_thread_ids.front();
-debugmsg("---->force-closing idle thread...");
                 close_thread_sock(tid);
             }
             idlelock.unlock();
 
-            cerr << "NEW REQUEST..." << endl;
-            waiting = true;
             ::sem_wait(_semaphore);
-            waiting = false;
-            cerr << "THREAD FOR NEW REQUEST" << endl;
 
             if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
                 perror("could not create thread");
@@ -862,7 +898,9 @@ debugmsg("---->force-closing idle thread...");
 
     ThreadStatus Server::processRequest(istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure, int &keep_alive)
     {
-        if (ins->eof() || os-eof()) return CANCELED;
+        if (ins->eof() || os->eof()) return CANCELED;
+
+        debugmsg("Server::processRequest START");
 
         pthread_t my_tid = pthread_self();
         int sock = get_thread_sock(my_tid);
@@ -871,36 +909,9 @@ debugmsg("---->force-closing idle thread...");
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
         try {
-            debugmsg("processRequest before CONNECTION");
             Connection conn(this, ins, os, _tmpdir);
-            debugmsg("processRequest after CONNECTION");
 
-            //
-            // first we check if the thread is in the idle vector
-            //
-            int index = 0;
-            bool in_idle = false;
-
-            /*
-            idlelock.lock();
-            for (auto tid : idle_thread_ids) {
-                if (tid == my_tid) {
-                    in_idle = true;
-                    break;
-                }
-                index++;
-            }
-            if (in_idle) {
-                //
-                // the vector is in idle state, remove it from the idle vector
-                //
-                idle_thread_ids.erase(idle_thread_ids.begin() + index);
-            }
-            idlelock.unlock();
-            */
-            //if (!in_idle) {
-            , int &keep_alivekeep_alive = conn.setupKeepAlive(sock, _keep_alive_timeout);
-            //}
+            keep_alive = conn.setupKeepAlive(sock, _keep_alive_timeout);
 
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
@@ -932,6 +943,7 @@ debugmsg("---->force-closing idle thread...");
                 _logger->error("Possibly socket closed by peer!");
                 return CLOSE; // or CANCELED ??
             }
+            debugmsg("Server::processRequest END");
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
             }
@@ -966,32 +978,6 @@ debugmsg("---->force-closing idle thread...");
             }
             return CANCELED;
         }
-        /*
-idlelock.lock();
-idle_thread_ids.push_back(my_tid);
-debugmsg("-->Pushing idle thread...: " + idle_thread_ids.size());
-debugmsg("waiting=" + waiting);
-if (waiting) {
-    pthread_t tid = idle_thread_ids.front();
-    idlelock.unlock();
-    if (tid == my_tid) {
-        cerr << "Exciting this thread..." << endl;
-        return true;
-    }
-    else {
-        cerr << "---->force-closing idle thread..." << endl;
-        close_thread_sock(tid);
-    }
-
-}
-else {
-    idlelock.unlock();
-}
-cerr << "processRequest loop END" << endl;
-
-        }
-        return do_close;
-        */
     }
     //=========================================================================
 
@@ -1066,6 +1052,7 @@ cerr << "processRequest loop END" << endl;
 #endif
         int sock = get_thread_sock(thread_id_p);
         if (sock >= 0) {
+            debugmsg("Closing a thread socket!");
             close(sock);
         }
     }
@@ -1074,7 +1061,6 @@ cerr << "processRequest loop END" << endl;
     void Server::remove_thread(pthread_t thread_id_p) {
         int index = 0;
         bool in_idle = false;
-debugmsg("AAAA");
         idlelock.lock();
         for (auto tid : idle_thread_ids) {
             if (tid == thread_id_p) {
@@ -1090,11 +1076,9 @@ debugmsg("AAAA");
             idle_thread_ids.erase(idle_thread_ids.begin() + index);
         }
         idlelock.unlock();
-debugmsg("BBBB");
         threadlock.lock();
         thread_ids.erase(thread_id_p);
         threadlock.unlock();
-debugmsg("CCC");
     }
     //=========================================================================
 

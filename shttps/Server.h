@@ -178,7 +178,6 @@ namespace shttps {
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
         std::map<pthread_t,GenericSockId> thread_ids;
-        std::vector<pthread_t> idle_thread_ids;
         int _keep_alive_timeout;
         bool running;
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
@@ -193,7 +192,6 @@ namespace shttps {
     protected:
         std::shared_ptr<spdlog::logger> _logger;
     public:
-        bool waiting;
         /*!
         * Create a server listening on the given port with the maximal number of threads
         *
@@ -431,7 +429,7 @@ namespace shttps {
         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
         * \param[in] peer_port Port number of peer/client
         */
-        bool processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure, int &keep_alive);
+        ThreadStatus processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure, int &keep_alive);
 
         /*!
         * Return the user data that has been added previously
