@@ -288,6 +288,9 @@ namespace shttps {
                         _keep_alive = true;
                     }
                     if (opts.count("upgrade") == 1) {
+                        _close = true;
+                    }
+                    if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
                 }
@@ -347,6 +350,7 @@ namespace shttps {
         header_sent = false;
         _keep_alive = false;
         _keep_alive_timeout = -1;
+        _close = false;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
         _content = NULL;
@@ -367,6 +371,7 @@ namespace shttps {
         header_sent = false;
         _keep_alive = false;
         _keep_alive_timeout = -1;
+        _close = false;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
         _content = NULL;
@@ -831,7 +836,7 @@ namespace shttps {
     }
     //=============================================================================
 
-    int Connection::setupKeepAlive(int sock, int default_timeout)
+    int Connection::setupKeepAlive(int default_timeout)
     {
         if (_keep_alive) {
             header_out["Connection"] = "keep-alive";
@@ -844,7 +849,29 @@ namespace shttps {
                 to_string(4);
             }
         }
+        else if (_close) {
+            header_out["Connection"] = "close";
+            _keep_alive_timeout = 0;
+        }
         return _keep_alive_timeout;
+    }
+    //=============================================================================
+
+    int Connection::setupClose(bool force) {
+        if (_close || force {
+            header_out["Connection"] = "close";
+            //
+            // remove keep-alive headers if here
+            try {
+                string str = header_out.at("Keep-Alive");
+                header_out.erase("Keep-Alive");
+            }
+            catch(const std::out_of_range& oor) {
+                // do nothing...
+            }
+            _keep_alive_timeout = 0;
+            _close = true;
+        }
     }
     //=============================================================================
 

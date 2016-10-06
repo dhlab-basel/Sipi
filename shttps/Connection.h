@@ -308,6 +308,7 @@ namespace shttps {
         bool header_sent;           //!< True if header already sent
         bool _keep_alive;           //!< if true, don't close the socket after the request
         int _keep_alive_timeout;    //!< timeout for connection
+        bool _close;                //!< Client sent close header –> close connection after serving request
         bool _chunked_transfer_in;  //!< Input data is chunked
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
@@ -468,7 +469,16 @@ namespace shttps {
         * \param[in] default_timeout Sets the default timeout of the
         * has not been a keep-alive header in the HTTP request.
         */
-        int setupKeepAlive(int sock, int default_timeout = 20);
+        int setupKeepAlive(int default_timeout = 20);
+
+       /*!
+        *
+        */
+        int setupClose(bool force = false);
+       /*!
+        *
+        */
+        inline bool close(void) { return _close; }
 
        /*!
         * Set the keep alive time (in seconds)

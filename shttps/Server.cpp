@@ -659,13 +659,13 @@ namespace shttps {
             }
 
             else {
-                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
                 if (tdata->serv->semaphore_get() < 0) {
                     tdata->serv->debugmsg("Another thread is waiting, give him a chance...");
                     tstatus = CLOSE; // we're not yet in idle state....
                     break; // leave while loop, tstatus now CLOSE!
                 }
-                */
+                /* */
             }
 
             //
@@ -997,6 +997,10 @@ namespace shttps {
 
     ThreadStatus Server::processRequest(istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure, int &keep_alive)
     {
+        if (_tmpdir.empty()) {
+            throw Error(__file__, __LINE__, "_tmpdir is empty");
+        }
+
         if (ins->eof() || os->eof()) return CANCELED;
 
         pthread_t my_tid = pthread_self();
@@ -1004,9 +1008,6 @@ namespace shttps {
 
         string progress = "A";
 
-        if (_tmpdir.empty()) {
-            throw Error(__file__, __LINE__, "_tmpdir is empty");
-        }
         try {
             progress += "B";
             Connection conn(this, ins, os, _tmpdir);
