@@ -59,7 +59,7 @@ namespace shttps {
     *
     * \returns Number of bytes read
     */
-    extern size_t safeGetline(std::istream& is, std::string& t);
+    extern size_t safeGetline(std::istream& is, std::string& t, bool debug = false);
 
    /*!
     * Function to parse the options of a HTTP header line
@@ -325,6 +325,8 @@ namespace shttps {
         size_t outbuf_nbytes;       //!< number of bytes used so far in output buffer
         bool _reset_connection;     //!< true, if connection should be reset (e.g. cors)
         std::shared_ptr<spdlog::logger> _logger; //!< logger...
+
+        unsigned long nnn;
 
        /*!
         * Read, process and parse the HTTP request header

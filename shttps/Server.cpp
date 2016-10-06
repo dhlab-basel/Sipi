@@ -65,6 +65,8 @@ static std::mutex idlelock;
 static std::vector<pthread_t> idle_thread_ids;
 
 
+
+
 static std::mutex debugio;
 
 using namespace std;
@@ -80,6 +82,7 @@ namespace shttps {
 #endif
         string peer_ip;
         int peer_port;
+        int commpipe_read;
         Server *serv;
     } TData;
     //=========================================================================
@@ -264,6 +267,7 @@ namespace shttps {
 
 
         string infile = docroot + uri;
+
 
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
             conn.status(Connection::NOT_FOUND);
@@ -457,6 +461,10 @@ namespace shttps {
         OpenSSL_add_all_algorithms();
 #endif
 
+    ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
+    _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
+    _semcnt = _nthreads;
+
     }
     //=========================================================================
 
@@ -576,13 +584,10 @@ namespace shttps {
     static void *process_request(void *arg)
     {
         TData *tdata = (TData *) arg;
-        tdata->serv->debugmsg("process_request...");
         pthread_t my_tid = pthread_self();
         signal(SIGPIPE, SIG_IGN);
 
         auto logger = spdlog::get(loggername);
-
-        SockStream *sockstream;
 
         //
         // now we create the socket StreamSock
@@ -604,7 +609,6 @@ namespace shttps {
         ThreadStatus tstatus;
         do {
             int keep_alive;
-            tdata->serv->debugmsg("Start processRequest with sock=" + to_string(tdata->sock));
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
@@ -615,33 +619,105 @@ namespace shttps {
 #else
             tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
 #endif
-            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
-                tdata->serv->debugmsg("idle add, keep alive=" + to_string(keep_alive));
-                idle_add(my_tid);
-                tdata->serv->debugmsg("idle size=" + to_string(idle_thread_ids.size()));
-                pollfd readfds[1];
-                int n_readfds = 0;
-                readfds[0] = { tdata->sock, POLLIN, 0}; n_readfds++;
-                if (poll(readfds, n_readfds, keep_alive*1000) < 0) {
-                    tstatus = CLOSE;
-                    tdata->serv->debugmsg("idle remove");
 
-                    idle_remove(my_tid);
-                    tdata->serv->debugmsg("poll returned -1, idle removed, size=" + to_string(idle_thread_ids.size()));
-                    break; // accept returned something strange – probably we want to shutdown the server
+            if (tstatus != CONTINUE) break;
+
+
+            //
+            // let's check if we got in the meantime a CLOSE message from the main...
+            //
+            pollfd readfds[2];
+            int n_readfds = 0;
+            readfds[0] = { tdata->commpipe_read, POLLIN, 0}; n_readfds++;
+            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
+                readfds[1] = { tdata->sock, POLLIN, 0}; n_readfds++;
+            }
+            if (poll(readfds, n_readfds, 0) < 0) { // no blocking here!!!
+                tdata->serv->debugmsg("poll failed!!!!!!");
+                exit (88);
+                // some error message here
+            }
+            if (readfds[0].revents & POLLIN) {
+                if (readfds[1].revents & POLLIN) {
+                    tdata->serv->debugmsg("(AAAAA) Thread should terminate...BUT!!!!!!!" );
                 }
-                if (!(readfds[0].revents & POLLIN)) {
-                    tstatus = CLOSE;
-                    tdata->serv->debugmsg("idle remove");
-                    idle_remove(my_tid);
-                    tdata->serv->debugmsg("poll returned -1, idle removed, size=" + to_string(idle_thread_ids.size()));
-                    break; // accept returned something strange – probably we want to shutdown the server
-                }
-                tdata->serv->debugmsg("idle remove, poll found data on sock=" + to_string(tdata->sock));
-                idle_remove(my_tid);
+                tdata->serv->debugmsg("(A) Thread should terminate... sock=" + to_string(tdata->sock));
+                //
+                // we got a message on the communication channel from the main thread...
+                //
+                Server::CommMsg msg;
+                msg.read(tdata->commpipe_read);
+                tstatus = CLOSE;
+                break;
             }
 
+            if ((keep_alive > 0) && (readfds[1].revents & POLLIN)) {
+                //
+                // we have more to do...., continue the loop
+                //
+                continue;
+            }
+
+            else {
+                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                if (tdata->serv->semaphore_get() < 0) {
+                    tdata->serv->debugmsg("Another thread is waiting, give him a chance...");
+                    tstatus = CLOSE; // we're not yet in idle state....
+                    break; // leave while loop, tstatus now CLOSE!
+                }
+                */
+            }
+
+            //
+            // if we can contunue and have a keep_alive, then...
+            //
+            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
+                //
+                // the thread is idle for the moment...
+                //
+                idle_add(my_tid);
+
+                pollfd readfds[2];
+                int n_readfds = 0;
+                readfds[0] = { tdata->commpipe_read, POLLIN, 0}; n_readfds++;
+                readfds[1] = { tdata->sock, POLLIN, 0}; n_readfds++;
+                if (poll(readfds, n_readfds, keep_alive*1000) < 0) {
+                    //tdata->serv->debugmsg(strerror);
+                    tstatus = CLOSE;
+                    idle_remove(my_tid);
+                    break; // accept returned something strange – probably we want to shutdown the server
+                }
+                if (!(readfds[0].revents | readfds[1].revents)) {
+                    //
+                    // keep_alive timeout...
+                    //
+                    tstatus = CLOSE;
+                    idle_remove(my_tid);
+                    tdata->serv->debugmsg("***TIMEOUT***");
+                    break;
+                }
+                if (readfds[0].revents & POLLIN) {
+                    tdata->serv->debugmsg("(B) Thread should terminate... sock=" + to_string(tdata->sock));
+                    //
+                    // we got a message on the communication channel from the main thread...
+                    //
+                    Server::CommMsg msg;
+                    msg.read(tdata->commpipe_read);
+                    tstatus = CLOSE;
+                    idle_remove(my_tid);
+                    break; // leave while loop, tstatus is still CONTINUE...
+                }
+                if (!(readfds[1].revents & POLLIN)) {
+                    tdata->serv->debugmsg("Expected Data..." + to_string(readfds[0].revents) + " " + to_string(readfds[1].revents));
+                    tstatus = CLOSE;
+                    idle_remove(my_tid);
+                    break; // accept returned something strange – probably we want to shutdown the server
+                }
+                idle_remove(my_tid);
+            }
         } while (tstatus == CONTINUE);
+
+
         if (tstatus == CLOSE) {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
@@ -658,8 +734,13 @@ namespace shttps {
         }
         delete sockstream;
 
+        int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
         tdata->serv->remove_thread(pthread_self());
-        ::sem_post(tdata->serv->semaphore());
+        tdata->serv->semaphore_leave();
+
+
+        close(tdata->commpipe_read);
+        close (compipe_write);
 
         delete tdata;
         return NULL;
@@ -679,10 +760,6 @@ namespace shttps {
             addRoute(route.method, route.route, ScriptHandler, &(route.script));
             _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
         }
-
-
-        ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
-        _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
 
         _sockfd = prepare_socket(port);
         _logger->info("Server listening on port ") << to_string(port);
@@ -709,6 +786,10 @@ namespace shttps {
             if (poll(readfds, n_readfds, -1) < 0) {
                 switch(errno) {
                     case EAGAIN: debugmsg("EAGAIN: try again..."); break;
+                    case EFAULT: debugmsg("EFAULT: outside adress space.."); break;
+                    case EINTR: debugmsg("EINTR: Got signal..."); break;
+                    case EINVAL: debugmsg("EINVAL: nfds or timeout invalid..."); break;
+                    default: debugmsg("POLL: unknown error: errno=" + to_string(errno));
                 }
                 running = false;
                 break;
@@ -728,14 +809,17 @@ namespace shttps {
             }
             else {
                 _logger->debug("poll failed (2)");
+                debugmsg("poll failed (2)");
                 break; // accept returned something strange – probably we want to shutdown the server
             }
-
 
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (newsockfs <= 0) {
                 _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
+                debugmsg("accept returned something strange");
+                perror("::accept");
+                exit(-1);
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
@@ -811,75 +895,81 @@ namespace shttps {
             tmp->cSSL = cSSL;
 #endif
 
-            idlelock.lock();
-
-            debugmsg("IDLE=" + to_string(idle_thread_ids.size()));
-            if (idle_thread_ids.size() >= _nthreads) {
-                debugmsg("=======>KILLING IDLE THREAD!");
-                exit(11);
-                pthread_t tid = idle_thread_ids.front();
-                close_thread_sock(tid);
+            chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+            if (semaphore_get() <= 0) {
+                //
+                // we would be blocked by the semaphore...
+                //
+                idlelock.lock();
+                if (idle_thread_ids.size() > 0) {
+                    pthread_t tid = idle_thread_ids.front();
+                    idlelock.unlock();
+                    int pipe_id = get_thread_pipe(tid);
+                    Server::CommMsg msg("CLOSE");
+                    if (pipe_id > 0) {
+                        msg.send(pipe_id);
+                    }
+                    else {
+                        debugmsg("SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - ");
+                        exit(22);
+                    }
+                    debugmsg("Killing an idle thread...");
+                    pthread_join(tid, NULL);
+                }
+                else {
+                    idlelock.unlock();
+                }
             }
-            idlelock.unlock();
+            semaphore_wait();
+            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+            if (duration > 1000000) {
+                debugmsg("DURATION: " + to_string(duration));
+            }
+            int commpipe[2];
 
-            ::sem_wait(_semaphore);
-
+            if (socketpair(PF_LOCAL, SOCK_STREAM, 0, commpipe) != 0) {
+                perror("creating pipe failed!");
+                exit (22);
+            }
+            /*
+            if (pipe(commpipe) != 0) {
+                perror("creating pipe failed!");
+                exit(22);
+            }
+            */
+            tmp->commpipe_read = commpipe[1]; // read end;
             if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
-                perror("could not create thread");
                 _logger->error("Could not create thread") << strerror(errno);
+                debugmsg("Could not create thread");
                 exit (1);
             }
 #ifdef SHTTPS_ENABLE_SSL
             if (tmp->cSSL != NULL) {
-                add_thread(thread_id, tmp->sock, tmp->cSSL);
+                add_thread(thread_id, commpipe[0], tmp->sock, tmp->cSSL);
             }
             else {
-                add_thread(thread_id, tmp->sock);
+                add_thread(thread_id, commpipe[0], tmp->sock);
             }
 #else
-            add_thread(thread_id, tmp->sock);
+            add_thread(thread_id, commpipe[0], tmp->sock);
 #endif
         }
         _logger->info("Server shutting down!");
 
+
         //
-        // now we make all threads to terminate by closing their sockets
+        // let's send the close message to all running threads
         //
+        Server::CommMsg msg("CLOSE");
+        int i = 0;
+        threadlock.lock();
         int num_active_threads = thread_ids.size();
         pthread_t *ptid = new pthread_t[num_active_threads];
-        GenericSockId *sid = new GenericSockId[num_active_threads];
-
-        threadlock.lock();
-        int i = 0;
         for(auto const &tid : thread_ids) {
-            ptid[i] = tid.first;
-            sid[i] = tid.second;
-            i++;
+            ptid[i++] = tid.first;
+            msg.send(tid.second.commpipe_write);
         }
-        for (int i = 0; i < num_active_threads; i++) {
-#ifdef SHTTPS_ENABLE_SSL
-            if (sid[i].ssl_sid != NULL) {
-                _logger->debug(" Before SSL_shutdown ") << i << " of " << num_active_threads;
-                int sstat;
-                while ((sstat = SSL_shutdown(sid[i].ssl_sid)) == 0) _logger->debug("***");
-                if (sstat < 0) {
-                    _logger->error("SSL socket error: shutdown (3) of socket failed! Reason: ") << SSL_get_error(sid[i].ssl_sid, sstat);
-                }
-                SSL_free(sid[i].ssl_sid);
-                sid[i].ssl_sid = NULL;
-            }
-#endif
-            close(sid[i].sid);
-
-            //
-            // we indicate to the thread that the socked has been closed (and it's not a timeout)
-            // by setting the socked_id in the thread_ids-table to -1. This leads the thread
-            // not to close it again. In case of a timeout the socket is being closed
-            // by the thread.
-            //
-            thread_ids[ptid[i]].sid = -1;
-        }
-
         threadlock.unlock();
 
         close(stoppipe[0]);
@@ -893,7 +983,6 @@ namespace shttps {
         }
 
         delete [] ptid;
-        delete [] sid;
     }
     //=========================================================================
 
@@ -910,16 +999,18 @@ namespace shttps {
     {
         if (ins->eof() || os->eof()) return CANCELED;
 
-        debugmsg("Server::processRequest START");
-
         pthread_t my_tid = pthread_self();
         int sock = get_thread_sock(my_tid);
+
+        string progress = "A";
 
         if (_tmpdir.empty()) {
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
         try {
+            progress += "B";
             Connection conn(this, ins, os, _tmpdir);
+            progress += "C";
 
             keep_alive = conn.setupKeepAlive(sock, _keep_alive_timeout);
 
@@ -935,6 +1026,8 @@ namespace shttps {
                     return CLOSE;
                 }
             }
+            progress += "D";
+
             //
             // Setting up the Lua server
             //
@@ -943,30 +1036,34 @@ namespace shttps {
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
+            progress += "E";
 
             void *hd = NULL;
             try {
                 RequestHandler handler = getHandler(conn, &hd);
+                progress += "F";
                 handler(conn, luaserver, _user_data, hd);
+                progress += "G";
             }
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
+                debugmsg(progress);
                 return CLOSE; // or CANCELED ??
             }
-            debugmsg("Server::processRequest END");
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
             }
-
+            progress += "H";
             if (conn.keepAlive()) {
                 return CONTINUE;
             }
             else {
                 return CLOSE;
             }
+            progress += "I";
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-            debugmsg("processRequest: i/o exception thrown");
+            debugmsg("-2- processRequest: i/o exception thrown: " + progress);
             _logger->debug("Socket connection: timeout or socket closed from main");
             if (get_thread_sock(pthread_self()) == -1) {
                 _logger->info("Socket is closed – no need not close anymore");
@@ -991,22 +1088,22 @@ namespace shttps {
     }
     //=========================================================================
 
-    void Server::add_thread(pthread_t thread_id_p, int sock_id) {
-        threadlock.lock();
-        GenericSockId sid;
-        sid.sid = sock_id;
+    void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id) {
 #ifdef SHTTPS_ENABLE_SSL
-        sid.ssl_sid = NULL;
+        GenericSockId sid = {sock_id, NULL, commpipe_write_p};
+#else
+        GenericSockId sid = {sock_id, commpipe_write_p};
 #endif
+        threadlock.lock();
         thread_ids[thread_id_p] = sid;
         threadlock.unlock();
     }
     //=========================================================================
 
 #ifdef SHTTPS_ENABLE_SSL
-    void Server::add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL) {
+    void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL) {
+        GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
         threadlock.lock();
-        GenericSockId sid = {sock_id, cSSL};
         thread_ids[thread_id_p] = sid;
         threadlock.unlock();
     }
@@ -1028,6 +1125,21 @@ namespace shttps {
     }
     //=========================================================================
 
+    int Server::get_thread_pipe(pthread_t thread_id_p) {
+        threadlock.lock();
+        GenericSockId sid;
+        try {
+            sid = thread_ids.at(thread_id_p);
+        }
+        catch (const std::out_of_range& oor) {
+            threadlock.unlock();
+            return -1;
+        }
+        threadlock.unlock();
+        return sid.commpipe_write;
+    }
+    //=========================================================================
+
 
 #ifdef SHTTPS_ENABLE_SSL
      SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
@@ -1046,28 +1158,7 @@ namespace shttps {
     //=========================================================================
 #endif
 
-    void Server::close_thread_sock(pthread_t thread_id_p) {
-#ifdef SHTTPS_ENABLE_SSL
-        SSL *ssl;
-        if ((ssl = get_thread_ssl(thread_id_p)) != NULL) {
-            //_logger->debug(" Before SSL_shutdown of thread with id=") << tid;
-            int sstat;
-            while ((sstat = SSL_shutdown(ssl)) == 0) _logger->debug("***");
-            if (sstat < 0) {
-                _logger->error("SSL socket error: shutdown (3) of socket failed! Reason: ") << SSL_get_error(ssl, sstat);
-            }
-            SSL_free(ssl);
-            //thread_ids[tid].ssl_sid = NULL;
-        }
-#endif
-        int sock = get_thread_sock(thread_id_p);
-        if (sock >= 0) {
-            debugmsg("Closing a thread socket!");
-            close(sock);
-        }
-    }
-    //=========================================================================
-#
+
     void Server::remove_thread(pthread_t thread_id_p) {
         int index = 0;
         bool in_idle = false;

@@ -48,7 +48,7 @@
 #include "Error.h"
 #include "Connection.h"
 #include "ChunkReader.h"
-
+#include "Server.h" // TEMPORARY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 static const char __file__[] = __FILE__;
 
 using namespace std;
@@ -127,14 +127,16 @@ namespace shttps {
     //=========================================================================
 
 
-    size_t safeGetline(std::istream &is, std::string& t)
+    size_t safeGetline(std::istream &is, std::string& t, bool debug)
     {
         t.clear();
 
+        if (debug) cerr << "++++ safeGetline ++++" << endl;
         size_t n = 0;
         for(;;) {
             int c;
             c = is.get();
+            if (debug && (c != EOF)) cerr << "<-- \"" << (char) c << "\"" << endl;
             switch (c) {
                 case '\n':
                     n++;
@@ -153,6 +155,8 @@ namespace shttps {
                     t += (char) c;
             }
         }
+        if (debug) cerr << "---- safeGetline ----" << endl;
+
     }
     //=========================================================================
 
@@ -390,7 +394,6 @@ namespace shttps {
             //
             throw -1;
         }
-
         //
         // Parse first line of request
         //
@@ -412,6 +415,7 @@ namespace shttps {
             }
 
             process_header();
+
             if (ins->fail() || ins->eof()) {
                 throw -1;
             }
@@ -835,7 +839,9 @@ namespace shttps {
                 _keep_alive_timeout = default_timeout;
             }
             if (_keep_alive_timeout > 0) {
-                header_out["Keep-Alive"] = string("timeout=") + to_string(_keep_alive_timeout);
+                header_out["Keep-Alive"] = string("timeout=") +
+                to_string(_keep_alive_timeout) + string(", max=") +
+                to_string(4);
             }
         }
         return _keep_alive_timeout;
@@ -1138,6 +1144,7 @@ namespace shttps {
                 }
             }
         }
+        nnn += n;
     }
     //=============================================================================
 

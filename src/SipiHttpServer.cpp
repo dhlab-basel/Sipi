@@ -1055,6 +1055,8 @@ namespace Sipi {
             return;
         }
 
+        conobj.flush();
+
         logger->info() << "GET: \"" << uri << "\": File: " << infile;
         return;
     }

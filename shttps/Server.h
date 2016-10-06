@@ -128,6 +128,7 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
             SSL *ssl_sid; //!< Pointer to SLL socket struct
 #endif
+            int commpipe_write;
         } GenericSockId;
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -159,7 +160,50 @@ namespace shttps {
         };
 #endif
 
+public:
+    class CommMsg {
+    private:
+        unsigned char len;
+        char msg[128];
     public:
+        inline CommMsg() { len = 0; msg[0] = '\0'; };
+        inline CommMsg(const std::string &str) {
+            size_t s = str.size();
+            len = (s > 127) ? 127 : s;
+            memcpy(msg, str.data(), len);
+            msg[len] = '\0';
+        };
+
+        inline operator std::string () const {
+            return std::string(msg, len);
+        };
+
+        inline friend std::ostream &operator<< (std::ostream &outstr, const CommMsg &rhs)
+        {
+            return (outstr << std::string(rhs.msg, rhs.len));
+        };
+
+        inline void send(int pipe_id) {
+            int nn;
+            if ((nn = ::send(pipe_id, &len, 1, 0)) != 1) {
+                std::cerr << "(a) CommMsg.send failed! " << nn << std::endl;
+                if (nn == -1) perror("::send");
+                exit(44);
+            }
+            if ((nn = ::send(pipe_id, msg, len, 0)) != len) {
+                std::cerr << "(b) CommMsg.send failed! " << nn << std::endl;
+                if (nn == -1) perror("::send");
+                exit(44);
+            }
+        };
+
+        inline void read(int pipe_id) {
+            ::read(pipe_id, &len, 1);
+            ::read(pipe_id, msg, len);
+            msg[len] = '\0';
+        };
+    };
+    //=========================================================================
 
     private:
         int port; //!< listening Port for server
@@ -177,6 +221,8 @@ namespace shttps {
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
+        int _semcnt; //
+        std::mutex _semcntlock;
         std::map<pthread_t,GenericSockId> thread_ids;
         int _keep_alive_timeout;
         bool running;
@@ -259,6 +305,24 @@ namespace shttps {
          */
         inline std::string jwt_secret(void) { return _jwt_secret; }
 #endif
+
+        inline void semaphore_wait() {
+            _semcntlock.lock();
+            _semcnt--;
+            _semcntlock.unlock();
+            ::sem_wait(_semaphore);
+        }
+
+        inline void semaphore_leave() {
+            _semcntlock.lock();
+            _semcnt++;
+            _semcntlock.unlock();
+            ::sem_post(_semaphore);
+        }
+
+        inline int semaphore_get() {
+            return _semcnt;
+        }
 
         /*!
          * Returns the maximum number of parallel threads allowed
@@ -361,19 +425,19 @@ namespace shttps {
          */
         inline sem_t *semaphore(void) { return _semaphore; }
 
-        void add_thread(pthread_t thread_id_p, int sock_id);
+        void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id);
 
 #ifdef SHTTPS_ENABLE_SSL
-        void add_thread(pthread_t thread_id_p, int sock_id, SSL *cSSL);
+        void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL);
 #endif
 
         int get_thread_sock(pthread_t thread_id_p);
 
+        int get_thread_pipe(pthread_t thread_id_p);
+
 #ifdef SHTTPS_ENABLE_SSL
         SSL *get_thread_ssl(pthread_t thread_id_p);
 #endif
-
-        void close_thread_sock(pthread_t thread_id_p);
 
         void remove_thread(pthread_t thread_id_p);
 

@@ -61,7 +61,7 @@ namespace Sipi {
      */
     class JpegError : public runtime_error {
     public:
-        inline JpegError() : runtime_error("!! JPEG_ERROR") {}
+        inline JpegError() : runtime_error("!! JPEG_ERROR !!") {}
         inline JpegError(const char *msg) : runtime_error(msg) {}
         inline const char* what() const noexcept {
             return runtime_error::what();
@@ -94,7 +94,7 @@ namespace Sipi {
      */
     static boolean empty_output_buffer (j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
-       try {
+        try {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
         }
         catch (int i) { // an error occurred (possibly a broken pipe)
@@ -119,7 +119,6 @@ namespace Sipi {
         catch (int i) { // an error occured in sending the data (broken pipe?)
             // do nothing...
         }
-
         free(html_buffer->buffer);
 
         free(html_buffer);
@@ -620,7 +619,7 @@ namespace Sipi {
         struct jpeg_error_mgr jerr;
 
         //outlock.lock();
-        cinfo.err = jpeg_std_error( &jerr );
+        cinfo.err = jpeg_std_error( &jerr);
         jerr.error_exit = jpegErrorExit;
 
         FILE *outfile = NULL;		/* target file */

@@ -34,10 +34,10 @@ sipi = {
     --
     -- Number of threads to use
     --
-    nthreads = 2,
+    nthreads = 1,
 
     --
-    -- Number of seconds a connection (socket) remains open
+    -- Number of seconds a connection (socket) remains open at maximum
     --
     keep_alive = 5,
 
