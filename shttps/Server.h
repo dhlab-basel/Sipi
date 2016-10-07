@@ -68,7 +68,7 @@ namespace shttps {
 
     extern void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *handler_data);
 
-    typedef enum { CONTINUE, CLOSE, CANCELED} ThreadStatus;
+    typedef enum { CONTINUE, CLOSE } ThreadStatus;
 
 
     /*!
@@ -186,14 +186,12 @@ public:
         inline void send(int pipe_id) {
             int nn;
             if ((nn = ::send(pipe_id, &len, 1, 0)) != 1) {
-                std::cerr << "(a) CommMsg.send failed! " << nn << std::endl;
-                if (nn == -1) perror("::send");
-                exit(44);
+                return;
             }
             if ((nn = ::send(pipe_id, msg, len, 0)) != len) {
                 std::cerr << "(b) CommMsg.send failed! " << nn << std::endl;
                 if (nn == -1) perror("::send");
-                exit(44);
+                //exit(44);
             }
         };
 

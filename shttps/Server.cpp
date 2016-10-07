@@ -581,11 +581,36 @@ namespace shttps {
     }
     //=========================================================================
 
+    static int close_socket(TData *tdata) {
+#ifdef SHTTPS_ENABLE_SSL
+        if (tdata->cSSL != NULL) {
+            int sstat;
+            while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
+/*
+            if (sstat < 0) {
+                logger->error("SSL socket error: shutdown (1) of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+            }
+*/
+            SSL_free(tdata->cSSL);
+            tdata->cSSL = NULL;
+        }
+#endif
+        //shutdown(tdata->sock, SHUT_WR);
+        if (close(tdata->sock) == -1) {
+            tdata->serv->debugmsg("tdata->sock close error: " + string(strerror(errno)));
+        }
+
+        return 0;
+    }
+    //=========================================================================
+
+
     static void *process_request(void *arg)
     {
+        signal(SIGPIPE, SIG_IGN);
+
         TData *tdata = (TData *) arg;
         pthread_t my_tid = pthread_self();
-        signal(SIGPIPE, SIG_IGN);
 
         auto logger = spdlog::get(loggername);
 
@@ -607,8 +632,8 @@ namespace shttps {
         ostream os(sockstream);
 
         ThreadStatus tstatus;
+        int keep_alive = 1;
         do {
-            int keep_alive;
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != NULL) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
@@ -620,127 +645,119 @@ namespace shttps {
             tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
 #endif
 
-            if (tstatus != CONTINUE) break;
-
+            if (tstatus == CLOSE) break; // it's CLOSE , let's get out of the loop
 
             //
-            // let's check if we got in the meantime a CLOSE message from the main...
+            // tstatus is CONTINUE. Let's check if we got in the meantime a CLOSE message from the main...
             //
             pollfd readfds[2];
-            int n_readfds = 0;
-            readfds[0] = { tdata->commpipe_read, POLLIN, 0}; n_readfds++;
-            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
-                readfds[1] = { tdata->sock, POLLIN, 0}; n_readfds++;
+            readfds[0] = { tdata->commpipe_read, POLLIN, 0};
+            readfds[1] = { tdata->sock, POLLIN, 0};
+            if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
+                tdata->serv->debugmsg("poll failed at #" + to_string(__LINE__));
+                tstatus = CLOSE;
+                break; // accept returned something strange – probably we want to shutdown the server
             }
-            if (poll(readfds, n_readfds, 0) < 0) { // no blocking here!!!
-                tdata->serv->debugmsg("poll failed!!!!!!");
-                exit (88);
-                // some error message here
-            }
-            if (readfds[0].revents & POLLIN) {
-                if (readfds[1].revents & POLLIN) {
-                    tdata->serv->debugmsg("(AAAAA) Thread should terminate...BUT!!!!!!!" );
-                }
+            if (readfds[0].revents & POLLIN) { // something on the pipe...
                 tdata->serv->debugmsg("(A) Thread should terminate... sock=" + to_string(tdata->sock));
                 //
                 // we got a message on the communication channel from the main thread...
                 //
                 Server::CommMsg msg;
                 msg.read(tdata->commpipe_read);
-                tstatus = CLOSE;
-                break;
-            }
-
-            if ((keep_alive > 0) && (readfds[1].revents & POLLIN)) {
-                //
-                // we have more to do...., continue the loop
-                //
-                continue;
-            }
-
-            else {
-                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-                if (tdata->serv->semaphore_get() < 0) {
-                    tdata->serv->debugmsg("Another thread is waiting, give him a chance...");
-                    tstatus = CLOSE; // we're not yet in idle state....
-                    break; // leave while loop, tstatus now CLOSE!
+                keep_alive = -1;
+                if (readfds[1].revents & POLLIN) { // but we already have data...
+                    tdata->serv->debugmsg("(A) After processing pending request, we close later....");
+                    continue; // continue loop
                 }
-                /* */
-            }
-
-            //
-            // if we can contunue and have a keep_alive, then...
-            //
-            if ((tstatus == CONTINUE) && (keep_alive > 0)) {
-                //
-                // the thread is idle for the moment...
-                //
-                idle_add(my_tid);
-
-                pollfd readfds[2];
-                int n_readfds = 0;
-                readfds[0] = { tdata->commpipe_read, POLLIN, 0}; n_readfds++;
-                readfds[1] = { tdata->sock, POLLIN, 0}; n_readfds++;
-                if (poll(readfds, n_readfds, keep_alive*1000) < 0) {
-                    //tdata->serv->debugmsg(strerror);
-                    tstatus = CLOSE;
-                    idle_remove(my_tid);
-                    break; // accept returned something strange – probably we want to shutdown the server
-                }
-                if (!(readfds[0].revents | readfds[1].revents)) {
-                    //
-                    // keep_alive timeout...
-                    //
-                    tstatus = CLOSE;
-                    idle_remove(my_tid);
-                    tdata->serv->debugmsg("***TIMEOUT***");
+                else {
+                    continue;
                     break;
                 }
-                if (readfds[0].revents & POLLIN) {
-                    tdata->serv->debugmsg("(B) Thread should terminate... sock=" + to_string(tdata->sock));
-                    //
-                    // we got a message on the communication channel from the main thread...
-                    //
-                    Server::CommMsg msg;
-                    msg.read(tdata->commpipe_read);
-                    tstatus = CLOSE;
-                    idle_remove(my_tid);
-                    break; // leave while loop, tstatus is still CONTINUE...
+            }
+
+            //
+            // we check if a new request is waiting for the semaphore which limits the number of threads
+            //
+            if (tdata->serv->semaphore_get() < 0) {
+                tdata->serv->debugmsg("(B) Another thread is waiting, give him a chance...");
+                keep_alive = -1;
+                if (readfds[1].revents & POLLIN) { // but we already have data...
+                    tdata->serv->debugmsg("(B) After processing pending request, we close later...." + to_string(tdata->sock));
+                    continue; // we have data, we will close after the next round...
                 }
-                if (!(readfds[1].revents & POLLIN)) {
-                    tdata->serv->debugmsg("Expected Data..." + to_string(readfds[0].revents) + " " + to_string(readfds[1].revents));
-                    tstatus = CLOSE;
-                    idle_remove(my_tid);
-                    break; // accept returned something strange – probably we want to shutdown the server
+                else {
+                    continue;
+                    break;
                 }
+            }
+
+            //
+            // if we can continue and have a keep_alive, let's set the thread to idle...
+            //
+            idle_add(my_tid);
+
+            //
+            // use poll to wait...
+            //
+            readfds[0] = { tdata->commpipe_read, POLLIN, 0};
+            readfds[1] = { tdata->sock, POLLIN, 0};
+            if (poll(readfds, 2, keep_alive*1000) < 0) {
+                tdata->serv->debugmsg("poll failed at #" + to_string(__LINE__));
+                tstatus = CLOSE;
                 idle_remove(my_tid);
+                break; // accept returned something strange – probably we want to shutdown the server
+            }
+            if (!(readfds[0].revents | readfds[1].revents)) { // we got a timeout from poll
+                //
+                // timeout from poll
+                //
+                tstatus = CLOSE;
+                idle_remove(my_tid);
+                tdata->serv->debugmsg("***TIMEOUT***");
+                break;
+            }
+            if (readfds[0].revents & POLLIN) { // something on the pipe...
+                tdata->serv->debugmsg("(C)) Thread should terminate... sock=" + to_string(tdata->sock));
+                //
+                // we got a message on the communication channel from the main thread...
+                //
+                Server::CommMsg msg;
+                msg.read(tdata->commpipe_read);
+                keep_alive = -1;
+                idle_remove(my_tid);
+                if (readfds[1].revents & POLLIN) { // but we already have data...
+                    tdata->serv->debugmsg("(C) After processing pending request, we close....");
+                    continue; // continue loop
+                }
+                else {
+                    continue;
+                    break;
+                }
             }
         } while (tstatus == CONTINUE);
 
+        //
+        // let's close the socket
+        //
+        close_socket(tdata);
 
-        if (tstatus == CLOSE) {
-#ifdef SHTTPS_ENABLE_SSL
-            if (tdata->cSSL != NULL) {
-                int sstat;
-                while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
-                if (sstat < 0) {
-                    logger->error("SSL socket error: shutdown (1) of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
-                }
-                SSL_free(tdata->cSSL);
-                tdata->cSSL = NULL;
-            }
-#endif
-            close(tdata->sock);
-        }
         delete sockstream;
 
         int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
+
+
+
+        if (close(tdata->commpipe_read) == -1) {
+            tdata->serv->debugmsg("commpipe_read close error: " + string(strerror(errno)));
+        }
+        if (close (compipe_write) == -1) {
+            tdata->serv->debugmsg("commpipe_write close error: " + string(strerror(errno)));
+        }
         tdata->serv->remove_thread(pthread_self());
         tdata->serv->semaphore_leave();
 
-
-        close(tdata->commpipe_read);
-        close (compipe_write);
+        tdata->serv->debugmsg("Ending thread with sock=" + to_string(tdata->sock));
 
         delete tdata;
         return NULL;
@@ -896,7 +913,9 @@ namespace shttps {
 #endif
 
             chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-            if (semaphore_get() <= 0) {
+            int nnn = semaphore_get();
+            debugmsg("===================>SEM=" + to_string(nnn));
+            if (nnn <= 0) {
                 //
                 // we would be blocked by the semaphore...
                 //
@@ -911,10 +930,9 @@ namespace shttps {
                     }
                     else {
                         debugmsg("SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - ");
-                        exit(22);
                     }
                     debugmsg("Killing an idle thread...");
-                    pthread_join(tid, NULL);
+//                    pthread_join(tid, NULL);
                 }
                 else {
                     idlelock.unlock();
@@ -932,14 +950,16 @@ namespace shttps {
                 perror("creating pipe failed!");
                 exit (22);
             }
-            /*
-            if (pipe(commpipe) != 0) {
-                perror("creating pipe failed!");
-                exit(22);
-            }
-            */
+
             tmp->commpipe_read = commpipe[1]; // read end;
-            if( pthread_create( &thread_id, NULL,  process_request, (void *) tmp) < 0) {
+
+            pthread_attr_t tattr;
+            pthread_attr_init(&tattr);
+            pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
+            int stacksize = (PTHREAD_STACK_MIN + 1024*1024*3);
+            pthread_attr_setstacksize(&tattr, stacksize);
+
+            if( pthread_create( &thread_id, &tattr,  process_request, (void *) tmp) < 0) {
                 _logger->error("Could not create thread") << strerror(errno);
                 debugmsg("Could not create thread");
                 exit (1);
@@ -1001,7 +1021,7 @@ namespace shttps {
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
 
-        if (ins->eof() || os->eof()) return CANCELED;
+        if (ins->eof() || os->eof()) return CLOSE;
 
         pthread_t my_tid = pthread_self();
         int sock = get_thread_sock(my_tid);
@@ -1013,7 +1033,10 @@ namespace shttps {
             Connection conn(this, ins, os, _tmpdir);
             progress += "C";
 
-            keep_alive = conn.setupKeepAlive(sock, _keep_alive_timeout);
+            if (keep_alive <= 0) {
+                conn.keepAlive(false);
+            }
+            keep_alive = conn.setupKeepAlive(_keep_alive_timeout);
 
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
@@ -1049,7 +1072,7 @@ namespace shttps {
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
                 debugmsg(progress);
-                return CLOSE; // or CANCELED ??
+                return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
@@ -1061,15 +1084,11 @@ namespace shttps {
             else {
                 return CLOSE;
             }
-            progress += "I";
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-            debugmsg("-2- processRequest: i/o exception thrown: " + progress);
+            debugmsg("-2- processRequest: i/o exception thrown: " + progress + " sock=" + to_string(sock));
             _logger->debug("Socket connection: timeout or socket closed from main");
-            if (get_thread_sock(pthread_self()) == -1) {
-                _logger->info("Socket is closed – no need not close anymore");
-            }
-            return CANCELED;
+            return CLOSE;
         }
         catch(Error &err) {
             try {
@@ -1084,7 +1103,7 @@ namespace shttps {
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
             }
-            return CANCELED;
+            return CLOSE;
         }
     }
     //=========================================================================
