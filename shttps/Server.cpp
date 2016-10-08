@@ -412,8 +412,8 @@ namespace shttps {
     }
     //=========================================================================
 
-    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p)
-        : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p)
+    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p, const std::string &loglevel_p)
+        : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p), _loglevel(loglevel_p)
     {
         _ssl_port = -1;
         semname = "shttps";
@@ -423,6 +423,41 @@ namespace shttps {
         _keep_alive_timeout = 20;
 
         spdlog::set_async_mode(1048576);
+        _logger = spdlog::rotating_logger_mt(loggername, _logfilename, 1048576 * 20, 3, true);
+
+        if (_loglevel == "TRACE") {
+            spdlog::set_level(spdlog::level::trace);
+        }
+        else if (_loglevel == "DEBUG") {
+            spdlog::set_level(spdlog::level::debug);
+        }
+        else if (_loglevel == "INFO") {
+            spdlog::set_level(spdlog::level::info);
+        }
+        else if (_loglevel == "NOTICE") {
+            spdlog::set_level(spdlog::level::notice);
+        }
+        else if (_loglevel == "WARN") {
+            spdlog::set_level(spdlog::level::warn);
+        }
+        else if (_loglevel == "ERROR") {
+            spdlog::set_level(spdlog::level::err);
+        }
+        else if (_loglevel == "CRITICAL") {
+            spdlog::set_level(spdlog::level::critical);
+        }
+        else if (_loglevel == "ALERT") {
+            spdlog::set_level(spdlog::level::alert);
+        }
+        else if (_loglevel == "EMER") {
+            spdlog::set_level(spdlog::level::emerg);
+        }
+        else if (_loglevel == "OFF") {
+            spdlog::set_level(spdlog::level::off);
+        }
+        else {
+            spdlog::set_level(spdlog::level::debug);
+        }
 
         //
         // Her we check if we have to change to a different uid. This can only be done
@@ -447,11 +482,9 @@ namespace shttps {
             delete [] buffer;
         }
 
-        _logger = spdlog::rotating_logger_mt(loggername, _logfilename, 1048576 * 20, 3, true);
-        spdlog::set_level(spdlog::level::debug);
 
         if (setuid_done) {
-            _logger->info("Server will run as user ") << userid_str << " (" << getuid() << ")";
+            _logger->notice("Server will run as user ") << userid_str << " (" << getuid() << ")";
         }
 
 
@@ -515,17 +548,17 @@ namespace shttps {
         int sockfd;
         struct sockaddr_in serv_addr;
 
+        auto logger = spdlog::get(loggername);
+
         sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0) {
-            perror("ERROR on socket");
-            //_logger->error("Could not create socket: ") << strerror(errno);
+            logger->emerg("Could not create socket: ") << strerror(errno);
             exit(1);
         }
 
         int optval = 1;
         if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
-            perror("ERROR on setsocketopt");
-            //_logger->error("Could not set socket option: ") << strerror(errno);
+            logger->emerg("Could not set socket option: ") << strerror(errno);
             exit(1);
         }
 
@@ -538,14 +571,12 @@ namespace shttps {
 
         /* Now bind the host address using bind() call.*/
         if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            perror("ERROR on binding");
-            //_logger->error("Could not bind socket: ") << strerror(errno);
+            logger->emerg("Could not bind socket: ") << strerror(errno);
             exit(1);
         }
 
         if (::listen(sockfd, SOMAXCONN) < 0) {
-            perror("ERROR on listen");
-            //_logger->error("Could not listen on socket: ") << strerror(errno);
+            logger->emerg("Could not listen on socket: ") << strerror(errno);
             exit (1);
         }
         return sockfd;
@@ -582,22 +613,21 @@ namespace shttps {
     //=========================================================================
 
     static int close_socket(TData *tdata) {
+        auto logger = spdlog::get(loggername);
+
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != NULL) {
             int sstat;
             while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
-/*
             if (sstat < 0) {
-                logger->error("SSL socket error: shutdown (1) of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+                logger->warn("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
             }
-*/
             SSL_free(tdata->cSSL);
             tdata->cSSL = NULL;
         }
 #endif
-        //shutdown(tdata->sock, SHUT_WR);
         if (close(tdata->sock) == -1) {
-            tdata->serv->debugmsg("tdata->sock close error: " + string(strerror(errno)));
+            logger->warn("Error closing socket! Reason: ") << strerror(errno);
         }
 
         return 0;
@@ -654,24 +684,23 @@ namespace shttps {
             readfds[0] = { tdata->commpipe_read, POLLIN, 0};
             readfds[1] = { tdata->sock, POLLIN, 0};
             if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
-                tdata->serv->debugmsg("poll failed at #" + to_string(__LINE__));
+                logger->error("Non-blocking poll failed: Line: ") << to_string(__LINE__);
                 tstatus = CLOSE;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
-            if (readfds[0].revents & POLLIN) { // something on the pipe...
-                tdata->serv->debugmsg("(A) Thread should terminate... sock=" + to_string(tdata->sock));
+            if (readfds[1].revents & POLLIN) {
+                continue;
+            }
+            if (readfds[0].revents & POLLIN) { // something on the pipe from the main
                 //
                 // we got a message on the communication channel from the main thread...
                 //
-                Server::CommMsg msg;
-                msg.read(tdata->commpipe_read);
+                Server::CommMsg::read(tdata->commpipe_read);
                 keep_alive = -1;
                 if (readfds[1].revents & POLLIN) { // but we already have data...
-                    tdata->serv->debugmsg("(A) After processing pending request, we close later....");
                     continue; // continue loop
                 }
                 else {
-                    continue;
                     break;
                 }
             }
@@ -679,15 +708,12 @@ namespace shttps {
             //
             // we check if a new request is waiting for the semaphore which limits the number of threads
             //
-            if (tdata->serv->semaphore_get() < 0) {
-                tdata->serv->debugmsg("(B) Another thread is waiting, give him a chance...");
+            if (tdata->serv->semaphore_get() < 0) { //Another thread is waiting, give him a chance...
                 keep_alive = -1;
                 if (readfds[1].revents & POLLIN) { // but we already have data...
-                    tdata->serv->debugmsg("(B) After processing pending request, we close later...." + to_string(tdata->sock));
                     continue; // we have data, we will close after the next round...
                 }
                 else {
-                    continue;
                     break;
                 }
             }
@@ -703,7 +729,7 @@ namespace shttps {
             readfds[0] = { tdata->commpipe_read, POLLIN, 0};
             readfds[1] = { tdata->sock, POLLIN, 0};
             if (poll(readfds, 2, keep_alive*1000) < 0) {
-                tdata->serv->debugmsg("poll failed at #" + to_string(__LINE__));
+                logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
                 tstatus = CLOSE;
                 idle_remove(my_tid);
                 break; // accept returned something strange – probably we want to shutdown the server
@@ -714,20 +740,16 @@ namespace shttps {
                 //
                 tstatus = CLOSE;
                 idle_remove(my_tid);
-                tdata->serv->debugmsg("***TIMEOUT***");
                 break;
             }
             if (readfds[0].revents & POLLIN) { // something on the pipe...
-                tdata->serv->debugmsg("(C)) Thread should terminate... sock=" + to_string(tdata->sock));
                 //
                 // we got a message on the communication channel from the main thread...
                 //
-                Server::CommMsg msg;
-                msg.read(tdata->commpipe_read);
+                Server::CommMsg::read(tdata->commpipe_read);
                 keep_alive = -1;
                 idle_remove(my_tid);
                 if (readfds[1].revents & POLLIN) { // but we already have data...
-                    tdata->serv->debugmsg("(C) After processing pending request, we close....");
                     continue; // continue loop
                 }
                 else {
@@ -744,20 +766,22 @@ namespace shttps {
 
         delete sockstream;
 
-        int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
-
-
 
         if (close(tdata->commpipe_read) == -1) {
-            tdata->serv->debugmsg("commpipe_read close error: " + string(strerror(errno)));
+            logger->error("Commpipe_read close error: ") << string(strerror(errno));
         }
-        if (close (compipe_write) == -1) {
-            tdata->serv->debugmsg("commpipe_write close error: " + string(strerror(errno)));
+        int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
+        if (compipe_write > 0) {
+            if (close (compipe_write) == -1) {
+                logger->error("Commpipe_write close error: ") << string(strerror(errno));
+            }
+        }
+        else {
+            logger->debug("Thread to stop does no longer exist...!");
         }
         tdata->serv->remove_thread(pthread_self());
         tdata->serv->semaphore_leave();
 
-        tdata->serv->debugmsg("Ending thread with sock=" + to_string(tdata->sock));
 
         delete tdata;
         return NULL;
@@ -779,10 +803,10 @@ namespace shttps {
         }
 
         _sockfd = prepare_socket(port);
-        _logger->info("Server listening on port ") << to_string(port);
+        _logger->notice("Server listening on port ") << to_string(port);
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
-            _logger->info("Server listening on SSL port ") << to_string(_ssl_port);
+            _logger->notice("Server listening on SSL port ") << to_string(_ssl_port);
         }
 
         pipe(stoppipe); // ToDo: Errorcheck
@@ -801,13 +825,7 @@ namespace shttps {
                 readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
             }
             if (poll(readfds, n_readfds, -1) < 0) {
-                switch(errno) {
-                    case EAGAIN: debugmsg("EAGAIN: try again..."); break;
-                    case EFAULT: debugmsg("EFAULT: outside adress space.."); break;
-                    case EINTR: debugmsg("EINTR: Got signal..."); break;
-                    case EINVAL: debugmsg("EINVAL: nfds or timeout invalid..."); break;
-                    default: debugmsg("POLL: unknown error: errno=" + to_string(errno));
-                }
+                _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
                 running = false;
                 break;
             }
@@ -825,18 +843,15 @@ namespace shttps {
                 sock = _ssl_sockfd;
             }
             else {
-                _logger->debug("poll failed (2)");
-                debugmsg("poll failed (2)");
+                _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: Strange!!";
+                running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (newsockfs <= 0) {
-                _logger->debug("accept returned ") << to_string(newsockfs) << ". Shutdown?";
-                debugmsg("accept returned something strange");
-                perror("::accept");
-                exit(-1);
+                _logger->error("::accept error! ERROR: ") << strerror(errno);
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
@@ -845,7 +860,6 @@ namespace shttps {
             //
             char client_ip[INET6_ADDRSTRLEN];
             int peer_port;
-
 
             if (cli_addr.ss_family == AF_INET) {
                 struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
@@ -856,7 +870,7 @@ namespace shttps {
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             }
-            _logger->info("Accepted connection from: ") << client_ip;
+            _logger->notice("Accepted connection from: ") << client_ip;
 
             TData *tmp = new TData;
             tmp->sock = newsockfs;
@@ -903,7 +917,7 @@ namespace shttps {
                     int sstat;
                     while ((sstat = SSL_shutdown(cSSL)) == 0);
                     if (sstat < 0) {
-                        _logger->error("SSL socket error: shutdown (2) of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
+                        _logger->warn("SSL socket error: shutdown (2) of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
                     }
                     SSL_free(cSSL);
                     cSSL = NULL;
@@ -912,57 +926,56 @@ namespace shttps {
             tmp->cSSL = cSSL;
 #endif
 
-            chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-            int nnn = semaphore_get();
-            debugmsg("===================>SEM=" + to_string(nnn));
-            if (nnn <= 0) {
+            //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+            if (semaphore_get() <= 0) {
                 //
-                // we would be blocked by the semaphore...
+                // we would be blocked by the semaphore... Get an idle thread...
                 //
                 idlelock.lock();
                 if (idle_thread_ids.size() > 0) {
                     pthread_t tid = idle_thread_ids.front();
                     idlelock.unlock();
                     int pipe_id = get_thread_pipe(tid);
-                    Server::CommMsg msg("CLOSE");
                     if (pipe_id > 0) {
-                        msg.send(pipe_id);
+                        Server::CommMsg::send(pipe_id);
                     }
                     else {
-                        debugmsg("SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - SCHEISSE - ");
+                        _logger->debug("Thread to stop does no longer exist...!");
                     }
-                    debugmsg("Killing an idle thread...");
-//                    pthread_join(tid, NULL);
                 }
                 else {
                     idlelock.unlock();
                 }
             }
             semaphore_wait();
-            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-            if (duration > 1000000) {
-                debugmsg("DURATION: " + to_string(duration));
-            }
+            //chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+            //auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+            //if (duration > 1000000) {
+            //    debugmsg("DURATION: " + to_string(duration));
+            //}
             int commpipe[2];
 
             if (socketpair(PF_LOCAL, SOCK_STREAM, 0, commpipe) != 0) {
-                perror("creating pipe failed!");
-                exit (22);
+                _logger->error("Creating pipe failed! ERROR: ") << strerror(errno);
+                running = false;
+                break;
             }
 
             tmp->commpipe_read = commpipe[1]; // read end;
 
+            //
+            // we create detached threads because we will not be able to use pthread_join()
+            //
             pthread_attr_t tattr;
             pthread_attr_init(&tattr);
             pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
-            int stacksize = (PTHREAD_STACK_MIN + 1024*1024*3);
-            pthread_attr_setstacksize(&tattr, stacksize);
+            //int stacksize = (PTHREAD_STACK_MIN + 1024*1024*3);
+            //pthread_attr_setstacksize(&tattr, stacksize);
 
             if( pthread_create( &thread_id, &tattr,  process_request, (void *) tmp) < 0) {
                 _logger->error("Could not create thread") << strerror(errno);
-                debugmsg("Could not create thread");
-                exit (1);
+                running = false;
+                break;
             }
 #ifdef SHTTPS_ENABLE_SSL
             if (tmp->cSSL != NULL) {
@@ -975,20 +988,19 @@ namespace shttps {
             add_thread(thread_id, commpipe[0], tmp->sock);
 #endif
         }
-        _logger->info("Server shutting down!");
+        _logger->notice("Server shutting down!");
 
 
         //
         // let's send the close message to all running threads
         //
-        Server::CommMsg msg("CLOSE");
         int i = 0;
         threadlock.lock();
         int num_active_threads = thread_ids.size();
         pthread_t *ptid = new pthread_t[num_active_threads];
         for(auto const &tid : thread_ids) {
             ptid[i++] = tid.first;
-            msg.send(tid.second.commpipe_write);
+            Server::CommMsg::send(tid.second.commpipe_write);
         }
         threadlock.unlock();
 
@@ -1023,15 +1035,8 @@ namespace shttps {
 
         if (ins->eof() || os->eof()) return CLOSE;
 
-        pthread_t my_tid = pthread_self();
-        int sock = get_thread_sock(my_tid);
-
-        string progress = "A";
-
         try {
-            progress += "B";
             Connection conn(this, ins, os, _tmpdir);
-            progress += "C";
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
@@ -1050,7 +1055,6 @@ namespace shttps {
                     return CLOSE;
                 }
             }
-            progress += "D";
 
             //
             // Setting up the Lua server
@@ -1060,24 +1064,19 @@ namespace shttps {
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
-            progress += "E";
 
             void *hd = NULL;
             try {
                 RequestHandler handler = getHandler(conn, &hd);
-                progress += "F";
                 handler(conn, luaserver, _user_data, hd);
-                progress += "G";
             }
             catch (int i) {
-                _logger->error("Possibly socket closed by peer!");
-                debugmsg(progress);
+                _logger->debug("Possibly socket closed by peer!");
                 return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
             }
-            progress += "H";
             if (conn.keepAlive()) {
                 return CONTINUE;
             }
@@ -1086,19 +1085,18 @@ namespace shttps {
             }
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-            debugmsg("-2- processRequest: i/o exception thrown: " + progress + " sock=" + to_string(sock));
             _logger->debug("Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
         catch(Error &err) {
             try {
+                _logger->error("Internal server error: ") << err;
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
                 stringstream ss;
                 ss << err;
                 *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
                 *os << ss.str();
-                _logger->error("Internal server error: ") << err;
             }
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");

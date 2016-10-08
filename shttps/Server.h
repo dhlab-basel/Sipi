@@ -162,43 +162,21 @@ namespace shttps {
 
 public:
     class CommMsg {
-    private:
-        unsigned char len;
-        char msg[128];
     public:
-        inline CommMsg() { len = 0; msg[0] = '\0'; };
-        inline CommMsg(const std::string &str) {
-            size_t s = str.size();
-            len = (s > 127) ? 127 : s;
-            memcpy(msg, str.data(), len);
-            msg[len] = '\0';
-        };
 
-        inline operator std::string () const {
-            return std::string(msg, len);
-        };
-
-        inline friend std::ostream &operator<< (std::ostream &outstr, const CommMsg &rhs)
-        {
-            return (outstr << std::string(rhs.msg, rhs.len));
-        };
-
-        inline void send(int pipe_id) {
-            int nn;
-            if ((nn = ::send(pipe_id, &len, 1, 0)) != 1) {
-                return;
+        static inline int send(int pipe_id) {
+            if ((::send(pipe_id, "X", 1, 0)) != 1) {
+                return -1;
             }
-            if ((nn = ::send(pipe_id, msg, len, 0)) != len) {
-                std::cerr << "(b) CommMsg.send failed! " << nn << std::endl;
-                if (nn == -1) perror("::send");
-                //exit(44);
-            }
+            return 0;
         };
 
-        inline void read(int pipe_id) {
-            ::read(pipe_id, &len, 1);
-            ::read(pipe_id, msg, len);
-            msg[len] = '\0';
+        static inline int read(int pipe_id) {
+            char c;
+            if (::read(pipe_id, &c, 1) != 1) {
+                return -1;
+            }
+            return 0;
         };
     };
     //=========================================================================
@@ -233,6 +211,7 @@ public:
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
         std::string _logfilename;
+        std::string _loglevel;
     protected:
         std::shared_ptr<spdlog::logger> _logger;
     public:
@@ -242,7 +221,7 @@ public:
         * \param[in] port_p Listening port of HTTP server
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
-        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log");
+        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log", const std::string &loglevel_p = "DEBUG");
 
 #ifdef SHTTPS_ENABLE_SSL
 

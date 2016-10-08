@@ -290,6 +290,9 @@ namespace shttps {
                     if (opts.count("close") == 1) {
                         _keep_alive = false;
                     }
+                    else {
+                        _keep_alive = true; // keep_alive is the default with HTTP/1.1
+                    }
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
@@ -348,7 +351,7 @@ namespace shttps {
         outbuf_inc = 0;
         outbuf = NULL;
         header_sent = false;
-        _keep_alive = false;
+        _keep_alive = true;  // this is the default for HTTP/1.1
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
@@ -368,7 +371,7 @@ namespace shttps {
         _secure = false;
         cachefile = NULL;
         header_sent = false;
-        _keep_alive = false;
+        _keep_alive = true; // this is the default for HTTP/1.1
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
@@ -397,6 +400,8 @@ namespace shttps {
             //
             throw -1;
         }
+        _logger->info("REQUEST: ") << line;
+
         //
         // Parse first line of request
         //
@@ -1152,7 +1157,6 @@ namespace shttps {
                 }
             }
         }
-        nnn += n;
     }
     //=============================================================================
 

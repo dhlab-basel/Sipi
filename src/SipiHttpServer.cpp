@@ -1105,8 +1105,8 @@ namespace Sipi {
     }
     //=========================================================================
 
-    SipiHttpServer::SipiHttpServer(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p)
-        : Server::Server(port_p, nthreads_p, userid_str, logfile_p)
+    SipiHttpServer::SipiHttpServer(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p, const std::string &loglevel_p)
+        : Server::Server(port_p, nthreads_p, userid_str, logfile_p, loglevel_p)
     {
         _salsah_prefix = "imgrep";
         _cache = NULL;

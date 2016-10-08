@@ -327,8 +327,6 @@ namespace shttps {
         bool _reset_connection;     //!< true, if connection should be reset (e.g. cors)
         std::shared_ptr<spdlog::logger> _logger; //!< logger...
 
-        unsigned long nnn;
-
        /*!
         * Read, process and parse the HTTP request header
         */

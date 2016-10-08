@@ -276,7 +276,7 @@ int main (int argc, char *argv[]) {
     params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
     params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
     params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
-    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "DEBUG:INFO:NOTICE:WARN:ERROR:CRIT:ALERT:FATAL:EMER", 1, "INFO"));
+    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:NOTICE:WARN:ERROR:CRITICAL:ALERT:EMER:OFF", 1, "INFO"));
     params.parseArgv ();
 
     //
@@ -293,7 +293,8 @@ int main (int argc, char *argv[]) {
             sipiConf = Sipi::SipiConf(luacfg);
 
             //Create object SipiHttpServer
-            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(), sipiConf.getUseridStr());
+            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
+                sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
 #ifdef SHTTPS_ENABLE_SSL
             server.ssl_port(sipiConf.getSSLPort()); // set the secure connection port (-1 means no ssl socket)
