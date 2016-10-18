@@ -695,7 +695,10 @@ namespace shttps {
                 //
                 // we got a message on the communication channel from the main thread...
                 //
-                Server::CommMsg::read(tdata->commpipe_read);
+                if (Server::CommMsg::read(tdata->commpipe_read) != 0) {
+                    keep_alive = -1;
+                    break;
+                }
                 keep_alive = -1;
                 if (readfds[1].revents & POLLIN) { // but we already have data...
                     continue; // continue loop
@@ -746,14 +749,18 @@ namespace shttps {
                 //
                 // we got a message on the communication channel from the main thread...
                 //
-                Server::CommMsg::read(tdata->commpipe_read);
+                if (Server::CommMsg::read(tdata->commpipe_read) != 0) {
+                    keep_alive = -1;
+                    idle_remove(my_tid);
+                    break;
+                }
                 keep_alive = -1;
                 idle_remove(my_tid);
                 if (readfds[1].revents & POLLIN) { // but we already have data...
                     continue; // continue loop
                 }
                 else {
-                    continue;
+//                    continue;
                     break;
                 }
             }
@@ -782,8 +789,9 @@ namespace shttps {
         tdata->serv->remove_thread(pthread_self());
         tdata->serv->semaphore_leave();
 
-
         delete tdata;
+
+
         return NULL;
     }
     //=========================================================================
@@ -926,7 +934,7 @@ namespace shttps {
             tmp->cSSL = cSSL;
 #endif
 
-            //chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+            chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
             if (semaphore_get() <= 0) {
                 //
                 // we would be blocked by the semaphore... Get an idle thread...
@@ -948,10 +956,10 @@ namespace shttps {
                 }
             }
             semaphore_wait();
-            //chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
-            //auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-            //if (duration > 1000000) {
-            //    debugmsg("DURATION: " + to_string(duration));
+            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+            //if (duration > 100000) {
+                debugmsg("DURATION: " + to_string(duration));
             //}
             int commpipe[2];
 
@@ -1035,8 +1043,12 @@ namespace shttps {
 
         if (ins->eof() || os->eof()) return CLOSE;
 
+        chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
+        chrono::high_resolution_clock::time_point t2;
+        chrono::high_resolution_clock::time_point t3;
         try {
             Connection conn(this, ins, os, _tmpdir);
+            t2 = chrono::high_resolution_clock::now();
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
@@ -1048,6 +1060,10 @@ namespace shttps {
             conn.secure(secure);
 
             if (conn.resetConnection()) {
+                t3 = chrono::high_resolution_clock::now();
+                auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+                auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
+                debugmsg("------->(Z) " + to_string(duration1) + " " + to_string(duration2)); exit(5);
                 if (conn.keepAlive()) {
                     return CONTINUE;
                 }
@@ -1072,11 +1088,19 @@ namespace shttps {
             }
             catch (int i) {
                 _logger->debug("Possibly socket closed by peer!");
+                chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
+                auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+                auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
+                debugmsg("------->(A) " + to_string(duration1) + " " + to_string(duration2)); exit(5);
                 return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
             }
+            chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
+            auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+            auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
+            debugmsg("-------> " + to_string(duration1) + " " + to_string(duration2) + " ** " + to_string(semaphore_get()));
             if (conn.keepAlive()) {
                 return CONTINUE;
             }
@@ -1085,6 +1109,10 @@ namespace shttps {
             }
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
+        chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
+        auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+        auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
+        debugmsg("------->(B) " + to_string(duration1) + " " + to_string(duration2)  + " ** " + to_string(semaphore_get()));
             _logger->debug("Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
@@ -1101,6 +1129,10 @@ namespace shttps {
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
             }
+            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+            auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
+            auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
+            debugmsg("------->(C) " + to_string(duration1) + " " + to_string(duration2)); exit(9);
             return CLOSE;
         }
     }
@@ -1129,8 +1161,8 @@ namespace shttps {
     //=========================================================================
 
     int Server::get_thread_sock(pthread_t thread_id_p) {
-        threadlock.lock();
         GenericSockId sid;
+        threadlock.lock();
         try {
             sid = thread_ids.at(thread_id_p);
         }
@@ -1144,8 +1176,8 @@ namespace shttps {
     //=========================================================================
 
     int Server::get_thread_pipe(pthread_t thread_id_p) {
-        threadlock.lock();
         GenericSockId sid;
+        threadlock.lock();
         try {
             sid = thread_ids.at(thread_id_p);
         }

@@ -136,7 +136,7 @@ sipi = {
     -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
     --    "CRITICAL", "ALERT", "EMER", "OFF"
     --
-    loglevel = "INFO",
+    loglevel = "DEBUG",
 }
 
 admin = {

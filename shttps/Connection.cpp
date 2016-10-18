@@ -351,7 +351,7 @@ namespace shttps {
         outbuf_inc = 0;
         outbuf = NULL;
         header_sent = false;
-        _keep_alive = true;  // this is the default for HTTP/1.1
+        _keep_alive = false;  // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
@@ -371,7 +371,7 @@ namespace shttps {
         _secure = false;
         cachefile = NULL;
         header_sent = false;
-        _keep_alive = true; // this is the default for HTTP/1.1
+        _keep_alive = false; // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;

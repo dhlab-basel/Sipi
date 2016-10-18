@@ -197,8 +197,7 @@ public:
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
-        int _semcnt; //
-        std::mutex _semcntlock;
+        std::atomic<int> _semcnt; //
         std::map<pthread_t,GenericSockId> thread_ids;
         int _keep_alive_timeout;
         bool running;
@@ -284,16 +283,12 @@ public:
 #endif
 
         inline void semaphore_wait() {
-            _semcntlock.lock();
             _semcnt--;
-            _semcntlock.unlock();
             ::sem_wait(_semaphore);
         }
 
         inline void semaphore_leave() {
-            _semcntlock.lock();
             _semcnt++;
-            _semcntlock.unlock();
             ::sem_post(_semaphore);
         }
 
