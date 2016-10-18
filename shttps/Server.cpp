@@ -640,6 +640,7 @@ namespace shttps {
         signal(SIGPIPE, SIG_IGN);
 
         TData *tdata = (TData *) arg;
+        tdata->serv->debugmsg("THREAD BEGINS...");
         pthread_t my_tid = pthread_self();
 
         auto logger = spdlog::get(loggername);
@@ -791,7 +792,7 @@ namespace shttps {
 
         delete tdata;
 
-
+        tdata->serv->debugmsg("THREAD ENDS...");
         return NULL;
     }
     //=========================================================================
@@ -832,11 +833,18 @@ namespace shttps {
             if (_ssl_port > 0) {
                 readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
             }
+
+            threadlock.lock();
+            int nnn = thread_ids.size();
+            threadlock.unlock();
+            debugmsg("Waiting for connection...: nthreads=" + to_string(nnn));
+
             if (poll(readfds, n_readfds, -1) < 0) {
                 _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
                 running = false;
                 break;
             }
+            debugmsg("Got new connection...");
             if (readfds[0].revents & POLLIN) {
                 sock = _sockfd;
             }
@@ -1005,6 +1013,7 @@ namespace shttps {
         int i = 0;
         threadlock.lock();
         int num_active_threads = thread_ids.size();
+        debugmsg("NUM_OF ACTIVE_THREADS=" + to_string(num_active_threads));
         pthread_t *ptid = new pthread_t[num_active_threads];
         for(auto const &tid : thread_ids) {
             ptid[i++] = tid.first;
@@ -1037,6 +1046,8 @@ namespace shttps {
 
     ThreadStatus Server::processRequest(istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure, int &keep_alive)
     {
+        string GAGA = "";
+
         if (_tmpdir.empty()) {
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
@@ -1047,13 +1058,17 @@ namespace shttps {
         chrono::high_resolution_clock::time_point t2;
         chrono::high_resolution_clock::time_point t3;
         try {
+            GAGA += "   a";
             Connection conn(this, ins, os, _tmpdir);
+            GAGA += "b";
             t2 = chrono::high_resolution_clock::now();
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
             }
+            GAGA += "c";
             keep_alive = conn.setupKeepAlive(_keep_alive_timeout);
+            GAGA += "d";
 
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
@@ -1063,7 +1078,7 @@ namespace shttps {
                 t3 = chrono::high_resolution_clock::now();
                 auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
                 auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-                debugmsg("------->(Z) " + to_string(duration1) + " " + to_string(duration2)); exit(5);
+                debugmsg("------->(Z) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(5);
                 if (conn.keepAlive()) {
                     return CONTINUE;
                 }
@@ -1071,6 +1086,7 @@ namespace shttps {
                     return CLOSE;
                 }
             }
+            GAGA += "e";
 
             //
             // Setting up the Lua server
@@ -1091,7 +1107,7 @@ namespace shttps {
                 chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
                 auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
                 auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-                debugmsg("------->(A) " + to_string(duration1) + " " + to_string(duration2)); exit(5);
+                debugmsg("------->(A) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(5);
                 return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
@@ -1100,7 +1116,7 @@ namespace shttps {
             chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
             auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
             auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-            debugmsg("-------> " + to_string(duration1) + " " + to_string(duration2) + " ** " + to_string(semaphore_get()));
+            debugmsg("-------> " + to_string(duration1) + " " + to_string(duration2) + " ** " + to_string(semaphore_get()) + GAGA);
             if (conn.keepAlive()) {
                 return CONTINUE;
             }
@@ -1112,7 +1128,7 @@ namespace shttps {
         chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
         auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
         auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-        debugmsg("------->(B) " + to_string(duration1) + " " + to_string(duration2)  + " ** " + to_string(semaphore_get()));
+        debugmsg("------->(B) " + to_string(duration1) + " " + to_string(duration2)  + " ** " + to_string(semaphore_get()) + GAGA);
             _logger->debug("Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
@@ -1132,7 +1148,7 @@ namespace shttps {
             chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
             auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
             auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-            debugmsg("------->(C) " + to_string(duration1) + " " + to_string(duration2)); exit(9);
+            debugmsg("------->(C) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(9);
             return CLOSE;
         }
     }
