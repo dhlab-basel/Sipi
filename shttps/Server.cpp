@@ -1162,6 +1162,7 @@ namespace shttps {
 #endif
         threadlock.lock();
         thread_ids[thread_id_p] = sid;
+        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
     //=========================================================================
@@ -1171,6 +1172,7 @@ namespace shttps {
         GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
         threadlock.lock();
         thread_ids[thread_id_p] = sid;
+        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
 #endif
@@ -1209,8 +1211,8 @@ namespace shttps {
 
 #ifdef SHTTPS_ENABLE_SSL
      SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
-        threadlock.lock();
         GenericSockId sid;
+        threadlock.lock();
         try {
             sid = thread_ids.at(thread_id_p);
         }
@@ -1245,6 +1247,7 @@ namespace shttps {
         idlelock.unlock();
         threadlock.lock();
         thread_ids.erase(thread_id_p);
+        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
     //=========================================================================
