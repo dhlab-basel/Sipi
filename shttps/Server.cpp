@@ -626,6 +626,9 @@ namespace shttps {
             tdata->cSSL = NULL;
         }
 #endif
+        if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
+            logger->warn("Error shutdown socket! Reason: ") << strerror(errno);
+        }
         if (close(tdata->sock) == -1) {
             logger->warn("Error closing socket! Reason: ") << strerror(errno);
         }
@@ -640,7 +643,6 @@ namespace shttps {
         signal(SIGPIPE, SIG_IGN);
 
         TData *tdata = (TData *) arg;
-        tdata->serv->debugmsg("THREAD BEGINS...");
         pthread_t my_tid = pthread_self();
 
         auto logger = spdlog::get(loggername);
@@ -792,7 +794,6 @@ namespace shttps {
 
         delete tdata;
 
-        tdata->serv->debugmsg("THREAD ENDS...");
         return NULL;
     }
     //=========================================================================
@@ -810,8 +811,9 @@ namespace shttps {
             addRoute(route.method, route.route, ScriptHandler, &(route.script));
             _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
         }
-
+        debugmsg("before prepare_socket");
         _sockfd = prepare_socket(port);
+        debugmsg("after prepare_socket");
         _logger->notice("Server listening on port ") << to_string(port);
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
@@ -821,10 +823,9 @@ namespace shttps {
         pipe(stoppipe); // ToDo: Errorcheck
         pthread_t thread_id;
         running = true;
+        int count = 0;
         while(running) {
             int sock;
-            struct sockaddr_storage cli_addr;
-            socklen_t cli_size = sizeof(cli_addr);
 
             pollfd readfds[3];
             int n_readfds = 0;
@@ -842,9 +843,11 @@ namespace shttps {
             if (poll(readfds, n_readfds, -1) < 0) {
                 _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
                 running = false;
+                debugmsg("poll failed!!!!!!!!!");
                 break;
             }
-            debugmsg("Got new connection...");
+            count++;
+            debugmsg("Got new connection... (" + to_string(count) + ")");
             if (readfds[0].revents & POLLIN) {
                 sock = _sockfd;
             }
@@ -863,8 +866,11 @@ namespace shttps {
                 running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
-
+            debugmsg("Before ::accept");
+            struct sockaddr_storage cli_addr;
+            socklen_t cli_size = sizeof(cli_addr);
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+            debugmsg("After ::accept");
 
             if (newsockfs <= 0) {
                 _logger->error("::accept error! ERROR: ") << strerror(errno);
@@ -1046,39 +1052,25 @@ namespace shttps {
 
     ThreadStatus Server::processRequest(istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure, int &keep_alive)
     {
-        string GAGA = "";
-
         if (_tmpdir.empty()) {
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
 
         if (ins->eof() || os->eof()) return CLOSE;
 
-        chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
-        chrono::high_resolution_clock::time_point t2;
-        chrono::high_resolution_clock::time_point t3;
         try {
-            GAGA += "   a";
             Connection conn(this, ins, os, _tmpdir);
-            GAGA += "b";
-            t2 = chrono::high_resolution_clock::now();
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
             }
-            GAGA += "c";
             keep_alive = conn.setupKeepAlive(_keep_alive_timeout);
-            GAGA += "d";
 
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
             conn.secure(secure);
 
             if (conn.resetConnection()) {
-                t3 = chrono::high_resolution_clock::now();
-                auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-                auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-                debugmsg("------->(Z) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(5);
                 if (conn.keepAlive()) {
                     return CONTINUE;
                 }
@@ -1086,7 +1078,6 @@ namespace shttps {
                     return CLOSE;
                 }
             }
-            GAGA += "e";
 
             //
             // Setting up the Lua server
@@ -1104,19 +1095,11 @@ namespace shttps {
             }
             catch (int i) {
                 _logger->debug("Possibly socket closed by peer!");
-                chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
-                auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-                auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-                debugmsg("------->(A) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(5);
                 return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
                 _logger->error("Cleanup of uploaded files failed!");
             }
-            chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
-            auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-            auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-            debugmsg("-------> " + to_string(duration1) + " " + to_string(duration2) + " ** " + to_string(semaphore_get()) + GAGA);
             if (conn.keepAlive()) {
                 return CONTINUE;
             }
@@ -1125,10 +1108,6 @@ namespace shttps {
             }
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-        chrono::high_resolution_clock::time_point t3 = chrono::high_resolution_clock::now();
-        auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-        auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-        debugmsg("------->(B) " + to_string(duration1) + " " + to_string(duration2)  + " ** " + to_string(semaphore_get()) + GAGA);
             _logger->debug("Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
@@ -1145,10 +1124,6 @@ namespace shttps {
             catch (int i) {
                 _logger->error("Possibly socket closed by peer!");
             }
-            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
-            auto duration1 = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-            auto duration2 = chrono::duration_cast<chrono::microseconds>( t3 - t2 ).count();
-            debugmsg("------->(C) " + to_string(duration1) + " " + to_string(duration2) + GAGA); exit(9);
             return CLOSE;
         }
     }
@@ -1162,7 +1137,6 @@ namespace shttps {
 #endif
         threadlock.lock();
         thread_ids[thread_id_p] = sid;
-        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
     //=========================================================================
@@ -1172,7 +1146,6 @@ namespace shttps {
         GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
         threadlock.lock();
         thread_ids[thread_id_p] = sid;
-        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
 #endif
@@ -1247,7 +1220,6 @@ namespace shttps {
         idlelock.unlock();
         threadlock.lock();
         thread_ids.erase(thread_id_p);
-        debugmsg("thread_ids.size()=" + to_string(thread_ids.size()));
         threadlock.unlock();
     }
     //=========================================================================
