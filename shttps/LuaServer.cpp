@@ -131,6 +131,7 @@ namespace shttps {
         return (isalnum(c) || (c == '+') || (c == '/'));
     }
 
+/* NOT YET USED
     static std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
         std::string ret;
         int i = 0;
@@ -173,6 +174,7 @@ namespace shttps {
         return ret;
 
     }
+*/
 
     static std::string base64_decode(std::string const& encoded_string) {
         int in_len = encoded_string.size();
@@ -920,7 +922,6 @@ namespace shttps {
         }
 
         string errormsg; // filled in case of errors...
-        bool success = true;
 
         //
         // Get the first parameter: method (ATTENTION: only "GET" is supported at the moment
@@ -1194,7 +1195,8 @@ namespace shttps {
                 if (content_length == -1) { // we expect chunked data
                     try {
                         ChunkReader ckrd(&ins);
-                        size_t n = ckrd.readAll(&bodybuf);
+                        content_length = ckrd.readAll(&bodybuf);
+
                     }
                     catch (int ierr) { // i/o error
                         close(socketfd);
@@ -1284,7 +1286,7 @@ namespace shttps {
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "body"); // table - "body"
-                lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+                lua_pushlstring(L, bodybuf, content_length); // table - "body" - bodybuf
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "duration"); // table - "duration"
@@ -1344,7 +1346,7 @@ namespace shttps {
                 }
             }
             else if (lua_type(L, index + 1) == LUA_TNUMBER) {
-                int dummy = lua_tointeger(L, index + 1);
+                (void) lua_tointeger(L, index + 1);
                 if (tableobj != NULL) {
                     lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
@@ -1807,7 +1809,6 @@ namespace shttps {
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
 
-        int top = lua_gettop(L);
         int tmpfile_id = lua_tointeger(L, 1);
         const char *outfile = lua_tostring(L, 2);
 

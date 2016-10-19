@@ -296,14 +296,16 @@ int main (int argc, char *argv[]) {
             Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
-#ifdef SHTTPS_ENABLE_SSL
+#           ifdef SHTTPS_ENABLE_SSL
+
             server.ssl_port(sipiConf.getSSLPort()); // set the secure connection port (-1 means no ssl socket)
             std::string tmps = sipiConf.getSSLCertificate();
             server.ssl_certificate(tmps);
             tmps = sipiConf.getSSLKey();
             server.ssl_key(tmps);
             server.jwt_secret(sipiConf.getJwtSecret());
-#endif
+
+#           endif
 
             // set tmpdir for uploads (defined in sipi.config.lua)
             server.tmpdir(sipiConf.getTmpDir());

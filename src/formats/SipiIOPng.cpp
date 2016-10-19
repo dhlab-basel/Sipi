@@ -35,8 +35,6 @@
 #include <png.h>
 #include <zlib.h>
 
-static const char __file__[] = __FILE__;
-
 
 // bad hack in order to include definitions in png.h on debian systems
 #if !defined(PNG_TEXT_SUPPORTED)
@@ -92,8 +90,8 @@ namespace Sipi {
         tmp->text = (char *) data;
         tmp->text_length = len;
         tmp->itxt_length = 0;
-        tmp->lang = "";
-        tmp->lang_key = "";
+        tmp->lang = (char *) "";
+        tmp->lang_key = (char *) "";
     }
     //=============================================
 
@@ -104,8 +102,8 @@ namespace Sipi {
         tmp->text = data;
         tmp->text_length = 0;
         tmp->itxt_length = len;
-        tmp->lang = "";
-        tmp->lang_key = "";
+        tmp->lang = (char *) "";
+        tmp->lang_key = (char *) "";
     }
     //=============================================
 
@@ -354,7 +352,6 @@ namespace Sipi {
     void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
         FILE *outfile = NULL;
         png_structp png_ptr;
-        shttps::Connection *conobj = img->connection();
 
         if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL))) {
             throw SipiImageError("Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");

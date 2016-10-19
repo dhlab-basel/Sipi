@@ -125,13 +125,14 @@ namespace shttps {
          */
         typedef struct {
             int sid;    //!< socket id
-#ifdef SHTTPS_ENABLE_SSL
+#           ifdef SHTTPS_ENABLE_SSL
             SSL *ssl_sid; //!< Pointer to SLL socket struct
-#endif
-            int commpipe_write;
+#           endif
+            int commpipe_write; //!< socket id of pipe connecting main thread
         } GenericSockId;
 
-#ifdef SHTTPS_ENABLE_SSL
+#       ifdef SHTTPS_ENABLE_SSL
+
         /*!
          * Error handling class for SSL functions
          */
@@ -158,9 +159,14 @@ namespace shttps {
                 return ss.str();
             };
         };
-#endif
+
+#       endif
 
 public:
+    /*!
+    * Used to send a message between main thread and worker threads. A pipe is
+    * used and the worker theads use poll to detect an incoming message.
+    */
     class CommMsg {
     public:
 
@@ -186,21 +192,25 @@ public:
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
         int _ssl_sockfd; //!< SSL socket id
-#ifdef SHTTPS_ENABLE_SSL
+
+#       ifdef SHTTPS_ENABLE_SSL
+
         std::string _ssl_certificate; //!< Path to SSL certificate
         std::string _ssl_key; //!< Path to SSL certificate
         std::string _jwt_secret;
-#endif
+
+#       endif
+
         int stoppipe[2];
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
-        std::atomic<int> _semcnt; //
-        std::map<pthread_t,GenericSockId> thread_ids;
+        std::atomic<int> _semcnt; //!< current value of semaphore (sem_getvalue() is not available on all systems)
+        std::map<pthread_t,GenericSockId> thread_ids; //!< Map of active worker threads
         int _keep_alive_timeout;
-        bool running;
+        bool running; //!< Main runloop should keep on going
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
         std::map<std::string, void *> handler_data[9]; // request handlers for the different 9 request methods
         void *_user_data; //!< Some opaque user data that can be given to the Connection (for use within the handler)
@@ -211,8 +221,10 @@ public:
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
         std::string _logfilename;
         std::string _loglevel;
+
     protected:
         std::shared_ptr<spdlog::logger> _logger;
+
     public:
         /*!
         * Create a server listening on the given port with the maximal number of threads
@@ -222,7 +234,30 @@ public:
         */
         Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log", const std::string &loglevel_p = "DEBUG");
 
-#ifdef SHTTPS_ENABLE_SSL
+        /*!
+        * Decrease the semaphore, wait if semaphore would be smaller than zero
+        */
+        inline void semaphore_wait() {
+            _semcnt--;
+            ::sem_wait(_semaphore);
+        }
+
+        /*!
+        * Increase the semaphore
+        */
+        inline void semaphore_leave() {
+            _semcnt++;
+            ::sem_post(_semaphore);
+        }
+
+        /*!
+        * Get the semaphore value
+        */
+        inline int semaphore_get() {
+            return _semcnt;
+        }
+
+#       ifdef SHTTPS_ENABLE_SSL
 
         /*!
          * Sets the port number for the SSL socket
@@ -280,21 +315,8 @@ public:
          * \returns String of length 32 with the secret used for JWT's
          */
         inline std::string jwt_secret(void) { return _jwt_secret; }
-#endif
 
-        inline void semaphore_wait() {
-            _semcnt--;
-            ::sem_wait(_semaphore);
-        }
-
-        inline void semaphore_leave() {
-            _semcnt++;
-            ::sem_post(_semaphore);
-        }
-
-        inline int semaphore_get() {
-            return _semcnt;
-        }
+#       endif
 
         /*!
          * Returns the maximum number of parallel threads allowed
@@ -365,15 +387,6 @@ public:
          */
         inline void stop(void) {
             write(stoppipe[1], "@", 1);
-            /*
-            running = false;
-            close(_sockfd);
-#ifdef SHTTPS_ENABLE_SSL
-            if (_ssl_port > 0) {
-                //close(_ssl_sockfd);
-            }
-#endif
-             */
         }
 
         /*!
@@ -399,17 +412,21 @@ public:
 
         void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id);
 
-#ifdef SHTTPS_ENABLE_SSL
+#       ifdef SHTTPS_ENABLE_SSL
+
         void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL);
-#endif
+
+#       endif
 
         int get_thread_sock(pthread_t thread_id_p);
 
         int get_thread_pipe(pthread_t thread_id_p);
 
-#ifdef SHTTPS_ENABLE_SSL
+#       ifdef SHTTPS_ENABLE_SSL
+
         SSL *get_thread_ssl(pthread_t thread_id_p);
-#endif
+
+#       endif
 
         void remove_thread(pthread_t thread_id_p);
 

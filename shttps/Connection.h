@@ -302,24 +302,21 @@ namespace shttps {
         std::map<std::string,std::string> header_out;     //!< Output header fields
         std::map<std::string,std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
+        std::istream *ins;          //!< incoming data stream
+        std::ostream *os;           //!< outgoing data stream
         std::string _tmpdir;        //!< directory used to temporary storage of files (e.g. uploads)
         StatusCodes status_code;    //!< Status code of response
         std::string status_string;  //!< Short description of status code
         bool header_sent;           //!< True if header already sent
         bool _keep_alive;           //!< if true, don't close the socket after the request
         int _keep_alive_timeout;    //!< timeout for connection
-        int _keep_alive_requests;   //!< maximum requests allowed per persistent connection
         bool _chunked_transfer_in;  //!< Input data is chunked
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
-        std::istream *ins;          //!< incoming data stream
-        std::ostream *os;           //!< outgoing data stream
         char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
         unsigned content_length;    //!< length of body in octets (used if not chunked transfer)
         std::string _content_type;   //!< Content-type (mime type of content)
-        unsigned next_chunk;        //!< not used yet (for reading chunks from incoming stream)
         std::ofstream *cachefile;   //!< pointer to cache file
-
         char *outbuf;               //!< If not NULL, pointer to the output buffer (buffered output used)
         size_t outbuf_size;         //!< Actual size of output buffer
         size_t outbuf_inc;          //!< Increment of outbuf buffer if it has to be enlarged

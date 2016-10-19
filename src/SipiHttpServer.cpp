@@ -1070,18 +1070,6 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static void admin_handler(Connection &conobj, shttps::LuaServer &luaserver, void *user_data, void *dummy)
-    {
-        conobj.status(Connection::OK);
-        conobj.header("Content-Type", "text/plain");
-        //conobj.add_header("Content-Length", "28");
-        conobj << "(1) Hello World, I'm here again!\n";
-        sleep(2);
-        conobj << "(2) Hello World, I'm here again!\n";
-        conobj.flush();
-    }
-    //=========================================================================
-
     static void test_handler(Connection &conobj, shttps::LuaServer &luaserver, void *user_data, void *dummy)
     {
         lua_State *L = luaL_newstate();
@@ -1126,10 +1114,10 @@ namespace Sipi {
         }
         catch (const SipiError &err) {
             _cache = NULL;
-            _logger->error("Couldn't open cache directory '") << cachedir_p << "'!";
             stringstream ss;
             ss << err;
-            _logger->error(ss.str());
+            _logger->warn("Couldn't open cache directory '") << cachedir_p << "'! Reason: " << ss.str();
+            debugmsg("Warning: Couldn't open cache directory '" + cachedir_p + "'! Reason: " + ss.str());
         }
     }
     //=========================================================================
@@ -1144,7 +1132,6 @@ namespace Sipi {
         _logger->info() << "Serving images from \"" << _imgroot << "\"";
         _logger->info() << "Salsah prefix \"" << _salsah_prefix << "\"";
 
-        addRoute(Connection::GET, "/admin", admin_handler);
         addRoute(Connection::GET, "/favcon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);
         addRoute(Connection::GET, "/admin/test", test_handler);

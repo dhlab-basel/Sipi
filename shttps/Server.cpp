@@ -59,15 +59,12 @@
 
 static const char __file__[] = __FILE__;
 
-static std::mutex threadlock;
-static std::mutex idlelock;
+static std::mutex threadlock; // mutex to protect map of active threads
+static std::mutex idlelock; // mutex to protect vector of idle threads (keep alive condition)
+static std::mutex debugio; // mutex to protect debugging messages from threads
 
 static std::vector<pthread_t> idle_thread_ids;
 
-
-
-
-static std::mutex debugio;
 
 using namespace std;
 
@@ -416,6 +413,10 @@ namespace shttps {
         : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p), _loglevel(loglevel_p)
     {
         _ssl_port = -1;
+
+        //
+        // we use a semaphore object to control the number of threads
+        //
         semname = "shttps";
         semname += to_string(port);
         _user_data = NULL;
@@ -481,7 +482,9 @@ namespace shttps {
             }
             delete [] buffer;
         }
-
+        else {
+            _logger->warn("Couldnt switch tu user ") << userid_str << "! You must start SIPI as root!";
+        }
 
         if (setuid_done) {
             _logger->notice("Server will run as user ") << userid_str << " (" << getuid() << ")";
@@ -494,10 +497,9 @@ namespace shttps {
         OpenSSL_add_all_algorithms();
 #endif
 
-    ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
-    _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
-    _semcnt = _nthreads;
-
+        ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
+        _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
+        _semcnt = _nthreads;
     }
     //=========================================================================
 
@@ -513,7 +515,6 @@ namespace shttps {
     }
     //=========================================================================
 #endif
-
 
 
 
@@ -763,7 +764,6 @@ namespace shttps {
                     continue; // continue loop
                 }
                 else {
-//                    continue;
                     break;
                 }
             }
@@ -775,7 +775,6 @@ namespace shttps {
         close_socket(tdata);
 
         delete sockstream;
-
 
         if (close(tdata->commpipe_read) == -1) {
             logger->error("Commpipe_read close error: ") << string(strerror(errno));
@@ -811,9 +810,7 @@ namespace shttps {
             addRoute(route.method, route.route, ScriptHandler, &(route.script));
             _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
         }
-        debugmsg("before prepare_socket");
         _sockfd = prepare_socket(port);
-        debugmsg("after prepare_socket");
         _logger->notice("Server listening on port ") << to_string(port);
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
@@ -835,19 +832,12 @@ namespace shttps {
                 readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
             }
 
-            threadlock.lock();
-            int nnn = thread_ids.size();
-            threadlock.unlock();
-            debugmsg("Waiting for connection...: nthreads=" + to_string(nnn));
-
             if (poll(readfds, n_readfds, -1) < 0) {
                 _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
                 running = false;
-                debugmsg("poll failed!!!!!!!!!");
                 break;
             }
             count++;
-            debugmsg("Got new connection... (" + to_string(count) + ")");
             if (readfds[0].revents & POLLIN) {
                 sock = _sockfd;
             }
@@ -866,11 +856,9 @@ namespace shttps {
                 running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
-            debugmsg("Before ::accept");
             struct sockaddr_storage cli_addr;
             socklen_t cli_size = sizeof(cli_addr);
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
-            debugmsg("After ::accept");
 
             if (newsockfs <= 0) {
                 _logger->error("::accept error! ERROR: ") << strerror(errno);
@@ -948,7 +936,6 @@ namespace shttps {
             tmp->cSSL = cSSL;
 #endif
 
-            chrono::high_resolution_clock::time_point t1 = chrono::high_resolution_clock::now();
             if (semaphore_get() <= 0) {
                 //
                 // we would be blocked by the semaphore... Get an idle thread...
@@ -970,11 +957,6 @@ namespace shttps {
                 }
             }
             semaphore_wait();
-            chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::microseconds>( t2 - t1 ).count();
-            //if (duration > 100000) {
-                debugmsg("DURATION: " + to_string(duration));
-            //}
             int commpipe[2];
 
             if (socketpair(PF_LOCAL, SOCK_STREAM, 0, commpipe) != 0) {
@@ -1019,7 +1001,6 @@ namespace shttps {
         int i = 0;
         threadlock.lock();
         int num_active_threads = thread_ids.size();
-        debugmsg("NUM_OF ACTIVE_THREADS=" + to_string(num_active_threads));
         pthread_t *ptid = new pthread_t[num_active_threads];
         for(auto const &tid : thread_ids) {
             ptid[i++] = tid.first;
