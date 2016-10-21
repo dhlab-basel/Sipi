@@ -70,7 +70,7 @@ function pre_flight(prefix, identifier, cookie)
 
         if session_id == nil then
             -- no session_id could be extracted
-            print("cookie key is invalid")
+            print("cookie key is invalid: " .. cookie)
         else
             knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
         end
@@ -121,3 +121,81 @@ function pre_flight(prefix, identifier, cookie)
 
 end
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- String constants to be used in error messages
+-------------------------------------------------------------------------------
+MIMETYPES_INCONSISTENCY = "Submitted mimetypes and/or file extension are inconsistent"
+
+FILE_NOT_READBLE = "Submitted file path could not be read: "
+
+PARAMETERS_INCORRECT = "Parameters not set correctly"
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- This function is called from the route when an error occurred.
+-- Parameters:
+--     'status' (number):  HTTP status code to returned to the client
+--     'msg'    (string):  error message describing the problem that occurred
+--
+-- Returns:
+--    an unsuccessful HTTP response containing a JSON string with the member 'message'
+-------------------------------------------------------------------------------
+function send_error(status, msg)
+
+    if type(status) == "number" and status ~= 200 and type(msg) == "string" then
+
+        result = {
+            message = msg
+        }
+
+        http_status = status
+
+    else
+
+        result = {
+            message = "Unknown error. Please report this as a possible bug in a Sipi route."
+        }
+
+        http_status = 500
+
+    end
+
+    server.sendHeader("Content-Type", "application/json")
+    server.sendStatus(http_status)
+    jsonstr = server.table_to_json(result)
+
+    server.print(jsonstr)
+
+end
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- This function is called from the route when the request could
+-- be handled successfully.
+--
+-- Parameters:
+--     'result' (table):  HTTP status code to returned to the client
+--
+-- Returns:
+--    a JSON string that represents the table 'result'
+-------------------------------------------------------------------------------
+function send_success(result)
+
+    if type(result) == "table" then
+
+        server.sendHeader("Content-Type", "application/json")
+        jsonstr = server.table_to_json(result)
+
+        server.print(jsonstr)
+
+    else
+
+        send_error()
+
+    end
+
+end
+
+
