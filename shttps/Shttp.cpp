@@ -212,6 +212,7 @@ int main(int argc, char *argv[]) {
     server.scriptdir(scriptdir); // set the direcxtory where the Lua scripts are found for the "Lua"-routes
     server.luaRoutes(routes);
     server.keep_alive_timeout(keep_alive); // set the keep alive timeout
+    server.add_lua_globals_func(sqliteGlobals, &server);
     server.add_lua_globals_func(new_lua_func); // add new lua function "gaga"
 
     //

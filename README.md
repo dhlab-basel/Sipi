@@ -22,14 +22,14 @@ The build process relies on cmake.
 SIPI supports secure connections (SSL). However, OpenSLL must be installed on the computer. On Linux,
 you just have to install the openssl RPMs (including the development version), on OS X use brew.
 
-** The OpenSSL libraries and includes are _not_ downloaded by cmake! **
+**The OpenSSL libraries and includes are _not_ downloaded by cmake!**
 
 Cmake checks if OpenSSL is installed and compiles the support for it automatically.
 In order to use SIPI with secure connections, You need to install a certificate (see the config file
 example "config/sipi.config.lua" for instructions.
 
 ### General
-- a working c++11 compiler (gcc >= v4.9 or clang)
+- a working c++11 compiler (gcc >= v4.8 or clang)
 - cmake > 2.8.0 (for Mac, see below)
 - internet connection. During the make process a large amount of open source packages are automatically downloaded. These are:
    - zlib-1.2.8
@@ -44,24 +44,26 @@ example "config/sipi.config.lua" for instructions.
    - log4cpp-1.1.2rc1
    - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
 
-In the root directory, two additional directories must be created: `build` and `cache`.
+In the root directory, the directory `cache` must be created.
 
 ### Mac
 - xcode command line tools: `xcode-select --install`
 - install brew (apt-get like package manager for Mac): <http://brew.sh>
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
+- install openssl: `brew install openssl`
 
-### CentOS
-- `sudo yum install package gcc-c++`
-- `sudo yum install package cmake`
-- `sudo yum install package readline-devel`
-- `sudo yum install package gettext`
-- `sudo yum install package vim-common`
-- `sudo yum install package zlib-devel`
-- `sudo yum install package doxygen`
-- `sudo yum install package unzip`
-- `sudo yum install package patch`
+### CentOS (V7)
+- `sudo yum install gcc-c++`
+- `sudo yum install cmake`
+- `sudo yum install readline-devel`
+- `sudo yum install gettext`
+- `sudo yum install vim-common`
+- `sudo yum install zlib-devel`
+- `sudo yum install doxygen`
+- `sudo yum install unzip`
+- `sudo yum install patch`
+- `sudo yum install openssl-devel`
 
 ### Debian (>= V8.0 jessie)
 To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -79,7 +81,6 @@ go to the Sipi dicrectory and run
 
 `sudo bash debian-cmake-patch.sh`
 
-
 ### Ubuntu (>= V14)
 - `sudo apt-get update`
 - `sudo apt-get upgrade`
@@ -90,7 +91,6 @@ go to the Sipi dicrectory and run
 - `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
 - `sudo apt-get install libreadline-dev`
-
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -114,7 +114,7 @@ NOTE: not yet ready ready problem with library names...
 
 
 
-### IDE's
+### IDEs
 
 #### CLion
 If you are using the [CLion](https://www.jetbrains.com/clion/) IDE, put `-j 1` in Preferences ->
@@ -138,11 +138,13 @@ cmake ..
 make
 ```
 
+Then after the build, call `make install`.
+
 ## Delete previous Build including Dependencies and start over from zero
 
 ```bash
 cd build
-rm -rf * ../lib ../local
+rm -rf * ../lib ../local  ../extsrcs
 cmake ..
 make
 
@@ -150,17 +152,19 @@ make
 
 ## Running SIPI-Server
 
-Adapt the config file `sipi.config.lua` (port number and root dir for images `imgroot`).
+Adapt the config file `sipi.config.lua`:
+- check that the port number is correct and make sure that your operating system's firewall does not block it
+- make sure that `imgroot` is set correctly (root dir for images)
+- create the directory `cache` in the main directory.
+
 For more information, please have a look at the comments in the config file.
 
 If you intend to use Sipi with Knora, use `sipi.knora-config.lua` (in that case, make sure that you install the required packages for lua, see below).
 
-Add the directory `cache` in the main directory.
-
 In the main directory, call:
 
 ```bash
-build/sipi -config config/sipi.config.lua
+local/bin/sipi -config config/sipi.config.lua
 ```
 
 All operations are written to the log file `sipi.log.file`.
@@ -173,9 +177,9 @@ After SIPI-Server has been started, images can be requested as follows: `http://
 
 The given prefix must exist as a folder in the SIPI `imgroot` (defined in the config file) when `prefix_as_path` is set to `true`.
 
-If SIPI is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `tmp_6931722432531834801.jpx` exists in `imgroot/images`, the URL looks as follows:
+If SIPI is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `myimage.jpx` exists in `imgroot/images`, the URL looks as follows:
 
-`http://localhost:1024/images/tmp_6931722432531834801.jpx/full/full/0/default.jpg`
+`http://localhost:1024/images/myimage.jpx/full/full/0/default.jpg`
 
 The URI complies with this pattern: `{scheme}://{server}{/prefix}/{identifier}/{region}/{size}/{rotation}/{quality}.{format}`
 
@@ -210,6 +214,10 @@ Then run doxygen in the sipi main directory: `doxygen Doxygen.in`. You will the 
 ## Using Lua scripts
 
 Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpreter and pack manager `luarocks` as executables. **Sipi does not use your system's Lua interpreter or package manager.**
+
+**Note:** The Lua interepreter in Sipi runs in a multithreaded environment (each connection runs in its
+own thread and has it's own Lua interpreter). Thus only packages that are positivley known to be thread
+safe may be used!
 
 ### SIPI functions within Lua
 
@@ -349,6 +357,56 @@ Sipi provides the following functions`and preset variables:
 To install Lua modules that can be used in Lua scripts, use `local/bin/luarocks`. Please take care that the location where the modules get stored are in the lua package path: `local/bin/lurocks path`. The Lua paths will be used by the Lua interpreter when loading modules in a script with `require`, see: <http://leafo.net/guides/customizing-the-luarocks-tree.html>.
 
 For example, using `local/bin/luarocks install --local package` the package will be installed in `~/.luarocks/`. To include this path in the Lua's interpreter package search path, you can use an environment variable. Running `local/bin/luarocks path` outputs the code you can use to do so. Alternatively, you can build the package path at the beginning of a Lua file by setting `package.path` and `package.cpath` (see: <http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages>).
+
+## Sqlite3
+
+Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi:
+
+### Opening a sqlite databases
+
+```
+db = sqlite('db/test.db', 'RW')
+```
+This creates a new opaque database object. The first parameter is the path to the database file.
+The second parameter may be 'RO' for read-only access, 'RW' for read-write access, or 'CRW'
+for read-write access. If the database file does not exist, it will be created using this option.
+
+In order to destroy the database object and free all resources, You can use
+```
+db = ~db
+```
+However, also the normal garbage collection of Lua will destroy the database object and
+free all resources.
+
+### Preparing a query
+
+```
+qry = db << 'SELECT * FROM image'
+```
+or
+```
+qry = db << 'INSERT INTO image (id, description) VALUES (?,?)'
+```
+`qry` will be a query object containing a prepared query. If the query object
+is not needed anymore, it may be destroyed by
+```
+qry = ~qry
+```
+qry objects should be destroyed explicitely if not needed any longer.
+
+### Executing a query
+```
+row = qry()
+while (row) do
+    print(row[0], ' -> ', row[1])
+    row = qry()
+end
+```
+or
+```
+qry('SGV_1960_00315', 'This is an image of a steam engine...')
+```
+The second way is used for prepared queries that contain parameters.
 
 ## Starting Sipi from the GNU Debugger GDB
 

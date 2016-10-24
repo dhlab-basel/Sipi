@@ -7,10 +7,10 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_sqlite3
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://www.sqlite.org/2016/sqlite-autoconf-3130000.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/sqlite-autoconf-3130000
-        CONFIGURE_COMMAND ${COMMON_SRCS}/sqlite-autoconf-3130000/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
-        BUILD_COMMAND make
+        URL https://www.sqlite.org/2016/sqlite-autoconf-3140200.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/sqlite-autoconf-3140200
+        CONFIGURE_COMMAND ${COMMON_SRCS}/sqlite-autoconf-3140200/configure --enable-fts5  --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
+        BUILD_COMMAND make CFLAGS=-DSQLITE_ENABLE_RTREE=1
         BUILD_IN_SOURCE 1
         )
 ExternalProject_Get_Property(project_sqlite3 install_dir)
