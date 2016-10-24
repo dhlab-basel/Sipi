@@ -36,7 +36,6 @@ set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
 # Usually SIPI is compiled with all static libraries
 #
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
-option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
@@ -97,11 +96,9 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-if(MAKE_DEBUG)
-    set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
-else()
-    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
-endif()
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+
 
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
