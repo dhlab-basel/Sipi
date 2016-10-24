@@ -19,7 +19,7 @@ sipi
 *~
 .idea/
 SipiConfig.h
-sipi.log.txt
+sipi.log*.txt
 
 #
 # Cmake things to be ignored
