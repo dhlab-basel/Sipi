@@ -27,26 +27,12 @@ server.setBuffer()
 sessionId = server.post['sid']
 
 if sessionId == nil then
-    result = {
-        status = 1,
-        message = "no sid given"
-    }
-    jsonstr = server.table_to_json(result)
-    server.print(jsonstr)
+
+    send_error(400, "no sid given")
+
     return
 end
 
-
-server.sendHeader("Content-Type", "application/json")
 -- set the cookie HttpOnly
 server.sendHeader("Set-Cookie", "sid=" .. sessionId .. ";HttpOnly")
 
---print("received requets with param: " .. "sid=" .. sessionId)
-
-result = {
-    status = 0
-}
-
-jsonstr = server.table_to_json(result)
-
-server.print(jsonstr)

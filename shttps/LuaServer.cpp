@@ -1329,6 +1329,7 @@ namespace shttps {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
         json_t *tableobj = NULL;
         json_t *arrayobj = NULL;
+        json_t *tmp_luanumber = NULL;
         const char *skey;
         lua_pushnil(L);  /* first key */
         while (lua_next(L, index) != 0) {
@@ -1370,11 +1371,21 @@ namespace shttps {
             if (lua_type(L, index + 2) == LUA_TNUMBER) {
                 // a number value
                 double val = lua_tonumber(L, index + 2);
+
+
+                if (floor(val) == val) {
+                    // the lua number is actually an integer
+                    tmp_luanumber = json_integer(static_cast <long> (floor(val)));
+                } else {
+                    // the lua number is a double
+                    tmp_luanumber = json_real(val);
+                }
+
                 if (tableobj != NULL) {
-                    json_object_set_new(tableobj, skey, json_real(val));
+                    json_object_set_new(tableobj, skey, tmp_luanumber);
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(arrayobj, json_real(val));
+                    json_array_append_new(arrayobj, tmp_luanumber);
                 }
                 else {
                     lua_pushstring(L, table_error);
