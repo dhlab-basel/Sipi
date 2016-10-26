@@ -46,6 +46,8 @@
 
 using namespace std;
 
+static const char __file__[] = __FILE__;
+
 namespace Sipi {
 
     static char lang_en[] = "en";
@@ -130,15 +132,15 @@ namespace Sipi {
 
         if ((png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, (png_voidp) NULL, (png_error_ptr) NULL, (png_error_ptr) NULL)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
         }
         if ((info_ptr = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
         if ((end_info = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
 
         png_init_io(png_ptr, infile);
@@ -258,7 +260,7 @@ namespace Sipi {
 
         if (force_bps_8) {
             if (!img->to8bps()) {
-                throw SipiImageError("Cannot convert to 8 Bits(sample");
+                throw SipiImageError(__file__, __LINE__, "Cannot convert to 8 Bits(sample");
             }
         }
 
@@ -289,15 +291,15 @@ namespace Sipi {
 
         if ((png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, (png_voidp) NULL, (png_error_ptr) NULL, (png_error_ptr) NULL)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
         }
         if ((info_ptr = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
         if ((end_info = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiImageError("Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
 
         png_init_io(png_ptr, infile);
@@ -354,7 +356,7 @@ namespace Sipi {
         png_structp png_ptr;
 
         if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL))) {
-            throw SipiImageError("Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
         }
 
         if (strcmp (filepath.c_str(), "-") == 0) {
@@ -378,13 +380,13 @@ namespace Sipi {
         }
         else {
             if (!(outfile = fopen(filepath.c_str(), "wb"))) {
-                throw SipiImageError("Error writing PNG file \"" + filepath + "\": Could notopen output file !");
+                throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": Could notopen output file !");
             }
         }
 
         png_infop info_ptr;
         if (!(info_ptr = png_create_info_struct(png_ptr))) {
-            throw SipiImageError("Error writing PNG file \"" + filepath + "\": png_create_info_struct !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_info_struct !");
         }
 
     	if (outfile != NULL) png_init_io(png_ptr, outfile);
@@ -408,7 +410,7 @@ namespace Sipi {
             color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         }
         else {
-            throw SipiImageError("Error writing PNG file \"" + filepath + "\": cannot handle number of channels () !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": cannot handle number of channels () !");
         }
 
         png_set_IHDR(png_ptr, info_ptr, img->nx, img->ny, img->bps, color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);

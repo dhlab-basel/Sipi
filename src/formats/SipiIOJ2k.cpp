@@ -355,7 +355,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiImageError("Unsupported ICC profile: " + to_string(space));
+                        throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + to_string(space));
                     }
                 }
             }
@@ -390,7 +390,7 @@ namespace Sipi {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
-                throw SipiImageError("Unsupported number of bits/sample!");
+                throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
         }
         decompressor.finish();
@@ -701,7 +701,7 @@ namespace Sipi {
             compressor.push_stripe(buf, stripe_heights);
         }
     	else {
-            throw SipiImageError("Unsupported number of bits/sample!");
+            throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
         }
         compressor.finish();
 

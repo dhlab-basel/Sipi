@@ -464,31 +464,37 @@ namespace shttps {
         // Her we check if we have to change to a different uid. This can only be done
         // if the server runs originally as root!
         //
-        bool setuid_done = false;
-        if (!userid_str.empty() && (getuid() == 0)) { // must be root to setuid() !!
-            struct passwd pwd, *res;
+        if (!userid_str.empty()) {
+            if (getuid() == 0) { // must be root to setuid() !!
+                struct passwd pwd, *res;
 
-            size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
-            char *buffer = new char[buffer_len];
-            getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
-            if (res != NULL) {
-                setuid(pwd.pw_uid);
-                setgid(pwd.pw_gid);
-                setuid_done = true;
+                size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
+                char *buffer = new char[buffer_len];
+                getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
+                if (res != NULL) {
+                    if (setuid(pwd.pw_uid) == 0) {
+                        _logger->notice("Server will run as user ") << userid_str << " (" << getuid() << ")";
+                        if (setgid(pwd.pw_gid) == 0) {
+                            _logger->notice("Server will run with group-id ") << getuid();
+                        }
+                        else {
+                            _logger->error("setgid() failed! Reason: ") << strerror(errno);
+                        }
+                    }
+                    else {
+                        _logger->error("setuid() failed! Reason: ") << strerror(errno);
+                    }
+                }
+                else {
+                    _logger->warn("Could not get uid of user \"") << userid_str << "\"! You must start SIPI as root!";
+                }
+                delete [] buffer;
             }
             else {
-                cerr << "Couldn't setuid() to " << userid_str << "!" << endl;
-                exit (-1);
+                _logger->warn("Could not switch to user \"") << userid_str << "\"! You must start SIPI as root!";
             }
-            delete [] buffer;
-        }
-        else {
-            _logger->warn("Couldnt switch tu user ") << userid_str << "! You must start SIPI as root!";
         }
 
-        if (setuid_done) {
-            _logger->notice("Server will run as user ") << userid_str << " (" << getuid() << ")";
-        }
 
 
 #ifdef SHTTPS_ENABLE_SSL
