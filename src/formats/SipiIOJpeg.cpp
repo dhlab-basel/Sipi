@@ -539,11 +539,13 @@ namespace Sipi {
     bool SipiIOJpeg::getDim(std::string filepath, int &width, int &height) {
         FILE *infile;
 
+        inlock.lock();
         //
         // open the input file
         //
         if ((infile = fopen (filepath.c_str(), "rb")) == NULL) {
-            return false;
+            inlock.unlock();
+           return false;
         }
 
         // workaround for bug #0011: jpeglib crashes the app when the file is not a jpeg file
@@ -553,6 +555,8 @@ namespace Sipi {
 
         if ((magic1 != 0xff) || (magic2 != 0xd8)) {
             fclose(infile);
+            inlock.unlock();
+
             return false; // it's not a JPEG file!
         }
 
@@ -560,7 +564,6 @@ namespace Sipi {
         rewind(infile);
         // end of workaround for bug #0011
 
-        inlock.lock();
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
@@ -590,7 +593,7 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_decompress (&cinfo);
             inlock.unlock();
-            throw SipiImageError(__file__, __LINE__, jpgerr.what());
+            throw SipiImageError(__file__, __LINE__, string(jpgerr.what()) + " File: " + filepath);
         }
 
         width = cinfo.output_width;
