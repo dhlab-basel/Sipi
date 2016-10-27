@@ -266,7 +266,11 @@ namespace Sipi {
         }
 
         // move infile position back to the beginning of the file
-        rewind(infile);
+        fclose(infile);
+
+        if ((infile = fopen (filepath.c_str(), "rb")) == NULL) {
+            return false;
+        }
         // end of workaround for bug #0011
 
         //
@@ -507,10 +511,8 @@ namespace Sipi {
             inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
-        inlock.unlock();
-
-
         fclose(infile);
+        inlock.unlock();
 
         //
         // do some croping...
@@ -536,77 +538,89 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiIOJpeg::getDim(std::string filepath, int &width, int &height) {
-        FILE *infile;
+#   define readbyte(a,b) do if(((a)=getc((b))) == EOF) return 0; while (0)
+#   define readword(a,b) do { int cc_=0,dd_=0; \
+                              if((cc_=getc((b))) == EOF \
+                              || (dd_=getc((b))) == EOF) return 0; \
+                              (a) = (cc_<<8) + (dd_); \
+                          } while(0)
 
-        inlock.lock();
+    bool SipiIOJpeg::getDim(std::string filepath, int &width, int &height) {
+        // portions derived from IJG code */
+
+        FILE *infile;
         //
         // open the input file
         //
         if ((infile = fopen (filepath.c_str(), "rb")) == NULL) {
-            inlock.unlock();
-           return false;
+            // inlock.unlock();
+            return false;
         }
 
-        // workaround for bug #0011: jpeglib crashes the app when the file is not a jpeg file
-        // we check the magic number before calling any jpeglib routines
-        int magic1 = fgetc(infile);
-        int magic2 = fgetc(infile);
-
-        if ((magic1 != 0xff) || (magic2 != 0xd8)) {
-            fclose(infile);
-            inlock.unlock();
-
-            return false; // it's not a JPEG file!
+        int marker = 0;
+        int dummy = 0;
+        if ( getc(infile) != 0xFF || getc(infile) != 0xD8 ) {
+            fclose (infile);
+            return false; // wrong magic number
         }
-
-        // move infile position back to the beginning of the file
-        rewind(infile);
-        // end of workaround for bug #0011
-
-
-        struct jpeg_decompress_struct cinfo;
-        struct jpeg_error_mgr jerr;
-
-        //
-        // let's create the decompressor
-        //
-        jpeg_create_decompress (&cinfo);
-
-        cinfo.dct_method = JDCT_FLOAT;
-        cinfo.err = jpeg_std_error (&jerr);
-        jerr.error_exit = jpegErrorExit;
-
-        jpeg_stdio_src (&cinfo, infile);
-
-        //
-        // now we read the header
-        //
-        try {
-            if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
-                fclose(infile);
-                inlock.unlock();
-                throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
+        for (;;) {
+            int discarded_bytes=0;
+            readbyte(marker, infile);
+            while (marker != 0xFF) {
+                discarded_bytes++;
+                readbyte(marker, infile);
             }
-            jpeg_start_decompress(&cinfo);
+            do readbyte(marker, infile); while (marker == 0xFF);
+
+            if (discarded_bytes != 0) {
+                fclose (infile);
+                return false;
+            }
+
+            switch (marker) {
+                case 0xC0:
+                case 0xC1:
+                case 0xC2:
+                case 0xC3:
+                case 0xC5:
+                case 0xC6:
+                case 0xC7:
+                case 0xC9:
+                case 0xCA:
+                case 0xCB:
+                case 0xCD:
+                case 0xCE:
+                case 0xCF: {
+                    readword(dummy, infile);	/* usual parameter length count */
+                    readbyte(dummy, infile);
+                    readword(height, infile);
+                    readword(width, infile);
+                    readbyte(dummy, infile);
+                    fclose (infile);
+                    return true;
+                }
+                case 0xDA:
+                case 0xD9:
+                    fclose (infile);
+                    return false;
+                default: {
+                    int length;
+                    readword(length,infile);
+                    if (length < 2) {
+                        fclose (infile);
+                        return false;
+                    }
+                    length -= 2;
+                    while (length > 0) {
+                        readbyte(dummy, infile);
+                        length--;
+                    }
+                }
+                break;
+            }
         }
-        catch (JpegError &jpgerr) {
-            jpeg_destroy_decompress (&cinfo);
-            inlock.unlock();
-            throw SipiImageError(__file__, __LINE__, string(jpgerr.what()) + " File: " + filepath);
-        }
-
-        width = cinfo.output_width;
-        height = cinfo.output_height;
-        jpeg_destroy_decompress (&cinfo);
-
-        fclose (infile);
-        inlock.unlock();
-
-        return true;
     }
     //============================================================================
-
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
