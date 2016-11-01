@@ -1437,17 +1437,23 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
 
-        if (!_chunked_transfer_out && (outbuf != NULL) && (outbuf_nbytes > 0)) {
-            *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
-        }
-        else if (n > 0) {
-            *os << "Content-Length: " << n << "\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
+        if (!_chunked_transfer_out) {
+            if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
+                *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
+            else if (n > 0) {
+                *os << "Content-Length: " << n << "\r\n\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
+            else {
+                *os << "Content-Length: " << n << "\r\n\r\n";
+                //*os << "\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
         }
         else {
-            *os << "Content-Length: " << n << "\r\n\r\n";
-            //*os << "\r\n";
+            *os << "\r\n"; //we have to add only one more "\r\n" in this case
             if (os->eof() || os->fail()) throw -1;
         }
 
