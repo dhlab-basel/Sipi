@@ -140,19 +140,19 @@ namespace Sipi {
     static kdu_core::kdu_message_formatter pretty_cerr(&cerr_message);
 
     static bool is_jpx(const char *fname) {
-        FILE *inf;
+        int inf;
         int retval = 0;
-        if ((inf = fopen(fname, "r")) != NULL) {
+        if ((inf = open(fname, O_RDONLY)) != NULL) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
             char sig2[] = {'\x00', '\x00', '\x00', '\x0C', '\x6A', '\x50', '\x20', '\x20', '\x0D', '\x0A', '\x87', '\x0A'};
-            int n = fread(testbuf, 1, 48, inf);
+            int n = read(inf, testbuf, 48);
             if ((n >= 47) && (memcmp(sig0, testbuf + 45, 2) == 0)) retval = 1;
-            if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
-            if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
+            else if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
+            else if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
         }
-        fclose(inf);
+        close(inf);
         return (retval == 1) ? true : false;
     }
     //=============================================================================
@@ -534,7 +534,7 @@ namespace Sipi {
         codestream.create(&siz, output);
 
         kdu_codestream_comment comment = codestream.add_comment();
-        comment.put_text("http://rosenthaler.org/sipi/0.9B/");
+        comment.put_text("http://rosenthaler.org/sipi/1.0 B/");
 
         // Set up any specific coding parameters and finalize them.
 
@@ -557,6 +557,7 @@ namespace Sipi {
 
         jp2_family_dimensions.init(&siz); // initalize dimension box
 
+        bool alpha = false;
         if (img->icc != NULL) {
             PredefinedProfiles icc_type = img->icc->getProfileType();
             switch (icc_type) {
@@ -574,18 +575,21 @@ namespace Sipi {
                 }
                 case icc_sRGB: {
                     jp2_family_colour.init(JP2_sRGB_SPACE);
+                    if (img->nc > 3) alpha = true;
                     break;
                 }
                 case icc_AdobeRGB: {
                     unsigned int icc_len;
                     kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                     jp2_family_colour.init(icc_bytes);
+                    if (img->nc > 3) alpha = true;
                     break;
                 }
                 case icc_RGB: {
                     unsigned int icc_len;
                     kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                     jp2_family_colour.init(icc_bytes);
+                    if (img->nc > 3) alpha = true;
                     break;
                 }
                 case icc_CYMK_standard: {
@@ -596,6 +600,8 @@ namespace Sipi {
                     unsigned int icc_len;
                     kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                     jp2_family_colour.init(icc_bytes);
+                    if (img->nc > 1) alpha = true;
+                    break;
                 }
                 default: {
                     unsigned int icc_len;
@@ -618,16 +624,18 @@ namespace Sipi {
                 case 4: {
                     jp2_family_colour.init(JP2_CMYK_SPACE);
                     break;
-
-
-
                 }
             }
         }
-
-        jp2_family_channels.init(img->nc);
-        for (int c = 0; c < img->nc; c++) jp2_family_channels.set_colour_mapping(c,c);
-
+        if (alpha) {
+            jp2_family_channels.init(img->nc - 1);
+            for (int c = 0; c < img->nc - 1; c++) jp2_family_channels.set_colour_mapping(c, c);
+            jp2_family_channels.set_opacity_mapping(img->nc - 1, img->nc - 1);
+        }
+        else {
+            jp2_family_channels.init(img->nc);
+            for (int c = 0; c < img->nc; c++) jp2_family_channels.set_colour_mapping(c,c);
+        }
         jpx_out.write_headers();
 
         if (img->iptc != NULL) {
