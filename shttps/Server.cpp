@@ -137,7 +137,7 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    if (lua.executeChunk(luacode) != 1) {
+                    if (lua.executeChunk(luacode) < 0) {
                         conn.flush();
                         return;
                     }
@@ -185,7 +185,7 @@ namespace shttps {
                     }
 
                     try {
-                        if (lua.executeChunk(luastr) != 1) {
+                        if (lua.executeChunk(luastr) < 0) {
                             conn.flush();
                             return;
                         }
@@ -315,7 +315,7 @@ namespace shttps {
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    if (lua.executeChunk(luacode) != 1) {
+                    if (lua.executeChunk(luacode) < 0) {
                         conn.flush();
                         return;
                     }
@@ -362,7 +362,7 @@ namespace shttps {
                     }
 
                     try {
-                        if (lua.executeChunk(luastr) != 1) {
+                        if (lua.executeChunk(luastr) < 0) {
                             conn.flush();
                             return;
                         }

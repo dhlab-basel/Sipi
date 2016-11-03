@@ -92,11 +92,13 @@ namespace Sipi {
     * It's being derived from the runtime_error so that catching the runtime error
     * also catched errors withing reading/writing an image format.
     */
-    class SipiImageError : public std::runtime_error {
+    //class SipiImageError : public std::runtime_error {
+    class SipiImageError  {
     private:
         std::string file; //!< Source file where the error occurs in
         int line; //!< Line within the source file
         int errnum; //!< error number if a system call is the reason for the error
+        std::string errmsg;
     public:
         /*!
         * Constructor
@@ -105,7 +107,7 @@ namespace Sipi {
         * \param[in] Errnum, if a unix system call is the reason for throwing this exception
         */
         inline SipiImageError(const char *file_p, int line_p, int errnum_p = 0)
-        : runtime_error("-"), file(file_p), line(line_p), errnum(errnum_p) {}
+        : file(file_p), line(line_p), errnum(errnum_p) {}
 
         /*!
         * Constructor
@@ -115,7 +117,7 @@ namespace Sipi {
         * \param[in] errnum_p Errnum, if a unix system call is the reason for throwing this exception
         */
         inline SipiImageError(const char *file_p, int line_p, const char *msg_p, int errnum_p = 0)
-        : runtime_error(msg_p), file(file_p), line(line_p), errnum(errnum_p) {}
+        : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
 
         /*!
         * Constructor
@@ -125,17 +127,20 @@ namespace Sipi {
         * \param[in] errnum_p Errnum, if a unix system call is the reason for throwing this exception
         */
         inline SipiImageError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0)
-        : runtime_error(msg_p), file(file_p), line(line_p), errnum(errnum_p) {}
+        : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
 
         /*!
         * Output the error message
         */
-        inline const char* what() const noexcept {
+        inline const char* what() const {
+            /*
             std::stringstream ss;
-            ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << runtime_error::what();
+            ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
             if (errnum > 0) ss << " System-msg: " << strerror(errnum);
-
-            return ss.str().c_str();
+            errmsg = ss.str();
+            */
+            // errmsg = "SipiImageError in \"" + file + "\" #" + std::to_string(line) + " Message: " + errmsg;
+            return "SipiImageError";
         }
     };
 
