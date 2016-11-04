@@ -338,8 +338,8 @@ namespace Sipi {
         if (jpx_layer.exists()) {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
             kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
-            int numcol = chaninfo.get_num_colours();
-            for (int i = 0; i < img->nc - numcol; i++) {
+            int numcol = chaninfo.get_num_colours(); // I assume these are the color channels (1, 3 or 4 in case of CMYK)
+            for (int i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
                 img->es.push_back(ASSOCALPHA);
             }
             if (colinfo.exists()) {
