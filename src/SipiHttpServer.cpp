@@ -940,7 +940,10 @@ namespace Sipi {
                     conobj.status(Connection::OK);
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
-                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB);
+                    if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
+                        for (int i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                    }
+                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conobj.setChunkedTransfer();
                     if (cache != NULL) {
@@ -981,7 +984,6 @@ namespace Sipi {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
-                        break;
                     }
                     break;
                 }

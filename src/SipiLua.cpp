@@ -605,7 +605,6 @@ namespace Sipi {
                 img->image->write(ftype, imgpath);
             }
             catch (SipiImageError &err) {
-                std::cerr << "+++++++" << err.what() << std::endl;
                 lua_pushstring(L, err.what());
                 return lua_error(L);
             }

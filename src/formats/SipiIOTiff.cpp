@@ -464,9 +464,7 @@ namespace Sipi {
             unsigned short *es;
             int eslen;
             if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &eslen, &es) == 1) {
-                img->ne = eslen;
-                img->es = new ExtraSamples[eslen];
-                for (int i = 0; i < eslen; i++) img->es[i] = (ExtraSamples) es[i];
+                for (int i = 0; i < eslen; i++) img->es.push_back((ExtraSamples) es[i]);
             }
 
             //
@@ -905,8 +903,8 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, (uint16) img->nc);
         TIFFSetField (tif, TIFFTAG_PHOTOMETRIC, img->photo);
         TIFFSetField (tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-        if (img->ne > 0) {
-            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->ne, img->es);
+        if (img->es.size() > 0) {
+            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
         }
 
         //

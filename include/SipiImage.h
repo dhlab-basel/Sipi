@@ -133,14 +133,11 @@ namespace Sipi {
         * Output the error message
         */
         inline const char* what() const {
-            /*
             std::stringstream ss;
             ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
             if (errnum > 0) ss << " System-msg: " << strerror(errnum);
-            errmsg = ss.str();
-            */
-            // errmsg = "SipiImageError in \"" + file + "\" #" + std::to_string(line) + " Message: " + errmsg;
-            return "SipiImageError";
+            std::string tmpstr = ss.str();
+            return tmpstr.c_str();
         }
     };
 
@@ -169,9 +166,8 @@ namespace Sipi {
         int nx;         //!< Number of horizontal pixels (width)
         int ny;         //!< Number of vertical pixels (height)
         int nc;         //!< Total number of samples per pixel
-        int ne;         //!< Number of extra samples/pixel ()
         int bps;        //!< bits per sample. Currently only 8 and 16 are supported
-        ExtraSamples *es; //!< meaning of extra samples
+        std::vector<ExtraSamples> es; //!< meaning of extra samples
         PhotometricInterpretation photo;    //!< Image type, that is the meaning of the channels
         byte *pixels;   //!< Pointer to block of memory holding the pixels
         SipiXmp *xmp;   //!< Pointer to instance SipiXmp class (\ref SipiXmp), or NULL
@@ -211,6 +207,16 @@ namespace Sipi {
         * Getter for ny
         */
         inline int getNy() { return ny; };
+
+       /*!
+        * Getter for nc (includes alpha channels!)
+        */
+        inline int getNc() { return nc; };
+
+       /*!
+        * Getter for number of alpha channels
+        */
+        inline int getNalpha() { return es.size(); }
 
         /*! Destructor
          *

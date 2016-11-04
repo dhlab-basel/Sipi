@@ -125,7 +125,6 @@ namespace Sipi {
     class KduSipiWarning : public kdu_core::kdu_message {
     private:
         string msg;
-        kdu_uint32 error_id;
     public:
         KduSipiWarning() : kdu_message() { msg = "KAKADU-WARNING: "; }
         KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
@@ -146,7 +145,6 @@ namespace Sipi {
     class KduSipiError : public kdu_core::kdu_message {
     private:
         string msg;
-        kdu_uint32 error_id;
     public:
         KduSipiError() : kdu_message() { msg = "KAKADU-ERROR: "; }
         KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
@@ -339,6 +337,11 @@ namespace Sipi {
         jpx_layer = jpx_in.access_layer(0);
         if (jpx_layer.exists()) {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
+            kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
+            int numcol = chaninfo.get_num_colours();
+            for (int i = 0; i < img->nc - numcol; i++) {
+                img->es.push_back(ASSOCALPHA);
+            }
             if (colinfo.exists()) {
                 int space = colinfo.get_space();
                 switch (space) {
@@ -582,7 +585,6 @@ namespace Sipi {
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
 
-            bool alpha = false;
             if (img->icc != NULL) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
@@ -600,21 +602,18 @@ namespace Sipi {
                     }
                     case icc_sRGB: {
                         jp2_family_colour.init(JP2_sRGB_SPACE);
-                        if (img->nc > 3) alpha = true;
                         break;
                     }
                     case icc_AdobeRGB: {
                         unsigned int icc_len;
                         kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                         jp2_family_colour.init(icc_bytes);
-                        if (img->nc > 3) alpha = true;
                         break;
                     }
                     case icc_RGB: {
                         unsigned int icc_len;
                         kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                         jp2_family_colour.init(icc_bytes);
-                        if (img->nc > 3) alpha = true;
                         break;
                     }
                     case icc_CYMK_standard: {
@@ -625,7 +624,6 @@ namespace Sipi {
                         unsigned int icc_len;
                         kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                         jp2_family_colour.init(icc_bytes);
-                        if (img->nc > 1) alpha = true;
                         break;
                     }
                     default: {
@@ -637,7 +635,7 @@ namespace Sipi {
 
             }
             else {
-                switch (img->nc) {
+                switch (img->nc - img->es.size()) {
                     case 1: {
                         jp2_family_colour.init(JP2_sLUM_SPACE);
                         break;
@@ -652,16 +650,9 @@ namespace Sipi {
                     }
                 }
             }
-            alpha = false;
-            if (alpha) {
-                jp2_family_channels.init(img->nc - 1);
-                for (int c = 0; c < img->nc - 1; c++) jp2_family_channels.set_colour_mapping(c, c);
-                jp2_family_channels.set_opacity_mapping(img->nc - 1, img->nc - 1);
-            }
-            else {
-                jp2_family_channels.init(img->nc);
-                for (int c = 0; c < img->nc; c++) jp2_family_channels.set_colour_mapping(c,c);
-            }
+            jp2_family_channels.init(img->nc - img->es.size());
+            for (int c = 0; c < img->nc - img->es.size(); c++) jp2_family_channels.set_colour_mapping(c, c);
+            for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
             jpx_out.write_headers();
 
             if (img->iptc != NULL) {

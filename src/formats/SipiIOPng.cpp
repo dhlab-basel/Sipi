@@ -161,6 +161,7 @@ namespace Sipi {
             }
             case PNG_COLOR_TYPE_GRAY_ALPHA: { // implies nc = 2, (bit depths 8, 16)
                 img->photo = MINISBLACK;
+                img->es.push_back(ASSOCALPHA);
                 break;
             }
             case PNG_COLOR_TYPE_PALETTE: { // we will not support it for now, (bit depths 1, 2, 4, 8)
@@ -173,6 +174,7 @@ namespace Sipi {
             }
             case PNG_COLOR_TYPE_RGB_ALPHA: { // implies nc = 4, (bit_depths 8, 16)
                 img->photo = RGB;
+                img->es.push_back(ASSOCALPHA);
                 break;
             }
         }
@@ -400,13 +402,13 @@ namespace Sipi {
         if (img->nc == 1) { // grey value
             color_type = PNG_COLOR_TYPE_GRAY;
         }
-        else if (img->nc == 2) { // grey value with alpha
+        else if ((img->nc == 2) && (img->es.size() == 1)) { // grey value with alpha
             color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
         }
         else if (img->nc == 3) { // RGB
             color_type = PNG_COLOR_TYPE_RGB;
         }
-        else if (img->nc == 4) { // RGB + ALPHA
+        else if ((img->nc == 4) && (img->es.size() == 1)) { // RGB + ALPHA
             color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         }
         else {
