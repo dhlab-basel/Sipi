@@ -7,9 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_jpeg
     INSTALL_DIR ${COMMON_LOCAL}
-    URL http://www.ijg.org/files/jpegsrc.v9a.tar.gz
-    SOURCE_DIR ${COMMON_SRCS}/libjpeg-v9a
-    CONFIGURE_COMMAND ${COMMON_SRCS}/libjpeg-v9a/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
+    URL http://www.ijg.org/files/jpegsrc.v9b.tar.gz
+    SOURCE_DIR ${COMMON_SRCS}/libjpeg-v9b
+    CONFIGURE_COMMAND ${COMMON_SRCS}/libjpeg-v9b/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

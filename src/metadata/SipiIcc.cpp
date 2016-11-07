@@ -39,7 +39,18 @@ namespace Sipi {
             cerr << "THROWING ERROR IN ICC!" << endl;
             throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
         }
-        profile_type = icc_unknown;
+        unsigned int len = cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        char *buf = new char[len];
+        cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf, len);
+        if (strcmp(buf, "sRGB IEC61966-2.1") == 0) {
+            profile_type = icc_sRGB;
+        }
+        else if (strncmp(buf, "AdobeRGB", 8) == 0) {
+            profile_type = icc_AdobeRGB;
+        }
+        else {
+            profile_type = icc_unknown;
+        }
     }
 
     SipiIcc::SipiIcc(const SipiIcc &icc_p) {
@@ -70,10 +81,10 @@ namespace Sipi {
             buf = new char[len];
             cmsSaveProfileToMem(icc_profile_p, buf, &len);
             if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
-	      delete [] buf;
+                delete [] buf;
                 throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
             }
-	    delete [] buf;
+            delete [] buf;
         }
         profile_type = icc_unknown;
     }

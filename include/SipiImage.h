@@ -87,13 +87,57 @@ namespace Sipi {
         SKIP_ALL = 0xFF
     } SkipMetadata;
 
-    class SipiImageError : public std::runtime_error {
+    /*!
+    * This class implements the error handling for the different image formats.
+    * It's being derived from the runtime_error so that catching the runtime error
+    * also catched errors withing reading/writing an image format.
+    */
+    //class SipiImageError : public std::runtime_error {
+    class SipiImageError  {
+    private:
+        std::string file; //!< Source file where the error occurs in
+        int line; //!< Line within the source file
+        int errnum; //!< error number if a system call is the reason for the error
+        std::string errmsg;
     public:
-        inline SipiImageError() : runtime_error("SipiImageError") {}
-        inline SipiImageError(const char *msg, int errnum = 0) : runtime_error(msg) {}
-        inline SipiImageError(const std::string &msg, int errnum = 0) : runtime_error(msg.c_str()) {}
-        inline const char* what() const noexcept {
-            return runtime_error::what();
+        /*!
+        * Constructor
+        * \param[in] file_p The source file name (usually __FILE__)
+        * \param[in] line_p The line number in the source file (usually __LINE__)
+        * \param[in] Errnum, if a unix system call is the reason for throwing this exception
+        */
+        inline SipiImageError(const char *file_p, int line_p, int errnum_p = 0)
+        : file(file_p), line(line_p), errnum(errnum_p) {}
+
+        /*!
+        * Constructor
+        * \param[in] file_p The source file name (usually __FILE__)
+        * \param[in] line_p The line number in the source file (usually __LINE__)
+        * \param[in] msg Error message describing the problem
+        * \param[in] errnum_p Errnum, if a unix system call is the reason for throwing this exception
+        */
+        inline SipiImageError(const char *file_p, int line_p, const char *msg_p, int errnum_p = 0)
+        : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
+
+        /*!
+        * Constructor
+        * \param[in] file_p The source file name (usually __FILE__)
+        * \param[in] line_p The line number in the source file (usually __LINE__)
+        * \param[in] msg_p Error message describing the problem
+        * \param[in] errnum_p Errnum, if a unix system call is the reason for throwing this exception
+        */
+        inline SipiImageError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0)
+        : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
+
+        /*!
+        * Output the error message
+        */
+        inline const char* what() const {
+            std::stringstream ss;
+            ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
+            if (errnum > 0) ss << " System-msg: " << strerror(errnum);
+            std::string tmpstr = ss.str();
+            return tmpstr.c_str();
         }
     };
 
@@ -122,9 +166,8 @@ namespace Sipi {
         int nx;         //!< Number of horizontal pixels (width)
         int ny;         //!< Number of vertical pixels (height)
         int nc;         //!< Total number of samples per pixel
-        int ne;         //!< Number of extra samples/pixel ()
         int bps;        //!< bits per sample. Currently only 8 and 16 are supported
-        ExtraSamples *es; //!< meaning of extra samples
+        std::vector<ExtraSamples> es; //!< meaning of extra samples
         PhotometricInterpretation photo;    //!< Image type, that is the meaning of the channels
         byte *pixels;   //!< Pointer to block of memory holding the pixels
         SipiXmp *xmp;   //!< Pointer to instance SipiXmp class (\ref SipiXmp), or NULL
@@ -164,6 +207,16 @@ namespace Sipi {
         * Getter for ny
         */
         inline int getNy() { return ny; };
+
+       /*!
+        * Getter for nc (includes alpha channels!)
+        */
+        inline int getNc() { return nc; };
+
+       /*!
+        * Getter for number of alpha channels
+        */
+        inline int getNalpha() { return es.size(); }
 
         /*! Destructor
          *

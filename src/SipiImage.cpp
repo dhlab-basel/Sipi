@@ -62,9 +62,7 @@ namespace Sipi {
         nx = 0;
         ny = 0;
         nc = 0;
-        ne = 0;
         bps = 0;
-        es = NULL;
         pixels = NULL;
         xmp = NULL;
         icc = NULL;
@@ -80,6 +78,7 @@ namespace Sipi {
         ny = img_p.ny;
         nc = img_p.nc;
         bps = img_p.bps;
+        es = img_p.es;
 
         size_t bufsiz;
         switch (bps) {
@@ -111,7 +110,6 @@ namespace Sipi {
 
     SipiImage::~SipiImage() {
         delete [] pixels;
-        delete [] es;
         delete xmp;
         delete icc;
         delete iptc;
@@ -126,6 +124,7 @@ namespace Sipi {
             ny = img_p.ny;
             nc = img_p.nc;
             bps = img_p.bps;
+            es = img_p.es;
 
             size_t bufsiz;
             switch (bps) {
@@ -354,6 +353,24 @@ namespace Sipi {
             string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
             throw SipiError(__file__, __LINE__, msg);
         }
+        if (es.size() > 0) {
+            if (nc < 3) {
+                es.clear(); // no more alpha channel
+            }
+            else if (nc > 3) { // it's probably an alpha channel
+                if ((nc == 4) && (photo == SEPARATED)) {  // oh no – 4 channes, but CMYK
+                    string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
+                    throw SipiError(__file__, __LINE__, msg);
+                }
+                else {
+                    es.erase(es.begin() + (chan - ((photo ==  SEPARATED) ? 4 : 3)));
+                }
+            }
+            else {
+                string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
+                throw SipiError(__file__, __LINE__, msg);
+            }
+        }
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
             unsigned int nnc = nc - 1;
@@ -390,6 +407,7 @@ namespace Sipi {
                 throw SipiError(__file__, __LINE__, msg);
             }
         }
+        nc--;
     }
     //============================================================================
 

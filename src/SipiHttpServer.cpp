@@ -78,27 +78,27 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request!") << errmsg;
+                logger->error("Bad Request! ") << errmsg;
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden!") << errmsg;
+                logger->error("Forbidden! ") << errmsg;
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found!") << errmsg;
+                logger->error("Not Found! ") << errmsg;
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error!") << errmsg;
+                logger->error("Internal Server Error! ") << errmsg;
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented!") << errmsg;
+                logger->error("Not Implemented! ") << errmsg;
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable!") << errmsg;
+                logger->error("Service Unavailable! ") << errmsg;
                 break;
             default:
                 break; // do nothing
@@ -120,27 +120,27 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request!") << outss.str();
+                logger->error("Bad Request! ") << outss.str();
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden!") << outss.str();
+                logger->error("Forbidden! ") << outss.str();
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found!") << outss.str();
+                logger->error("Not Found! ") << outss.str();
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error!") << outss.str();
+                logger->error("Internal Server Error! ") << outss.str();
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented!") << outss.str();
+                logger->error("Not Implemented! ") << outss.str();
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable!") << outss.str();
+                logger->error("Service Unavailable! ") << outss.str();
                 break;
             default: break; // do nothing
         }
@@ -940,7 +940,10 @@ namespace Sipi {
                     conobj.status(Connection::OK);
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
-                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB);
+                    if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
+                        for (int i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                    }
+                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conobj.setChunkedTransfer();
                     if (cache != NULL) {
@@ -981,7 +984,6 @@ namespace Sipi {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
-                        break;
                     }
                     break;
                 }

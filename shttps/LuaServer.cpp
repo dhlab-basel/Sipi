@@ -68,6 +68,7 @@ namespace shttps {
      * Error handler for Lua errors!
      */
     static int dont_panic(lua_State *L) {
+        cerr << "LUA-PANIC..." << endl;
         const char *luapanic = lua_tostring(L, -1);
         throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
     }
@@ -248,19 +249,16 @@ namespace shttps {
         if (!luafile.empty()) {
             if (iscode) {
                 if (luaL_loadstring(L, luafile.c_str()) != 0) {
-                    const char *luaerror = lua_tostring(L, -1);
-                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                    lua_error(L);
                 }
             }
             else {
                 if (luaL_loadfile(L, luafile.c_str()) != 0) {
-                    const char *luaerror = lua_tostring(L, -1);
-                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                    lua_error(L);
                 }
             }
             if (lua_pcall(L, 0, LUA_MULTRET, 0) != 0) {
-                const char *luaerror = lua_tostring(L, -1);
-                throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                lua_error(L);
             }
         }
     }
@@ -976,8 +974,8 @@ namespace shttps {
                 port = 443;
             }
             else {
-                throw _HttpError(__LINE__,
-                                 "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+                lua_pushstring(L, "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+                lua_error(L);
             }
 
             size_t pos;
@@ -2393,8 +2391,7 @@ namespace shttps {
 
     int LuaServer::executeChunk(const string &luastr) {
         if (luaL_dostring(L, luastr.c_str()) != 0) {
-            const char *luaerror = lua_tostring(L, -1);
-            throw Error(__file__, __LINE__, string("Lua error: ") + luaerror);
+            return -1;
         }
         int top = lua_gettop(L);
         if (top == 1) {
