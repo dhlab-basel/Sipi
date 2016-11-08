@@ -87,6 +87,13 @@ namespace Sipi {
         SKIP_ALL = 0xFF
     } SkipMetadata;
 
+    template <typename Enumeration>
+    inline auto as_integer(Enumeration const value)
+        -> typename std::underlying_type<Enumeration>::type
+    {
+        return static_cast<typename std::underlying_type<Enumeration>::type>(value);
+    }
+
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error
@@ -190,6 +197,17 @@ namespace Sipi {
          * \param[in] img_p An existing instance if SipiImage
          */
         SipiImage(const SipiImage &img_p);
+
+       /*!
+        * Create an empty image with the pixel buffer available, but all pixels set to 0
+        *
+        * \param[in] nx_p Dimension in x direction
+        * \param[in] ny_p Dimension in y direction
+        * \param[in] nc_p Number of channels
+        * \param[in] bps_p Bits per sample, either 8 or 16 are allowed
+        * \param[in] photo_p The photometric interpretation
+        */
+        SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p);
 
         /*!
          * Checks if the actual mimetype of an image file corresponds to the indicated mimetype and the extension of the filename.
@@ -357,6 +375,8 @@ namespace Sipi {
         * \param[in] wmfilename Path to watermakfile (which must be a TIFF file at the moment)
         */
         bool add_watermark(std::string wmfilename);
+
+        bool compare(SipiImage &img);
 
 
         /*!
