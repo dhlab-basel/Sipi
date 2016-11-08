@@ -107,6 +107,20 @@ namespace Sipi {
     }
     //============================================================================
 
+    SipiImage::SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p)
+    : nx(nx_p), ny(ny_p), nc(nc_p), bps(bps_p), photo(photo_p) {
+        if (((photo == MINISWHITE) || (photo == MINISBLACK)) && !((nc == 1) || (nc == 2))) {
+            throw SipiError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+        }
+        if ((photo == RGB) && !((nc == 3) || (nc == 4))) {
+            throw SipiError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+        }
+        if ((bps != 8) && (bps != 16)) {
+            throw SipiError(__file__, __LINE__, "Bits per samples not supported by SIPI!");
+        }
+
+    }
+    //============================================================================
 
     SipiImage::~SipiImage() {
         delete [] pixels;
@@ -1023,6 +1037,34 @@ namespace Sipi {
     	delete[] wmbuf;
 
     	return true;
+    }
+    /*==========================================================================*/
+
+    bool SipiImage::compare(SipiImage &img) {
+        if ((nx != img.nx)||(ny != img.ny)||(nc != img.nc)||(bps != img.bps)||(photo != img.photo)) {
+            stringstream ss;
+            ss << "Image compare: dimensions not identical!" << endl;
+            ss << "Image 1: nx: " << nx << " ny: " << ny << " nc: " << nc << " bps: " << bps << " photo: " << as_integer(photo) << endl;
+            ss << << "Image 2: nx: " << img.nx << " ny: " << img.ny << " nc: " << img.nc << " bps: " << img.bps << " photo: " << as_integer(img.photo) << endl;
+            throw SipiError(__file__, __LINE__, ss.str());
+        }
+        long long differences = 0;
+        long long n_differences = 0;
+        for (unsigned int j = 0; j < ny; j++) {
+            for (unsigned int i = 0; i < nx; i++) {
+                for (unsigned int k = 0; k < nc; k++) {
+                    if (pixels[nc*(j*nx + i) + k] != img.pixels[nc*(j*nx + i) + k]) {
+                        differences += (pixels[nc*(j*nx + i) + k] - img.pixels[nc*(j*nx + i) + k])*(pixels[nc*(j*nx + i) + k] - img.pixels[nc*(j*nx + i) + k]);
+                        n_differences++;
+                    }
+                }
+            }
+        }
+        if (n_differences > 0) {
+            cerr << "There are " << n_differences << " differences found: " << differences << endl;
+            return false;
+        }
+        return true;
     }
     /*==========================================================================*/
 

@@ -272,12 +272,44 @@ int main (int argc, char *argv[]) {
     params.addParam(new Sipi::SipiParam("mirror", "Mirror the image", "none:horizontal:vertical", 1, "none"));
     params.addParam(new Sipi::SipiParam("rotate", "Rotate the image", 0.0F, 359.99999F, 1, 0.0F));
     params.addParam(new Sipi::SipiParam("salsah", "Special flag for SALSAH internal use", false));
+    params.addParam(new Sipi::SipiParam("compare", "compare to files", false));
     params.addParam(new Sipi::SipiParam("serverport", "Port of the webserver", 0, 65535, 1, 0));
     params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
     params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
     params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
     params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:NOTICE:WARN:ERROR:CRITICAL:ALERT:EMER:OFF", 1, "INFO"));
     params.parseArgv ();
+
+
+    if (params["compare"].isSet()) {
+        std::string infname1;
+        try {
+            infname1 = params.getName();
+        }
+        catch (Sipi::SipiError &err) {
+            std::cerr << err;
+            exit (-1);
+        }
+
+        //
+        // get the output image name
+        //
+        std::string infname2;
+        try {
+            infname2 = params.getName();
+        }
+        catch (Sipi::SipiError &err) {
+            std::cerr << err;
+            exit (-1);
+        }
+        Sipi::SipiImage img1, img2;
+        img1.read(infname1);
+        img2.read(infname2);
+        bool result = img1.compare(img2);
+
+        return (result) ? 0 : -1;
+    }
+
 
     //
     // if a config file is given, we start sipi as IIIF compatible server
