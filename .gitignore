@@ -19,7 +19,8 @@ sipi
 *~
 .idea/
 SipiConfig.h
-sipi.log.txt
+sipi.log*.txt
+/extsrcs/
 
 #
 # Cmake things to be ignored
