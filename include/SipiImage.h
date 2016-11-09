@@ -242,6 +242,37 @@ namespace Sipi {
          */
         ~SipiImage();
 
+       /*!
+        * Sets a pixel to a given value
+        *
+        * \param[in] x X position
+        * \param[in] y Y position
+        * \param[in] c Color channels
+        * \param[in] val Pixel value
+        */
+        inline void setPixel(int x, int y, int c, int val) {
+            if ((x < 0) || (x >= nx)) throw ((int) 1);
+            if ((y < 0) || (x >= ny)) throw ((int) 2);
+            if ((c < 0) || (x >= nc)) throw ((int) 3);
+            switch (bps) {
+                case 8: {
+                    if (val > 0xff) throw ((int) 4);
+                    register unsigned char *tmp = (unsigned char *) pixels;
+                    tmp[nc*(x*nx + y) + c] = (unsigned char) val;
+                    break;
+                }
+                case 16: {
+                    if (val > 0xffff) throw ((int) 5;
+                    register unsigned short *tmp = (unsigned short *) pixels;
+                    pixels[nc*(x*nx + y) + c] = (unsigned short) val;
+                    break;
+                }
+                default: {
+                    if (val > 0xffff) throw ((int) 6;
+                }
+            }
+        }
+
         /*!
          * Assignment operator
          *
@@ -376,7 +407,7 @@ namespace Sipi {
         */
         bool add_watermark(std::string wmfilename);
 
-        bool compare(SipiImage &img);
+        SipiImage *difference(SipiImage &img);
 
 
         /*!
