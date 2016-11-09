@@ -43,6 +43,7 @@
 #include "iiifparser/SipiSize.h"
 
 #include "shttps/Connection.h"
+#include "shttps/Hash.h"
 
 
 /*!
@@ -93,7 +94,15 @@ namespace Sipi {
     {
         return static_cast<typename std::underlying_type<Enumeration>::type>(value);
     }
+/*
+    class EssentialMetadata {
+    private:
+        string origname;
 
+        string data_chksum;
+
+    };
+*/
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error
@@ -263,16 +272,16 @@ namespace Sipi {
                     break;
                 }
                 case 16: {
-                    if (val > 0xffff) throw ((int) 5;
+                    if (val > 0xffff) throw ((int) 5);
                     register unsigned short *tmp = (unsigned short *) pixels;
-                    pixels[nc*(x*nx + y) + c] = (unsigned short) val;
+                    tmp[nc*(x*nx + y) + c] = (unsigned short) val;
                     break;
                 }
                 default: {
-                    if (val > 0xffff) throw ((int) 6;
+                    if (val > 0xffff) throw ((int) 6);
                 }
             }
-        }
+        };
 
         /*!
          * Assignment operator
@@ -443,9 +452,9 @@ namespace Sipi {
 
         SipiImage &operator+=(const SipiImage &rhs);
 
-        SipiImage &operator-(const SipiImage &rhs);
+        SipiImage &operator+(const SipiImage &rhs);
 
-        bool operator== (SipiImage &rhs);
+        bool operator== (const SipiImage &rhs);
 
         /*!
         * The overloaded << operator which is used to write the error message to the output

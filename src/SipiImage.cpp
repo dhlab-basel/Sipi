@@ -1056,7 +1056,7 @@ namespace Sipi {
 
         if ((nx != rhs.nx) || (ny != rhs.ny)) {
             new_rhs = new SipiImage(rhs);
-            new_rhs.scale(nx, ny);
+            new_rhs->scale(nx, ny);
         }
 
         int *diffbuf = new int[nx*ny*nc];
@@ -1064,12 +1064,12 @@ namespace Sipi {
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixel;
+                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
                         }
                     }
@@ -1078,12 +1078,12 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixel;
+                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
                         }
                     }
@@ -1139,15 +1139,17 @@ namespace Sipi {
             }
         }
 
+        if (new_rhs != NULL) delete new_rhs;
+
         return *this;
     }
     /*==========================================================================*/
 
     SipiImage &SipiImage::operator-(const SipiImage &rhs)
     {
-        SipiImage lhs = *this;
-        lhs -= rhs;
-        return lhs;
+        SipiImage *lhs = new SipiImage(*this);
+        *lhs -= rhs;
+        return *lhs;
     }
     /*==========================================================================*/
 
@@ -1164,7 +1166,7 @@ namespace Sipi {
 
         if ((nx != rhs.nx) || (ny != rhs.ny)) {
             new_rhs = new SipiImage(rhs);
-            new_rhs.scale(nx, ny);
+            new_rhs->scale(nx, ny);
         }
 
         int *diffbuf = new int[nx*ny*nc];
@@ -1172,12 +1174,12 @@ namespace Sipi {
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixel;
+                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] + rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] + rtmp[nc*(j*nx + i) + k];
                             }
                         }
                     }
@@ -1186,12 +1188,12 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixel;
+                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
                         }
                     }
@@ -1248,11 +1250,11 @@ namespace Sipi {
     }
     /*==========================================================================*/
 
-    SipiImage &SipiImage::operator-(SipiImage lhs, const SipiImage &rhs)
+    SipiImage &SipiImage::operator+(const SipiImage &rhs)
     {
-        SipiImage lhs = *this;
-        lhs += rhs;
-        return lhs;
+        SipiImage *lhs = new SipiImage(*this);
+        *lhs += rhs;
+        return *lhs;
     }
     /*==========================================================================*/
 
@@ -1261,18 +1263,19 @@ namespace Sipi {
             return false;
         }
 
-        long long differences = 0;
         long long n_differences = 0;
         for (unsigned int j = 0; j < ny; j++) {
             for (unsigned int i = 0; i < nx; i++) {
-                for (unsigned int k = 0; k < lhs.nc; k++) {
+                for (unsigned int k = 0; k < nc; k++) {
                     if (pixels[nc*(j*nx + i) + k] != rhs.pixels[nc*(j*nx + i) + k]) {
                         n_differences++;
                     }
                 }
             }
         }
+        string hash = shttps::Hash::hash((char *) pixels, nx*ny*nc, shttps::md5);
 
+        cerr << "Hash=" << hash << endl;
 
         if (n_differences > 0) {
             return false;

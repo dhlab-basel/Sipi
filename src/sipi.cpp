@@ -307,6 +307,11 @@ int main (int argc, char *argv[]) {
         img2.read(infname2);
         bool result = img1 == img2;
 
+        if (!result) {
+            img1 -= img2;
+            img1.write("tif", "diff.tif");
+        }
+
         return (result) ? 0 : -1;
     }
 

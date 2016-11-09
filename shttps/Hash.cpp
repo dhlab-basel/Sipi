@@ -33,19 +33,19 @@ using namespace std;
 
 namespace shttps {
 
-    static string Hash::hash(const char &data, size_t len, HashType type) {
+    string Hash::hash(const char *data, size_t len, HashType type) {
         string hashed;
         EVP_MD_CTX* context = EVP_MD_CTX_create();
 
         if(context != NULL) {
             int status;
-            switch (HashType) {
+            switch (type) {
                 case md5: {
                     status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
                     break;
                 }
                 case sha1: {
-                    status = EVP_DigestInit_ex(context, EVP_sha1, NULL);
+                    status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
                     break;
                 }
                 case sha256: {
@@ -62,7 +62,7 @@ namespace shttps {
                 }
             }
             if(status) {
-                if (EVP_DigestUpdate(context, data, len)) {
+                if (EVP_DigestUpdate(context, (void *) data, len)) {
                     unsigned char hash[EVP_MAX_MD_SIZE];
                     unsigned int lengthOfHash = 0;
                     if (EVP_DigestFinal_ex(context, hash, &lengthOfHash)) {
@@ -76,7 +76,7 @@ namespace shttps {
             }
             EVP_MD_CTX_destroy(context);
         }
-        return success;
+        return hashed;
     }
 
 }
