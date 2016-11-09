@@ -1069,7 +1069,7 @@ namespace Sipi {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] += ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
                             }
                         }
                     }
@@ -1083,7 +1083,7 @@ namespace Sipi {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
-                                diffbuf[nc*(j*nx + i) + k] += ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
                             }
                         }
                     }
@@ -1115,7 +1115,7 @@ namespace Sipi {
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
-                            ltmp[nc*(j*nx + i) + k] = (byte) (diffbuf[nc*(j*nx + i) + k] + maxmax)*UCHAR_MAX/(2*maxmax);
+                            ltmp[nc*(j*nx + i) + k] = (byte) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*UCHAR_MAX/(2*maxmax));
                         }
                     }
                 }
@@ -1126,7 +1126,112 @@ namespace Sipi {
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
-                            ltmp[nc*(j*nx + i) + k] = (word) (diffbuf[nc*(j*nx + i) + k] + maxmax)*USHRT_MAX/(2*maxmax);
+                            ltmp[nc*(j*nx + i) + k] = (word) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*USHRT_MAX/(2*maxmax));
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+            }
+        }
+
+        return *this;
+    }
+    /*==========================================================================*/
+
+    SipiImage &SipiImage::operator-(const SipiImage &rhs)
+    {
+        SipiImage lhs = *this;
+        lhs -= rhs;
+        return lhs;
+    }
+    /*==========================================================================*/
+
+    SipiImage &SipiImage::operator+=(const SipiImage &rhs) {
+        SipiImage *new_rhs = NULL;
+
+        if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
+            stringstream ss;
+            ss << "Image op: images not compatible!" << endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << as_integer(photo) << endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << as_integer(rhs.photo) << endl;
+            throw SipiImageError(__file__, __LINE__, ss.str());
+        }
+
+        if ((nx != rhs.nx) || (ny != rhs.ny)) {
+            new_rhs = new SipiImage(rhs);
+            new_rhs.scale(nx, ny);
+        }
+
+        int *diffbuf = new int[nx*ny*nc];
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixel;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] + rtmp[nc*(j*nx + i) + k]));
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixel;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k]));
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+            }
+        }
+
+        int max = INT_MIN;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                for (int k = 0; k < nc; k++) {
+                    if (diffbuf[nc*(j*nx + i) + k] > max) max = diffbuf[nc*(j*nx + i) + k];
+                }
+            }
+        }
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (byte) (diffbuf[nc*(j*nx + i) + k]*UCHAR_MAX/max);
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (word) (diffbuf[nc*(j*nx + i) + k]*USHRT_MAX/max);
                         }
                     }
                 }
@@ -1145,22 +1250,23 @@ namespace Sipi {
 
     SipiImage &SipiImage::operator-(SipiImage lhs, const SipiImage &rhs)
     {
-      lhs += rhs;
-      return lhs;
+        SipiImage lhs = *this;
+        lhs += rhs;
+        return lhs;
     }
     /*==========================================================================*/
 
-    bool SipiImage::operator== (const SipiImage &lhs, const SipiImage &rhs) {
-        if ((lhs.nx != rhs.nx) || (lhs.ny != rhs.ny) || (lhs.nc != rhs.nc) || (lhs.bps != rhs.bps) || (lhs.photo != rhs.photo)) {
+    bool SipiImage::operator== (const SipiImage &rhs) {
+        if ((nx != rhs.nx) || (ny != rhs.ny) || (nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
             return false;
         }
 
         long long differences = 0;
         long long n_differences = 0;
-        for (unsigned int j = 0; j < lhs.ny; j++) {
-            for (unsigned int i = 0; i < lhs.nx; i++) {
+        for (unsigned int j = 0; j < ny; j++) {
+            for (unsigned int i = 0; i < nx; i++) {
                 for (unsigned int k = 0; k < lhs.nc; k++) {
-                    if (pixels[lhs.nc*(j*lhs.nx + i) + k] != rhs.pixels[lhs.nc*(j*lhs.nx + i) + k]) {
+                    if (pixels[nc*(j*nx + i) + k] != rhs.pixels[nc*(j*nx + i) + k]) {
                         n_differences++;
                     }
                 }

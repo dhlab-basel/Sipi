@@ -305,7 +305,7 @@ int main (int argc, char *argv[]) {
         Sipi::SipiImage img1, img2;
         img1.read(infname1);
         img2.read(infname2);
-        bool result = img1.compare(img2);
+        bool result = img1 == img2;
 
         return (result) ? 0 : -1;
     }
