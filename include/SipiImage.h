@@ -407,8 +407,44 @@ namespace Sipi {
         */
         bool add_watermark(std::string wmfilename);
 
-        SipiImage *difference(SipiImage &img);
 
+       /*!
+        * Calcaulates the difference between 2 images.
+        *
+        * The differfence between 2 images can conatin (and usually will) negative values.
+        * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+        * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
+        * absolute values. Thus a new pixelvalue will be calculated as follows:
+        * ```
+        * int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+        * newval = (byte) ((oldval + maxmax)*UCHAR_MAX/(2*maxmax));
+        * ```
+        * \param[in] rhs right hand side of "-="
+        */
+        SipiImage &operator-=(const SipiImage &rhs);
+
+       /*!
+        * Calcaulates the difference between 2 images.
+        *
+        * The differfence between 2 images can conatin (and usually will) negative values.
+        * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+        * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
+        * absolute values. Thus a new pixelvalue will be calculated as follows:
+        * ```
+        * int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+        * newval = (byte) ((oldval + maxmax)*UCHAR_MAX/(2*maxmax));
+        * ```
+        *
+        * \param[in] lhs left-hand side of "-" operator
+        * \param[in] rhs right hand side of "-" operator
+        */
+        SipiImage &operator-(const SipiImage &rhs);
+
+        SipiImage &operator+=(const SipiImage &rhs);
+
+        SipiImage &operator-(const SipiImage &rhs);
+
+        bool operator== (SipiImage &rhs);
 
         /*!
         * The overloaded << operator which is used to write the error message to the output
