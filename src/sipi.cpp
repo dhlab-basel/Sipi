@@ -530,7 +530,12 @@ int main (int argc, char *argv[]) {
         //
         // write the output file
         //
-        img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
+        try {
+            img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
+        }
+        catch (Sipi::SipiImageError &err) {
+            std::cerr << err.what() << std::endl;
+        }
 
         if (params["salsah"].isSet()) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;

@@ -137,6 +137,7 @@ namespace Sipi {
             ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
             if (errnum > 0) ss << " System-msg: " << strerror(errnum);
             std::string tmpstr = ss.str();
+            std::cerr << tmpstr << std::endl;
             return tmpstr.c_str();
         }
     };
