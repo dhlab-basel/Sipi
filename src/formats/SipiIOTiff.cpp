@@ -895,6 +895,7 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, msg);
             }
         }
+
         TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
         TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
         TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    rows_per_strip);
@@ -904,7 +905,11 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_PHOTOMETRIC, img->photo);
         TIFFSetField (tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
         if (img->es.size() > 0) {
-            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
+            uint8 *extrasamples = new uint8[img->es.size()];
+            ExtraSamples *tmp = img->es.data();
+            for (int i = 0; i < img->es.size(); i++) extrasamples[i] = as_integer(tmp[i]);
+            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (short) img->es.size(), &extrasamples);
+            delete [] extrasamples;
         }
 
         //

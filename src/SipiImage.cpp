@@ -1290,6 +1290,7 @@ namespace Sipi {
         outstr << "nx  = " << to_string(rhs.nx) << endl;
         outstr << "ny  = " << to_string(rhs.ny) << endl;
         outstr << "nc  = " << to_string(rhs.nc) << endl;
+        outstr << "es  = " << to_string(rhs.es.size()) << endl;
         outstr << "bps = " << to_string(rhs.bps) << endl;
         if (rhs.xmp) {
             outstr << "XMP-Metadata: " << endl

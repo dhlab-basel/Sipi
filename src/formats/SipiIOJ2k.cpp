@@ -165,7 +165,7 @@ namespace Sipi {
     static bool is_jpx(const char *fname) {
         int inf;
         int retval = 0;
-        if ((inf = open(fname, O_RDONLY)) != NULL) {
+        if ((inf = open(fname, O_RDONLY)) !=-1) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
