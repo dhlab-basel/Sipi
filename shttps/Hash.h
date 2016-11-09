@@ -26,7 +26,11 @@
  * to read, write and modify images. Reading and writing is supported in several standard formats
  * such as TIFF, J2k, PNG etc.
  */
+<<<<<<< HEAD
 #ifndef __shttps_has_h
+=======
+#ifndef __shttps_hash_h
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
 #define __shttps_hash_h
 
 namespace shttps {
@@ -40,10 +44,17 @@ namespace shttps {
     } HashType;
 
     class Hash {
+<<<<<<< HEAD
 
         static std::string hash(const char &data, size_t len, HashType type);
 
     }
+=======
+    public:
+        static std::string hash(const char *data, size_t len, HashType type);
+
+    };
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
 
 }
 

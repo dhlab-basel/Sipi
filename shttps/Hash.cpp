@@ -33,19 +33,31 @@ using namespace std;
 
 namespace shttps {
 
+<<<<<<< HEAD
     static string Hash::hash(const char &data, size_t len, HashType type) {
+=======
+    string Hash::hash(const char *data, size_t len, HashType type) {
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
         string hashed;
         EVP_MD_CTX* context = EVP_MD_CTX_create();
 
         if(context != NULL) {
             int status;
+<<<<<<< HEAD
             switch (HashType) {
+=======
+            switch (type) {
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
                 case md5: {
                     status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
                     break;
                 }
                 case sha1: {
+<<<<<<< HEAD
                     status = EVP_DigestInit_ex(context, EVP_sha1, NULL);
+=======
+                    status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
                     break;
                 }
                 case sha256: {
@@ -62,7 +74,11 @@ namespace shttps {
                 }
             }
             if(status) {
+<<<<<<< HEAD
                 if (EVP_DigestUpdate(context, data, len)) {
+=======
+                if (EVP_DigestUpdate(context, (void *) data, len)) {
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
                     unsigned char hash[EVP_MAX_MD_SIZE];
                     unsigned int lengthOfHash = 0;
                     if (EVP_DigestFinal_ex(context, hash, &lengthOfHash)) {
@@ -76,7 +92,11 @@ namespace shttps {
             }
             EVP_MD_CTX_destroy(context);
         }
+<<<<<<< HEAD
         return success;
+=======
+        return hashed;
+>>>>>>> a001d3d0e8eefee91f638a25e558e95ee3151699
     }
 
 }

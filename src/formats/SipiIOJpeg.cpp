@@ -94,11 +94,12 @@ namespace Sipi {
         do {
             int tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
             if (tmp_n < 0) {
+                //throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
                 return false; // and create an error message!!
             }
             else {
                 n -= tmp_n;
-                n += tmp_n;
+                nn += tmp_n;
             }
         } while (n > 0);
 
@@ -119,11 +120,11 @@ namespace Sipi {
         do {
             int tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
             if (tmp_n < 0) {
-                //return false; // and create an error message!!
+                throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
             }
             else {
                 n -= tmp_n;
-                n += tmp_n;
+                nn += tmp_n;
             }
         } while (n > 0);
 
@@ -829,7 +830,7 @@ namespace Sipi {
                 jpeg_stdio_dest(&cinfo, stdout);
             }
             else {
-                if ((outfile = open(filepath.c_str(), O_WRONLY)) == -1) {
+                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP)) == -1) {
                     //outlock.unlock();
                     throw SipiImageError(__file__, __LINE__, "Cannot open file \"" + filepath + "\"!");
                 }

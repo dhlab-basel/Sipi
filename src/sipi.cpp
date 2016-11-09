@@ -307,6 +307,11 @@ int main (int argc, char *argv[]) {
         img2.read(infname2);
         bool result = img1 == img2;
 
+        if (!result) {
+            img1 -= img2;
+            img1.write("tif", "diff.tif");
+        }
+
         return (result) ? 0 : -1;
     }
 
@@ -562,7 +567,12 @@ int main (int argc, char *argv[]) {
         //
         // write the output file
         //
-        img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
+        try {
+            img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
+        }
+        catch (Sipi::SipiImageError &err) {
+            std::cerr << err.what() << std::endl;
+        }
 
         if (params["salsah"].isSet()) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;
