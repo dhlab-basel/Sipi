@@ -96,6 +96,10 @@ namespace Sipi {
     {
         return static_cast<typename std::underlying_type<Enumeration>::type>(value);
     }
+/*
+    class EssentialMetadata {
+    private:
+        string origname;
 
     template <class OutIt>
     void explode(std::string const &input, char sep, OutIt output) {
