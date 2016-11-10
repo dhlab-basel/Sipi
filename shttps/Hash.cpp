@@ -40,6 +40,10 @@ namespace shttps {
         if(context != NULL) {
             int status;
             switch (type) {
+                case none: {
+                    status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                    break;
+                }
                 case md5: {
                     status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
                     break;

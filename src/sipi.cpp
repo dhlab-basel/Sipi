@@ -564,18 +564,13 @@ int main (int argc, char *argv[]) {
         std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
         */
 
-        Sipi::EssentialMetadata emdata;
-        emdata.origname("gaga.tif");
-        emdata.mimetype("image/tiff");
-        emdata.hash_type(shttps::HashType::md5);
-        emdata.data_chksum("CHECKSUM");
+        Sipi::EssentialMetadata emdata ("gaga.tif", "image/tiff", shttps::HashType::md5, "CHECKSUM");
 
-        std::stringstream ss;
-        ss << emdata;
-        std::cerr << ss.str() << std::endl;
+        std::cerr << emdata << std::endl;
 
-        Sipi::EssentialMetadata emdata2;
-        emdata2.parse(ss.str());
+        std::string gaga = emdata;
+
+        Sipi::EssentialMetadata emdata2 (gaga);
 
         std::cerr << emdata2 << std::endl;
         //
