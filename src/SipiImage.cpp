@@ -120,7 +120,32 @@ namespace Sipi {
         if ((bps != 8) && (bps != 16)) {
             throw SipiError(__file__, __LINE__, "Bits per samples not supported by SIPI!");
         }
-
+        size_t bufsiz;
+        switch (bps) {
+            case 8: {
+                bufsiz = nx*ny*nc*sizeof (unsigned char);
+                break;
+            }
+            case 16: {
+                bufsiz = nx*ny*nc*sizeof (unsigned short);
+                break;
+            }
+            default: {
+                bufsiz = 0;
+            }
+        }
+        if (bufsiz > 0) {
+            pixels = new byte[bufsiz];
+        }
+        else {
+            throw SipiError(__file__, __LINE__, "Image with noe content!");
+        }
+        xmp = NULL;
+        icc = NULL;
+        iptc = NULL;
+        exif = NULL;
+        skip_metadata = SKIP_NONE;
+        conobj = NULL;
     }
     //============================================================================
 
@@ -1287,11 +1312,12 @@ namespace Sipi {
 
     ostream &operator<< (ostream &outstr, const SipiImage &rhs) {
         outstr << endl << "SipiImage with the following parameters:" << endl;
-        outstr << "nx  = " << to_string(rhs.nx) << endl;
-        outstr << "ny  = " << to_string(rhs.ny) << endl;
-        outstr << "nc  = " << to_string(rhs.nc) << endl;
-        outstr << "es  = " << to_string(rhs.es.size()) << endl;
-        outstr << "bps = " << to_string(rhs.bps) << endl;
+        outstr << "nx    = " << to_string(rhs.nx) << endl;
+        outstr << "ny    = " << to_string(rhs.ny) << endl;
+        outstr << "nc    = " << to_string(rhs.nc) << endl;
+        outstr << "es    = " << to_string(rhs.es.size()) << endl;
+        outstr << "bps   = " << to_string(rhs.bps) << endl;
+        outstr << "photo = " << to_string(rhs.photo) << endl;
         if (rhs.xmp) {
             outstr << "XMP-Metadata: " << endl
                 << *(rhs.xmp) << endl;

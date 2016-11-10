@@ -29,6 +29,8 @@
 #ifndef __sipi_image_h
 #define __sipi_image_h
 
+#include <sstream>
+#include <utility>
 #include <string>
 #include <map>
 
@@ -72,7 +74,7 @@ namespace Sipi {
         LINEARRAW = 34892   //!< Linear raw array for DNG and RAW formats. Not supported!
     } PhotometricInterpretation;
 
-    /*! The meaning of extra channels */
+    /*! The meaning of extra channels as used in the TIF format */
     typedef enum : unsigned short {
         UNSPECIFIED = 0,    //!< Unknown meaning
         ASSOCALPHA = 1,     //!< Associated alpha channel
@@ -94,15 +96,57 @@ namespace Sipi {
     {
         return static_cast<typename std::underlying_type<Enumeration>::type>(value);
     }
-/*
+
+    template <class OutIt>
+    void explode(std::string const &input, char sep, OutIt output) {
+        std::istringstream buffer(input);
+        std::string temp;
+
+        while (std::getline(buffer, temp, sep)) {
+            std::cerr << "a) TEMP=" << temp << std::endl;
+            *output++ = temp;
+            std::cerr << "b) TEMP=" << temp << std::endl;
+        }
+    }
+
     class EssentialMetadata {
     private:
-        string origname;
+        std::string _origname;
+        std::string _mimetype;
+        shttps::HashType _hash_type;
+        std::string _data_chksum;
+    public:
+        inline EssentialMetadata() { _hash_type = shttps::HashType::none; }
 
-        string data_chksum;
+        inline std::string origname(void) { return _origname; }
+        inline void origname(const std::string &origname_p) { _origname = origname_p; }
 
+        inline std::string mimetype(void) { return _mimetype; }
+        inline void mimetype(const std::string &mimetype_p) { _mimetype = mimetype_p; }
+
+        inline shttps::HashType hash_type(void) { return _hash_type; }
+        inline void hash_type(shttps::HashType hash_type_p) { _hash_type = hash_type_p; }
+
+        inline std::string data_chksum(void) { return _data_chksum; }
+        inline void data_chksum(const std::string &data_chksum_p) { _data_chksum = data_chksum_p; }
+
+        inline void parse(const std::string &str) {
+            std::vector<std::string> result;
+            std::cerr << "1111111" << std::endl;
+            explode(str, '|', std::begin(result));
+            std::cerr << "2222222" << std::endl;
+            _origname = *std::begin(result);
+            _mimetype = *(std::begin(result) + 1);
+            std::string _hash_type_str = *(std::begin(result) + 2);
+            _data_chksum = *(std::begin(result) + 3);
+        }
+
+        inline friend std::ostream &operator<< (std::ostream &ostr, const EssentialMetadata &rhs) {
+            ostr << rhs._origname << "|" << rhs._mimetype << "|" << as_integer(rhs._hash_type) << "|" << rhs._data_chksum;
+            return ostr;
+        }
     };
-*/
+
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error

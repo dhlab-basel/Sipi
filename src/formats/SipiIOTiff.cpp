@@ -461,7 +461,7 @@ namespace Sipi {
             TIFF_GET_FIELD (tif, TIFFTAG_PLANARCONFIG, &planar, PLANARCONFIG_CONTIG);
             TIFF_GET_FIELD (tif, TIFFTAG_SAMPLEFORMAT, &safo, SAMPLEFORMAT_UINT);
 
-            unsigned short *es;
+            uint16 *es;
             int eslen;
             if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &eslen, &es) == 1) {
                 for (int i = 0; i < eslen; i++) img->es.push_back((ExtraSamples) es[i]);
@@ -867,11 +867,10 @@ namespace Sipi {
     {
         TIFF *tif;
         MEMTIFF *memtif = NULL;
+        uint32 rowsperstrip = (uint32) -1;
 
         auto logger = spdlog::get(shttps::loggername);
 
-        int rows_per_strip = 65536 * img->bps / (img->nc * img->nx * 8);
-        if (rows_per_strip == 0) rows_per_strip = 1;
 
         TIFFSetWarningHandler(tiffWarning);
         TIFFSetErrorHandler(tiffError);
@@ -898,19 +897,25 @@ namespace Sipi {
 
         TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
         TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
-        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    rows_per_strip);
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
+        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,     TIFFDefaultStripSize(tif, rowsperstrip));
+        TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
+        TIFFSetField (tif, TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG);
         TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
-        TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, (uint16) img->nc);
-        TIFFSetField (tif, TIFFTAG_PHOTOMETRIC, img->photo);
-        TIFFSetField (tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+        TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);
         if (img->es.size() > 0) {
-            uint8 *extrasamples = new uint8[img->es.size()];
-            ExtraSamples *tmp = img->es.data();
-            for (int i = 0; i < img->es.size(); i++) extrasamples[i] = as_integer(tmp[i]);
-            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, (short) img->es.size(), &extrasamples);
-            delete [] extrasamples;
+            //
+            // it seems we have a bug in libtiff. Anyting other then EXTRASAMPLE_UNSPECIFIED
+            // writes a file that cannot be read anymore...
+            //
+            uint16 *gaga = new uint16[img->es.size()];
+            for (int i = 0; i < img->es.size(); i++) gaga[i] = EXTRASAMPLE_UNSPECIFIED;
+            //TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), gaga /*img->es.data()*/ );
+            TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
         }
+        TIFFSetField (tif, TIFFTAG_PHOTOMETRIC,     img->photo);
+
+
 
         //
         // let's get the TIFF metadata if there is some. We stored the TIFF metadata in the exifData meber variable!
@@ -1007,18 +1012,18 @@ namespace Sipi {
             }
         }
 
-        TIFFCheckpointDirectory(tif);
+        //TIFFCheckpointDirectory(tif);
 
         for (int i = 0; i < img->ny; i++) {
             TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
         }
 
-        TIFFWriteDirectory(tif);
 
         //
         // write exif data
         //
         if (img->exif != NULL) {
+            TIFFWriteDirectory(tif);
             writeExif(img, tif);
         }
 

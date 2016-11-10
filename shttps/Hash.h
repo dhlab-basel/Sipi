@@ -32,11 +32,12 @@
 namespace shttps {
 
     typedef enum {
-        md5,
-        sha1,
-        sha256,
-        sha384,
-        sha512
+        none = 0,
+        md5 = 1,
+        sha1 = 2,
+        sha256 = 3,
+        sha384 = 4,
+        sha512 = 5
     } HashType;
 
     class Hash {
