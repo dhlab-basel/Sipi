@@ -29,6 +29,11 @@
 #ifndef __shttps_hash_h
 #define __shttps_hash_h
 
+#include <iostream>
+
+#include <openssl/evp.h>
+
+
 namespace shttps {
 
     typedef enum {
@@ -45,8 +50,12 @@ namespace shttps {
         EVP_MD_CTX* context;
     public:
         Hash (HashType type);
-        
-        static std::string hash(const char *data, size_t len, HashType type);
+        ~Hash();
+        bool add_data(const void *data, size_t len);
+        std::string hash_of_file(std::string path, size_t buflen = 32*1024);
+        friend std::istream &operator>> (std::istream  &input, Hash &h);
+        std::string hash(void);
+        //static std::string hash(const char *data, size_t len, HashType type);
 
     };
 

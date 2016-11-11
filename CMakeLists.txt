@@ -275,6 +275,7 @@ add_executable(
         src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
         src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
         src/metadata/SipiExif.cpp include/metadata/SipiExif.h
+        src/metadata/SipiEssentials.cpp include/metadata/SipiEssentials.h
         src/SipiImage.cpp include/SipiImage.h
         src/formats/SipiIOTiff.cpp include/formats/SipiIOTiff.h
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h

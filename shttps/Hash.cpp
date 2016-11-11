@@ -25,8 +25,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <openssl/evp.h>
 
+#include "SipiError.h"
 #include "Hash.h"
 
 using namespace std;
@@ -38,7 +38,7 @@ namespace shttps {
     Hash::Hash(HashType type) {
         EVP_MD_CTX* context = EVP_MD_CTX_create();
         if (context == NULL) {
-            throw SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
+            throw Sipi::SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
         }
         int status;
         switch (type) {
@@ -69,27 +69,53 @@ namespace shttps {
         }
         if (!status) {
             EVP_MD_CTX_destroy(context);
-            throw SipiError(__file__, __LINE__, "EVP_DigestInit_ex failed!");
+            throw Sipi::SipiError(__file__, __LINE__, "EVP_DigestInit_ex failed!");
         }
     }
+    //==========================================================================
 
     Hash::~Hash() {
         EVP_MD_CTX_destroy(context);
     }
+    //==========================================================================
 
     bool Hash::add_data(const void *data, size_t len) {
         return EVP_DigestUpdate(context, data, len);
     }
+    //==========================================================================
 
-    friend istream &operator>> (istream  &input, Hash &h) {
+    string Hash::hash_of_file(const string &path, HashType type, size_t buflen) {
+        char *buf = new char[buflen];
+
+        int fptr = open(path.c_str(), O_RDONLY);
+        if (fptr == -1) {
+            throw SipiError(__file__, __LINE__, "Couldn't open file \"" + path + "\" !");
+        }
+        size_t n;
+        while ((n = read(fptr, buf, buflen)) > 0) {
+            if (n == -1) {
+                close (fptr);
+                throw SipiError(__file__, __LINE__, "Error reading file \"" + path + "\" !");
+            }
+            if (!EVP_DigestUpdate(context, buf, n)) {
+                close(fptr);
+                throw SipiError(__file__, __LINE__, "EVP_DigestUpdate failed!");
+            }
+        }
+        close(fptr);
+    }
+    //==========================================================================
+
+    istream &operator>> (istream  &input, Hash &h) {
         char buffer[4096];
         int i = 0;
         while (input.good() && (i < 4096)) {
             buffer[i++] = input.get();
         }
-        EVP_DigestUpdate(context, buffer, i);
+        EVP_DigestUpdate(h.context, buffer, i);
         return input;
-      }
+    }
+    //==========================================================================
 
     string Hash::hash(void) {
         unsigned char hash[EVP_MAX_MD_SIZE];
@@ -104,6 +130,7 @@ namespace shttps {
         }
         return hashstr;
     }
+    //==========================================================================
 /*
     string Hash::hash(const char *data, size_t len, HashType type) {
         string hashed;

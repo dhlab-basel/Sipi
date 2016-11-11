@@ -41,6 +41,7 @@
 #include "metadata/SipiIcc.h"
 #include "metadata/SipiIptc.h"
 #include "metadata/SipiExif.h"
+#include "metadata/SipiEssentials.h"
 #include "iiifparser/SipiRegion.h"
 #include "iiifparser/SipiSize.h"
 
@@ -109,160 +110,6 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-   /*!
-    * Small class to create a small essentaion metadata packet that can be embedded
-    * within an image header. It contains
-    * - original file name
-    * - original mime type
-    * - checksum method
-    * - checksum of uncompressed pixel values
-    * The class contains methods to set the fields, to serialize and deserialize
-    * the data.
-    */
-    class EssentialMetadata {
-    private:
-        std::string _origname; //!< oroginal filename
-        std::string _mimetype; //!< original mime type
-        shttps::HashType _hash_type; //!< type of checksum
-        std::string _data_chksum; //!< the checksum of pixel data
-    public:
-       /*!
-        * Constructor for empty packet
-        */
-        inline EssentialMetadata() { _hash_type = shttps::HashType::none; }
-
-       /*!
-        * Constructor where all fields are passed
-        *
-        * \param[in] origname_p Original filename
-        * \param[in] mimetype_p Original mimetype as string
-        * \param[in] hash_type_p Checksumtype as defined in Hash.h (shttps::HashType)
-        * \param[in] data_chksum The actual checksum of the internal image data
-        */
-        inline EssentialMetadata(const std::string &origname_p,
-            const std::string &mimetype_p,
-            shttps::HashType hash_type_p,
-            const std::string &data_chksum_p)
-            : _origname(origname_p), _mimetype(mimetype_p), _hash_type(hash_type_p), _data_chksum(data_chksum_p)
-        { }
-
-       /*!
-        * Constructor taking a serialized packet (as string)
-        *
-        * \param[in] datastr Serialzed metadata packet
-        */
-        inline EssentialMetadata(const std::string &datastr) {
-            parse(datastr);
-        }
-
-       /*!
-        * Getter for original name
-        */
-        inline std::string origname(void) { return _origname; }
-
-       /*!
-        * Setter for original name
-        */
-        inline void origname(const std::string &origname_p) { _origname = origname_p; }
-
-        /*!
-         * Getter for mimetype
-         */
-        inline std::string mimetype(void) { return _mimetype; }
-
-        /*!
-         * Setter for original name
-         */
-        inline void mimetype(const std::string &mimetype_p) { _mimetype = mimetype_p; }
-
-        /*!
-         * Getter for checksum type as shttps::HashType
-         */
-        inline shttps::HashType hash_type(void) { return _hash_type; }
-
-        /*!
-         * Getter for checksum type as string
-         */
-        inline std::string hash_type_string(void) const {
-            std::string hash_type_str;
-            switch (_hash_type) {
-                case shttps::HashType::none:    hash_type_str = "none";   break;
-                case shttps::HashType::md5:     hash_type_str = "md5";   break;
-                case shttps::HashType::sha1:    hash_type_str = "sha1";   break;
-                case shttps::HashType::sha256:   hash_type_str = "sha256";   break;
-                case shttps::HashType::sha384:  hash_type_str = "sha384";   break;
-                case shttps::HashType::sha512:  hash_type_str = "sha512";   break;
-            }
-            return hash_type_str;
-        }
-
-        /*!
-         * Setter for checksum type
-         *
-         * \param[in] hash_type_p checksum type
-         */
-        inline void hash_type(shttps::HashType hash_type_p) { _hash_type = hash_type_p; }
-
-        /*!
-         * Setter for checksum type
-         *
-         * \param[in] hash_type_p checksum type
-         */
-        inline void hash_type(const std::string &hash_type_p) {
-            if (hash_type_p == "none")        _hash_type = shttps::HashType::none;
-            else if (hash_type_p == "md5")    _hash_type = shttps::HashType::md5;
-            else if (hash_type_p == "sha1")   _hash_type = shttps::HashType::sha1;
-            else if (hash_type_p == "sha256") _hash_type = shttps::HashType::sha256;
-            else if (hash_type_p == "sha384") _hash_type = shttps::HashType::sha384;
-            else if (hash_type_p == "sha512") _hash_type = shttps::HashType::sha512;
-            else _hash_type = shttps::HashType::none;
-        }
-
-        /*!
-         * Getter for checksum
-         */
-        inline std::string data_chksum(void) { return _data_chksum; }
-
-        /*!
-         * Setter for checksum
-         */
-        inline void data_chksum(const std::string &data_chksum_p) { _data_chksum = data_chksum_p; }
-
-        /*!
-        * Parse a string containing a serialized metadata packet
-        */
-        inline void parse(const std::string &str) {
-            std::vector<std::string> result(4);
-            explode(str, '|', result.begin());
-            _origname = *result.begin();
-            _mimetype = *(result.begin() + 1);
-            std::string _hash_type_str = *(result.begin() + 2);
-            if (_hash_type_str == "none") _hash_type = shttps::HashType::none;
-            else if (_hash_type_str == "md5") _hash_type = shttps::HashType::md5;
-            else if (_hash_type_str == "sha1") _hash_type = shttps::HashType::sha1;
-            else if (_hash_type_str == "sha256") _hash_type = shttps::HashType::sha256;
-            else if (_hash_type_str == "sha384") _hash_type = shttps::HashType::sha384;
-            else if (_hash_type_str == "sha512") _hash_type = shttps::HashType::sha512;
-            else _hash_type = shttps::HashType::none;
-            _data_chksum = *(result.begin() + 3);
-        }
-
-        /*!
-        * String conversion operator
-        */
-        inline operator std::string() const {
-            std::string tmpstr = _origname + "|" + _mimetype + "|" + hash_type_string() + "|" + _data_chksum;
-            return tmpstr;
-        }
-
-        /*!
-        * Stream output operator
-        */
-        inline friend std::ostream &operator<< (std::ostream &ostr, const EssentialMetadata &rhs) {
-            ostr << rhs._origname << "|" << rhs._mimetype << "|" << rhs.hash_type_string() << "|" << rhs._data_chksum;
-            return ostr;
-        }
-    };
 
     /*!
     * This class implements the error handling for the different image formats.
@@ -352,7 +199,7 @@ namespace Sipi {
         SipiIcc *icc;   //!< Pointer to instance of SipiIcc class (\ref SipiIcc), or NULL
         SipiIptc *iptc; //!< Pointer to instance of SipiIptc class (\ref SipiIptc), or NULL
         SipiExif *exif; //!< Pointer to instance of SipiExif class (\ref SipiExif), or NULL
-        EssentialMetadata emdata; //!< Metadata to be stored in file header
+        SipiEssentials emdata; //!< Metadata to be stored in file header
         shttps::Connection *conobj; //!< Pointer to mongoose webserver connection data
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
     public:
