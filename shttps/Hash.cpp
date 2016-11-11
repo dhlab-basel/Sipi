@@ -31,8 +31,80 @@
 
 using namespace std;
 
+static const char __file__[] = __FILE__;
+
 namespace shttps {
 
+    Hash::Hash(HashType type) {
+        EVP_MD_CTX* context = EVP_MD_CTX_create();
+        if (context == NULL) {
+            throw SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
+        }
+        int status;
+        switch (type) {
+            case none: {
+                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                break;
+            }
+            case md5: {
+                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                break;
+            }
+            case sha1: {
+                status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
+                break;
+            }
+            case sha256: {
+                status = EVP_DigestInit_ex(context, EVP_sha256(), NULL);
+                break;
+            }
+            case sha384: {
+                status = EVP_DigestInit_ex(context, EVP_sha384(), NULL);
+                break;
+            }
+            case sha512: {
+                status = EVP_DigestInit_ex(context, EVP_sha512(), NULL);
+                break;
+            }
+        }
+        if (!status) {
+            EVP_MD_CTX_destroy(context);
+            throw SipiError(__file__, __LINE__, "EVP_DigestInit_ex failed!");
+        }
+    }
+
+    Hash::~Hash() {
+        EVP_MD_CTX_destroy(context);
+    }
+
+    bool Hash::add_data(const void *data, size_t len) {
+        return EVP_DigestUpdate(context, data, len);
+    }
+
+    friend istream &operator>> (istream  &input, Hash &h) {
+        char buffer[4096];
+        int i = 0;
+        while (input.good() && (i < 4096)) {
+            buffer[i++] = input.get();
+        }
+        EVP_DigestUpdate(context, buffer, i);
+        return input;
+      }
+
+    string Hash::hash(void) {
+        unsigned char hash[EVP_MAX_MD_SIZE];
+        unsigned int lengthOfHash = 0;
+        string hashstr;
+        if (EVP_DigestFinal_ex(context, hash, &lengthOfHash)) {
+            std::stringstream ss;
+            for (unsigned int i = 0; i < lengthOfHash; ++i) {
+                ss << std::hex << std::setw(2) << std::setfill('0') << (int) hash[i];
+            }
+            hashstr = ss.str();
+        }
+        return hashstr;
+    }
+/*
     string Hash::hash(const char *data, size_t len, HashType type) {
         string hashed;
         EVP_MD_CTX* context = EVP_MD_CTX_create();
@@ -82,5 +154,5 @@ namespace shttps {
         }
         return hashed;
     }
-
+    */
 }

@@ -352,7 +352,7 @@ namespace Sipi {
         SipiIcc *icc;   //!< Pointer to instance of SipiIcc class (\ref SipiIcc), or NULL
         SipiIptc *iptc; //!< Pointer to instance of SipiIptc class (\ref SipiIptc), or NULL
         SipiExif *exif; //!< Pointer to instance of SipiExif class (\ref SipiExif), or NULL
-
+        EssentialMetadata emdata; //!< Metadata to be stored in file header
         shttps::Connection *conobj; //!< Pointer to mongoose webserver connection data
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
     public:
@@ -474,6 +474,10 @@ namespace Sipi {
         * \returns Pointer to connection data
         */
          inline shttps::Connection *connection() { return conobj; };
+
+         inline void essential_metadata(const EssentialMetadata &emdata_p) { emdata = emdata_p; }
+
+         inline EssentialMetadata essential_metadata(void) { return emdata; }
 
         /*!
          * Read an image from the given path

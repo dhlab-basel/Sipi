@@ -1298,9 +1298,6 @@ namespace Sipi {
                 }
             }
         }
-        string hash = shttps::Hash::hash((char *) pixels, nx*ny*nc, shttps::md5);
-
-        cerr << "Hash=" << hash << endl;
 
         if (n_differences > 0) {
             return false;

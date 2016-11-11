@@ -41,7 +41,11 @@ namespace shttps {
     } HashType;
 
     class Hash {
+    private:
+        EVP_MD_CTX* context;
     public:
+        Hash (HashType type);
+        
         static std::string hash(const char *data, size_t len, HashType type);
 
     };
