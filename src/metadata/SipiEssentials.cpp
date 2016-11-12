@@ -21,6 +21,10 @@
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <vector>
+
+#include "shttps/Global.h"
+#include "SipiEssentials.h"
 
 static const char __file__[] = __FILE__;
 
@@ -53,7 +57,7 @@ namespace Sipi {
 
     void SipiEssentials::parse(const std::string &str) {
         std::vector<std::string> result(4);
-        explode(str, '|', result.begin());
+        shttps::explode(str, '|', result.begin());
         _origname = *result.begin();
         _mimetype = *(result.begin() + 1);
         std::string _hash_type_str = *(result.begin() + 2);

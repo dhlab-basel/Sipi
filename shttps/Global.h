@@ -19,8 +19,51 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */namespace shttps {
+ */
+
+#ifndef __shttps_global_h
+#define __shttps_global_h
+
+#include <string>
+#include <sstream>
+#include <istream>
+#include <utility>
+#include <string>
+#include <iostream>
+
+
+ namespace shttps {
 
     extern const char loggername[];
 
+    template <typename Enumeration>
+    inline auto as_integer(Enumeration const value)
+        -> typename std::underlying_type<Enumeration>::type
+    {
+        return static_cast<typename std::underlying_type<Enumeration>::type>(value);
+    }
+    //-------------------------------------------------------------------------
+
+    template <class OutIt>
+    void explode(std::string const &input, char sep, OutIt output) {
+        std::istringstream buffer(input);
+        std::string temp;
+
+        while (std::getline(buffer, temp, sep)) {
+            *output++ = temp;
+        }
+    }
+    //-------------------------------------------------------------------------
+
+
+    inline std::string getFileName(const std::string& s) {
+       char sep = '/';
+       size_t i = s.rfind(sep, s.length());
+       if (i != std::string::npos) {
+          return(s.substr(i+1, s.length() - i));
+       }
+       return("");
+    }
 }
+
+#endif

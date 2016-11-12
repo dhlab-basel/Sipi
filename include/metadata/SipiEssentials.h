@@ -23,7 +23,7 @@
  #ifndef __defined_essentials_h
  #define __defined_essentials_h
 
-
+#include <cstdlib>
 #include <sstream>
 #include <utility>
 #include <string>
@@ -55,7 +55,7 @@ namespace Sipi {
         /*!
         * Constructor for empty packet
         */
-        inline EssentialMetadata() { _hash_type = shttps::HashType::none; }
+        inline SipiEssentials() { _hash_type = shttps::HashType::none; }
 
         /*!
         * Constructor where all fields are passed
@@ -65,7 +65,7 @@ namespace Sipi {
         * \param[in] hash_type_p Checksumtype as defined in Hash.h (shttps::HashType)
         * \param[in] data_chksum The actual checksum of the internal image data
         */
-        inline EssentialMetadata(const std::string &origname_p,
+        inline SipiEssentials(const std::string &origname_p,
             const std::string &mimetype_p,
             shttps::HashType hash_type_p,
             const std::string &data_chksum_p)
@@ -76,7 +76,7 @@ namespace Sipi {
         *
         * \param[in] datastr Serialzed metadata packet
         */
-        inline EssentialMetadata(const std::string &datastr) { parse(datastr); }
+        inline SipiEssentials(const std::string &datastr) { parse(datastr); }
 
         /*!
         * Getter for original name
@@ -148,7 +148,7 @@ namespace Sipi {
         /*!
         * Stream output operator
         */
-        inline friend std::ostream &operator<< (std::ostream &ostr, const EssentialMetadata &rhs) {
+        inline friend std::ostream &operator<< (std::ostream &ostr, const SipiEssentials &rhs) {
             ostr << rhs._origname << "|" << rhs._mimetype << "|" << rhs.hash_type_string() << "|" << rhs._data_chksum;
             return ostr;
         }

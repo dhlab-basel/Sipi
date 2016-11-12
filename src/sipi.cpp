@@ -322,7 +322,8 @@ int main (int argc, char *argv[]) {
     if ((params["config"]).isSet()) {
         std::string configfile = (params["config"])[0].getValue(SipiStringType);
         try {
-            std::cout << std::endl << SIPI_VERSION << std::endl;
+            std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
+            std::cout << SIPI_BUILD_VERSION << std::endl;
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
@@ -494,7 +495,7 @@ int main (int argc, char *argv[]) {
         // read the input image
         //
         Sipi::SipiImage img;
-        img.read(infname, region, size, format == "jpg"); //convert to bps=8 in case of JPG output
+        img.readOriginal(infname, region, size, format == "jpg"); //convert to bps=8 in case of JPG output
 
         delete region;
         delete size;
@@ -564,15 +565,6 @@ int main (int argc, char *argv[]) {
         std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
         */
 
-        Sipi::EssentialMetadata emdata ("gaga.tif", "image/tiff", shttps::HashType::md5, "CHECKSUM");
-
-        std::cerr << emdata << std::endl;
-
-        std::string gaga = emdata;
-
-        Sipi::EssentialMetadata emdata2 (gaga);
-
-        std::cerr << emdata2 << std::endl;
         //
         // write the output file
         //

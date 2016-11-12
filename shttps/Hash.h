@@ -45,18 +45,70 @@ namespace shttps {
         sha512 = 5
     } HashType;
 
+   /*!
+    * \brief Hash class which implements a variety of checksum schemes
+    * \author Lukas Rosenthaler
+    * \version 1.0
+    * \date 2016-11-11
+    */
     class Hash {
     private:
         EVP_MD_CTX* context;
     public:
+        /*!
+        * Constructor of a Hash instance
+        *
+        * \param[in] type Hash/checksum method to use (see HashType)
+        */
         Hash (HashType type);
-        ~Hash();
-        bool add_data(const void *data, size_t len);
-        std::string hash_of_file(std::string path, size_t buflen = 32*1024);
-        friend std::istream &operator>> (std::istream  &input, Hash &h);
-        std::string hash(void);
-        //static std::string hash(const char *data, size_t len, HashType type);
 
+        /*!
+        * Destructor which cleans up everything
+        */
+        ~Hash();
+
+        /*!
+        * Adds data to the hash
+        *
+        * \param[in] data Pointer to data
+        * \param[in] len Length of data in bytes
+        *
+        * \returns true in case of success, false if the data couln't be processed
+        */
+        bool add_data(const void *data, size_t len);
+
+        /*!
+        * Calculate the checksum of a fileType_string. THe method uses directly
+        * the unix system calls open, read and write and does the buffering
+        * internally.
+        *
+        * \param[in] path Path to the file
+        * \param[in] buflen Internal buffer for reading the file
+        *
+        * \returns true in case of success, false if the data couln't be processed
+        */
+        bool hash_of_file(const std::string &path, size_t buflen = 16*1024);
+
+        /*!
+        * Adds data to the has from a input stream. It reads the stream until
+        * an eof is encountered!
+        *
+        * \code{.cpp}
+        * stringstream strstr;
+        * ss << "Waseliwas " << a_number << " ist das ?";
+        * shttps::Hash h(shttp::HashType:md5);
+        * strstr >> h;
+        * std::string checksum = h.hash();
+        * \endcode
+        */
+        friend std::istream &operator>> (std::istream  &input, Hash &h);
+
+        /*!
+        * Calculate and return the has value as string
+        *
+        * \returns Returns the has value as string
+        */
+        std::string hash(void);
     };
 
 }

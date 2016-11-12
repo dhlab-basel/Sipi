@@ -26,6 +26,11 @@
 #include <sstream>
 #include <string>
 
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <unistd.h>
+
 #include "SipiError.h"
 #include "Hash.h"
 
@@ -84,25 +89,26 @@ namespace shttps {
     }
     //==========================================================================
 
-    string Hash::hash_of_file(const string &path, HashType type, size_t buflen) {
+    bool Hash::hash_of_file(const string &path, size_t buflen) {
         char *buf = new char[buflen];
 
-        int fptr = open(path.c_str(), O_RDONLY);
+        int fptr = ::open(path.c_str(), O_RDONLY);
         if (fptr == -1) {
-            throw SipiError(__file__, __LINE__, "Couldn't open file \"" + path + "\" !");
+            return false;
         }
         size_t n;
-        while ((n = read(fptr, buf, buflen)) > 0) {
+        while ((n = ::read(fptr, buf, buflen)) > 0) {
             if (n == -1) {
-                close (fptr);
-                throw SipiError(__file__, __LINE__, "Error reading file \"" + path + "\" !");
+                ::close (fptr);
+                return false;
             }
             if (!EVP_DigestUpdate(context, buf, n)) {
-                close(fptr);
-                throw SipiError(__file__, __LINE__, "EVP_DigestUpdate failed!");
+                ::close(fptr);
+                return false;
             }
         }
-        close(fptr);
+        ::close(fptr);
+        return true;
     }
     //==========================================================================
 
@@ -131,55 +137,4 @@ namespace shttps {
         return hashstr;
     }
     //==========================================================================
-/*
-    string Hash::hash(const char *data, size_t len, HashType type) {
-        string hashed;
-        EVP_MD_CTX* context = EVP_MD_CTX_create();
-
-        if(context != NULL) {
-            int status;
-            switch (type) {
-                case none: {
-                    status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
-                    break;
-                }
-                case md5: {
-                    status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
-                    break;
-                }
-                case sha1: {
-                    status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
-                    break;
-                }
-                case sha256: {
-                    status = EVP_DigestInit_ex(context, EVP_sha256(), NULL);
-                    break;
-                }
-                case sha384: {
-                    status = EVP_DigestInit_ex(context, EVP_sha384(), NULL);
-                    break;
-                }
-                case sha512: {
-                    status = EVP_DigestInit_ex(context, EVP_sha512(), NULL);
-                    break;
-                }
-            }
-            if(status) {
-                if (EVP_DigestUpdate(context, (void *) data, len)) {
-                    unsigned char hash[EVP_MAX_MD_SIZE];
-                    unsigned int lengthOfHash = 0;
-                    if (EVP_DigestFinal_ex(context, hash, &lengthOfHash)) {
-                        std::stringstream ss;
-                        for (unsigned int i = 0; i < lengthOfHash; ++i) {
-                            ss << std::hex << std::setw(2) << std::setfill('0') << (int) hash[i];
-                        }
-                        hashed = ss.str();
-                    }
-                }
-            }
-            EVP_MD_CTX_destroy(context);
-        }
-        return hashed;
-    }
-    */
 }

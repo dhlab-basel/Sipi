@@ -29,8 +29,8 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
-string(TIMESTAMP VERSION "%Y-%m-%d %H:%M")
-set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
+string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
+set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
 
 #
 # Usually SIPI is compiled with all static libraries
@@ -203,7 +203,25 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 
+
+
+IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    FIND_PACKAGE(Git)
+    IF(GIT_FOUND)
+        EXECUTE_PROCESS(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            OUTPUT_VARIABLE "SIPI_BUILD_VERSION"
+            ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Git version: ${SIPI_BUILD_VERSION}" )
+    ELSE(GIT_FOUND)
+        SET(SIPI_BUILD_VERSION 0)
+    ENDIF(GIT_FOUND)
+ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+
 CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
+
 
 #
 # Here we get the ICC profiles from the Adobe website and prepare them for including

@@ -91,26 +91,6 @@ namespace Sipi {
         SKIP_ALL = 0xFF
     } SkipMetadata;
 
-    template <typename Enumeration>
-    inline auto as_integer(Enumeration const value)
-        -> typename std::underlying_type<Enumeration>::type
-    {
-        return static_cast<typename std::underlying_type<Enumeration>::type>(value);
-    }
-    //-------------------------------------------------------------------------
-
-    template <class OutIt>
-    void explode(std::string const &input, char sep, OutIt output) {
-        std::istringstream buffer(input);
-        std::string temp;
-
-        while (std::getline(buffer, temp, sep)) {
-            *output++ = temp;
-        }
-    }
-    //-------------------------------------------------------------------------
-
-
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error
@@ -322,9 +302,9 @@ namespace Sipi {
         */
          inline shttps::Connection *connection() { return conobj; };
 
-         inline void essential_metadata(const EssentialMetadata &emdata_p) { emdata = emdata_p; }
+         inline void essential_metadata(const SipiEssentials &emdata_p) { emdata = emdata_p; }
 
-         inline EssentialMetadata essential_metadata(void) { return emdata; }
+         inline SipiEssentials essential_metadata(void) { return emdata; }
 
         /*!
          * Read an image from the given path
@@ -332,6 +312,8 @@ namespace Sipi {
          * \param[in] filepath A string containing the path to the image file
          */
         void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+
+        void readOriginal(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
 
        /*!
         * Get the dimension of the image

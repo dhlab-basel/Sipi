@@ -26,6 +26,8 @@
 #include <climits>
 #include "lcms2.h"
 
+#include "shttps/Global.h"
+#include "shttps/Hash.h"
 #include "SipiImage.h"
 #include "formats/SipiIOTiff.h"
 #include "formats/SipiIOJ2k.h"
@@ -33,7 +35,6 @@
 #include "formats/SipiIOJpeg.h"
 #include "formats/SipiIOPng.h"
 #include "shttps/GetMimetype.h"
-#include "shttps/Hash.h"
 
 using namespace std;
 
@@ -267,6 +268,20 @@ namespace Sipi {
         }
     }
     //============================================================================
+
+    void SipiImage::readOriginal(string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
+        read(filepath, region, size, force_bps_8);
+        shttps::Hash internal_hash(shttps::HashType::md5);
+        internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+        string checksum = internal_hash.hash();
+        string origname = shttps::getFileName(filepath);
+        string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+        SipiEssentials emdata(origname, mimetype, shttps::HashType::md5, checksum);
+        cerr << emdata << endl;
+        essential_metadata(emdata);
+    }
+    //============================================================================
+
 
     void SipiImage::getDim(string filepath, int &width, int &height) {
         size_t pos = filepath.find_last_of('.');
@@ -1074,8 +1089,8 @@ namespace Sipi {
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
             stringstream ss;
             ss << "Image op: images not compatible!" << endl;
-            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << as_integer(photo) << endl;
-            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << as_integer(rhs.photo) << endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << endl;
             throw SipiImageError(__file__, __LINE__, ss.str());
         }
 
@@ -1184,8 +1199,8 @@ namespace Sipi {
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
             stringstream ss;
             ss << "Image op: images not compatible!" << endl;
-            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << as_integer(photo) << endl;
-            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << as_integer(rhs.photo) << endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << endl;
             throw SipiImageError(__file__, __LINE__, ss.str());
         }
 
