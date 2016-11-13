@@ -113,13 +113,13 @@ namespace Sipi {
     SipiImage::SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p)
     : nx(nx_p), ny(ny_p), nc(nc_p), bps(bps_p), photo(photo_p) {
         if (((photo == MINISWHITE) || (photo == MINISBLACK)) && !((nc == 1) || (nc == 2))) {
-            throw SipiError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
         }
         if ((photo == RGB) && !((nc == 3) || (nc == 4))) {
-            throw SipiError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
         }
         if ((bps != 8) && (bps != 16)) {
-            throw SipiError(__file__, __LINE__, "Bits per samples not supported by SIPI!");
+            throw SipiImageError(__file__, __LINE__, "Bits per samples not supported by SIPI!");
         }
         size_t bufsiz;
         switch (bps) {
@@ -139,7 +139,7 @@ namespace Sipi {
             pixels = new byte[bufsiz];
         }
         else {
-            throw SipiError(__file__, __LINE__, "Image with noe content!");
+            throw SipiImageError(__file__, __LINE__, "Image with noe content!");
         }
         xmp = NULL;
         icc = NULL;
@@ -264,21 +264,31 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
         }
     }
     //============================================================================
 
-    void SipiImage::readOriginal(string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        read(filepath, region, size, force_bps_8);
-        shttps::Hash internal_hash(shttps::HashType::md5);
-        internal_hash.add_data(pixels, nx*ny*nc*bps/8);
-        string checksum = internal_hash.hash();
-        string origname = shttps::getFileName(filepath);
-        string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
-        SipiEssentials emdata(origname, mimetype, shttps::HashType::md5, checksum);
-        cerr << emdata << endl;
-        essential_metadata(emdata);
+    bool SipiImage::readOriginal(string filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
+        read(filepath, region, size, false);
+        if (!emdata.is_set()) {
+            shttps::Hash internal_hash(htype);
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            string checksum = internal_hash.hash();
+            string origname = shttps::getFileName(filepath);
+            string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
+            essential_metadata(emdata);
+        }
+        else {
+            shttps::Hash internal_hash(emdata.hash_type());
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            string checksum = internal_hash.hash();
+            if (checksum != emdata.data_chksum()) {
+                return false;
+            }
+        }
+        return true;
     }
     //============================================================================
 
@@ -310,7 +320,7 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
         }
     }
     //============================================================================
@@ -342,7 +352,7 @@ namespace Sipi {
                     break;
                 }
                 default: {
-                    throw SipiError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + to_string(nc) + "!");
+                    throw SipiImageError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + to_string(nc) + "!");
                 }
             }
         }
@@ -365,7 +375,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiError(__file__, __LINE__, "Unsuported bits/sample (" + to_string(bps) + ")!");
+                throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + to_string(bps) + ")!");
             }
         }
         cmsDoTransform(hTransform, inbuf, outbuf, nx*ny);
@@ -407,7 +417,7 @@ namespace Sipi {
     void SipiImage::removeChan(unsigned int chan) {
         if ((nc == 1) || (chan >= nc)) {
             string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiImageError(__file__, __LINE__, msg);
         }
         if (es.size() > 0) {
             if (nc < 3) {
@@ -416,7 +426,7 @@ namespace Sipi {
             else if (nc > 3) { // it's probably an alpha channel
                 if ((nc == 4) && (photo == SEPARATED)) {  // oh no – 4 channes, but CMYK
                     string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
-                    throw SipiError(__file__, __LINE__, msg);
+                    throw SipiImageError(__file__, __LINE__, msg);
                 }
                 else {
                     es.erase(es.begin() + (chan - ((photo ==  SEPARATED) ? 4 : 3)));
@@ -424,7 +434,7 @@ namespace Sipi {
             }
             else {
                 string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(__file__, __LINE__, msg);
             }
         }
         if (bps == 8) {
@@ -460,7 +470,7 @@ namespace Sipi {
         else {
             if (bps != 8) {
                 string msg = "Bits per sample is not supported for operation: " + to_string(bps);
-                throw SipiError(__file__, __LINE__, msg);
+                throw SipiImageError(__file__, __LINE__, msg);
             }
         }
         nc--;
@@ -1039,7 +1049,7 @@ namespace Sipi {
         int wm_nx, wm_ny, wm_nc;
     	byte *wmbuf = read_watermark(wmfilename, wm_nx, wm_ny, wm_nc);
         if (wmbuf == NULL) {
-            throw SipiError(__file__, __LINE__, "Cannot read watermark file=\"" + wmfilename + "\" !");
+            throw SipiImageError(__file__, __LINE__, "Cannot read watermark file=\"" + wmfilename + "\" !");
         }
 
         float *xlut = new float[nx];

@@ -133,17 +133,31 @@ namespace Sipi {
         inline SipiImageError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0)
         : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
 
-        /*!
-        * Output the error message
-        */
-        inline const char* what() const {
-            std::stringstream ss;
-            ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
-            if (errnum > 0) ss << " System-msg: " << strerror(errnum);
-            std::string tmpstr = ss.str();
-            std::cerr << tmpstr << std::endl;
-            return tmpstr.c_str();
+        inline std::string get_error(void) const {
+            stringstream ss;
+            ss << "SIPI-IMAGE-ERROR at [" << file << ": #" << line << "]";
+            if (errnum != 0) ss << ": " << strerror(errnum);
+            ss << ": " << errmsg;
+            return ss.str();
         }
+        //----------------------------------------------------------------------
+
+        inline friend std::ostream &operator<<(std::ostream &outstr, const SipiImageError &rhs)
+        {
+            outstr << endl << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]" << endl;
+            if (rhs.errnum != 0) outstr << "System error: " << strerror(rhs.errnum) << endl;
+            outstr << "Description : " << rhs.errmsg << endl;
+            return outstr;
+        }
+        //----------------------------------------------------------------------
+
+        inline friend std::shared_ptr<spdlog::logger> &operator<<(std::shared_ptr<spdlog::logger> &log, const SipiImageError &rhs)
+        {
+            log->error("SIPI-IMAGE-ERROR at [") << rhs.file << ": #" << rhs.line << "]: " << rhs.errmsg;
+            return log;
+        }
+        //----------------------------------------------------------------------
+
     };
 
 
@@ -306,14 +320,40 @@ namespace Sipi {
 
          inline SipiEssentials essential_metadata(void) { return emdata; }
 
-        /*!
-         * Read an image from the given path
-         *
-         * \param[in] filepath A string containing the path to the image file
-         */
+       /*!
+        * Read an image from the given path
+        *
+        * \param[in] filepath A string containing the path to the image file
+        * \param[in] region Pointer to a SipiRegion which indicates that we
+        *            are only interested in this regeion. The image will be cropped.
+        * \param[in] size Pointer to a size object. The image will be scaled accordingly
+        * \param[in] force_bps_8 We want in any case a 8 Bit/sample image. Reduce if necessary
+        *
+        * \throws SipiError
+        */
         void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
 
-        void readOriginal(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+       /*!
+        * Read an image that is to be considered an "original image". In this case
+        * a SipiEssentials object is created containing the original name, the
+        * original mime type. In addition also a checksum of the pixel values
+        * is added in order to guarantee the integrity of the image pixels.
+        * if the image is written as J2K or as TIFF image, these informations
+        * are added to the file header (in case of TIFF as a private tag 65111,
+        * in case of J2K as comment box).
+        * If the file read already contains a SipiEssentials as embedded metadata,
+        * it is not overwritten, put the embeded and pixel checksums are compared.
+        *
+        * \param[in] filepath A string containing the path to the image file
+        * \param[in] region Pointer to a SipiRegion which indicates that we
+        *            are only interested in this regeion. The image will be cropped.
+        * \param[in] size Pointer to a size object. The image will be scaled accordingly
+        * \param[in] htype The checksum method that should be used if the checksum is
+        *            being calculated for the first time.
+        *
+        * \returns true, if everythin worked. False, if the checksums do not match.
+        */
+        bool readOriginal(string filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype = shttps::HashType::sha256);
 
        /*!
         * Get the dimension of the image

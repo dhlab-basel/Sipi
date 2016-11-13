@@ -62,7 +62,7 @@
        if (i != std::string::npos) {
           return(s.substr(i+1, s.length() - i));
        }
-       return("");
+       return(s);
     }
 }
 

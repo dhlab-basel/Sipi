@@ -69,7 +69,6 @@ namespace Sipi {
         else if (_hash_type_str == "sha512") _hash_type = shttps::HashType::sha512;
         else _hash_type = shttps::HashType::none;
         _data_chksum = *(result.begin() + 3);
+         _is_set = true;
     }
-
-
 }

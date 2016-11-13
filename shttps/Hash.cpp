@@ -41,7 +41,7 @@ static const char __file__[] = __FILE__;
 namespace shttps {
 
     Hash::Hash(HashType type) {
-        EVP_MD_CTX* context = EVP_MD_CTX_create();
+        context = EVP_MD_CTX_create();
         if (context == NULL) {
             throw Sipi::SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
         }
@@ -72,7 +72,7 @@ namespace shttps {
                 break;
             }
         }
-        if (!status) {
+        if (status != 1) {
             EVP_MD_CTX_destroy(context);
             throw Sipi::SipiError(__file__, __LINE__, "EVP_DigestInit_ex failed!");
         }

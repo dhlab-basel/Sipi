@@ -256,6 +256,7 @@ int main (int argc, char *argv[]) {
         std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
     }
 
+    Sipi::SipiIOTiff::initLibrary();
 
     //
     // commandline processing....
@@ -495,8 +496,13 @@ int main (int argc, char *argv[]) {
         // read the input image
         //
         Sipi::SipiImage img;
-        img.readOriginal(infname, region, size, format == "jpg"); //convert to bps=8 in case of JPG output
-
+        img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+        if (format == "jpg") {
+            img.to8bps();
+            if (img.getNalpha() > 0) {
+                img.removeChan(img.getNc() - 1);
+            }
+        }
         delete region;
         delete size;
 
@@ -565,6 +571,7 @@ int main (int argc, char *argv[]) {
         std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
         */
 
+std::cout << img << std::endl;
         //
         // write the output file
         //
@@ -572,7 +579,7 @@ int main (int argc, char *argv[]) {
             img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
         }
         catch (Sipi::SipiImageError &err) {
-            std::cerr << err.what() << std::endl;
+            std::cerr << err << std::endl;
         }
 
         if (params["salsah"].isSet()) {

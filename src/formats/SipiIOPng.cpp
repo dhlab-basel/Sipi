@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <string.h>
 
 #include "SipiIOPng.h"
 
@@ -54,6 +55,7 @@ namespace Sipi {
     static char exif_tag[] = "Raw profile type exif";
     static char iptc_tag[] = "Raw profile type iptc";
     static char xmp_tag[] = "XML:com.adobe.xmp";
+    static char sipi_tag[] = "SIPI:io.sipi.essentials";
 
     //============== HELPER CLASS ==================
     class PngTextPtr {
@@ -181,7 +183,6 @@ namespace Sipi {
 
         if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sRGB) != 0) {
             img->icc = new SipiIcc(icc_sRGB);
-            cerr << "PNG with sRGB profile: " << filepath << endl;
         }
         else {
             png_charp name;
@@ -190,7 +191,6 @@ namespace Sipi {
             png_uint_32 proflen;
             if (png_get_iCCP(png_ptr, info_ptr, &name, &compression_type, &profile, &proflen) != 0) {
                 img->icc = new SipiIcc((unsigned char *) profile, (int) proflen);
-                cerr << "PNG with ICC profile: " << filepath << endl;
             }
         }
 
@@ -205,6 +205,10 @@ namespace Sipi {
             }
             else if (strcmp(png_texts[i].key, iptc_tag) == 0) {
                 img->iptc = new SipiIptc((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
+            }
+            else if (strcmp(png_texts[i].key, sipi_tag) == 0) {
+                SipiEssentials se(png_texts[i].text);
+                img->essential_metadata(se);
             }
             else {
                 fprintf(stderr, "PNG-COMMENT: key=\"%s\" text=\"%s\"\n", png_texts[i].key, png_texts[i].text);
@@ -451,6 +455,17 @@ namespace Sipi {
             xmp_buf = img->xmp->xmpBytes(len);
             chunk_ptr.add_iTXt(xmp_tag, xmp_buf, len);
         }
+
+        SipiEssentials es = img->essential_metadata();
+        if (es.is_set()) {
+            string esstr = es;
+            unsigned int len = esstr.length();
+            char sipi_buf[512 + 1];
+            strncpy(sipi_buf, esstr.c_str(), 512);
+            sipi_buf[512] = '\0';
+            chunk_ptr.add_iTXt(sipi_tag, sipi_buf, len);
+        }
+
 
         if (chunk_ptr.num() > 0) {
             png_set_text(png_ptr, info_ptr, chunk_ptr.ptr(), chunk_ptr.num());

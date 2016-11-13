@@ -311,7 +311,7 @@ namespace Sipi {
                 tmpimg.getDim(infile, width, height);
             }
             catch(SipiImageError &err) {
-                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.get_error());
                 return;
             }
         }
@@ -761,7 +761,7 @@ namespace Sipi {
                 tmpimg.getDim(infile, img_w, img_h);
             }
             catch(SipiImageError &err) {
-                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.get_error());
                 return;
             }
         }
@@ -893,7 +893,7 @@ namespace Sipi {
             img.read(infile, &region, &size, quality_format.format() == SipiQualityFormat::JPG);
         }
         catch(const SipiImageError &err) {
-            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.what());
+            send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.get_error());
             return;
         }
 

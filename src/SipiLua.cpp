@@ -596,7 +596,7 @@ namespace Sipi {
                 img->image->write(ftype, "HTTP");
             }
             catch (SipiImageError &err) {
-                lua_pushstring(L, err.what());
+                lua_pushstring(L, err.get_error().c_str());
                 return lua_error(L);
             }
         }
@@ -605,7 +605,7 @@ namespace Sipi {
                 img->image->write(ftype, imgpath);
             }
             catch (SipiImageError &err) {
-                lua_pushstring(L, err.what());
+                lua_pushstring(L, err.get_error().c_str());
                 return lua_error(L);
             }
         }

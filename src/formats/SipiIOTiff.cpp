@@ -348,7 +348,7 @@ namespace Sipi {
         TIFF_GET_FIELD (tif, TIFFTAG_PLANARCONFIG, &pc, PLANARCONFIG_CONTIG);
         if (pc != PLANARCONFIG_CONTIG) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: Tag TIFFTAG_PLANARCONFIG is not PLANARCONFIG_CONTIG: " + wmfile);
+            throw SipiImageError(__file__, __LINE__, "ERROR in read_watermark: Tag TIFFTAG_PLANARCONFIG is not PLANARCONFIG_CONTIG: " + wmfile);
         }
         sll = nx*spp*bps/8;
         try {
@@ -414,6 +414,33 @@ namespace Sipi {
     }
     //============================================================================
 
+    #define N(a) (sizeof(a) / sizeof (a[0]))
+    #define TIFFTAG_SIPIMETA 65111
+
+    static const TIFFFieldInfo xtiffFieldInfo[] = {
+        { TIFFTAG_SIPIMETA,  1, 1, TIFF_ASCII,  FIELD_CUSTOM, 1, 0, const_cast<char*>("SipiEssentialMetadata") },
+    };
+    //============================================================================
+
+    static TIFFExtendProc parent_extender = NULL;
+
+    static void registerCustomTIFFTags(TIFF *tif) {
+        /* Install the extended Tag field info */
+        TIFFMergeFieldInfo(tif, xtiffFieldInfo, N(xtiffFieldInfo));
+        if (parent_extender != NULL) (*parent_extender)(tif);
+    }
+    //============================================================================
+
+    void SipiIOTiff::initLibrary(void) {
+        static bool done = false;
+        if (!done) {
+            TIFFSetErrorHandler(tiffError);
+            TIFFSetWarningHandler(tiffWarning);
+
+            parent_extender = TIFFSetTagExtender(registerCustomTIFFTags);
+            done = true;
+        }
+    }
 
     bool SipiIOTiff::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
     {
@@ -421,8 +448,6 @@ namespace Sipi {
 
         auto logger = spdlog::get(shttps::loggername);
 
-        TIFFSetWarningHandler(NULL);
-        TIFFSetErrorHandler(NULL);
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
             TIFFSetErrorHandler(tiffError);
             TIFFSetWarningHandler(tiffWarning);
@@ -644,6 +669,15 @@ namespace Sipi {
                 if (primaries_del) delete [] primaries;
             }
 
+            //
+            // Read SipiEssential metadata
+            //
+            char *emdatastr;
+            if (1 == TIFFGetField(tif, TIFFTAG_SIPIMETA, &emdatastr)) {
+                SipiEssentials se(emdatastr);
+                img->essential_metadata(se);
+            }
+
 
             if ((region == NULL) || (region->getType() == SipiRegion::FULL)) {
                 if (planar == PLANARCONFIG_CONTIG) {
@@ -833,11 +867,7 @@ namespace Sipi {
     bool SipiIOTiff::getDim(std::string filepath, int &width, int &height) {
     	TIFF *tif;
 
-        TIFFSetWarningHandler(NULL);
-        TIFFSetErrorHandler(NULL);
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
-            TIFFSetErrorHandler(tiffError);
-            TIFFSetWarningHandler(tiffWarning);
 
             //
             // OK, it's a TIFF file
@@ -871,10 +901,6 @@ namespace Sipi {
 
         auto logger = spdlog::get(shttps::loggername);
 
-
-        TIFFSetWarningHandler(tiffWarning);
-        TIFFSetErrorHandler(tiffError);
-
         if ((filepath == "-") || (filepath == "HTTP")) {
             memtif = memTiffOpen();
             tif = TIFFClientOpen("MEMTIFF", "wb", (thandle_t) memtif,
@@ -904,13 +930,6 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
         TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);
         if (img->es.size() > 0) {
-            //
-            // it seems we have a bug in libtiff. Anyting other then EXTRASAMPLE_UNSPECIFIED
-            // writes a file that cannot be read anymore...
-            //
-            uint16 *gaga = new uint16[img->es.size()];
-            for (int i = 0; i < img->es.size(); i++) gaga[i] = EXTRASAMPLE_UNSPECIFIED;
-            //TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), gaga /*img->es.data()*/ );
             TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
         }
         TIFFSetField (tif, TIFFTAG_PHOTOMETRIC,     img->photo);
@@ -1012,12 +1031,20 @@ namespace Sipi {
             }
         }
 
+        //
+        // Custom tag for SipiEssential metadata
+        //
+        SipiEssentials es = img->essential_metadata();
+        if (es.is_set()) {
+            string emdata = es;
+            TIFFSetField(tif, TIFFTAG_SIPIMETA, emdata.c_str());
+        }
+
         //TIFFCheckpointDirectory(tif);
 
         for (int i = 0; i < img->ny; i++) {
             TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
         }
-
 
         //
         // write exif data

@@ -47,6 +47,7 @@ namespace Sipi {
     */
     class SipiEssentials {
     private:
+        bool _is_set;
         std::string _origname; //!< oroginal filename
         std::string _mimetype; //!< original mime type
         shttps::HashType _hash_type; //!< type of checksum
@@ -55,7 +56,7 @@ namespace Sipi {
         /*!
         * Constructor for empty packet
         */
-        inline SipiEssentials() { _hash_type = shttps::HashType::none; }
+        inline SipiEssentials() { _hash_type = shttps::HashType::none; _is_set = false; }
 
         /*!
         * Constructor where all fields are passed
@@ -69,7 +70,7 @@ namespace Sipi {
             const std::string &mimetype_p,
             shttps::HashType hash_type_p,
             const std::string &data_chksum_p)
-            : _origname(origname_p), _mimetype(mimetype_p), _hash_type(hash_type_p), _data_chksum(data_chksum_p) { }
+            : _origname(origname_p), _mimetype(mimetype_p), _hash_type(hash_type_p), _data_chksum(data_chksum_p) { _is_set = true; }
 
         /*!
         * Constructor taking a serialized packet (as string)
@@ -86,7 +87,7 @@ namespace Sipi {
         /*!
         * Setter for original name
         */
-        inline void origname(const std::string &origname_p) { _origname = origname_p; }
+        inline void origname(const std::string &origname_p) { _origname = origname_p; _is_set = true; }
 
         /*!
         * Getter for mimetype
@@ -136,6 +137,11 @@ namespace Sipi {
         * Parse a string containing a serialized metadata packet
         */
         void parse(const std::string &str);
+
+        /*!
+        * Check if essential metadata has been set.
+        */
+        inline bool is_set(void) { return _is_set; }
 
         /*!
         * String conversion operator

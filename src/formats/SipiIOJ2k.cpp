@@ -28,6 +28,8 @@
 #include <fstream>
 #include <cstdio>
 
+#include <string.h>
+
 #include "shttps/Connection.h"
 #include "shttps/Global.h"
 
@@ -271,6 +273,20 @@ namespace Sipi {
         codestream.create(input);
         //codestream.set_fussy(); // Set the parsing error tolerance.
         codestream.set_fast(); // No errors expected in input
+
+        //
+        // get SipiEssentials (if present) as codestream comment
+        //
+        kdu_codestream_comment comment = codestream.get_comment();
+        while (comment.exists()) {
+            const char *cstr = comment.get_text();
+            if (strncmp(cstr, "SIPI:", 5) == 0) {
+                SipiEssentials se(cstr + 5);
+                img->essential_metadata(se);
+                break;
+            }
+            comment = codestream.get_comment(comment);
+        }
 
         //
         // get the size of the full image (without reduce!)
@@ -566,8 +582,17 @@ namespace Sipi {
 
             codestream.create(&siz, output);
 
-            kdu_codestream_comment comment = codestream.add_comment();
-            comment.put_text("http://rosenthaler.org/sipi/1.0 B/");
+            //
+            // Custom tag for SipiEssential metadata
+            //
+            SipiEssentials es = img->essential_metadata();
+            if (es.is_set()) {
+                string esstr = es;
+                string emdata = "SIPI:" + esstr;
+                kdu_codestream_comment comment = codestream.add_comment();
+                comment.put_text(emdata.c_str());
+            }
+
 
             // Set up any specific coding parameters and finalize them.
 

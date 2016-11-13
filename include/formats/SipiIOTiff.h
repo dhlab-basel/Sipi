@@ -72,6 +72,7 @@ namespace Sipi {
         */
         void cvrt1BitTo8Bit(SipiImage *img, unsigned int sll, unsigned int black, unsigned int white);
     public:
+        static void initLibrary(void);
        /*!
         * Method used to read an image file
         *
