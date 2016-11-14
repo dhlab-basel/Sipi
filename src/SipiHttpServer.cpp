@@ -241,7 +241,6 @@ namespace Sipi {
             }
             else { ; // error handling!
             }
-            cerr << "Permission=" << permission << endl;
 
             if (rval[1].type == LuaValstruct::STRING_TYPE) {
                 infile = rval[1].value.s;
@@ -649,7 +648,8 @@ namespace Sipi {
         string infile;  // path to the input file on the server
         string permission; // the permission string
         string watermark; // path to watermark file, or empty, if no watermark required
-        SipiSize restriction_size; // size of restricted image... (SizeTYpe::FULL if unrestricted)
+        SipiSize restriction_size; // size of restricted image... (SizeType::FULL if unrestricted)
+
         //
         // here we start the lua script which checks for permissions
         //
@@ -725,7 +725,7 @@ namespace Sipi {
         if (extpos != string::npos) {
             extension = infile.substr(extpos + 1);
         }
-        if ((extension == "tif") || (extension == "TIF")) {
+        if ((extension == "tif") || (extension == "TIF") || (extension == "tiff") || (extension == "TIFF")) {
             in_format = SipiQualityFormat::TIF;
         }
         else if ((extension == "jpg") || (extension == "JPG")) {
@@ -737,6 +737,9 @@ namespace Sipi {
         else if ((extension == "j2k") || (extension == "J2K") || (extension == "jp2") || (extension == "JP2") ||
                  (extension == "jpx") || (extension == "JPX")) {
             in_format = SipiQualityFormat::JP2;
+        }
+        else if ((extension == "pdf") || (extenstion == "PDF")) {
+            in_format = SipiQualityFormat::PDF;
         }
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
             send_error(conobj, Connection::NOT_FOUND);

@@ -177,6 +177,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
+#add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
+#add_subdirectory(${EXT_PROJECTS_DIR}/freetype2)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
@@ -186,7 +188,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
-#add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
+#add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
 
 
