@@ -61,6 +61,36 @@ static const char servertablename[] = "server";
 
 namespace shttps {
 
+#ifdef GAGA
+    void stackdump_g(lua_State* l)
+    {
+        int i;
+        int top = lua_gettop(l);
+
+        printf("total in stack %d\n",top);
+
+        for (i = 1; i <= top; i++)
+        {  /* repeat for each level */
+            int t = lua_type(l, i);
+            switch (t) {
+                case LUA_TSTRING:  /* strings */
+                    printf("string: '%s'\n", lua_tostring(l, i));
+                    break;
+                case LUA_TBOOLEAN:  /* booleans */
+                    printf("boolean %s\n",lua_toboolean(l, i) ? "true" : "false");
+                    break;
+                case LUA_TNUMBER:  /* numbers */
+                    printf("number: %g\n", lua_tonumber(l, i));
+                    break;
+                default:  /* other values */
+                    printf("%s\n", lua_typename(l, t));
+                    break;
+            }
+            printf("  ");  /* put a separator */
+        }
+        printf("\n");  /* end the listing */
+    }
+#endif
 
     char luaconnection[] = "__shttpsconnection";
 
@@ -68,9 +98,15 @@ namespace shttps {
      * Error handler for Lua errors!
      */
     static int dont_panic(lua_State *L) {
-        cerr << "LUA-PANIC..." << endl;
-        const char *luapanic = lua_tostring(L, -1);
-        throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
+        string errormsg = "";
+        int n = lua_gettop(L);
+        for (int i = 1; i <= n; i++) {
+            const char *tmpstr = lua_tostring(L, i);
+            errormsg += tmpstr + string("\n");
+        }
+        //const char *luapanic = lua_tostring(L, -1);
+        //throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
+        throw Error(__file__, __LINE__, string("Lua panic: ") + errormsg);
     }
     //=========================================================================
 
@@ -227,7 +263,6 @@ namespace shttps {
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
-
     }
     //=========================================================================
 
@@ -738,6 +773,7 @@ namespace shttps {
         for (int i = 1; i <= top; i++) {
             const char *str = lua_tostring(L, i);
             if (str != NULL) {
+cerr << "conn->send: " << str << endl; 
                 conn->send(str, strlen(str));
             }
         }
@@ -2390,8 +2426,14 @@ namespace shttps {
 
 
     int LuaServer::executeChunk(const string &luastr) {
-        if (luaL_dostring(L, luastr.c_str()) != 0) {
-            return -1;
+        try {
+            if (luaL_dostring(L, luastr.c_str()) != 0) {
+                lua_error(L);
+                return -1;
+            }
+        }
+        catch (Error &err) {
+            cerr << err;
         }
         int top = lua_gettop(L);
         if (top == 1) {

@@ -183,18 +183,23 @@ end
 --    a JSON string that represents the table 'result'
 -------------------------------------------------------------------------------
 function send_success(result)
-
+server.sendHeader("Content-Type", "text/text")
+server.print("WaseliwasdhjasJHDSAJHDSAHJDSJHKDSAjhkdasjhkdsajhkdasjhkdasjhkdasjhkdsajhkdasjhkdsajhkdasjhkdasjkhdasjhkdasjhkdsajhkdasjhkdsajhkdasjhkdasjhkdasjhkdasjhkdsajhkdsajhkdasjhkdasjhkdsajhkdsajhkdsajhkdasjhkdasjhkdsajhkdasjhkdashjksa")
+return
+print ("In send_success")
     if type(result) == "table" then
-
+print("==1")
         server.sendHeader("Content-Type", "application/json")
+print("==2")
         jsonstr = server.table_to_json(result)
-
+print("==3", jsonstr)
         server.print(jsonstr)
+        print("==3.5")
 
     else
-
+print("==4")
         send_error()
-
+print("==5")
     end
 
 end

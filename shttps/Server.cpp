@@ -138,6 +138,7 @@ namespace shttps {
 
                 try {
                     if (lua.executeChunk(luacode) < 0) {
+cerr << __file__ << " : " << __LINE__ << endl;
                         conn.flush();
                         return;
                     }
@@ -156,6 +157,8 @@ namespace shttps {
                     logger->error("ScriptHandler: error executing lua script") << err;
                     return;
                 }
+cerr << __file__ << " : " << __LINE__ << endl;
+
                 conn.flush();
             }
             else if (extension == "elua") { // embedded lua <lua> .... </lua>

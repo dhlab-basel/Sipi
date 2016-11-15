@@ -31,32 +31,51 @@ for imgindex,imgparam in pairs(server.uploads) do
     --for kk,vv in pairs(imgparam) do
     --    print(kk, " = ", vv)
     --end
-
+print ("111")
     --
     -- check if tmporary directory is available, if not, create it
     --
     tmpdir = config.imgroot .. '/tmp/'
     if  not server.fs.exists(tmpdir) then
-        server.fs.mkdir(tmpdir, 511)
+        local success, result = pcall (function(a,b)  server.fs.mkdir(a,b) end, tmpdir, 511)
+        if not success then
+            print("server.fs.mkdir: ", tmpdir, " ; ", result)
+        end
     end
 
+print("222")
     --
     -- copy the file to a safe place
     --
     tmpname = server.uuid62()
     tmppath =  tmpdir .. tmpname
-    server.copyTmpfile(imgindex, tmppath)
-
+    --server.copyTmpfile(imgindex, tmppath)
+    local success, result = pcall (function(a,b)  server.copyTmpfile(a,b) end, imgindex, tmppath)
+    if not success then
+        print("server.copyTmpfile: ", result)
+    end
+print("333")
     --
     -- create a SipiImage, already resized to the thumbnail size
     --
+    print ("tmppath=", tmppath)
+    print ("config.thumb_size=", config.thumb_size)
     myimg = SipiImage.new(tmppath, {size = config.thumb_size})
+    --local myimg, error = pcall (function(a,b) return SipiImage.new(a,b) end, tmppath, {size = config.thumb_size})
+    --if not myimg then
+    --   print("SipiImage.new: ", error)
+    --end
+print("444")
 
     filename = imgparam["origname"]
     mimetype = imgparam["mimetype"]
 
-    check = myimg:mimetype_consistency(mimetype, filename)
-
+    --check = myimg:mimetype_consistency(mimetype, filename)
+    local check, result = pcall (function(a,b)  return myimg:mimetype_consistency(a,b) end, mimetype, filename)
+    if not check then
+        print("myimg:mimetype_consistency : ", result)
+    end
+print("555")
     -- if check returns false, the user's input is invalid
     if not check then
 
@@ -69,7 +88,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     -- get the dimensions and print them
     --
     dims = myimg:dims()
-
+print("666")
     --
     -- write the thumbnail file
     --
@@ -77,10 +96,10 @@ for imgindex,imgparam in pairs(server.uploads) do
     if  not server.fs.exists(thumbsdir) then
         server.fs.mkdir(thumbsdir, 511)
     end
-
+print("777")
     thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
     myimg:write(thumbname)
-
+print("888")
     result = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
@@ -91,7 +110,15 @@ for imgindex,imgparam in pairs(server.uploads) do
         original_filename = filename,
         file_type = 'IMAGE'
     }
+    gaga = { me = "Lukas", you = "Ben"}
+    print("999")
+    send_success(gaga)
 
-    send_success(result)
+    --server.sendHeader("Content-Type", "application/json")
+    --print("999")
+    --jsonstr = server.table_to_json(result)
+    --print(jsonstr)
+    --server.print(jsonstr)
+    print("THE END")
 
 end

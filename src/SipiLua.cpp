@@ -36,7 +36,7 @@
 #include "SipiHttpServer.h"
 #include "SipiCache.h"
 
-
+static char __file__[] = __FILE__;
 
 namespace Sipi {
 
@@ -340,11 +340,18 @@ namespace Sipi {
         int top = lua_gettop(L);
         if (top < 1) {
             // throw an error!
-            return 0;
+            stringstream ss;
+            ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+            lua_pushstring(L, ss.str().c_str());
+            cerr << ss.str();
+            return lua_error(L);
         }
         if (!lua_isstring(L, 1)) {
-            // thow an error!
-            return 0;
+            stringstream ss;
+            ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+            lua_pushstring(L, ss.str().c_str());
+            cerr << ss.str();
+            return lua_error(L);
         }
         const char *imgpath = lua_tostring(L, 1);
 
@@ -355,8 +362,12 @@ namespace Sipi {
                 //lua_pop(L,1); // remove filename from stack
             }
             else {
+                stringstream ss;
+                ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+                lua_pushstring(L, ss.str().c_str());
+                cerr << ss.str();
                 // throw an error
-                return 0;
+                return lua_error(L);
             }
             lua_pushnil(L);
             while (lua_next(L, 2) != 0) {
