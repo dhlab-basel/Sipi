@@ -368,7 +368,7 @@ namespace Sipi {
 
     void SipiSize::canonical(char *buf, int buflen) {
         int n;
-        if (!canonical_ok) {
+        if (!canonical_ok && (size_type != SipiSize::FULL)) {
             string msg = "Canonical size not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
@@ -398,7 +398,7 @@ namespace Sipi {
                 break;
             }
             case SipiSize::FULL: {
-                n = snprintf(buf, buflen, "%d,%d", w, h);
+                n = snprintf(buf, buflen, "full"); // replace with "max" for version 3.0 of iiif
             }
         }
         if ((n < 0) || (n >= buflen)) {

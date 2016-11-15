@@ -403,10 +403,14 @@ namespace Sipi {
         int tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h, tmp_red;
         bool tmp_ro;
 
-        region.crop_coords(tmp_w, tmp_h, tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h);
+        if (region.getType() != SipiRegion::FULL) {
+            region.crop_coords(tmp_w, tmp_h, tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h);
+        }
         region.canonical(canonical_region, canonical_len);
 
-        size.get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+        if (size.getType() != SipiSize::FULL) {
+            size.get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+        }
         size.canonical(canonical_size, canonical_len);
 
         float angle;
@@ -452,8 +456,11 @@ namespace Sipi {
             case SipiQualityFormat::PNG: {
                 ext[0] = 'p'; ext[1] = 'n'; ext[2] = 'g'; ext[3] = '\0'; break; // png
             }
+            case SipiQualityFormat::PDF: {
+                ext[0] = 'p'; ext[1] = 'd'; ext[2] = 'f'; ext[3] = '\0'; break; // pdf
+            }
             default: {
-                throw SipiError(__file__, __LINE__, "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png");
+                throw SipiError(__file__, __LINE__, "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png, .pdf");
             }
         }
 
@@ -738,7 +745,7 @@ namespace Sipi {
                  (extension == "jpx") || (extension == "JPX")) {
             in_format = SipiQualityFormat::JP2;
         }
-        else if ((extension == "pdf") || (extenstion == "PDF")) {
+        else if ((extension == "pdf") || (extension == "PDF")) {
             in_format = SipiQualityFormat::PDF;
         }
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
@@ -754,28 +761,49 @@ namespace Sipi {
         //
         SipiCache *cache = serv->cache();
 
-        //
-        // get image dimensions, needed for get_canonical...
-        //
-        int img_w, img_h;
-        if ((cache == NULL) || !cache->getSize(infile, img_w, img_h)) {
-            Sipi::SipiImage tmpimg;
-            try {
-                tmpimg.getDim(infile, img_w, img_h);
+        int img_w = 0, img_h = 0;
+        if (in_format == SipiQualityFormat::PDF) {
+            if (size.getType() != SipiSize::FULL) {
+                send_error(conobj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"!");
+                return;
             }
-            catch(SipiImageError &err) {
-                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.get_error());
+            if (region.getType() != SipiRegion::FULL) {
+                send_error(conobj, Connection::BAD_REQUEST, "PDF must have region qualifier of \"full\"!");
+                return;
+            }
+            float rot;
+            if (rotation.get_rotation(rot) || (rot != 0.0)) {
+                send_error(conobj, Connection::BAD_REQUEST, "PDF must have rotation qualifier of \"0\"!");
+                return;
+            }
+            if ((quality_format.quality() != SipiQualityFormat::DEFAULT) || (quality_format.format() != SipiQualityFormat::PDF)) {
+                send_error(conobj, Connection::BAD_REQUEST, "PDF must have quality qualifier of \"default.pdf\"!");
                 return;
             }
         }
+        else {
+            //
+            // get image dimensions, needed for get_canonical...
+            //
+            if ((cache == NULL) || !cache->getSize(infile, img_w, img_h)) {
+                Sipi::SipiImage tmpimg;
+                try {
+                    tmpimg.getDim(infile, img_w, img_h);
+                }
+                catch(SipiImageError &err) {
+                    send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.get_error());
+                    return;
+                }
+            }
 
-        int tmp_r_w, tmp_r_h, tmp_red;
-        bool tmp_ro;
-        size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
-        restriction_size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            int tmp_r_w, tmp_r_h, tmp_red;
+            bool tmp_ro;
+            size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            restriction_size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
 
-        if (size > restriction_size) {
-            size = restriction_size;
+            if (size > restriction_size) {
+                size = restriction_size;
+            }
         }
 
 
@@ -791,6 +819,7 @@ namespace Sipi {
             send_error(conobj, Connection::BAD_REQUEST, err);
             return;
         }
+
         string canonical_header = tmppair.first;
         string canonical = tmppair.second;
 
@@ -824,6 +853,10 @@ namespace Sipi {
                     conobj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     break;
                 }
+                case SipiQualityFormat::PDF: {
+                    conobj.header("Content-Type", "application/pdf"); // set the header (mimetype)
+                    break;
+                }
                 default: {
                 }
             }
@@ -841,6 +874,10 @@ namespace Sipi {
                 return;
             }
             return;
+        }
+
+        if (quality_format.format() == SipiQualityFormat::PDF) {
+            send_error(conobj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported!");
         }
 
         logger->debug("Checking for cache...");

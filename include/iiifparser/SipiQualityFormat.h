@@ -38,6 +38,7 @@ namespace Sipi {
         inline SipiQualityFormat() {quality_type = SipiQualityFormat::DEFAULT; format_type = SipiQualityFormat::JPG;}
         SipiQualityFormat(std::string str);
         friend std::ostream &operator<< (std::ostream &lhs, const SipiQualityFormat &rhs);
+        inline QualityType quality() { return quality_type; };
         inline FormatType format() { return format_type; };
     };
 
