@@ -380,7 +380,7 @@ namespace shttps {
                 lua_error(L);
             }
         }
-        lua_pop(L, 2);
+        lua_pop(L, top);
 
         lua_getglobal(L, luaconnection); // push onto stack
         Connection *conn = (Connection *) lua_touserdata(L, -1); // does not change the stack
@@ -420,7 +420,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (stat(filename, &s) != 0) {
             lua_pushstring(L, strerror(errno));
@@ -473,7 +473,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (access(filename, R_OK) == 0) {
             lua_pushboolean(L, true);
@@ -502,7 +502,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (access(filename, W_OK) == 0) {
             lua_pushboolean(L, true);
@@ -531,7 +531,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (access(filename, X_OK) == 0) {
             lua_pushboolean(L, true);
@@ -560,7 +560,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (access(filename, F_OK) == 0) {
             lua_pushboolean(L, true);
@@ -591,7 +591,7 @@ namespace shttps {
             return 0;
         }
         const char *filename = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (unlink(filename) != 0) {
             lua_pushstring(L, strerror(errno));
@@ -625,7 +625,7 @@ namespace shttps {
         }
         const char *dirname = lua_tostring(L, 1);
         int mode = lua_tointeger(L, 2);
-        lua_pop(L, 2); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (mkdir(dirname, mode) != 0) {
             lua_pushstring(L, strerror(errno));
@@ -653,7 +653,7 @@ namespace shttps {
             return 0;
         }
         const char *dirname = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         if (rmdir(dirname) != 0) {
             lua_pushstring(L, strerror(errno));
@@ -693,7 +693,7 @@ namespace shttps {
             return 0;
         }
         const char *dirname = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         char *olddirname = getcwd(NULL, 0);
 
@@ -765,7 +765,7 @@ namespace shttps {
             return 0;
         }
         const char *uuidstr = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
         sole::uuid u4 = sole::rebuild(uuidstr);
         string uuidb62str = u4.base62();
@@ -792,7 +792,7 @@ namespace shttps {
             return 0;
         }
         const char *uuidb62 = lua_tostring(L, 1);
-        lua_pop(L, 1); // clear stack
+        lua_pop(L, top); // clear stack
 
 
         sole::uuid u4 = sole::rebuild(uuidb62);
