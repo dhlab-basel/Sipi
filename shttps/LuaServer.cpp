@@ -267,11 +267,53 @@ namespace shttps {
     //=========================================================================
 
     /*!
+     * Instantiates a Lua server
+     */
+    LuaServer::LuaServer(Connection &conn) {
+        if ((L = luaL_newstate()) == NULL) {
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+        }
+        lua_atpanic(L, dont_panic);
+        luaL_openlibs(L);
+        createGlobals(conn);
+    }
+    //=========================================================================
+
+    /*!
+     * Instantiates a Lua server
+     */
+    LuaServer::LuaServer(const string &luafile, bool iscode) {
+        if ((L = luaL_newstate()) == NULL) {
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+        }
+        lua_atpanic(L, dont_panic);
+        luaL_openlibs(L);
+
+        if (!luafile.empty()) {
+            if (iscode) {
+                if (luaL_loadstring(L, luafile.c_str()) != 0) {
+                    lua_error(L);
+                }
+            }
+            else {
+                if (luaL_loadfile(L, luafile.c_str()) != 0) {
+                    lua_error(L);
+                }
+            }
+            if (lua_pcall(L, 0, LUA_MULTRET, 0) != 0) {
+                lua_error(L);
+            }
+        }
+    }
+    //=========================================================================
+
+
+    /*!
      * Instantiates a Lua server and directly executes the script file given
      *
      * \param[in] luafile A file containing a Lua script or a Lua code chunk
      */
-    LuaServer::LuaServer(const string &luafile, bool iscode) {
+    LuaServer::LuaServer(Connection &conn, const string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == NULL) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
         }
@@ -280,6 +322,7 @@ namespace shttps {
 
         luaL_openlibs(L);
 
+        createGlobals(conn);
 
         if (!luafile.empty()) {
             if (iscode) {
@@ -303,6 +346,7 @@ namespace shttps {
      * Destroys the Lua server and free's all resources (garbage collectors are called here)
      */
     LuaServer::~LuaServer() {
+        cerr << "LuaServer::~LuaServer()" << endl;
         lua_close(L);
     }
     //=========================================================================
@@ -773,7 +817,7 @@ namespace shttps {
         for (int i = 1; i <= top; i++) {
             const char *str = lua_tostring(L, i);
             if (str != NULL) {
-cerr << "conn->send: " << str << endl; 
+cerr << "conn->send: " << str << endl;
                 conn->send(str, strlen(str));
             }
         }
@@ -2428,14 +2472,17 @@ cerr << "conn->send: " << str << endl;
     int LuaServer::executeChunk(const string &luastr) {
         try {
             if (luaL_dostring(L, luastr.c_str()) != 0) {
-                lua_error(L);
-                return -1;
+                cerr << "Scheisse!!!!!!!!!!" << endl;
+                return lua_error(L);
             }
         }
         catch (Error &err) {
-            cerr << err;
+            cerr << "LuaServer::executeChunk" << err;
+            return lua_error(L);
         }
+cerr << "in LuaServer::executeChunk... " << __LINE__ << endl;
         int top = lua_gettop(L);
+cerr << "LuaServer::executeChunk::::top=" << top << endl;
         if (top == 1) {
             int status = lua_tointeger(L, 1);
             lua_pop(L, 1);

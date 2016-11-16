@@ -68,6 +68,7 @@ namespace shttps {
         */
         LuaServer();
 
+        LuaServer(Connection &conn);
        /*!
         * Instantiates a lua interpreter an executes the given lua script
         *
@@ -75,7 +76,9 @@ namespace shttps {
         */
         LuaServer(const std::string &luafile, bool iscode = false);
 
-        inline LuaServer(const LuaServer &conn) {
+        LuaServer(Connection &conn, const std::string &luafile, bool iscode);
+
+        inline LuaServer(const LuaServer &other) {
             throw Error(__FILE__, __LINE__, "Copy constructor not allowed!");
         }
 

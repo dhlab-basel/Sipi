@@ -130,15 +130,17 @@ namespace shttps {
         try {
             if (extension == "lua") { // pure lua
                 ifstream inf;
-                inf.open(script);//open the input file
+                inf.open(script); //open the input file
 
                 stringstream sstr;
-                sstr << inf.rdbuf();//read the file
+                sstr << inf.rdbuf(); //read the file
                 string luacode = sstr.str();//str holds the content of the file
+
+cerr << "ScriptHandler" << __file__ << " : " << __LINE__ << endl;
 
                 try {
                     if (lua.executeChunk(luacode) < 0) {
-cerr << __file__ << " : " << __LINE__ << endl;
+cerr << "ScriptHandler" << __file__ << " : " << __LINE__ << endl;
                         conn.flush();
                         return;
                     }
@@ -157,7 +159,7 @@ cerr << __file__ << " : " << __LINE__ << endl;
                     logger->error("ScriptHandler: error executing lua script") << err;
                     return;
                 }
-cerr << __file__ << " : " << __LINE__ << endl;
+cerr << "ScriptHandler" << __file__ << " : " << __LINE__ << endl;
 
                 conn.flush();
             }
@@ -884,10 +886,14 @@ cerr << __file__ << " : " << __LINE__ << endl;
                 struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
                 peer_port = ntohs(s->sin_port);
                 inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+            }
+            else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
                 struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
+            }
+            else {
+                peer_port = -1;
             }
             _logger->notice("Accepted connection from: ") << client_ip;
 
@@ -1072,8 +1078,8 @@ cerr << __file__ << " : " << __LINE__ << endl;
             //
             // Setting up the Lua server
             //
-            LuaServer luaserver(_initscript, true);
-            luaserver.createGlobals(conn);
+            LuaServer luaserver(conn, _initscript, true);
+            //luaserver.createGlobals(conn);
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
