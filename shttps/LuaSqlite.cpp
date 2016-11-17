@@ -170,14 +170,12 @@ namespace shttps {
         if (top != 2) {
             // throw an error!
             lua_pushstring(L, "Incorrect number of arguments!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
         Sqlite *db = checkSqlite(L, 1);
         if (db == NULL) {
             lua_pushstring(L, "Couldn't connect to database!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
         const char *sql = NULL;
         if (lua_isstring(L, 2)) {
@@ -192,8 +190,7 @@ namespace shttps {
         int status = sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt_handle, NULL);
         if (status !=  SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(db->sqlite_handle));
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         Stmt *stmt = pushStmt(L);
@@ -245,15 +242,13 @@ namespace shttps {
         if (top < 1) {
             // throw an error!
             lua_pushstring(L, "Stmt_next: Incorrect number of arguments!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         Stmt *stmt = checkStmt(L, 1);
         if (stmt == NULL) {
             lua_pushstring(L, "Stmt_next: Invalid prepared statment!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         if (top > 1) {
@@ -286,12 +281,11 @@ namespace shttps {
                 }
                 else {
                     lua_pushstring(L, "Stmt_next: Invalid datatype for binding to prepared statments!");
-                    lua_error(L);
+                    return lua_error(L);
                 }
                 if (status != SQLITE_OK) {
                     lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
-                    lua_error(L);
-                    return 0;
+                    return lua_error(L);
                 }
             }
         }
@@ -340,8 +334,7 @@ namespace shttps {
         }
         else {
             lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         //
@@ -350,13 +343,11 @@ namespace shttps {
         if (top > 1) {
             if (sqlite3_reset(stmt->stmt_handle) != SQLITE_OK) {
                 lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
-                lua_error(L);
-                return 0;
+                return lua_error(L);
             }
             if (sqlite3_clear_bindings(stmt->stmt_handle) != SQLITE_OK) {
                 lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
-                lua_error(L);
-                return 0;
+                return lua_error(L);
             }
         }
         return 1;
@@ -395,12 +386,12 @@ namespace shttps {
     static int Sqlite_new(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
-            // throw an error!
-            return 0;
+            lua_pushstring(L, "'sqlite(path, mode)': no enough parameters!");
+            return lua_error(L);
         }
         if (!lua_isstring(L, 1)) {
-            // thow an error!
-            return 0;
+            lua_pushstring(L, "'sqlite(path, mode)': no enough parameters!");
+            return lua_error(L);
         }
         const char *dbpath = lua_tostring(L, 1);
 
@@ -423,8 +414,7 @@ namespace shttps {
         int status = sqlite3_open_v2(dbpath, &handle, flags, NULL);
         if (status !=  SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(handle));
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         Sqlite *db = pushSqlite(L);

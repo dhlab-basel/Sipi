@@ -206,8 +206,8 @@ namespace Sipi {
         std::string sortmethod;
         if (top == 1) {
             sortmethod = std::string(lua_tostring(L, 1));
-            lua_pop(L, 1);
         }
+        lua_pop(L, top);
         SipiCache *cache = server->cache();
 
         if (cache == NULL) {
@@ -243,12 +243,13 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
+        int top = lua_gettop(L);
+
         if (cache == NULL) {
+            lua_pop(L, top);
             lua_pushnil(L);
             return 1;
         }
-
-        int top = lua_gettop(L);
 
         std::string canonical;
         if (top == 1) {
@@ -262,6 +263,7 @@ namespace Sipi {
             }
         }
         else {
+            lua_pop(L, top);
             lua_pushboolean(L, false);
         }
 
@@ -334,39 +336,36 @@ namespace Sipi {
     /*!
      * Lua usage:
      *    img = sipi.image.new("filename")
-     *    img = sipi.image.new("filename",{region=<iiif-region-string>, size=<iiif-size-string> | reduce=<integer>})
+     *    img = sipi.image.new("filename",{region=<iiif-region-string>, size=<iiif-size-string> , reduce=<integer>, original=<boolean>})
      */
     static int SImage_new(lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
             // throw an error!
             stringstream ss;
-            ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+            ss << "'sipi.image.new(filename)': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
             lua_pushstring(L, ss.str().c_str());
-            cerr << ss.str();
             return lua_error(L);
         }
         if (!lua_isstring(L, 1)) {
             stringstream ss;
-            ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+            ss << "'sipi.image.new(filename)': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
             lua_pushstring(L, ss.str().c_str());
-            cerr << ss.str();
             return lua_error(L);
         }
         const char *imgpath = lua_tostring(L, 1);
 
         SipiRegion *region = NULL;
         SipiSize *size = NULL;
+        bool original = false;
         if (top == 2) {
             if (lua_istable(L, 2)) {
                 //lua_pop(L,1); // remove filename from stack
             }
             else {
                 stringstream ss;
-                ss << "ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+                ss << "'sipi.image.new(filename)': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
                 lua_pushstring(L, ss.str().c_str());
-                cerr << ss.str();
-                // throw an error
                 return lua_error(L);
             }
             lua_pushnil(L);
@@ -377,18 +376,34 @@ namespace Sipi {
                         if (lua_isstring(L, -1)) {
                             region = new SipiRegion(lua_tostring(L, -1));
                         }
+                        else {
+                            lua_pushstring(L, "'sipi.image.new(filename)': Error in region parameter!");
+                            return lua_error(L);
+                        }
                     }
                     else if (strcmp(param, "size") == 0) {
                         if (lua_isstring(L, -1)) {
                             size = new SipiSize(lua_tostring(L, -1));
                         }
+                        else {
+                            lua_pushstring(L, "'sipi.image.new(filename)': Error in size parameter!");
+                            return lua_error(L);
+                        }
                     }
                     else if (strcmp(param, "reduce") == 0) {
                         if (lua_isnumber(L, -1)) {
-                            std::cerr << "REDUCE=" << (int) lua_tointeger(L, -1) << std::endl;
                             size = new SipiSize((int) lua_tointeger(L, -1));
                         }
                         else {
+                            lua_pushstring(L, "'sipi.image.new(filename)': Error in reduce parameter!");
+                        }
+                    }
+                    else if (strcmp(param, "original") == 0) {
+                        if (lua_isboolean(L, -1)) {
+                            original = lua_toboolean(L, -1);
+                        }
+                        else {
+                            lua_pushstring(L, "'sipi.image.new(filename)': Error in original parameter!");
                         }
                     }
                     else {
@@ -403,7 +418,24 @@ namespace Sipi {
         SImage *img = pushSImage(L);
         img->image = new SipiImage();
         img->filename = new std::string(imgpath);
-        img->image->read(imgpath, region, size);
+        try {
+            if (original) {
+                img->image->readOriginal(imgpath, region, size);
+            }
+            else {
+                img->image->read(imgpath, region, size);
+            }
+        }
+        catch(SipiImageError &err) {
+            delete region;
+            delete size;
+
+            stringstream ss;
+            ss << "'sipi.image.new(filename)': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+            ss << err;
+            lua_pushstring(L, ss.str().c_str());
+            return lua_error(L);
+        }
 
         delete region;
         delete size;
@@ -416,10 +448,8 @@ namespace Sipi {
         int nx, ny;
         int top = lua_gettop(L);
         if (top != 1) {
-            // throw an error!
             lua_pushstring(L, "Incorrect number of arguments!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         if (lua_isstring(L, 1)) {
@@ -457,10 +487,8 @@ namespace Sipi {
 
         // three arguments are expected
         if (top != 3) {
-            // throw an error!
             lua_pushstring(L, "Incorrect number of arguments!");
-            lua_error(L);
-            return 0;
+            return lua_error(L);
         }
 
         // get pointer to SImage
@@ -490,8 +518,8 @@ namespace Sipi {
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isstring(L, 2)) {
-            // thow an error!
-            return 0;
+            lua_pushstring(L, "image:crop: Incorrect number of arguments!");
+            return lua_error(L);
         }
         const char *regionstr = lua_tostring(L, 2);
         lua_pop(L, 2);
@@ -511,8 +539,8 @@ namespace Sipi {
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isstring(L, 2)) {
-            // throw an error!
-            return 0;
+            lua_pushstring(L, "image:scale: Incorrect number of arguments!");
+            return lua_error(L);
         }
         const char *sizestr = lua_tostring(L, 2);
         lua_pop(L, 2);
@@ -526,14 +554,19 @@ namespace Sipi {
     //=========================================================================
 
     /*!
-    * SipiImage.scale(img, <wm-file>)
+    * SipiImage.rotate(img, number)
     */
     static int SImage_rotate(lua_State *L) {
+        int top = lua_gettop(L);
+        if (top != 2) {
+            lua_pushstring(L, "image:rotate: Incorrect number of arguments!");
+            return lua_error(L);
+        }
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isnumber(L, 2)) {
-            // throw an error!
-            return 0;
+            lua_pushstring(L, "image:rotate: Incorrect  arguments!");
+            return lua_error(L);
         }
         float angle = lua_tonumber(L, 2);
         lua_pop(L, 2);
@@ -551,8 +584,8 @@ namespace Sipi {
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isstring(L, 2)) {
-            // thow an error!
-            return 0;
+            lua_pushstring(L, "image:rotate: Incorrect arguments!");
+            return lua_error(L);
         }
         const char *watermark = lua_tostring(L, 2);
         lua_pop(L, 2);
@@ -571,8 +604,8 @@ namespace Sipi {
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isstring(L, 2)) {
-            // thow an error!
-            return 0;
+            lua_pushstring(L, "image:rotate: Incorrect arguments!");
+            return lua_error(L);
         }
         const char *imgpath = lua_tostring(L, 2);
         lua_pop(L, 2);
@@ -633,8 +666,8 @@ namespace Sipi {
        SImage *img = checkSImage(L, 1);
 
        if (!lua_isstring(L, 2)) {
-           // throw an error!
-           return 0;
+           lua_pushstring(L, "image:rotate: Incorrect arguments!");
+           return lua_error(L);
        }
        const char *ext = lua_tostring(L, 2);
        lua_pop(L, 2);
