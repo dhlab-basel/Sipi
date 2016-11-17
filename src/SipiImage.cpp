@@ -229,9 +229,12 @@ namespace Sipi {
         }
         catch (std::out_of_range& e)
         {
-            // file extension was not found in map
-            //std::cerr << "unsupported file type " << filename << std::endl;
-            return false;
+            stringstream ss;
+            ss << "Unsupported file type: \"" << filename;
+            throw SipiImageError(__file__, __LINE__, ss.str());
+        }
+        catch (shttps::Error &err) {
+            throw SipiImageError(__file__, __LINE__, err.to_string());
         }
 
         return true;
@@ -269,7 +272,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiImage::readOriginal(string filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
+    bool SipiImage::readOriginal(const string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
@@ -292,6 +295,28 @@ namespace Sipi {
     }
     //============================================================================
 
+
+    bool SipiImage::readOriginal(const string &filepath, SipiRegion *region, SipiSize *size, const string &origname, shttps::HashType htype) {
+        read(filepath, region, size, false);
+        if (!emdata.is_set()) {
+            shttps::Hash internal_hash(htype);
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            string checksum = internal_hash.hash();
+            string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
+            essential_metadata(emdata);
+        }
+        else {
+            shttps::Hash internal_hash(emdata.hash_type());
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            string checksum = internal_hash.hash();
+            if (checksum != emdata.data_chksum()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    //============================================================================
 
     void SipiImage::getDim(string filepath, int &width, int &height) {
         size_t pos = filepath.find_last_of('.');

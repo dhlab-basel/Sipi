@@ -353,7 +353,31 @@ namespace Sipi {
         *
         * \returns true, if everythin worked. False, if the checksums do not match.
         */
-        bool readOriginal(string filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype = shttps::HashType::sha256);
+        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype = shttps::HashType::sha256);
+
+        /*!
+         * Read an image that is to be considered an "original image". In this case
+         * a SipiEssentials object is created containing the original name, the
+         * original mime type. In addition also a checksum of the pixel values
+         * is added in order to guarantee the integrity of the image pixels.
+         * if the image is written as J2K or as TIFF image, these informations
+         * are added to the file header (in case of TIFF as a private tag 65111,
+         * in case of J2K as comment box).
+         * If the file read already contains a SipiEssentials as embedded metadata,
+         * it is not overwritten, put the embeded and pixel checksums are compared.
+         *
+         * \param[in] filepath A string containing the path to the image file
+         * \param[in] region Pointer to a SipiRegion which indicates that we
+         *            are only interested in this regeion. The image will be cropped.
+         * \param[in] size Pointer to a size object. The image will be scaled accordingly
+         * \param[in] origname Original file name
+         * \param[in] htype The checksum method that should be used if the checksum is
+         *            being calculated for the first time.
+         *
+         * \returns true, if everythin worked. False, if the checksums do not match.
+         */
+        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype);
+
 
        /*!
         * Get the dimension of the image

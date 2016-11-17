@@ -318,7 +318,7 @@ namespace Sipi {
         luaL_checktype(L, index, LUA_TUSERDATA);
         img = (SImage *) luaL_checkudata(L, index, SIMAGE);
         if (img == NULL) {
-            lua_pushstring(L, "Type error");
+            lua_pushstring(L, "Type error! Expected an image!");
             lua_error(L);
         }
         return img;
@@ -336,7 +336,7 @@ namespace Sipi {
     /*!
      * Lua usage:
      *    img = sipi.image.new("filename")
-     *    img = sipi.image.new("filename",{region=<iiif-region-string>, size=<iiif-size-string> , reduce=<integer>, original=<boolean>})
+     *    img = sipi.image.new("filename",{region=<iiif-region-string>, size=<iiif-size-string> , reduce=<integer>, original=origfilename}, hash="md5"|"sha1"|"sha256"|"sha384"|"sha512")
      */
     static int SImage_new(lua_State *L) {
         int top = lua_gettop(L);
@@ -357,7 +357,8 @@ namespace Sipi {
 
         SipiRegion *region = NULL;
         SipiSize *size = NULL;
-        bool original = false;
+        string original;
+        shttps::HashType htype = shttps::HashType::sha256;
         if (top == 2) {
             if (lua_istable(L, 2)) {
                 //lua_pop(L,1); // remove filename from stack
@@ -396,31 +397,64 @@ namespace Sipi {
                         }
                         else {
                             lua_pushstring(L, "'sipi.image.new(filename)': Error in reduce parameter!");
+                            return lua_error(L);
                         }
                     }
                     else if (strcmp(param, "original") == 0) {
-                        if (lua_isboolean(L, -1)) {
-                            original = lua_toboolean(L, -1);
+                        if (lua_isstring(L, -1)) {
+                            const char *tmpstr = lua_tostring(L, -1);
+                            original = tmpstr;
                         }
                         else {
                             lua_pushstring(L, "'sipi.image.new(filename)': Error in original parameter!");
+                            return lua_error(L);
+                        }
+                    }
+                    else if (strcmp(param, "hash") == 0) {
+                        if (lua_isstring(L, -1)) {
+                            const char *tmpstr = lua_tostring(L, -1);
+                            string hashstr = tmpstr;
+                            if (hashstr == "md5") {
+                                htype = shttps::HashType::md5;
+                            }
+                            else if (hashstr == "sha1") {
+                                htype = shttps::HashType::sha1;
+                            }
+                            else if (hashstr == "sha256") {
+                                htype = shttps::HashType::sha256;
+                            }
+                            else if (hashstr == "sha384") {
+                                htype = shttps::HashType::sha384;
+                            }
+                            else if (hashstr == "sha512") {
+                                htype = shttps::HashType::sha512;
+                            }
+                            else {
+                                lua_pushstring(L, "'sipi.image.new(...)': Error in hash type!");
+                                return lua_error(L);
+                            }
+                        }
+                        else {
+                            lua_pushstring(L, "'sipi.image.new(...)': Error in hash parameter!");
+                            return lua_error(L);
                         }
                     }
                     else {
+                        lua_pushstring(L, "'sipi.image.new(...)': Error in parameter table (unknown parameter)!");
+                        return lua_error(L);
                     }
                 }
                 /* removes 'value'; keeps 'key' for next iteration */
                 lua_pop(L, 1);
             }
-
         }
 
         SImage *img = pushSImage(L);
         img->image = new SipiImage();
         img->filename = new std::string(imgpath);
         try {
-            if (original) {
-                img->image->readOriginal(imgpath, region, size);
+            if (!original.empty()) {
+                img->image->readOriginal(imgpath, region, size, original, htype);
             }
             else {
                 img->image->read(imgpath, region, size);
@@ -455,11 +489,23 @@ namespace Sipi {
         if (lua_isstring(L, 1)) {
             const char *imgpath = lua_tostring(L, 1);
             SipiImage img;
-            img.getDim(imgpath, nx, ny);
+            try {
+                img.getDim(imgpath, nx, ny);
+            }
+            catch (SipiImageError &err) {
+                stringstream ss;
+                ss << "'sipi.image.dims()': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl;
+                ss << err;
+                lua_pushstring(L, ss.str().c_str());
+                return lua_error(L);
+            }
         }
         else {
             SImage *img = checkSImage(L, 1);
-            if (img == NULL) return 0;
+            if (img == NULL) {
+                lua_pushstring(L, "'sipi.image.dims()': not a valid image!");
+                return lua_error(L);
+            }
             nx = img->image->getNx();
             ny = img->image->getNy();
         }
@@ -502,7 +548,16 @@ namespace Sipi {
         const char* given_filename = lua_tostring(L, 3);
 
         // do the consistency check
-        bool check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+        bool check;
+        try {
+            check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+        }
+        catch (SipiImageError &err) {
+            stringstream ss;
+            ss << "'sipi.image.dims()': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl << err;
+            lua_pushstring(L, ss.str().c_str());
+            return lua_error(L);
+        }
 
         lua_pushboolean(L, check);
 
@@ -524,8 +579,17 @@ namespace Sipi {
         const char *regionstr = lua_tostring(L, 2);
         lua_pop(L, 2);
 
-        SipiRegion *reg = new SipiRegion(regionstr);
-        img->image->crop(reg);
+        SipiRegion *reg;
+        try {
+            reg = new SipiRegion(regionstr);
+        }
+        catch (SipiError &err) {
+            stringstream ss;
+            ss << "'sipi.image.crop()': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl << err;
+            lua_pushstring(L, ss.str().c_str());
+            return lua_error(L);
+        }
+        img->image->crop(reg); // can not throw exception!
         delete reg;
 
         return 0;
@@ -533,7 +597,7 @@ namespace Sipi {
     //=========================================================================
 
     /*!
-    * SipiImage.scale(img, <wm-file>)
+    * SipiImage.scale(img, sizestring)
     */
     static int SImage_scale(lua_State *L) {
         SImage *img = checkSImage(L, 1);
@@ -545,8 +609,22 @@ namespace Sipi {
         const char *sizestr = lua_tostring(L, 2);
         lua_pop(L, 2);
 
-        SipiSize *size = new SipiSize(sizestr);
-        img->image->scale(512,512);
+        SipiSize *size;
+        int nx, ny;
+        try {
+            size = new SipiSize(sizestr);
+            int r;
+            bool ro;
+            size->get_size(img->image->getNx(), img->image->getNy(), nx, ny, r, ro);
+        }
+        catch (SipiError &err) {
+            stringstream ss;
+            ss << "'sipi.image.scale()': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl << err;
+            lua_pushstring(L, ss.str().c_str());
+            return lua_error(L);
+        }
+
+        img->image->scale(nx, ny);
         delete size;
 
         return 0;
@@ -571,7 +649,7 @@ namespace Sipi {
         float angle = lua_tonumber(L, 2);
         lua_pop(L, 2);
 
-        img->image->rotate(angle);
+        img->image->rotate(angle); // does not throw an exception!
 
         return 0;
     }
@@ -590,7 +668,15 @@ namespace Sipi {
         const char *watermark = lua_tostring(L, 2);
         lua_pop(L, 2);
 
-        img->image->add_watermark(watermark);
+        try {
+            img->image->add_watermark(watermark);
+        }
+        catch(SipiImageError &err) {
+            stringstream ss;
+            ss << "'sipi.image.watermark()': ERROR AT LINE: " << __LINE__ << " File: " << __file__ << endl << err;
+            lua_pushstring(L, ss.str().c_str());
+            return lua_error(L);
+        }
 
         return 0;
     }
@@ -718,7 +804,6 @@ namespace Sipi {
 
     static int SImage_gc(lua_State *L) {
         SImage *img = toSImage(L, 1);
-        std::cerr << "Deleting SipiImage!" << std::endl;
         delete img->image;
         delete img->filename;
         return 0;
