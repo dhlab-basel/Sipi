@@ -221,7 +221,7 @@ safe may be used!
 
 ### SIPI functions within Lua
 
-Sipi provides the following functions`and preset variables:
+Sipi provides the following functions:
 
 - `success, errmsg = server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given. Returns true, nil on success or false, errormsg on failure.
 - `success, filetype = server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either true, filetype (one of )"FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN") or false, errormsg
@@ -279,9 +279,25 @@ Sipi provides the following functions`and preset variables:
    end
    ```
 - `success, jsonstr = server.table_to_json(table)` : Convert a table to a JSON string. Returns true, jsonstr on success or false, errormsg on failure.
-- `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
-- `server.sendHeader(key, value)` : Adds a new HTTP header field.
-- `server.requireAuth()` : Gets Basic HTTP authentification data. The result is a table:
+- `success, table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table. Returns true, table on success or false, errormsg on failure.
+- `success, errormsg = server.sendHeader(key, value)` : Adds a new HTTP header field. Returns true, nil on success or false, errormsg on failure.
+- `success, errormsg = server.sendCookie(key, value [, options-table])` : Adds a new Cookie. Returns true, nil on success or false, errormsg on failure. options-table as Lua-table:
+    - path = "path allowed",
+    - domain = "domain allowed",
+    - expires = seconds,
+    - secure = true | false,
+    - http_only = true | false
+- `server.sendStatus() `: send HTTP status code. This function is always succesful and returns nothing!
+- `success, token = server.generate_jwt(table)` : Generate a Json Web Token (JWT) with the table as payload. Returns true, token on success or false, errormsg on failure. The table contains the jwt-claims. The following claims do have a predefined semantic(IntDate: The number of seconds from 1970-01-01T0:0:0Z):
+    - iss (string => StringOrURI) OPT: principal that issued the JWT.
+    - exp (number => IntDate) OPT: expiration time on or after which the token. MUST NOT be accepted for processing.
+    - nbf  (number => IntDate) OPT: identifies the time before which the token. MUST NOT be accepted for processing.
+    - iat (number => IntDate) OPT: identifies the time at which the JWT was issued.
+    - aud (string => StringOrURI) OPT: identifies the audience that the JWT is intended for. The audience value is a string -- typically, the base address of the resource being accessed, such as "https://contoso.com"
+    - prn (string => StringOrURI) OPT: identifies the subject of the JWT.
+    - jti (string => String) OPT: provides a unique identifier for the JWT.
+- `success, table = decode_jwt(token)` : Decode a jwt token and return the content as table. Returns true, table on success or false, errormsg on failure.
+- `success, table = server.requireAuth()` : Gets Basic HTTP authentification data. Returns true, table on success or false, errormsg on failure. The result is a table:
   ```lua`
   {
     status = "BASIC" | "BEARER" | "NOAUTH" | "ERROR", -- NOAUTH means no authorization header
@@ -293,7 +309,12 @@ Sipi provides the following functions`and preset variables:
   ```
   Usage is as follows (example):
   ```lua
-  auth = server.requireAuth()
+  success, auth = server.requireAuth()
+  if not success then
+    server.sendStatus(501)
+    server.print("Error in getting authentification scheme!")
+    return -1
+  end
 
   if auth.status == 'BASIC' then
      --
@@ -305,8 +326,18 @@ Sipi provides the following functions`and preset variables:
            aud = "knora.org",
            user = auth.username
         }
-        token = server.generate_jwt(tokendata)
-        server.sendCookie('sipi', token, {path = '/', expires = 3600})
+        success, token = server.generate_jwt(tokendata)
+        if not success then
+            server.sendStatus(501)
+            server.print("Could not generate JWT!")
+            return -1
+        end
+        success, errormsg = server.sendCookie('sipi', token, {path = '/', expires = 3600})
+        if not success then
+            server.sendStatus(501)
+            server.print("Couldn't send cookie with JWT!")
+            return -1
+        end
      else
         server.sendStatus(401)
         server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
@@ -314,7 +345,12 @@ Sipi provides the following functions`and preset variables:
         return -1
      end
   elseif auth.status == 'BEARER' then
-     jwt = server.decode_jwt(auth.token)
+     success, jwt = server.decode_jwt(auth.token)
+     if not success then
+        server.sendStatus(501)
+        server.print("Couldn't deocde JWT!")
+        return -1
+     end
      if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
         server.sendStatus(401)
         server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
@@ -332,7 +368,9 @@ Sipi provides the following functions`and preset variables:
   end
 
   ```
-- `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
+- `sucess, errormsg = server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.
+
+Sipi provides the following functions:
 - `server.has_openssl` : True if openssl is available
 - `server.secure` : True, if we are an a secure https connection
 - `server.host` : The hostname of the SIPI server that was used in the request.

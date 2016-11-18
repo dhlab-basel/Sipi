@@ -881,6 +881,8 @@ namespace shttps {
         Connection *conn = (Connection *) lua_touserdata(L, -1); // does not change the stack
         lua_remove(L, -1); // remove from stack
 
+        lua_pushboolean(L, true);
+
         string auth = conn->header("authorization");
         lua_createtable(L, 0, 3); // table
 
@@ -947,7 +949,7 @@ namespace shttps {
             }
         }
 
-        return 1;
+        return 2;
     }
     //=========================================================================
 
@@ -1453,7 +1455,9 @@ namespace shttps {
             lua_pushstring(L, err.what().c_str()); // table - "errmsg" - errormsg
             return 2;
         }
-        return 0;
+        lua_pushboolean(L, false);
+        lua_pushstring(L, "Unknown error – shouldn't happen!"); // table - "errmsg" - errormsg
+        return 2;
     }
     //=========================================================================
 
@@ -1472,7 +1476,7 @@ namespace shttps {
                 // we have a string as key
                 skey = lua_tostring(L, index + 1);
                 if (arrayobj != NULL) {
-                    throw(string("'server.table_to_json(table)': Cannot mix int and strings as key"));
+                    throw string("'server.table_to_json(table)': Cannot mix int and strings as key");
                 }
                 if (tableobj == NULL) {
                     tableobj = json_object();
@@ -1481,7 +1485,7 @@ namespace shttps {
             else if (lua_type(L, index + 1) == LUA_TNUMBER) {
                 (void) lua_tointeger(L, index + 1);
                 if (tableobj != NULL) {
-                    throw(string("'server.table_to_json(table)': Cannot mix int and strings as key"));
+                    throw string("'server.table_to_json(table)': Cannot mix int and strings as key");
                 }
                 if (arrayobj == NULL) {
                     arrayobj = json_array();
@@ -1489,7 +1493,7 @@ namespace shttps {
             }
             else {
                 // something else as key....
-                throw(string("'server.table_to_json(table)': Cannot convert key to JSON object field"));
+                throw string("'server.table_to_json(table)': Cannot convert key to JSON object field");
             }
 
             //
@@ -1517,7 +1521,7 @@ namespace shttps {
                     json_array_append_new(arrayobj, tmp_luanumber);
                 }
                 else {
-                    throw(table_error);
+                    throw table_error;
                 }
             }
             else if (lua_type(L, index + 2) == LUA_TSTRING) {
@@ -1530,7 +1534,7 @@ namespace shttps {
                     json_array_append_new(arrayobj, json_string(val));
                 }
                 else {
-                    throw(table_error);
+                    throw table_error;
                 }
             }
             else if (lua_type(L, index + 2) == LUA_TBOOLEAN) {
@@ -1543,7 +1547,7 @@ namespace shttps {
                     json_array_append_new(arrayobj, json_boolean(val));
                 }
                 else {
-                    throw(table_error);
+                    throw table_error;
                 }
             }
             else if (lua_type(L, index + 2) == LUA_TTABLE) {
@@ -1554,11 +1558,11 @@ namespace shttps {
                     json_array_append_new(arrayobj, subtable(L, index + 2));
                 }
                 else {
-                    throw(table_error);
+                    throw table_error;
                 }
             }
             else {
-                throw(table_error);
+                throw table_error;
             }
             lua_pop(L, 1);
         }
@@ -1611,9 +1615,7 @@ namespace shttps {
 
     static void lua_jsonobj(lua_State *L, json_t *obj) {
         if (!json_is_object(obj)) {
-            lua_pushstring(L, "'lua_jsonobj expects object!");
-            lua_error(L);
-            return;
+            throw string("'lua_jsonobj expects object!");
         }
 
         lua_createtable(L, 0, 0);
@@ -1664,9 +1666,7 @@ namespace shttps {
 
     static void lua_jsonarr(lua_State *L, json_t *arr) {
         if (!json_is_array(arr)) {
-            lua_pushstring(L, "'lua_jsonarr expects array!");
-            lua_error(L);
-            return;
+            throw string("'lua_jsonarr expects array!")
         }
 
         lua_createtable(L, 0, 0);
@@ -1722,12 +1722,16 @@ namespace shttps {
     static int lua_json_to_table (lua_State *L) {
         int top = lua_gettop(L);
         if (top < 1) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr parameter missing!");
-            return lua_error(L);
+            return 2;
         }
         if (!lua_isstring(L, 1)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr is not a string!");
-            return lua_error(L);
+            return 2;
         }
 
         const char *jsonstr = lua_tostring(L, 1);
@@ -1738,26 +1742,37 @@ namespace shttps {
         json_t *jsonobj = json_loads(jsonstr, JSON_REJECT_DUPLICATES, &jsonerror);
 
         if (jsonobj == NULL) {
+            lua_pushboolean(L, false);
             stringstream ss;
             ss << "'server.json_to_table(jsonstr)': Error parsing JSON: " << jsonerror.text << endl;
             ss << "JSON-source: " << jsonerror.source << endl;
             ss << "Line: " << jsonerror.line << " Column: " << jsonerror.column << " Pos: " << jsonerror.position << endl;
             lua_pushstring(L, ss.str().c_str());
-            return lua_error(L);
+            return 2;
         }
-        if (json_is_object(jsonobj)) {
-            lua_jsonobj(L, jsonobj);
+        lua_pushboolean(L, true); // we assume success
+        try {
+            if (json_is_object(jsonobj)) {
+                lua_jsonobj(L, jsonobj);
+            }
+            else if (json_is_array(jsonobj)) {
+                lua_jsonarr(L, jsonobj);
+            }
+            else {
+                lua_pop(L, 1); // pop success :-(
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.json_to_table(jsonstr)': Not a valid json string!");
+                return 2;
+            }
         }
-        else if (json_is_array(jsonobj)) {
-            lua_jsonarr(L, jsonobj);
-        }
-        else {
-            lua_pushstring(L, "'server.json_to_table(jsonstr)': Not a valid json string!");
-            return lua_error(L);
+        catch (string &errmsg) {
+            lua_pop(L, 1); // pop success :-(
+            lua_pushboolean(L, false);
+            lua_pushstring(L, errmsg.c_str());
         }
         json_decref(jsonobj);
 
-        return 1;
+        return 2;
     }
     //=========================================================================
 
@@ -1791,8 +1806,10 @@ namespace shttps {
         int top = lua_gettop(L);
 
         if (top != 2) {
-            lua_pushstring(L, "'server.header(key,val)': Invalid number of parameters!");
-            return lua_error(L);
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.sendHeader(key,val)': Invalid number of parameters!");
+            return 2;
         }
         const char *hkey = lua_tostring(L, 1);
         const char *hval = lua_tostring(L, 2);
@@ -1800,7 +1817,10 @@ namespace shttps {
 
         conn->header(hkey, hval);
 
-        return 0;
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+
+        return 2;
     }
     //=========================================================================
 
@@ -1823,8 +1843,10 @@ namespace shttps {
         int top = lua_gettop(L);
 
         if ((top < 2) || (top > 3)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid number of parameters!");
-            return lua_error(L);
+            return 2;
         }
         const char *ckey = lua_tostring(L, 1);
         const char *cval = lua_tostring(L, 2);
@@ -1833,23 +1855,27 @@ namespace shttps {
 
         if (top == 3) {
             if (!lua_istable(L, 3)) {
+                lua_pop(L, top);
+                lua_pushboolean(L, false);
                 lua_pushstring(L, "'server.sendCookie(name, value[, options])': options is not a lua-table!");
-                lua_error(L);
-                return 0;
+                return 2;
             }
             lua_pushnil(L);  /* first key */
             int index = 3;
+            string optname;
             while (lua_next(L, index) != 0) {
                 // key is at index -2
                 // value is at index -1
                 try {
-                    string optname;
                     if (lua_isstring(L, -2)) {
                         // we have a string as key
                         optname = lua_tostring(L, -2);
                     }
                     else {
-                        throw (1);
+                        lua_pop(L, lua_gettop(L)); // cleanup stack
+                        lua_pushboolean(L, false);
+                        lua_pushstring(L, "'server.sendCookie(name, value[, options])': option name is not a string!");
+                        return 2;
                     }
                     if (optname == "path") {
                         if (lua_isstring(L, -1)) {
@@ -1857,7 +1883,7 @@ namespace shttps {
                             cookie.path(path);
                         }
                         else {
-                            throw (1);
+                            throw string("'server.sendCookie(name, value[, options])': path is not string!");
                         }
                     }
                     else if (optname == "domain") {
@@ -1866,7 +1892,7 @@ namespace shttps {
                             cookie.domain(domain);
                         }
                         else {
-                            throw (1);
+                            throw string("'server.sendCookie(name, value[, options])': domain is not string!");
                         }
                     }
                     else if (optname == "expires") {
@@ -1875,7 +1901,7 @@ namespace shttps {
                             cookie.expires(expires);
                         }
                         else {
-                            throw (1);
+                            throw string("'server.sendCookie(name, value[, options])': expires is not integer!");
                         }
                     }
                     else if (optname == "secure") {
@@ -1884,7 +1910,7 @@ namespace shttps {
                             if (secure) cookie.secure(secure);
                         }
                         else {
-                            throw (1);
+                            throw string("'server.sendCookie(name, value[, options])': secure is not boolean!");
                         }
                     }
                     else if (optname == "http_only") {
@@ -1893,26 +1919,30 @@ namespace shttps {
                             if (http_only) cookie.httpOnly(http_only);
                         }
                         else {
-                            throw (1);
+                            throw string("'server.sendCookie(name, value[, options])': http_only is not boolean!");
                         }
                     }
                     else {
-
+                        throw string("'server.sendCookie(name, value[, options])': unknown option: ") + optname;
                     }
                 }
-                catch (int err) {
-                    lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid options!");
-                    lua_error(L);
-                    return 0;
+                catch (string *errmsg) {
+                    lua_pop(L, lua_gettop(L)); // cleanup stack
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, errmsg.c_str());
+                    return 2;
                 }
                 lua_pop(L, 1);
             }
         }
-        lua_pop(L, top);
+        lua_pop(L, lua_gettop(L));
 
         conn->cookies(cookie);
 
-        return 0;
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+
+        return 2;
     }
     //=========================================================================
 
@@ -1952,8 +1982,10 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 2) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': not enough parameters");
-            return lua_error(L);
+            return 2;
         }
         int tmpfile_id = lua_tointeger(L, 1);
         const char *outfile = lua_tostring(L, 2);
@@ -1964,21 +1996,31 @@ namespace shttps {
         string infile = uploads[tmpfile_id - 1].tmpname;
         ifstream source(infile, ios::binary);
         if (source.fail()) {
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open input file!");
-            return lua_error(L);
+            return 2;
         }
         ofstream dest(outfile, ios::binary);
         if (dest.fail()) {
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open output file!");
-            return lua_error(L);
+            return 2;
         }
 
         dest << source.rdbuf();
+        if (dest.fail() || source.fail()) {
+            lua_pushboolean(L, false);
+            lua_pushstring(L,  "'lua_copytmpfile(from,to)': Copying data failed!");
+            return 2;
+        }
 
         source.close();
         dest.close();
 
-        return 0;
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+
+        return 2;
     }
     //=========================================================================
 
@@ -2009,12 +2051,16 @@ namespace shttps {
         jwt_t *jwt;
         int top = lua_gettop(L);
         if (top < 1) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
-            return lua_error(L);
+            return 2;
         }
         if (!lua_istable(L, 1)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
-            return lua_error(L);
+            return 2;
         }
         lua_pop(L, top); // clear stack
 
@@ -2022,14 +2068,16 @@ namespace shttps {
         char *jsonstr = json_dumps(root, JSON_INDENT(3));
 
         if (jwt_new(&jwt) != 0) {
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.table_to_json(table)': Creating token failed!");
-            return lua_error(L);
+            return 2;
         }
         jwt_set_alg(jwt, JWT_ALG_HS256, (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size());
         jwt_add_grants_json(jwt, jsonstr);
 
         char *token = jwt_encode_str(jwt);
 
+        lua_pushboolean(L, true);
         lua_pushstring(L, token);
 
         return 1;
@@ -2043,8 +2091,10 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top != 1) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.decode_jwt(token)': error in parameter list!");
-            return lua_error(L);
+            return 2;
         }
 
         string token = lua_tostring(L, 1);
@@ -2053,13 +2103,15 @@ namespace shttps {
         jwt_t *jwt;
         int err;
         if ((err = jwt_decode(&jwt, token.c_str(), (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size())) != 0) {
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (1)");
-            return lua_error(L);
+            return 2;
         }
         char *tokendata;
         if ((tokendata = jwt_dump_str(jwt, false)) == NULL) {
+            lua_pushboolean(L, false);
             lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (2)");
-            return lua_error(L);
+            return 2;
         }
         string tokenstr = tokendata;
         free(tokendata);
@@ -2069,10 +2121,20 @@ namespace shttps {
         json_error_t jsonerror;
         json_t *jsonobj = json_loads(jsonstr.c_str(), JSON_REJECT_DUPLICATES, &jsonerror);
 
-        lua_jsonobj(L, jsonobj);
+        lua_pushboolean(L, true);
+        try {
+            lua_jsonobj(L, jsonobj);
+        }
+        catch (string &errormsg) {
+            lua_pop(L, 1); // remove success :-(
+            lua_pushboolean(L, false);
+            string tmpstr = string("'server.decode_jwt(token)': Error in decoding token: ") + errormsg;
+            lua_pushstring(L, tmpstr.c_str());
+            return 2;
+        }
         json_decref(jsonobj);
 
-        return 1;
+        return 2;
     }
 
 #endif
