@@ -223,30 +223,30 @@ safe may be used!
 
 Sipi provides the following functions`and preset variables:
 
-- `server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given.
-- `server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
-- `server.fs.is_readable(filepath)` : Checks if a file is readable. Returns boolean.
-- `server.fs.is_writeable(filepath)` : Checks if a file is writeable. Returns boolean.
-- `server.fs.is_executable(filepath)` : Checks if a file is executable. Returns boolean.
-- `server.fs.exists(filepath)` : Checks if a file exists. Returns boolean.
-- `server.fs.unlink(filename)` : Deletes a file from the file system. The file must exist and the user must have write access.
-- `server.fs.mkdir(dirname, tonumber('0755', 8)` : Creates a new directory with given permissions.
-- `server.fs.mkdir(dirname)` : Creates a new directory.
-- `curdir = server.fs.getcwd()` : Gets the current working directory.
-- `oldir = server.fs.chdir(newdir)` : Change working directory.
-- `uuid = server.uuid()` : Generates a random version 4 uuid string.
-- `uuid62 = server.uuid62()` : Generates a base62-uuid string.
-- `uuid62 = server.uuid_to_base62(uuid)` : Converts a uuid-string to a base62 uuid.
-- `uuid = server.base62_to_uuid(uuid62)` : Converts a base62-uuid to a "normal" uuid.
-- `server.print("string"|var1 [,"string|var]...)` : Prints variables and/or strings to the HTTP connection
-- `result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`: Get's data from a http server. Parameters:
+- `success, errmsg = server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given. Returns true, nil on success or false, errormsg on failure.
+- `success, filetype = server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either true, filetype (one of )"FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN") or false, errormsg
+- `success, readable = server.fs.is_readable(filepath)` : Checks if a file is readable. Returns true, readable(boolean) on success or false, errormsg on failure.
+- `success, writeable = server.fs.is_writeable(filepath)` : Checks if a file is writeable. Returns true, writeable(boolean) on success or false, errormsg on failure.
+- `success, errormsg = server.fs.is_executable(filepath)` : Checks if a file is executable. Returns true, executable(boolean) on success or false, errormsg on failure.
+- `success, exists = server.fs.exists(filepath)` : Checks if a file exists. Checks if a file exists. Returns true, exists(boolean) on success or false, errormsg on failure.
+- `success, errormsg = server.fs.unlink(filename)` : Deletes a file from the file system. The file must exist and the user must have write access. Returns true, nil on success or false, errormsg on failure.
+- `success, errormsg = server.fs.mkdir(dirname, tonumber('0755', 8)` : Creates a new directory with given permissions.
+- `server.fs.mkdir(dirname)` : Creates a new directory. Returns true, nil on success or false, errormsg on failure.
+- `server.fs.rmdir(dirname)` : Deletes a directory. Returns true, nil on success or false, errormsg on failure.
+- `success, curdir = server.fs.getcwd()` : Gets the current working directory. Returns true, current_dir on success or false, errormsg on failure.
+- `success, oldir = server.fs.chdir(newdir)` : Change working directory. Returns true, olddir on success or false, errormsg on failure.
+- `success, uuid = server.uuid()` : Generates a random version 4 uuid string. Returns true, uuid on success or false, errormsg on failure.
+- `success, uuid62 = server.uuid62()` : Generates a base62-uuid string. Returns true, uuid62 on success or false, errormsg on failure.
+- `success, uuid62 = server.uuid_to_base62(uuid)` : Converts a uuid-string to a base62 uuid. Returns true, uuid62 on success or false, errormsg on failure.
+- `success, uuid = server.base62_to_uuid(uuid62)` : Converts a base62-uuid to a "normal" uuid. Returns true, uuid on success or false, errormsg on failure.
+- `sucess, errormsg = server.print("string"|var1 [,"string|var]...)` : Prints variables and/or strings to the HTTP connection. Returns true, nil on success or false, errormsg on failure.
+- `success, result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`: Get's data from a http server. Parameters:
    - `method` : "GET" (only method allowed so far
    - `url` : complete url including optional port, but no authorization yet
    - `header` : optional table with HTTP-header key-value pairs
    - `timeout`: option number of milliseconds until the connect timeouts. The result is a table:
    ```lua
    result = {
-      success = true | false
       status_code = value -- HTTP status code returned
       erromsg = "error description" -- only if success is false
       header = {
@@ -262,7 +262,7 @@ Sipi provides the following functions`and preset variables:
    ```
    An example of usage:
    ```lua
-   result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
+   success, result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
 
    if (result.success) then
        server.print("<table>")
@@ -278,7 +278,7 @@ Sipi provides the following functions`and preset variables:
       server.print("ERROR: ", result.errmsg)
    end
    ```
-- `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
+- `success, jsonstr = server.table_to_json(table)` : Convert a table to a JSON string. Returns true, jsonstr on success or false, errormsg on failure.
 - `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
 - `server.sendHeader(key, value)` : Adds a new HTTP header field.
 - `server.requireAuth()` : Gets Basic HTTP authentification data. The result is a table:
