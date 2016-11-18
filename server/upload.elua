@@ -33,7 +33,7 @@
         newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
         filename = config.imgroot .. '/' .. newfilename[imgindex]
 
-        local status, errmsg = pcall(function(a,b) myimg[a]:write(b) end, imgindex, filename)
+        local status, errmsg = myimg[imgindex]:write(filename)
         if not status then
             server.print('Error converting image to j2k: ', errmsg)
         end
@@ -43,7 +43,7 @@
     end
     for imgindex,fn in pairs(newfilename) do
         server.print('<tr><td>', fn,
-            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/pct:12.5/0/default.jpg" /></a></td></tr>')
+            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/,250/0/default.jpg" /></a></td></tr>')
     end
 
 </lua>

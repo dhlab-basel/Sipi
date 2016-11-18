@@ -571,7 +571,6 @@ int main (int argc, char *argv[]) {
         std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
         */
 
-std::cout << img << std::endl;
         //
         // write the output file
         //

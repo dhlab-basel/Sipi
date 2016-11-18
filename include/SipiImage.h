@@ -386,8 +386,9 @@ namespace Sipi {
         * \param[out] width Width of the image in pixels
         * \param[out] height Height of the image in pixels
         */
-        void getDim(std::string filepath, int &width, int &height);
+        static void getDim(std::string filepath, int &width, int &height);
 
+        void getDim(int &width, int &height);
 
        /*!
         * Write an image to somewhere

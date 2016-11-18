@@ -22,6 +22,19 @@
 
 server.setBuffer()
 
+--
+-- check if tmporary directory is available, if not, create it
+--
+local tmpdir = config.imgroot .. '/tmp/'
+if  not server.fs.exists(tmpdir) then
+    local success, result = pcall (server.fs.mkdir, tmpdir, 511)
+    if not success then
+        send_error(500, "Couldn't create tmpdir: " .. result)
+        return
+    end
+end
+
+
 for imgindex,imgparam in pairs(server.uploads) do
 
     --
@@ -32,16 +45,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     --    print(kk, " = ", vv)
     --end
 
-    --
-    -- check if tmporary directory is available, if not, create it
-    --
-    local tmpdir = config.imgroot .. '/tmp/'
-    if  not server.fs.exists(tmpdir) then
-        local success, result = pcall (server.fs.mkdir, tmpdir, 511)
-        if not success then
-            print("server.fs.mkdir: ", tmpdir, " ; ", result)
-        end
-    end
 
     --
     -- copy the file to a safe place
@@ -49,46 +52,48 @@ for imgindex,imgparam in pairs(server.uploads) do
     local tmpname = server.uuid62()
     local tmppath =  tmpdir .. tmpname
     --server.copyTmpfile(imgindex, tmppath)
-    local success, error = pcall (server.copyTmpfile, imgindex, tmppath)
+    local success, result = pcall(server.copyTmpfile, imgindex, tmppath)
     if not success then
-        print("server.copyTmpfile: ", error)
+        send_error(500, "Couldn't copy uploaded file: " .. result)
+        return
     end
 
 
     --
     -- create a SipiImage, already resized to the thumbnail size
     --
-    --print("tmppath=", tmppath)
-    --print("config.thumb_size=", config.thumb_size)
-    -- local myimg = SipiImage.new(tmppath, {size = config.thumb_size})
-    local success, myimg = pcall (SipiImage.new, tmppath, {size = config.thumb_size})
+    local success, myimg = SipiImage.new(tmppath, {size = config.thumb_size})
     if not success then
-      print("SipiImage.new: ", myimg)
+        send_error(500, "Couldn't create thumbnail: " .. myimg)
+        return
     end
-
 
     local filename = imgparam["origname"]
     local mimetype = imgparam["mimetype"]
 
-    local check = myimg:mimetype_consistency(mimetype, filename)
-    --success, check = pcall(myimg:mimetype_consistency, mimetype, filename)
-    --if not success then
-    --    print("myimg:mimetype_consistency : ", check)
-    --end
+    local success, check = myimg:mimetype_consistency(mimetype, filename)
+    if not success then
+        send_error(500, "Couldn't check mimteype consistency: " .. check)
+        return
+    end
 
-
+    --
     -- if check returns false, the user's input is invalid
+    --
+
     if not check then
-
-        -- send_error(400, MIMETYPES_INCONSISTENCY)
-
-        -- return
+        send_error(400, MIMETYPES_INCONSISTENCY)
+        return
     end
 
     --
     -- get the dimensions and print them
     --
-    local dims = myimg:dims()
+    local success, dims = myimg:dims()
+    if not success then
+        send_error(500, "Couldn't get image dimensions: " .. dims)
+        return
+    end
 
 
     --
@@ -96,14 +101,22 @@ for imgindex,imgparam in pairs(server.uploads) do
     --
     local thumbsdir = config.imgroot .. '/thumbs/'
     if  not server.fs.exists(thumbsdir) then
-        server.fs.mkdir(thumbsdir, 511)
+        local success, result = pcall(server.fs.mkdir, thumbsdir, 511)
+        if not success then
+            send_error(500, "Couldn't create thumbsdir: " .. result)
+            return
+        end
     end
 
 
     local thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
-    myimg:write(thumbname)
+    local success, result = myimg:write(thumbname)
+    if not success then
+        send_error(500, "Couldn't create thumbnail: " .. result)
+        return
+    end
 
-    local result = {
+    answer = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
@@ -114,13 +127,6 @@ for imgindex,imgparam in pairs(server.uploads) do
         file_type = 'IMAGE'
     }
 
-    print("888")
-    --local s, r = pcall(send_success, result)
-    send_success(result)
-    --if not s then
-    --    print("ERRORRRRRRRRR: ", r)
-    --end
-    print("passed local s, r = pcall(send_success, jsonstr).......")
-
-
 end
+
+send_success(answer)

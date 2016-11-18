@@ -184,12 +184,15 @@ end
 -------------------------------------------------------------------------------
 
 function send_success(result)
-print ("send_success(result)")
---    if type(result) == "table" then
---        server.sendHeader("Content-Type", "application/json")
---        jsonstr = server.table_to_json(result)
---        server.print(jsonstr)
---    else
---        send_error()
---    end
+    if type(result) == "table" then
+        server.sendHeader("Content-Type", "application/json")
+        local success, jsonstr = pcall(server.table_to_json, result)
+        if not success then
+            send_error(500, "Could'nt create json string!")
+            return
+        end
+        server.print(jsonstr)
+    else
+        send_error()
+    end
 end

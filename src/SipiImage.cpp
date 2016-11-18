@@ -350,6 +350,13 @@ namespace Sipi {
     }
     //============================================================================
 
+
+    void SipiImage::getDim(int &width, int &height) {
+        width = getNx();
+        height = getNy();
+    }
+    //============================================================================
+
     void SipiImage::write(std::string ftype, std::string filepath, int quality) {
         if (quality == -1) {
             io[ftype]->write(this, filepath, 80);
