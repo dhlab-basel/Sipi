@@ -223,24 +223,59 @@ safe may be used!
 
 Sipi provides the following functions:
 
-- `success, errmsg = server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given. Returns true, nil on success or false, errormsg on failure.
-- `success, filetype = server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either true, filetype (one of )"FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN") or false, errormsg
-- `success, readable = server.fs.is_readable(filepath)` : Checks if a file is readable. Returns true, readable(boolean) on success or false, errormsg on failure.
-- `success, writeable = server.fs.is_writeable(filepath)` : Checks if a file is writeable. Returns true, writeable(boolean) on success or false, errormsg on failure.
-- `success, errormsg = server.fs.is_executable(filepath)` : Checks if a file is executable. Returns true, executable(boolean) on success or false, errormsg on failure.
-- `success, exists = server.fs.exists(filepath)` : Checks if a file exists. Checks if a file exists. Returns true, exists(boolean) on success or false, errormsg on failure.
-- `success, errormsg = server.fs.unlink(filename)` : Deletes a file from the file system. The file must exist and the user must have write access. Returns true, nil on success or false, errormsg on failure.
-- `success, errormsg = server.fs.mkdir(dirname, tonumber('0755', 8)` : Creates a new directory with given permissions.
-- `server.fs.mkdir(dirname)` : Creates a new directory. Returns true, nil on success or false, errormsg on failure.
-- `server.fs.rmdir(dirname)` : Deletes a directory. Returns true, nil on success or false, errormsg on failure.
-- `success, curdir = server.fs.getcwd()` : Gets the current working directory. Returns true, current_dir on success or false, errormsg on failure.
-- `success, oldir = server.fs.chdir(newdir)` : Change working directory. Returns true, olddir on success or false, errormsg on failure.
-- `success, uuid = server.uuid()` : Generates a random version 4 uuid string. Returns true, uuid on success or false, errormsg on failure.
-- `success, uuid62 = server.uuid62()` : Generates a base62-uuid string. Returns true, uuid62 on success or false, errormsg on failure.
-- `success, uuid62 = server.uuid_to_base62(uuid)` : Converts a uuid-string to a base62 uuid. Returns true, uuid62 on success or false, errormsg on failure.
-- `success, uuid = server.base62_to_uuid(uuid62)` : Converts a base62-uuid to a "normal" uuid. Returns true, uuid on success or false, errormsg on failure.
-- `sucess, errormsg = server.print("string"|var1 [,"string|var]...)` : Prints variables and/or strings to the HTTP connection. Returns true, nil on success or false, errormsg on failure.
-- `success, result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`: Get's data from a http server. Parameters:
+- `success, errmsg = server.setBuffer([bufsize][,incsize])`:  
+Activates the the connection buffer. Optionally the buffer size and increment size can be given. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, filetype = server.fs.ftype("path")` :  
+Checks the filetype of a given filepath. Returns either true, filetype (one of )"FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN") or false, errormsg  
+
+- `success, readable = server.fs.is_readable(filepath)` :  
+Checks if a file is readable. Returns true, readable(boolean) on success or false, errormsg on failure.  
+
+- `success, writeable = server.fs.is_writeable(filepath)` :  
+Checks if a file is writeable. Returns true, writeable(boolean) on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.is_executable(filepath)` :  
+Checks if a file is executable. Returns true, executable(boolean) on success or false, errormsg on failure.  
+
+- `success, exists = server.fs.exists(filepath)` :  
+Checks if a file exists. Checks if a file exists. Returns true, exists(boolean) on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.unlink(filename)` :  
+Deletes a file from the file system. The file must exist and the user must have write access. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.mkdir(dirname, tonumber('0755', 8)` :  
+Creates a new directory with given permissions.  
+
+- `success, errormsg = server.fs.mkdir(dirname)` :  
+Creates a new directory. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.rmdir(dirname)` :  
+Deletes a directory. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, curdir = server.fs.getcwd()` :  
+Gets the current working directory. Returns true, current_dir on success or false, errormsg on failure.  
+
+- `success, oldir = server.fs.chdir(newdir)` :  
+Change working directory. Returns true, olddir on success or false, errormsg on failure.  
+
+- `success, uuid = server.uuid()` :  
+Generates a random version 4 uuid string. Returns true, uuid on success or false, errormsg on failure.  
+
+- `success, uuid62 = server.uuid62()` :  
+Generates a base62-uuid string. Returns true, uuid62 on success or false, errormsg on failure.  
+
+- `success, uuid62 = server.uuid_to_base62(uuid)` :  
+Converts a uuid-string to a base62 uuid. Returns true, uuid62 on success or false, errormsg on failure.  
+
+- `success, uuid = server.base62_to_uuid(uuid62)` :  
+Converts a base62-uuid to a "normal" uuid. Returns true, uuid on success or false, errormsg on failure.  
+
+- `sucess, errormsg = server.print("string"|var1 [,"string|var]...)` :  
+Prints variables and/or strings to the HTTP connection. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`:  
+Get's data from a http server. Parameters:
    - `method` : "GET" (only method allowed so far
    - `url` : complete url including optional port, but no authorization yet
    - `header` : optional table with HTTP-header key-value pairs
@@ -277,18 +312,31 @@ Sipi provides the following functions:
    else
       server.print("ERROR: ", result.errmsg)
    end
-   ```
-- `success, jsonstr = server.table_to_json(table)` : Convert a table to a JSON string. Returns true, jsonstr on success or false, errormsg on failure.
-- `success, table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table. Returns true, table on success or false, errormsg on failure.
-- `success, errormsg = server.sendHeader(key, value)` : Adds a new HTTP header field. Returns true, nil on success or false, errormsg on failure.
-- `success, errormsg = server.sendCookie(key, value [, options-table])` : Adds a new Cookie. Returns true, nil on success or false, errormsg on failure. options-table as Lua-table:
+   ```  
+
+- `success, jsonstr = server.table_to_json(table)` :  
+Convert a table to a JSON string. Returns true, jsonstr on success or false, errormsg on failure.  
+
+- `success, table = server.json_to_table(jsonstr)` :  
+Convert a JSON string to a (nested) Lua table. Returns true, table on success or false, errormsg on failure.  
+
+- `success, errormsg = server.sendHeader(key, value)` :  
+Adds a new HTTP header field. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.sendCookie(key, value [, options-table])` :  
+Adds a new Cookie. Returns true, nil on success or false, errormsg on failure. options-table as Lua-table:
     - path = "path allowed",
     - domain = "domain allowed",
     - expires = seconds,
     - secure = true | false,
     - http_only = true | false
-- `server.sendStatus() `: send HTTP status code. This function is always succesful and returns nothing!
-- `success, token = server.generate_jwt(table)` : Generate a Json Web Token (JWT) with the table as payload. Returns true, token on success or false, errormsg on failure. The table contains the jwt-claims. The following claims do have a predefined semantic(IntDate: The number of seconds from 1970-01-01T0:0:0Z):
+
+
+- `server.sendStatus() `:  
+Send HTTP status code. This function is always succesful and returns nothing!  
+
+- `success, token = server.generate_jwt(table)` :  
+Generate a Json Web Token (JWT) with the table as payload. Returns true, token on success or false, errormsg on failure. The table contains the jwt-claims. The following claims do have a predefined semantic(IntDate: The number of seconds from 1970-01-01T0:0:0Z):
     - iss (string => StringOrURI) OPT: principal that issued the JWT.
     - exp (number => IntDate) OPT: expiration time on or after which the token. MUST NOT be accepted for processing.
     - nbf  (number => IntDate) OPT: identifies the time before which the token. MUST NOT be accepted for processing.
@@ -296,8 +344,13 @@ Sipi provides the following functions:
     - aud (string => StringOrURI) OPT: identifies the audience that the JWT is intended for. The audience value is a string -- typically, the base address of the resource being accessed, such as "https://contoso.com"
     - prn (string => StringOrURI) OPT: identifies the subject of the JWT.
     - jti (string => String) OPT: provides a unique identifier for the JWT.
-- `success, table = decode_jwt(token)` : Decode a jwt token and return the content as table. Returns true, table on success or false, errormsg on failure.
-- `success, table = server.requireAuth()` : Gets Basic HTTP authentification data. Returns true, table on success or false, errormsg on failure. The result is a table:
+
+
+- `success, table = decode_jwt(token)` :  
+Decode a jwt token and return the content as table. Returns true, table on success or false, errormsg on failure.  
+
+- `success, table = server.requireAuth()` :  
+Gets Basic HTTP authentification data. Returns true, table on success or false, errormsg on failure. The result is a table:
   ```lua`
   {
     status = "BASIC" | "BEARER" | "NOAUTH" | "ERROR", -- NOAUTH means no authorization header
@@ -368,9 +421,12 @@ Sipi provides the following functions:
   end
 
   ```
-- `sucess, errormsg = server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.
 
-Sipi provides the following functions:
+  
+- `success, errormsg = server.copyTmpfile()` :  
+shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.
+
+Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available
 - `server.secure` : True, if we are an a secure https connection
 - `server.host` : The hostname of the SIPI server that was used in the request.
