@@ -350,8 +350,10 @@ namespace Sipi {
             }
         }
 
-        logger->debug() << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
+        stringstream ss;
+        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
+        logger->debug(ss.str());
 
         w_p = w;
         h_p = h;

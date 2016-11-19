@@ -20,14 +20,22 @@
 
 -- Knora GUI-case: create a thumbnail
 
-server.setBuffer()
+success, errormsg = server.setBuffer()
+if not success then
+    return -1
+end
 
 --
 -- check if tmporary directory is available, if not, create it
 --
 local tmpdir = config.imgroot .. '/tmp/'
-if  not server.fs.exists(tmpdir) then
-    local success, result = pcall (server.fs.mkdir, tmpdir, 511)
+local success, exists = server.fs.exists(tmpdir)
+if not success then
+    send_error(500, "Internal server error")
+    return -1
+end
+if not exists then
+    local success, result = server.fs.mkdir(tmpdir, 511)
     if not success then
         send_error(500, "Couldn't create tmpdir: " .. result)
         return
@@ -38,24 +46,18 @@ end
 for imgindex,imgparam in pairs(server.uploads) do
 
     --
-    -- print all upload parameters of the file
-    --
-    --print("List of Parameters...")
-    --for kk,vv in pairs(imgparam) do
-    --    print(kk, " = ", vv)
-    --end
-
-
-    --
     -- copy the file to a safe place
     --
-    local tmpname = server.uuid62()
+    local success, tmpname = server.uuid62()
+    if not success then
+        send_error(500, "Couldn't generate uuid62!")
+        return -1
+    end
     local tmppath =  tmpdir .. tmpname
-    --server.copyTmpfile(imgindex, tmppath)
-    local success, result = pcall(server.copyTmpfile, imgindex, tmppath)
+    local success, result = server.copyTmpfile(imgindex, tmppath)
     if not success then
         send_error(500, "Couldn't copy uploaded file: " .. result)
-        return
+        return -1
     end
 
 
@@ -65,7 +67,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, myimg = SipiImage.new(tmppath, {size = config.thumb_size})
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. myimg)
-        return
+        return -1
     end
 
     local filename = imgparam["origname"]
@@ -74,7 +76,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, check = myimg:mimetype_consistency(mimetype, filename)
     if not success then
         send_error(500, "Couldn't check mimteype consistency: " .. check)
-        return
+        return -1
     end
 
     --
@@ -83,7 +85,7 @@ for imgindex,imgparam in pairs(server.uploads) do
 
     if not check then
         send_error(400, MIMETYPES_INCONSISTENCY)
-        return
+        return -1
     end
 
     --
@@ -92,7 +94,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, dims = myimg:dims()
     if not success then
         send_error(500, "Couldn't get image dimensions: " .. dims)
-        return
+        return -1
     end
 
 
@@ -100,11 +102,16 @@ for imgindex,imgparam in pairs(server.uploads) do
     -- write the thumbnail file
     --
     local thumbsdir = config.imgroot .. '/thumbs/'
-    if  not server.fs.exists(thumbsdir) then
-        local success, result = pcall(server.fs.mkdir, thumbsdir, 511)
+    local success, exists = server.fs.exists(thumbsdir)
+    if not success then
+        send_error(500, "Internal server error")
+        return -1
+    end
+    if not exists then
+        local success, result = server.fs.mkdir(thumbsdir, 511)
         if not success then
             send_error(500, "Couldn't create thumbsdir: " .. result)
-            return
+            return -1
         end
     end
 
@@ -113,7 +120,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, result = myimg:write(thumbname)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
-        return
+        return -1
     end
 
     answer = {
@@ -128,5 +135,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     }
 
 end
+
 
 send_success(answer)

@@ -163,11 +163,17 @@ function send_error(status, msg)
 
     end
 
-    server.sendHeader("Content-Type", "application/json")
+    local success, errormsg = server.sendHeader("Content-Type", "application/json")
+    if not success then
+        print(errormsg)
+    end
     server.sendStatus(http_status)
-    jsonstr = server.table_to_json(result)
+    local success, jsonstr = server.table_to_json(result)
 
-    server.print(jsonstr)
+    local success, errmsg = server.print(jsonstr)
+    if not success then
+        print(errormsg)
+    end
 
 end
 -------------------------------------------------------------------------------
@@ -185,13 +191,20 @@ end
 
 function send_success(result)
     if type(result) == "table" then
-        server.sendHeader("Content-Type", "application/json")
-        local success, jsonstr = pcall(server.table_to_json, result)
+        local success, errormsg = server.sendHeader("Content-Type", "application/json")
         if not success then
-            send_error(500, "Could'nt create json string!")
+            print(">>>1 ", errormsg)
+        end
+        local success, jsonstr = server.table_to_json(result)
+        if not success then
+            print(">>>2 ", jsonstr)
+            send_error(500, "Couldn't create json string!")
             return
         end
-        server.print(jsonstr)
+        local success, errormsg = server.print(jsonstr)
+        if not success then
+            print(">>>3 ", errormsg)
+        end
     else
         send_error()
     end

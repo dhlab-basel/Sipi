@@ -37,12 +37,14 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include "Global.h"
 #include "SockStream.h"
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
 #include "ChunkReader.h"
 
+#include "spdlog/spdlog.h"  // logging...
 #include "sole.hpp"
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -60,7 +62,6 @@ static const char __file__[] = __FILE__;
 static const char servertablename[] = "server";
 
 namespace shttps {
-
 
     char luaconnection[] = "__shttpsconnection";
 
@@ -872,7 +873,7 @@ namespace shttps {
         lua_pushboolean(L, true);
         lua_pushnil(L);
 
-        return 0;
+        return 2;
     }
     //=========================================================================
 
@@ -1666,7 +1667,7 @@ namespace shttps {
 
     static void lua_jsonarr(lua_State *L, json_t *arr) {
         if (!json_is_array(arr)) {
-            throw string("'lua_jsonarr expects array!")
+            throw string("'lua_jsonarr expects array!");
         }
 
         lua_createtable(L, 0, 0);
@@ -1926,7 +1927,7 @@ namespace shttps {
                         throw string("'server.sendCookie(name, value[, options])': unknown option: ") + optname;
                     }
                 }
-                catch (string *errmsg) {
+                catch (string &errmsg) {
                     lua_pop(L, lua_gettop(L)); // cleanup stack
                     lua_pushboolean(L, false);
                     lua_pushstring(L, errmsg.c_str());
@@ -2136,8 +2137,35 @@ namespace shttps {
 
         return 2;
     }
+    //=========================================================================
 
 #endif
+
+   /*!
+    * Lua: logger(message, level)
+    */
+    static int lua_logger(lua_State *L) {
+        auto logger = spdlog::get(shttps::loggername);
+
+        const char *message;
+        int level = spdlog::level::err;
+
+        int top = lua_gettop(L);
+        if (top > 0) {
+            message = lua_tostring(L, 1);
+        }
+        if (top > 1) {
+            level = lua_tointeger(L, 2);
+        }
+
+        logger->log((spdlog::level::level_enum) level, message);
+
+        lua_pop(L, top);
+
+        return 0;
+    }
+    //=========================================================================
+
 
     /*!
      * This function registers all variables and functions in the server table
@@ -2409,6 +2437,19 @@ namespace shttps {
         lua_rawset(L, -3); // table1
 
 #endif
+
+        lua_pushstring(L, "log"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_logger); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1 lua_decode_jwt
+
+        lua_pushstring(L, "loglevel"); // table1 - "index_L1"
+        lua_createtable(L, 0, 9); // table1 - "index_L1" - table2
+        for (int level = as_integer(spdlog::level::trace); level <= as_integer(spdlog::level::off); level++) {
+            lua_pushstring(L, spdlog::level::to_str((spdlog::level::level_enum) level)); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, level);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+        }
+        lua_rawset(L, -3); // table1
 
         lua_setglobal(L, servertablename);
 

@@ -78,33 +78,33 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request! ") << errmsg;
+                logger->error("Bad Request! {}", errmsg);
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden! ") << errmsg;
+                logger->error("Forbidden! {}", errmsg);
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found! ") << errmsg;
+                logger->error("Not Found! {}", errmsg);
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error! ") << errmsg;
+                logger->error("Internal Server Error! {}", errmsg);
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented! ") << errmsg;
+                logger->error("Not Implemented! {}", errmsg);
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable! ") << errmsg;
+                logger->error("Service Unavailable! {}", errmsg);
                 break;
             default:
                 break; // do nothing
         }
         conobj << errmsg;
-        logger->debug() << "GET: " << conobj.uri() << " failed!";
+        logger->debug("GET: {} failed!", conobj.uri());
         conobj.flush();
     }
     //=========================================================================
@@ -120,32 +120,32 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request! ") << outss.str();
+                logger->error("Bad Request! {}", outss.str());
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden! ") << outss.str();
+                logger->error("Forbidden! {}", outss.str());
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found! ") << outss.str();
+                logger->error("Not Found! {}", outss.str());
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error! ") << outss.str();
+                logger->error("Internal Server Error! {}", outss.str());
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented! ") << outss.str();
+                logger->error("Not Implemented! {}", outss.str());
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable! ") << outss.str();
+                logger->error("Service Unavailable! {}", outss.str());
                 break;
             default: break; // do nothing
         }
         conobj << outss.str();
-        logger->debug() << "GET: " << conobj.uri() << " failed!";
+        logger->debug("GET: {} failed!", conobj.uri());
         conobj.flush();
     }
     //=========================================================================
@@ -179,7 +179,7 @@ namespace Sipi {
                 break;
             default: break; // do nothing
         }
-        logger->debug() << "GET: " << conobj.uri() << " failed!";
+        logger->debug("GET: {} failed!", conobj.uri());
         conobj.flush();
     }
     //=========================================================================
@@ -386,7 +386,7 @@ namespace Sipi {
         //TODO and all the other CJSON obj?
         json_decref(root);
 
-        logger->info("info.json created from: ") << infile;
+        logger->info("info.json created from: {}", infile);
     }
     //=========================================================================
 
@@ -434,7 +434,7 @@ namespace Sipi {
                     (void) snprintf(canonical_rotation, canonical_len, "%1.1f", angle);
                 }
             }
-            logger->debug() << "Rotation (canonical): " << canonical_rotation;
+            logger->debug("Rotation (canonical): {}", canonical_rotation);
         }
         else {
             (void) snprintf(canonical_rotation, canonical_len, "0");
@@ -501,7 +501,7 @@ namespace Sipi {
         //for (int i = 0; i < params.size(); i++) cerr << params[i] << endl;
 
         if (params.size() < 1) {
-            logger->error() << "GET failed: No parameters/path given!";
+            logger->error("GET failed: No parameters/path given!");
             send_error(conobj, Connection::BAD_REQUEST, "No parameters/path given!");
             return;
         }
@@ -528,12 +528,12 @@ namespace Sipi {
                 conobj.header("Location", redirect);
                 conobj.header("Content-Type", "text/plain");
                 conobj << "Redirect to " << redirect;
-                logger->info() << "GET: redirect to \"" << redirect << "\".";
+                logger->info("GET: redirect to \"{}\".", redirect);
                 conobj.flush();
                 return;
             }
             else {
-                logger->warn() << "GET: \"" << infile << "\" not accessible!";
+                logger->warn("GET: \"{}\" not accessible!", infile);
                 send_error(conobj, Connection::NOT_FOUND);
                 conobj.flush();
                 return;
@@ -561,7 +561,7 @@ namespace Sipi {
 
 
         if (params.size() < 7) {
-            logger->error() << "Query syntax has not enough parameters!";
+            logger->error("Query syntax has not enough parameters!");
             send_error(conobj, Connection::BAD_REQUEST, "Query syntax has not enough parameters!");
             return;
         }
@@ -574,7 +574,7 @@ namespace Sipi {
             region = SipiRegion(params[iiif_region]);
             stringstream ss;
             ss << region;
-            logger->debug() << ss.str();
+            logger->debug(ss.str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -589,7 +589,7 @@ namespace Sipi {
             size = SipiSize(params[iiif_size]);
             stringstream ss;
             ss << size;
-            logger->debug() << ss.str();
+            logger->debug(ss.str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -604,7 +604,7 @@ namespace Sipi {
             rotation = SipiRotation(params[iiif_rotation]);
             stringstream ss;
             ss << rotation;
-            logger->debug() << ss.str();
+            logger->debug(ss.str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -616,7 +616,7 @@ namespace Sipi {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
             stringstream ss;
             ss << quality_format;
-            logger->debug() << ss.str();
+            logger->debug(ss.str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -861,7 +861,7 @@ namespace Sipi {
                 }
             }
             try {
-                logger->info() << "Sending file: \"" << infile << "\"";
+                logger->info("Sending file: \"{}\"", infile);
                 conobj.sendFile(infile);
             }
             catch(int err) {
@@ -883,10 +883,10 @@ namespace Sipi {
         logger->debug("Checking for cache...");
 
         if (cache != NULL) {
-            logger->debug("Cache found, testing for canonical '") << canonical << "'";
+            logger->debug("Cache found, testing for canonical '{}'", canonical);
             string cachefile = cache->check(infile, canonical);
             if (!cachefile.empty()) {
-                logger->debug("Using cachefile '") << cachefile << "'";
+                logger->debug("Using cachefile '{}'", cachefile);
                 conobj.status(Connection::OK);
                 conobj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
                 conobj.header("Link", canonical_header);
@@ -911,7 +911,7 @@ namespace Sipi {
                     }
                 }
                 try {
-                    logger->info() << "Sending file: \"" << cachefile << "\"";
+                    logger->info("Sending file: \"{}\"", cachefile);
                     conobj.sendFile(cachefile);
                 }
                 catch(int err) {
@@ -962,7 +962,7 @@ namespace Sipi {
                 send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
-            logger->info() << "GET: \"" << uri << "\": adding watermark";
+            logger->info("GET: \"{}\": adding watermark", uri);
         }
 
 
@@ -972,7 +972,7 @@ namespace Sipi {
         string cachefile;
         if (cache != NULL) {
             cachefile = cache->getNewCacheName();
-            logger->debug("Writing new cache file '") << cachefile << "'";
+            logger->debug("Writing new cache file '{}'", cachefile);
         }
         try {
             switch (quality_format.format()) {
@@ -1003,7 +1003,7 @@ namespace Sipi {
                     logger->debug("After writing JPG...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        logger->debug("Adding cachefile '") << cachefile << "' to internal list";
+                        logger->debug("Adding cachefile '{}' to internal list", cachefile);
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
@@ -1047,7 +1047,7 @@ namespace Sipi {
                     }
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        logger->debug("Adding cachefile '") << cachefile << "' to internal list";
+                        logger->debug("Adding cachefile '{}' to internal list", cachefile);
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
@@ -1076,7 +1076,7 @@ namespace Sipi {
                     }
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        logger->debug("Adding cachefile '") << cachefile << "' to internal list";
+                        logger->debug("Adding cachefile '{}' to internal list", cachefile);
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
@@ -1099,7 +1099,7 @@ namespace Sipi {
 
         conobj.flush();
 
-        logger->info() << "GET: \"" << uri << "\": File: " << infile;
+        logger->info("GET: \"{}\": File: {}", uri, infile);
         return;
     }
     //=========================================================================
@@ -1158,7 +1158,7 @@ namespace Sipi {
             _cache = NULL;
             stringstream ss;
             ss << err;
-            _logger->warn("Couldn't open cache directory '") << cachedir_p << "'! Reason: " << ss.str();
+            _logger->warn("Couldn't open cache directory '{}'! Reason: {}", cachedir_p, ss.str());
             debugmsg("Warning: Couldn't open cache directory '" + cachedir_p + "'! Reason: " + ss.str());
         }
     }
@@ -1166,13 +1166,13 @@ namespace Sipi {
 
     void SipiHttpServer::run(void) {
 
-        _logger->info() << "SIPI server starting";
+        _logger->info("SIPI server starting");
 
         //
         // setting the image root
         //
-        _logger->info() << "Serving images from \"" << _imgroot << "\"";
-        _logger->info() << "Salsah prefix \"" << _salsah_prefix << "\"";
+        _logger->info("Serving images from \"{}\"", _imgroot);
+        _logger->info("Salsah prefix \"\"", _salsah_prefix);
 
         addRoute(Connection::GET, "/favcon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);

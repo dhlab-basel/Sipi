@@ -188,6 +188,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
+add_subdirectory(${EXT_PROJECTS_DIR}/fmt)
+
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
 
@@ -281,6 +283,7 @@ include_directories(
     ${COMMON_INCLUDE_FILES_DIR}/metadata
     ${COMMON_INCLUDE_FILES_DIR}/formats
     ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+    ${PROJECT_SOURCE_DIR}/shttps
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
@@ -330,7 +333,7 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 fmt dl pthread ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()

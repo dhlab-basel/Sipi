@@ -385,7 +385,7 @@ namespace Sipi {
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->error("ERROR IN TIFF! Module: ") << module << " " << errmsg;
+            logger->error("ERROR IN TIFF! Module: {} {}", module, errmsg);
         }
         else {
             cerr << "ERROR IN TIFF! Module: " << module << endl;
@@ -403,7 +403,7 @@ namespace Sipi {
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->warn("ERROR IN TIFF! Module: ") << module << " " << errmsg;
+            logger->warn("ERROR IN TIFF! Module: {} {}", module, errmsg);
         }
         else {
             cerr << "WARNING IN TIFF! Module: " << module << endl;
@@ -575,7 +575,12 @@ namespace Sipi {
                     img->iptc = new SipiIptc(iptc_content, iptc_length);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
 
@@ -599,7 +604,12 @@ namespace Sipi {
                     img->xmp = new SipiXmp(xmp_content, xmp_length);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
 
@@ -615,7 +625,12 @@ namespace Sipi {
                     img->icc = new SipiIcc(icc_buf, icc_len);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
             else if (1 == TIFFGetField(tif, TIFFTAG_WHITEPOINT, &whitepoint)) {
@@ -991,7 +1006,12 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 
@@ -1009,7 +1029,12 @@ namespace Sipi {
                 delete [] buf;
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 
@@ -1027,7 +1052,12 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 

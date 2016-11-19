@@ -36,8 +36,6 @@
 #include "SipiHttpServer.h"
 #include "SipiCache.h"
 
-static char __file__[] = __FILE__;
-
 namespace Sipi {
 
     char sipiserver[] = "__sipiserver";

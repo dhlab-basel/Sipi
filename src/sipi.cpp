@@ -278,7 +278,7 @@ int main (int argc, char *argv[]) {
     params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
     params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
     params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
-    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:NOTICE:WARN:ERROR:CRITICAL:ALERT:EMER:OFF", 1, "INFO"));
+    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF", 1, "INFO"));
     params.parseArgv ();
 
 
@@ -334,6 +334,10 @@ int main (int argc, char *argv[]) {
             //Create object SipiHttpServer
             Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
+
+            auto logger = spdlog::get(shttps::loggername);
+            logger->info(SIPI_BUILD_DATE);
+            logger->info(SIPI_BUILD_VERSION);
 
 #           ifdef SHTTPS_ENABLE_SSL
 

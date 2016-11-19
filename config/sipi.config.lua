@@ -133,8 +133,8 @@ sipi = {
     logfile = "sipi.log",
 
     --
-    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
-    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    -- loglevel, one of "TRACE", "DEBUG", "INFO", "WARN", "ERROR",
+    --    "CRITICAL", "OFF"
     --
     loglevel = "TRACE",
 }

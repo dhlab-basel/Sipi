@@ -48,10 +48,10 @@ namespace Sipi {
     }
     //============================================================================
 
-    ostream &operator<<(std::shared_ptr<spdlog::logger> log, const SipiError &rhs)
+    std::shared_ptr<spdlog::logger> &operator<<(std::shared_ptr<spdlog::logger> &log, const SipiError &rhs)
     {
-        log->error("SIPI-ERROR at [") << rhs.getFile() << ": #" << rhs.getLine() << "]: " << rhs.getMessage();
+        log->error("SIPI-ERROR at [{}: #{}]: {}", rhs.getFile(), rhs.getLine(), rhs.getMessage());
+        return log;
     }
 
 }
-

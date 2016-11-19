@@ -422,9 +422,18 @@ Gets Basic HTTP authentification data. Returns true, table on success or false, 
 
   ```
 
-  
+
 - `success, errormsg = server.copyTmpfile()` :  
-shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.
+shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.  
+- `server.log(message, loglevel)` :  
+Writes a message into the logfile. Loglevels are
+    - server.loglevel.trace
+    - server.loglevel.debug
+    - server.loglevel.info
+    - server.loglevel.warning
+    - server.loglevel.error
+    - server.loglevel.critical
+    - server.loglevel.off
 
 Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available
@@ -454,7 +463,9 @@ For example, using `local/bin/luarocks install --local package` the package will
 
 ## Sqlite3
 
-Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi:
+Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi.
+Please note that the sqlite3 function may produce Lua errors. It is recommended
+to use pcall to encapsulate access to the sqlite3 database.
 
 ### Opening a sqlite databases
 
@@ -477,11 +488,11 @@ free all resources.
 ```
 qry = db << 'SELECT * FROM image'
 ```
-or
+or, if you want to used a prepared query statment:
 ```
 qry = db << 'INSERT INTO image (id, description) VALUES (?,?)'
 ```
-`qry` will be a query object containing a prepared query. If the query object
+`qry` will then be a query object containing a prepared query. If the query object
 is not needed anymore, it may be destroyed by
 ```
 qry = ~qry
@@ -496,7 +507,7 @@ while (row) do
     row = qry()
 end
 ```
-or
+or, in order to use a prepared statment:
 ```
 qry('SGV_1960_00315', 'This is an image of a steam engine...')
 ```

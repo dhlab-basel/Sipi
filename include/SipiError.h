@@ -89,7 +89,7 @@ namespace Sipi {
          */
         friend std::ostream &operator<<(std::ostream &lhs, const SipiError &rhs);
 
-        friend std::ostream &operator<<(std::shared_ptr<spdlog::logger> log, const SipiError &rhs);
+        friend std::shared_ptr<spdlog::logger> &operator<<(std::shared_ptr<spdlog::logger> &log, const SipiError &rhs);
 
 
     };

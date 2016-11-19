@@ -89,7 +89,9 @@ namespace Sipi {
         cachesize = 0;
         nfiles = 0;
 
-        logger->info("Cache at '") << _cachedir << "' cachesize=" << max_cachesize << " nfiles=" << max_nfiles << " hysteresis=" << cache_hysteresis;
+        stringstream ss;
+        ss << "Cache at '" << _cachedir << "' cachesize=" << max_cachesize << " nfiles=" << max_nfiles << " hysteresis=" << cache_hysteresis;
+        logger->info(ss.str());
         ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
 
         struct dirent **namelist;
@@ -109,7 +111,7 @@ namespace Sipi {
                     //
                     // we cannot find the file – probably it has been deleted => skip it
                     //
-                    logger->debug("Cache could'nt find file '") << fr.cachepath << "' on disk!";
+                    logger->debug("Cache could'nt find file '{}' on disk!", fr.cachepath);
                     continue;
                 }
                 CacheRecord cr;
@@ -123,7 +125,7 @@ namespace Sipi {
                 cachesize += fr.fsize;
                 nfiles++;
                 cachetable[fr.canonical] = cr;
-                logger->info("File '") << cr.cachepath << "' adding to cache file!";
+                logger->info("File '{}' adding to cache file!", cr.cachepath);
             }
         }
 
@@ -145,7 +147,7 @@ namespace Sipi {
                 }
                 if (!found) {
                     string ff = _cachedir + "/" + file_on_disk;
-                    logger->info("File '") << file_on_disk << "' not in cache file! Deleting...";
+                    logger->info("File '{}' not in cache file! Deleting...", file_on_disk);
                     remove(ff.c_str());
                 }
                 free(namelist[n]);
@@ -185,7 +187,7 @@ namespace Sipi {
                 fr.fsize = ele.second.fsize;
                 fr.access_time = ele.second.access_time;
                 cachefile.write((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                logger->debug("Writing '") << ele.second.cachepath << "' to cache file";
+                logger->debug("Writing '{}' to cache file", ele.second.cachepath);
             }
         }
         cachefile.close();
@@ -282,7 +284,7 @@ namespace Sipi {
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
-                logger->debug("Purging from cache '") << cachetable[ele.canonical].cachepath << "'...";
+                logger->debug("Purging from cache '{}'...", cachetable[ele.canonical].cachepath);
                 string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
                 ::remove(delpath.c_str());
                 cachesize -= cachetable[ele.canonical].fsize;
@@ -446,7 +448,7 @@ namespace Sipi {
             return false; // return empty string, because we didn't find the file in cache
         }
 
-        logger->debug("Delete from cache '") << cachetable[canonical_p].cachepath << "'...";
+        logger->debug("Delete from cache '{}'...", cachetable[canonical_p].cachepath);
         string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
         ::remove(delpath.c_str());
         cachesize -= cachetable[canonical_p].fsize;

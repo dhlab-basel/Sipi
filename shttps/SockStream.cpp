@@ -35,7 +35,7 @@ using namespace std;
 using namespace shttps;
 
 SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
-    : sock(sock_p), in_bufsize(in_bufsize_p), out_bufsize(out_bufsize_p), putback_size(putback_size_p)
+    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), sock(sock_p)
 {
 #ifdef SHTTPS_ENABLE_SSL
     cSSL = NULL;
@@ -52,7 +52,7 @@ SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putb
 #ifdef SHTTPS_ENABLE_SSL
 
 SockStream::SockStream(SSL *cSSL_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
-    : cSSL(cSSL_p), in_bufsize(in_bufsize_p), out_bufsize(out_bufsize_p), putback_size(putback_size_p)
+    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), cSSL(cSSL_p)
 {
     sock = -1;
     in_buf = new char[in_bufsize + putback_size];

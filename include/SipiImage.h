@@ -153,7 +153,7 @@ namespace Sipi {
 
         inline friend std::shared_ptr<spdlog::logger> &operator<<(std::shared_ptr<spdlog::logger> &log, const SipiImageError &rhs)
         {
-            log->error("SIPI-IMAGE-ERROR at [") << rhs.file << ": #" << rhs.line << "]: " << rhs.errmsg;
+            log->error("SIPI-IMAGE-ERROR at [{}: #{}]: ", rhs.file, rhs.line, rhs.errmsg);
             return log;
         }
         //----------------------------------------------------------------------

@@ -230,7 +230,12 @@ namespace Sipi {
                                 img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << "*** " << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }
@@ -242,7 +247,12 @@ namespace Sipi {
                                 img->iptc = new SipiIptc(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }
@@ -254,7 +264,12 @@ namespace Sipi {
                                 img->exif = new SipiExif(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }

@@ -26,6 +26,7 @@
 #ifndef __shttp_server_h
 #define __shttp_server_h
 
+
 #include <map>
 #include <vector>
 #include <mutex>
@@ -38,8 +39,7 @@
 #include <semaphore.h>
 #include <netdb.h>      // Needed for the socket functions
 #include <sstream>      // std::stringstream
-
-#include "spdlog/spdlog.h"  // logging...
+#include <iostream>
 
 #ifdef SHTTPS_ENABLE_SSL
 #include "openssl/bio.h"
@@ -50,6 +50,10 @@
 #include "Global.h"
 #include "Connection.h"
 #include "LuaServer.h"
+
+#include <spdlog/spdlog.h>  // logging...
+#include <spdlog/fmt/ostr.h> // must be included
+
 
 #include "lua.hpp"
 

@@ -400,7 +400,7 @@ namespace shttps {
             //
             throw -1;
         }
-        _logger->info("REQUEST: ") << line;
+        _logger->info("REQUEST: {}", line);
 
         //
         // Parse first line of request
