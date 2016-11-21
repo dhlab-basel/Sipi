@@ -20,7 +20,11 @@
 
 -- handles the Knora non GUI-case: Knora uploaded a file to sourcePath
 
-server.setBuffer()
+success, errmsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
@@ -40,14 +44,33 @@ end
 -- check if knora directory is available, if not, create it
 --
 knoraDir = config.imgroot .. '/knora/'
-if  not server.fs.exists(knoraDir) then
-    server.fs.mkdir(knoraDir, 511)
+success, exists = server.fs.exists(knoraDir)
+if not success then
+    server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+    return
+end
+if  not exists then
+    success, errmsg = server.fs.mkdir(knoraDir, 511)
+    if not success then
+        server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
+        return
+    end
 end
 
-baseName = server.uuid62()
+success, baseName = server.uuid62()
+if not success then
+    server.log("server.uuid62() failed: " .. baseName, server.loglevel.error)
+    return
+end
 
 -- check if source is readable
-if not server.fs.is_readable(sourcePath) then
+
+success, readable = server.fs.is_readable(sourcePath)
+if not success then
+    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.error)
+    return
+end
+if not readable then
 
     send_error(500, FILE_NOT_READBLE .. sourcePath)
 
@@ -56,9 +79,17 @@ if not server.fs.is_readable(sourcePath) then
 end
 
 -- create full quality image (jp2)
-fullImg = SipiImage.new(sourcePath)
+success, fullImg = SipiImage.new(sourcePath)
+if not success then
+    server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.error)
+    return
+end
 
-check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+if not success then
+    server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.error)
+    return
+end
 
 -- if check returns false, the user's input is invalid
 if not check then
@@ -69,8 +100,17 @@ if not check then
 end
 
 fullImgName = baseName .. '.jpx'
-fullDims = fullImg:dims()
-fullImg:write(knoraDir .. fullImgName)
+success, fullDims = fullImg:dims()
+if not success then
+    server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.error)
+    return
+end
+
+success, errmsg = fullImg:write(knoraDir .. fullImgName)
+if not success then
+    server.log("fullImg:write() failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 -- create thumbnail (jpg)
 thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
