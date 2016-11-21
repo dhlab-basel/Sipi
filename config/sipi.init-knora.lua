@@ -79,7 +79,11 @@ function pre_flight(prefix, identifier, cookie)
     knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
     --print("knora_url: " .. knora_url)
 
-    result = server.http("GET", knora_url, knora_cookie_header, 5000)
+    success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
+    if not success then
+        server.log("Server.http() failed: " .. result, server.loglevel.error)
+        return deny
+    end
 
     -- check HTTP request was successful
     if not result.success then
@@ -94,7 +98,11 @@ function pre_flight(prefix, identifier, cookie)
         return 'deny'
     end
 
-    response_json = server.json_to_table(result.body)
+    success, response_json = server.json_to_table(result.body)
+    if not success then
+        server.log("Server.http() failed: " .. response_json, server.loglevel.error)
+        return 'deny'
+    end
 
     --print("status: " .. response_json.status)
     --print("permission code: " .. response_json.permissionCode)
@@ -197,5 +205,3 @@ function send_success(result)
     end
 
 end
-
-
