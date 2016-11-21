@@ -2063,12 +2063,12 @@ namespace shttps {
             lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
             return 2;
         }
-        lua_pop(L, top); // clear stack
 
         json_t *root = subtable(L, 1);
         char *jsonstr = json_dumps(root, JSON_INDENT(3));
 
         if (jwt_new(&jwt) != 0) {
+            lua_pop(L, lua_gettop(L)); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "'server.table_to_json(table)': Creating token failed!");
             return 2;
@@ -2081,7 +2081,7 @@ namespace shttps {
         lua_pushboolean(L, true);
         lua_pushstring(L, token);
 
-        return 1;
+        return 2;
     }
     //=========================================================================
 
@@ -2147,22 +2147,44 @@ namespace shttps {
     static int lua_logger(lua_State *L) {
         auto logger = spdlog::get(shttps::loggername);
 
-        const char *message;
+        string message;
         int level = spdlog::level::err;
 
         int top = lua_gettop(L);
-        if (top > 0) {
-            message = lua_tostring(L, 1);
+        if (top < 1) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.log()': no message given!");
+            return 2;
         }
+        if (!lua_isstring(L, 1)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.log()': message is not a string!");
+            return 2;
+        }
+        message = lua_tostring(L, 1);
+
         if (top > 1) {
+            if (!lua_isinteger(L, 2)) {
+                lua_pop(L, top);
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.log()': leve is not integer!");
+                return 2;
+            }
             level = lua_tointeger(L, 2);
         }
 
-        logger->log((spdlog::level::level_enum) level, message);
+        if (!message.empty()) {
+            logger->log((spdlog::level::level_enum) level, message);
+        }
 
         lua_pop(L, top);
 
-        return 0;
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+
+        return 2;
     }
     //=========================================================================
 

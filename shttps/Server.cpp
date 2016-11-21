@@ -452,6 +452,11 @@ namespace shttps {
         }
 
         //
+        // flush logfile for error messages
+        //
+        _logger->flush_on(spdlog::level::err);
+
+        //
         // Her we check if we have to change to a different uid. This can only be done
         // if the server runs originally as root!
         //

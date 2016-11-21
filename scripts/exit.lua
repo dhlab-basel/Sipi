@@ -24,7 +24,7 @@ end
 result = {
     status = 'OK'
 }
-jsonresult = server.table_to_json(result)
+local success, jsonresult = server.table_to_json(result)
 server.sendHeader('Content-type', 'application/json')
 server.sendStatus(200)
 server.print(jsonresult)

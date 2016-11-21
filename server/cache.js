@@ -95,7 +95,7 @@ function get_cachelist(sortorder) {
             }
         },
         error: function(xhr, status, error) {
-            alert(error);
+            alert('ERROR: ' + error);
         }
     });
 }
@@ -184,4 +184,3 @@ $(function() {
 
     get_cachelist('atasc');
 });
-
