@@ -21,7 +21,11 @@
 -- Knora GUI-case: Sipi has already saved the file that is supposed to be converted
 -- the file was saved to: config.imgroot .. '/tmp/' (route make_thumbnail)
 
-server.setBuffer()
+success, errmsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
@@ -41,7 +45,12 @@ tmpdir = config.imgroot .. '/tmp/'
 sourcePath = tmpdir .. filename
 
 -- check if source is readable
-if not server.fs.is_readable(sourcePath) then
+success, readable = server.fs.is_readable(sourcePath)
+if not success then
+    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.error)
+    return
+end
+if not readable then
 
     send_error(500, FILE_NOT_READBLE .. sourcePath)
 
@@ -54,16 +63,33 @@ end
 -- check if knora directory is available, if not, create it
 --
 knoraDir = config.imgroot .. '/knora/'
-if  not server.fs.exists(knoraDir) then
+success, exists = server.fs.exists(knoraDir)
+if not success then
+    server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+    return
+end
+if  not exists then
     server.fs.mkdir(knoraDir, 511)
 end
 
-baseName = server.uuid62()
+success, baseName = server.uuid62()
+if not success then
+    server.log("server.uuid62() failed: " .. baseName, server.loglevel.error)
+    return
+end
 
 -- create full quality image (jp2)
-fullImg = SipiImage.new(sourcePath)
+success, fullImg = SipiImage.new(sourcePath)
+if not success then
+    server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.error)
+    return
+end
 
-check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+if not success then
+    server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.error)
+    return
+end
 
 -- if check returns false, the user's input is invalid
 if not check then
@@ -74,18 +100,38 @@ if not check then
 end
 
 fullImgName = baseName .. '.jpx'
-fullDims = fullImg:dims()
+success, fullDims = fullImg:dims()
+if not success then
+    server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.error)
+    return
+end
 fullImg:write(knoraDir .. fullImgName)
 
 -- create thumbnail (jpg)
-thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+success, thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+if not success then
+    server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.error)
+    return
+end
 thumbImgName = baseName .. '.jpg'
 thumbDims = thumbImg:dims()
-thumbImg:write(knoraDir .. thumbImgName)
+sucess, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 -- delete tmp and preview files
-server.fs.unlink(sourcePath)
-server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
+success, errmsg = server.fs.unlink(sourcePath)
+if not success then
+    server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.error)
+    return
+end
+success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
+if not success then
+    server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 result = {
     status = 0,

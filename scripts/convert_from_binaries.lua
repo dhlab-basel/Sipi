@@ -113,10 +113,18 @@ if not success then
 end
 
 -- create thumbnail (jpg)
-thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+success, thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
 thumbImgName = baseName .. '.jpg'
 thumbDims = thumbImg:dims()
-thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.error)
+    return
+end
+success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)
+    return
+end
 
 result = {
     mimetype_full = "image/jp2",

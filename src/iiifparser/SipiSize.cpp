@@ -46,6 +46,8 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
+    int SipiSize::limitdim = 32000;
+
     SipiSize::SipiSize(string str) {
         nx = ny = 0;
         percent = 0.;
@@ -95,6 +97,10 @@ namespace Sipi {
                     size_type = SizeType::PIXELS_Y;
                }
             }
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
         }
     };
     //-------------------------------------------------------------------------
@@ -103,10 +109,14 @@ namespace Sipi {
         canonical_ok = false;
         if (nx_p <= 0) {
             ny = ny_p;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             size_type = SizeType::PIXELS_Y;
         }
         else if (ny_p <= 0) {
             nx = nx_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
             size_type = SizeType::PIXELS_X;
         }
         else if ((nx_p <= 0) && (ny_p <= 0)) {
@@ -115,6 +125,10 @@ namespace Sipi {
         else {
             nx = nx_p;
             ny = ny_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             if (maxdim) {
                 size_type = SizeType::MAXDIM;
             }
