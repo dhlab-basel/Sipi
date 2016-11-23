@@ -249,11 +249,11 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
 int main (int argc, char *argv[]) {
 
-    Logger *mylogger = Logger::createLogger("gaga", "gaga.log", Logger::LogLevel::DEBUG);
+    shared_ptr<Logger> mylogger = Logger::createLogger("gaga", "gaga.log", Logger::LogLevel::DEBUG);
     *mylogger << Logger::LogLevel::NOTICE << "SIPI NEW LOGGER WORKS..." << Logger::LogAction::FLUSH;
     *mylogger << Logger::LogLevel::WARNING << "a second line added" << Logger::LogAction::FLUSH;
 
-    Logger *gaga = Logger::getLogger("gaga");
+    shared_ptr<Logger> gaga = Logger::getLogger("gaga");
     *gaga << Logger::LogLevel::WARNING << "from a new logger reference..." << Logger::LogAction::FLUSH;
     Logger::removeLogger("gaga");
     //

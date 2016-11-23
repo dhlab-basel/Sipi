@@ -36,28 +36,28 @@ using namespace std;
 
 
 static map<Logger::LogLevel,string> LogLevelNames = {
-    {Logger::EMERGENCY, "EMERGENCY"},
-    {Logger::ALERT, "ALERT"},
-    {Logger::CRITICAL, "CRITICAL"},
-    {Logger::ERROR, "ERROR"},
-    {Logger::WARNING, "WARNING"},
-    {Logger::NOTICE, "NOTICE"},
+    {Logger::EMERGENCY,     "EMERGENCY"},
+    {Logger::ALERT,         "ALERT"},
+    {Logger::CRITICAL,      "CRITICAL"},
+    {Logger::ERROR,         "ERROR"},
+    {Logger::WARNING,       "WARNING"},
+    {Logger::NOTICE,        "NOTICE"},
     {Logger::INFORMATIONAL, "INFORMATIONAL"},
-    {Logger::DEBUG, "DEBUG"}
+    {Logger::DEBUG,         "DEBUG"}
 };
 
-static std::map<std::string,Logger*> loggers;
+static std::map<std::string,shared_ptr<Logger>> loggers;
 
 
-Logger *Logger::createLogger(const std::string &name, const std::string &filename, LogLevel loglevel) {
-    Logger *tmp;
+shared_ptr<Logger> Logger::createLogger(const std::string &name_p, const std::string &filename, LogLevel loglevel) {
+    shared_ptr<Logger> tmp;
     LogStream *ls = new LogStream(filename);
-    loggers[name] = tmp = new Logger(ls, loglevel);
+    loggers[name_p] = tmp = shared_ptr(new Logger(name_p, ls, loglevel));
     return tmp;
 }
 
-Logger *Logger::getLogger(const string &name) {
-    Logger *logger;
+shared_ptr<Logger> Logger::getLogger(const string &name) {
+    shared_ptr<Logger> logger;
     try {
         logger = loggers.at(name);
     }
@@ -96,7 +96,7 @@ Logger& Logger::operator<< (LogLevel ll) {
     if (msg_loglevel <= loglevel) {
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
-        *this << put_time(&tm, "[%Y-%m-%d %H-%M-%S] [") << LogLevelNames[msg_loglevel] << "] ";
+        *this << put_time(&tm, "[%Y-%m-%d %H-%M-%S] [") << name << ":" << LogLevelNames[msg_loglevel] << "] ";
     }
     return *this;
 }

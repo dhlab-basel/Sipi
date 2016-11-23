@@ -51,17 +51,17 @@ public:
         FLUSH
     } LogAction;
 private:
-
+    std::string name;
     LogStream *ls;
     LogLevel loglevel;
     LogLevel msg_loglevel;
     std::mutex active;
 public:
-    static Logger *createLogger(const std::string &name, const std::string &filename, LogLevel loglevel);
-    static Logger *getLogger(const std::string &name);
+    static std::shared_ptr<Logger> createLogger(const std::string &name_p, const std::string &filename, LogLevel loglevel);
+    static std::shared_ptr<Logger> getLogger(const std::string &name);
     static void removeLogger(const std::string &name);
 
-    inline Logger(LogStream *ls_p, LogLevel loglevel_p) : std::ostream(ls_p), ls(ls_p), loglevel(loglevel_p) {};
+    inline Logger(const std::string &name_p, LogStream *ls_p, LogLevel loglevel_p) : std::ostream(ls_p), name(name_p), ls(ls_p), loglevel(loglevel_p) {};
     ~Logger();
 
     Logger& operator<< (LogLevel ll);

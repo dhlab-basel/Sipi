@@ -227,7 +227,7 @@ public:
         std::string _loglevel;
 
     protected:
-        std::shared_ptr<spdlog::logger> _logger;
+        std::shared_ptr<Logger> _logger;
 
     public:
         /*!
