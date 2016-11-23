@@ -318,6 +318,8 @@ add_executable(
         shttps/Global.h
         shttps/Error.cpp shttps/Error.h
         shttps/Hash.cpp shttps/Hash.h
+        shttps/LogStream.cpp shttps/LogStream.h
+        shttps/Logger.cpp shttps/Logger.h
         shttps/SockStream.cpp shttps/SockStream.h
         shttps/ChunkReader.cpp shttps/ChunkReader.h
         shttps/Connection.cpp shttps/Connection.h
