@@ -48,21 +48,56 @@ public:
         DEBUG = 7
     } LogLevel;
     typedef enum {
-        FLUSH
+        FLUSH,
+        FORCE
     } LogAction;
 private:
     std::string name;
     LogStream *ls;
     LogLevel loglevel;
     LogLevel msg_loglevel;
+    bool force;
+    bool header;
     std::mutex active;
 public:
+   /*!
+    *
+    */
     static std::shared_ptr<Logger> createLogger(const std::string &name_p, const std::string &filename, LogLevel loglevel);
+
+   /*!
+    *
+    */
     static std::shared_ptr<Logger> getLogger(const std::string &name);
+
+   /*!
+    *
+    */
     static void removeLogger(const std::string &name);
 
-    inline Logger(const std::string &name_p, LogStream *ls_p, LogLevel loglevel_p) : std::ostream(ls_p), name(name_p), ls(ls_p), loglevel(loglevel_p) {};
+   /*!
+    *
+    */
+    inline Logger(const std::string &name_p, LogStream *ls_p, LogLevel loglevel_p)
+    : std::ostream(ls_p), name(name_p), ls(ls_p), loglevel(loglevel_p) {
+        force = false;
+        header = false;
+    };
+
+   /*!
+    *
+    */
     ~Logger();
+
+   /*!
+    *
+    */
+    inline void setLoglevel(LogLevel level) { loglevel = level; };
+
+   /*!
+    *
+    */
+    static std::map<Logger::LogLevel,std::string> getLevelMap(void);
 
     Logger& operator<< (LogLevel ll);
     Logger& operator<< (LogAction action);

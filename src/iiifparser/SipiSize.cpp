@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "shttps/spdlog/spdlog.h"
+#include "shttps/Logger.h"
 
 #include "shttps/Global.h"
 #include "SipiError.h"
@@ -182,7 +182,7 @@ namespace Sipi {
     SipiSize::SizeType SipiSize::get_size(int img_w, int img_h, int &w_p, int &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
 
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
@@ -367,7 +367,7 @@ namespace Sipi {
         stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
-        logger->debug(ss.str());
+        *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
 
         w_p = w;
         h_p = h;

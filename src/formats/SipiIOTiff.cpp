@@ -40,7 +40,7 @@
 
 
 #include "shttps/Global.h"
-#include "shttps/spdlog/spdlog.h"
+#include "shttps/Logger.h"
 
 static const char __file__[] = __FILE__;
 
@@ -381,11 +381,11 @@ namespace Sipi {
 
     static void tiffError(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->error("ERROR IN TIFF! Module: {} {}", module, errmsg);
+            *logger << Logger::LogLevel::ERROR << "ERROR IN TIFF! Module: " << module << " Error: " << errmsg << Logger::LogAction::FLUSH;
         }
         else {
             cerr << "ERROR IN TIFF! Module: " << module << endl;
@@ -399,11 +399,11 @@ namespace Sipi {
 
     static void tiffWarning(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->warn("ERROR IN TIFF! Module: {} {}", module, errmsg);
+            *logger << Logger::LogLevel::WARNING << "ERROR IN TIFF! Module: " << module << "Warning: " << errmsg << Logger::LogAction::FLUSH;
         }
         else {
             cerr << "WARNING IN TIFF! Module: " << module << endl;
@@ -446,7 +446,7 @@ namespace Sipi {
     {
     	TIFF *tif;
 
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
             TIFFSetErrorHandler(tiffError);
@@ -914,7 +914,7 @@ namespace Sipi {
         MEMTIFF *memtif = NULL;
         uint32 rowsperstrip = (uint32) -1;
 
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         if ((filepath == "-") || (filepath == "HTTP")) {
             memtif = memTiffOpen();

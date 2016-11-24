@@ -24,7 +24,7 @@ sipi = {
     -- user under which the sipi server should run. Don't set (comment out) this configuration variable
     -- if SIPI should use the user which launches SIPI!
     --
-    userid = '_www',
+    -- userid = '_www',
 
     --
     -- port number the server is listening to

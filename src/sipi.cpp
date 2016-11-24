@@ -105,14 +105,13 @@ static std::string fileType_string(FileType f_type) {
 
 static void sighandler(int sig) {
     std::cerr << std::endl << "Got SIGINT, stopping server gracefully...." << std::endl;
+    auto logger = Logger::getLogger(shttps::loggername);
     if (serverptr != NULL) {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, stopping server");
+        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, stopping server" << Logger::LogAction::FLUSH;
         serverptr->stop();
     }
     else {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, exiting server");
+        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, exiting server" << Logger::LogAction::FLUSH;
         exit(0);
     }
 }
@@ -120,8 +119,8 @@ static void sighandler(int sig) {
 
 
 static void broken_pipe_handler(int sig) {
-    auto logger = spdlog::get(shttps::loggername);
-    logger->info("Got BROKEN PIPE signal!");
+    auto logger = Logger::getLogger(shttps::loggername);
+    *logger << Logger::LogLevel::INFORMATIONAL << "Got BROKEN PIPE signal!" << Logger::LogAction::FLUSH;
 }
 //=========================================================================
 
@@ -249,13 +248,6 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
 int main (int argc, char *argv[]) {
 
-    shared_ptr<Logger> mylogger = Logger::createLogger("gaga", "gaga.log", Logger::LogLevel::DEBUG);
-    *mylogger << Logger::LogLevel::NOTICE << "SIPI NEW LOGGER WORKS..." << Logger::LogAction::FLUSH;
-    *mylogger << Logger::LogLevel::WARNING << "a second line added" << Logger::LogAction::FLUSH;
-
-    shared_ptr<Logger> gaga = Logger::getLogger("gaga");
-    *gaga << Logger::LogLevel::WARNING << "from a new logger reference..." << Logger::LogAction::FLUSH;
-    Logger::removeLogger("gaga");
     //
     // register namespace sipi in xmp. Since this part of the XMP library is
     // not reentrant, it must be done here in the main thread!
@@ -343,9 +335,9 @@ int main (int argc, char *argv[]) {
             Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
-            auto logger = spdlog::get(shttps::loggername);
-            logger->info(SIPI_BUILD_DATE);
-            logger->info(SIPI_BUILD_VERSION);
+            auto logger = Logger::getLogger(shttps::loggername);
+            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_DATE << Logger::LogAction::FLUSH;
+            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_VERSION << Logger::LogAction::FLUSH;
 
 #           ifdef SHTTPS_ENABLE_SSL
 

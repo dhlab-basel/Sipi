@@ -44,7 +44,7 @@
 #include "Server.h"
 #include "ChunkReader.h"
 
-#include "spdlog/spdlog.h"  // logging...
+#include "Logger.h"  // logging...
 #include "sole.hpp"
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -2145,10 +2145,10 @@ namespace shttps {
     * Lua: logger(message, level)
     */
     static int lua_logger(lua_State *L) {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         string message;
-        int level = spdlog::level::err;
+        int level = Logger::LogLevel::ERROR;
 
         int top = lua_gettop(L);
         if (top < 1) {
@@ -2169,14 +2169,14 @@ namespace shttps {
             if (!lua_isinteger(L, 2)) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.log()': leve is not integer!");
+                lua_pushstring(L, "'server.log()': level is not integer!");
                 return 2;
             }
             level = lua_tointeger(L, 2);
         }
 
         if (!message.empty()) {
-            logger->log((spdlog::level::level_enum) level, message);
+            *logger << (Logger::LogLevel) level << message << Logger::LogAction::FLUSH;
         }
 
         lua_pop(L, top);
@@ -2466,9 +2466,11 @@ namespace shttps {
 
         lua_pushstring(L, "loglevel"); // table1 - "index_L1"
         lua_createtable(L, 0, 9); // table1 - "index_L1" - table2
-        for (int level = as_integer(spdlog::level::trace); level <= as_integer(spdlog::level::off); level++) {
-            lua_pushstring(L, spdlog::level::to_str((spdlog::level::level_enum) level)); // table1 - "index_L1" - table2 - "index_L2"
-            lua_pushinteger(L, level);
+
+        map<Logger::LogLevel,string> lmap = Logger::getLevelMap();
+        for(auto const& l : lmap) {
+            lua_pushstring(L, l.second.c_str()); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, as_integer(l.first));
             lua_rawset(L, -3); // table1 - "index_L1" - table2
         }
         lua_rawset(L, -3); // table1

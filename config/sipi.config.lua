@@ -133,10 +133,9 @@ sipi = {
     logfile = "sipi.log",
 
     --
-    -- loglevel, one of "TRACE", "DEBUG", "INFO", "WARN", "ERROR",
-    --    "CRITICAL", "OFF"
+    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "TRACE",
+    loglevel = "WARNING",
 }
 
 admin = {

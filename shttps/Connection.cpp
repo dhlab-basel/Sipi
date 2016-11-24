@@ -359,7 +359,6 @@ namespace shttps {
         content_length = 0;
         _finished = false;
         _reset_connection = false;
-        _logger = spdlog::get(loggername);
     }
     //=========================================================================
 
@@ -379,7 +378,6 @@ namespace shttps {
         content_length = 0;
         _finished = false;
         _reset_connection = false;
-        _logger = spdlog::get(loggername);
 
         status(OK); // thats the default...
 
@@ -400,7 +398,6 @@ namespace shttps {
             //
             throw -1;
         }
-        _logger->info("REQUEST: {}", line);
 
         //
         // Parse first line of request

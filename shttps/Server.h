@@ -48,11 +48,10 @@
 #endif
 
 #include "Global.h"
+#include "Logger.h"
 #include "Connection.h"
 #include "LuaServer.h"
 
-#include <spdlog/spdlog.h>  // logging...
-#include <spdlog/fmt/ostr.h> // must be included
 
 
 #include "lua.hpp"
@@ -226,9 +225,6 @@ public:
         std::string _logfilename;
         std::string _loglevel;
 
-    protected:
-        std::shared_ptr<Logger> _logger;
-
     public:
         /*!
         * Create a server listening on the given port with the maximal number of threads
@@ -376,8 +372,9 @@ public:
         *
         * \param[in] loglevel_p set the loglevel
         */
-        inline void loglevel(spdlog::level::level_enum loglevel_p) {
-            spdlog::set_level(loglevel_p);
+        inline void loglevel(Logger::LogLevel loglevel_p) {
+            auto logger = Logger::getLogger(loggername);
+            logger->setLoglevel(loglevel_p);
         }
 
         /*!

@@ -31,8 +31,6 @@
 #include <vector>
 #include <map>
 
-#include <spdlog/spdlog.h>  // logging...
-
 #include "Error.h"
 
 
@@ -322,7 +320,6 @@ namespace shttps {
         size_t outbuf_inc;          //!< Increment of outbuf buffer if it has to be enlarged
         size_t outbuf_nbytes;       //!< number of bytes used so far in output buffer
         bool _reset_connection;     //!< true, if connection should be reset (e.g. cors)
-        std::shared_ptr<spdlog::logger> _logger; //!< logger...
 
        /*!
         * Read, process and parse the HTTP request header

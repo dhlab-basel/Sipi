@@ -36,7 +36,7 @@
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
-#include "shttps/spdlog/spdlog.h"  // logging...
+#include "shttps/Logger.h"  // logging...
 
 
 // Kakadu core includes
@@ -132,9 +132,9 @@ namespace Sipi {
         KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = spdlog::get(shttps::loggername);
+            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                logger->warn(msg);
+                *logger << Logger::LogLevel::WARNING << msg << Logger::LogAction::FLUSH;
             }
         }
     };
@@ -152,9 +152,9 @@ namespace Sipi {
         KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = spdlog::get(shttps::loggername);
+            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                logger->error(msg);
+                *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
                 throw KDU_ERROR_EXCEPTION;
             }
         }
@@ -184,7 +184,7 @@ namespace Sipi {
 
 
     bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 

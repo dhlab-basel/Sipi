@@ -38,8 +38,8 @@ static sig_t old_broken_pipe_handler;
 
 static void sighandler(int sig) {
     if (serverptr != NULL) {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, stopping server");
+        auto logger = Logger::getLogger(shttps::loggername);
+        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, stopping server" << Logger::LogAction::FLUSH;
         serverptr->stop();
     }
     else {

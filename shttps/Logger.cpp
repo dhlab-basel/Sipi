@@ -52,7 +52,7 @@ static std::map<std::string,shared_ptr<Logger>> loggers;
 shared_ptr<Logger> Logger::createLogger(const std::string &name_p, const std::string &filename, LogLevel loglevel) {
     shared_ptr<Logger> tmp;
     LogStream *ls = new LogStream(filename);
-    loggers[name_p] = tmp = shared_ptr(new Logger(name_p, ls, loglevel));
+    loggers[name_p] = tmp = shared_ptr<Logger>(new Logger(name_p, ls, loglevel));
     return tmp;
 }
 
@@ -68,7 +68,7 @@ shared_ptr<Logger> Logger::getLogger(const string &name) {
 }
 
 void Logger::removeLogger(const string &name) {
-    Logger *logger;
+    shared_ptr<Logger> logger;
     try {
         logger = loggers.at(name);
     }
@@ -76,17 +76,41 @@ void Logger::removeLogger(const string &name) {
         return;
     }
     loggers.erase(name);
-    delete logger;
+    logger.reset();
 }
 
 Logger::~Logger() {
     delete ls;
 }
 
+
+map<Logger::LogLevel,string> Logger::getLevelMap(void) {
+    return LogLevelNames;
+}
+
 Logger& Logger::operator<< (LogAction action) {
-    std::ostream::operator<<(endl);
-    flush();
-    active.unlock();
+    switch (action) {
+        case LogAction::FLUSH: {
+            if (msg_loglevel <= loglevel || force) {
+                std::ostream::operator<<(endl);
+                flush();
+            }
+            force = false;
+            header = false;
+            active.unlock();
+            break;
+        }
+        case LogAction::FORCE: {
+            force = true;
+            if (!header) {
+                header = true;
+                auto t = std::time(nullptr);
+                auto tm = *std::localtime(&t);
+                *this << put_time(&tm, "[%Y-%m-%d %H-%M-%S] [") << name << ":" << LogLevelNames[msg_loglevel] << "] ";
+            }
+            break;
+        }
+    }
     return *this;
 }
 
@@ -94,6 +118,7 @@ Logger& Logger::operator<< (LogLevel ll) {
     active.lock();
     msg_loglevel = ll;
     if (msg_loglevel <= loglevel) {
+        header = true;
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         *this << put_time(&tm, "[%Y-%m-%d %H-%M-%S] [") << name << ":" << LogLevelNames[msg_loglevel] << "] ";
@@ -102,106 +127,106 @@ Logger& Logger::operator<< (LogLevel ll) {
 }
 
 Logger& Logger::operator<< (bool val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (char val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (unsigned char val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (short val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (unsigned short val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (int val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (unsigned int val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (long val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (unsigned long val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (long long val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (unsigned long long val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (float val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (double val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (long double val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 Logger& Logger::operator<< (void *val) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(val);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(val);
     return *this;
 }
 
 
 Logger& Logger::operator<< (std::streambuf* sb ) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(sb);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(sb);
     return *this;
 }
 
 Logger& Logger::operator<< (std::ostream& (*pf)(std::ostream&)) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(pf);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(pf);
     return *this;
 }
 
 
 Logger& Logger::operator<< (std::ios& (*pf)(std::ios&)) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(pf);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(pf);
     return *this;
 }
 
 
 Logger& Logger::operator<< (ios_base& (*pf)(ios_base&)) {
-    if (msg_loglevel <= loglevel) std::ostream::operator<<(pf);
+    if (msg_loglevel <= loglevel || force) std::ostream::operator<<(pf);
     return *this;
 }
 
 
 Logger& Logger::operator<< (const std::string &val) {
-    if (msg_loglevel <= loglevel) {
+    if (msg_loglevel <= loglevel || force) {
         ostream *os = this;
         *os << val;
     }
@@ -209,7 +234,7 @@ Logger& Logger::operator<< (const std::string &val) {
 }
 
 Logger& Logger::operator<< (const char *str) {
-    if (msg_loglevel <= loglevel) {
+    if (msg_loglevel <= loglevel || force) {
         ostream *os = this;
         *os << str;
     }
