@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
+#include <atomic>
 #include <netdb.h>      // Needed for the socket functions
 #include <sstream>      // std::stringstream
 #include <iostream>
