@@ -954,12 +954,12 @@ namespace shttps {
     }
     //=========================================================================
 
-    static map<string,string> process_http_header(istream *ins, int &content_length, int &status_code)
+    static unordered_map<string,string> process_http_header(istream *ins, int &content_length, int &status_code)
     {
         //
         // process header files
         //
-        map<string,string> header;
+        unordered_map<string,string> header;
         bool eoh = false; //end of header reached
         content_length = 0; // we don't know if we will get content...
         string line;
@@ -1081,7 +1081,7 @@ namespace shttps {
         // header: table of key/value pairs of additional HTTP-headers to be sent
         // timeout: number of milliseconds any operation of the socket may take at maximum
         //
-        map<string,string> outheader;
+        unordered_map<string,string> outheader;
         int timeout = 500; // default is 500 ms
         for (int i = 3; i <= top; i++) {
             if (lua_istable(L, i)) { // process header table at position i
@@ -1320,7 +1320,7 @@ namespace shttps {
                 //
                 int content_length;
                 int status_code;
-                map <string, string> header = process_http_header(&ins, content_length, status_code);
+                unordered_map <string, string> header = process_http_header(&ins, content_length, status_code);
                 if (status_code == -1) {
                     close(socketfd);
                     lua_pop(L, top);
@@ -2260,7 +2260,7 @@ namespace shttps {
         }
         lua_rawset(L, -3); // table1
 
-        std::map<std::string,std::string> cookies = conn.cookies();
+        std::unordered_map<std::string,std::string> cookies = conn.cookies();
         lua_pushstring(L, "cookies"); // table1 - "index_L1"
         lua_createtable(L, 0, cookies.size()); // table1 - "index_L1" - table2
         for (auto cookie : cookies) {

@@ -32,7 +32,7 @@
 #include <sstream>
 #include <utility>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 #include "SipiError.h"
 #include "SipiIO.h"
@@ -181,7 +181,7 @@ namespace Sipi {
         friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
-        static std::map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
+        static std::unordered_map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
         byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
         word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
     protected:
@@ -200,7 +200,7 @@ namespace Sipi {
         shttps::Connection *conobj; //!< Pointer to mongoose webserver connection data
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
     public:
-        static std::map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
+        static std::unordered_map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
         /*!
          * Default constructor. Creates an empty image
          */

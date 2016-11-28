@@ -159,7 +159,6 @@ int SockStream::sync(void)
     std::ptrdiff_t n = pptr() - out_buf;
     size_t nn = 0;
     while (n > 0) {
-        int flag = 1;
         ssize_t tmp_n;
 #ifdef SHTTPS_ENABLE_SSL
         if (cSSL == NULL) {

@@ -28,6 +28,7 @@
 
 #include <ostream>
 #include <streambuf>
+#include <string>
 #include <ios>
 #include <map>
 #include <mutex>
