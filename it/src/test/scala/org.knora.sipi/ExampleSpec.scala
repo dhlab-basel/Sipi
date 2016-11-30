@@ -19,10 +19,6 @@ package org.knora.sipi
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.directives.BasicDirectives.{extractRequestContext => _, provide => _}
-import akka.http.scaladsl.server.directives.FutureDirectives.{onSuccess => _}
-import akka.http.scaladsl.server.directives.MarshallingDirectives.{as => _, entity => _}
-import akka.http.scaladsl.server.directives.RouteDirectives.{complete => _, reject => _}
 import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.Await

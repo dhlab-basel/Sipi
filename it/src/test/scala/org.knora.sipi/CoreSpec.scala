@@ -23,6 +23,8 @@ package org.knora.sipi
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{BeforeAndAfterAll, Matchers, Suite, WordSpecLike}
 
+import scala.sys.process._
+
 
 /**
   * Core spec class, which is going to be extended by every spec.
@@ -33,8 +35,24 @@ class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike with Matc
     val logger = akka.event.Logging(system, this.getClass())
     val log = logger
 
+    def isAlive: Boolean = {
+        //Check if Sipi is still running
+        true
+    }
+
+    def tailConsole(lines: Int): String = {
+        //Return last number of lines from the console output
+        ""
+    }
+
+    def tailLog(lines: Int): String = {
+        s"tail -n$lines ../sipi.log.txt" !!
+    }
+
     override def beforeAll {
         //Here we should start a fresh sipi instance
+        //FIXME: Make it portable
+        val sipi = Process("build/sipi -config it/config/sipi.test-config.lua", new java.io.File("/Users/subotic/_github.com/sipi")).lineStream
     }
 
     override def afterAll {
