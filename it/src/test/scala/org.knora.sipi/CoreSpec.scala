@@ -20,9 +20,15 @@
 
 package org.knora.sipi
 
+import java.util.Date
+import java.io.File
+
+import akka.actor.ActorSystem
+import akka.event.LoggingAdapter
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{BeforeAndAfterAll, Matchers, Suite, WordSpecLike}
 
+import scala.io.Source
 import scala.sys.process._
 
 
@@ -31,32 +37,72 @@ import scala.sys.process._
   */
 class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike with Matchers with BeforeAndAfterAll {
 
-    def actorRefFactory = system
-    val logger = akka.event.Logging(system, this.getClass())
-    val log = logger
+    private val SipiCommand = "build/sipi -config it/config/sipi.test-config.lua"
+    private val SipiWorkingDir = "/Users/subotic/_github.com/sipi" // FIXME
+    private val SipiOutputToWaitFor = "Sipi Version"
+    private val SipiStartWaitMillis = 5000
+
+    protected def actorRefFactory: ActorSystem = system
+    protected val logger: LoggingAdapter = akka.event.Logging(system, this.getClass)
+    protected val log: LoggingAdapter = logger
+
+    private var maybeSipiProcess: Option[Process] = None
+    private var sipiStarted = false
+    private var sipiStartTime: Long = new Date().getTime
+    private var sipiTookTooLong = false
 
     def isAlive: Boolean = {
-        //Check if Sipi is still running
-        true
+        if (sipiStarted) {
+            maybeSipiProcess match {
+                case Some(sipiProcess) => sipiProcess.isAlive
+                case None => false
+            }
+        } else {
+            false
+        }
     }
 
-    def tailConsole(lines: Int): String = {
-        //Return last number of lines from the console output
-        ""
+    override def beforeAll(): Unit = {
+        startSipi()
     }
 
-    def tailLog(lines: Int): String = {
-        s"tail -n$lines ../sipi.log.txt" !!
+    override def afterAll(): Unit = {
+        maybeSipiProcess match {
+            case Some(sipiProcess) => sipiProcess.destroy()
+            case None => ()
+        }
     }
 
-    override def beforeAll {
-        //Here we should start a fresh sipi instance
-        //FIXME: Make it portable
-        val sipi = Process("build/sipi -config it/config/sipi.test-config.lua", new java.io.File("/Users/subotic/_github.com/sipi")).lineStream
-    }
+    /**
+      * Starts Sipi and waits for it to finish starting up.
+      */
+    private def startSipi(): Unit = {
+        // Make a ProcessLogger that can monitor Sipi's output to determine whether it has finished starting up.
+        val processLogger = ProcessLogger({
+            line =>
+                if (!sipiStarted) {
+                    println(line)
 
-    override def afterAll {
-        //Here we should stop the sipi instance
-    }
+                    if (line.contains(SipiOutputToWaitFor)) {
+                        sipiStarted = true
+                    }
+                }
+        })
 
+        // Start the Sipi process.
+        val sipiProcess: Process = Process(SipiCommand, new File(SipiWorkingDir)).run(processLogger)
+        sipiStartTime = new Date().getTime
+
+        // Wait for Sipi to finish starting up.
+        while (!(sipiStarted || sipiTookTooLong)) {
+            Thread.sleep(200)
+
+            if (new Date().getTime - sipiStartTime > SipiStartWaitMillis) {
+                sipiTookTooLong = true
+            }
+        }
+
+        require(!sipiTookTooLong, s"Sipi didn't start after $SipiStartWaitMillis ms")
+        maybeSipiProcess = Some(sipiProcess)
+    }
 }

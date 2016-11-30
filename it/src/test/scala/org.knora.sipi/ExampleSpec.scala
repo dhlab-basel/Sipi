@@ -35,7 +35,7 @@ class ExampleSpec extends CoreSpec {
         "succeed when getting the akka website " in {
             /* Correct username and password */
             val responseFuture = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
-            val response: HttpResponse = Await.result(responseFuture, 3 seconds)
+            val response: HttpResponse = Await.result(responseFuture, 3.seconds)
             log.debug(s"response: ${response.toString}")
             assert(response.status === StatusCodes.OK)
         }
