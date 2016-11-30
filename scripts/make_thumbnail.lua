@@ -18,7 +18,7 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
--- Knora GUI-case: create a thumbnail 
+-- Knora GUI-case: create a thumbnail
 
 server.setBuffer()
 
@@ -31,8 +31,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     --for kk,vv in pairs(imgparam) do
     --    print(kk, " = ", vv)
     --end
-
-    server.sendHeader("Content-Type", "application/json")
 
     --
     -- check if tmporary directory is available, if not, create it
@@ -61,14 +59,8 @@ for imgindex,imgparam in pairs(server.uploads) do
 
     -- if check returns false, the user's input is invalid
     if not check then
-        result = {
-            status = 1,
-            message = "Mimetypes are inconsistent."
-        }
 
-        jsonstr = server.table_to_json(result)
-
-        server.print(jsonstr)
+        send_error(400, MIMETYPES_INCONSISTENCY)
 
         return
     end
@@ -90,7 +82,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     myimg:write(thumbname)
 
     result = {
-        status = 0,
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
@@ -100,8 +91,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         original_filename = filename,
         file_type = 'IMAGE'
     }
-    jsonstr = server.table_to_json(result)
 
-    server.print(jsonstr)
+    send_success(result)
 
 end

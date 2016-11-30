@@ -68,6 +68,7 @@ namespace shttps {
      * Error handler for Lua errors!
      */
     static int dont_panic(lua_State *L) {
+        cerr << "LUA-PANIC..." << endl;
         const char *luapanic = lua_tostring(L, -1);
         throw Error(__file__, __LINE__, string("Lua panic: ") + luapanic);
     }
@@ -123,14 +124,15 @@ namespace shttps {
 
     static const std::string base64_chars =
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                    "abcdefghijklmnopqrstuvwxyz"
-                    "0123456789+/";
+            "abcdefghijklmnopqrstuvwxyz"
+            "0123456789+/";
 
 
     static inline bool is_base64(unsigned char c) {
         return (isalnum(c) || (c == '+') || (c == '/'));
     }
 
+/* NOT YET USED
     static std::string base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {
         std::string ret;
         int i = 0;
@@ -173,6 +175,7 @@ namespace shttps {
         return ret;
 
     }
+*/
 
     static std::string base64_decode(std::string const& encoded_string) {
         int in_len = encoded_string.size();
@@ -246,19 +249,16 @@ namespace shttps {
         if (!luafile.empty()) {
             if (iscode) {
                 if (luaL_loadstring(L, luafile.c_str()) != 0) {
-                    const char *luaerror = lua_tostring(L, -1);
-                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                    lua_error(L);
                 }
             }
             else {
                 if (luaL_loadfile(L, luafile.c_str()) != 0) {
-                    const char *luaerror = lua_tostring(L, -1);
-                    throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                    lua_error(L);
                 }
             }
             if (lua_pcall(L, 0, LUA_MULTRET, 0) != 0) {
-                const char *luaerror = lua_tostring(L, -1);
-                throw Error(__FILE__, __LINE__, string("Lua error: ") + luaerror);
+                lua_error(L);
             }
         }
     }
@@ -920,7 +920,6 @@ namespace shttps {
         }
 
         string errormsg; // filled in case of errors...
-        bool success = true;
 
         //
         // Get the first parameter: method (ATTENTION: only "GET" is supported at the moment
@@ -975,8 +974,8 @@ namespace shttps {
                 port = 443;
             }
             else {
-                throw _HttpError(__LINE__,
-                                 "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+                lua_pushstring(L, "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
+                lua_error(L);
             }
 
             size_t pos;
@@ -1194,7 +1193,8 @@ namespace shttps {
                 if (content_length == -1) { // we expect chunked data
                     try {
                         ChunkReader ckrd(&ins);
-                        size_t n = ckrd.readAll(&bodybuf);
+                        content_length = ckrd.readAll(&bodybuf);
+
                     }
                     catch (int ierr) { // i/o error
                         close(socketfd);
@@ -1284,7 +1284,7 @@ namespace shttps {
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "body"); // table - "body"
-                lua_pushstring(L, bodybuf); // table - "body" - bodybuf
+                lua_pushlstring(L, bodybuf, content_length); // table - "body" - bodybuf
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "duration"); // table - "duration"
@@ -1327,6 +1327,7 @@ namespace shttps {
         const char table_error[] = "server.table_to_json(table): datatype inconsistency!";
         json_t *tableobj = NULL;
         json_t *arrayobj = NULL;
+        json_t *tmp_luanumber = NULL;
         const char *skey;
         lua_pushnil(L);  /* first key */
         while (lua_next(L, index) != 0) {
@@ -1344,7 +1345,7 @@ namespace shttps {
                 }
             }
             else if (lua_type(L, index + 1) == LUA_TNUMBER) {
-                int dummy = lua_tointeger(L, index + 1);
+                (void) lua_tointeger(L, index + 1);
                 if (tableobj != NULL) {
                     lua_pushstring(L, "'server.table_to_json(table)': Cannot mix int and strings as key");
                     lua_error(L);
@@ -1368,11 +1369,21 @@ namespace shttps {
             if (lua_type(L, index + 2) == LUA_TNUMBER) {
                 // a number value
                 double val = lua_tonumber(L, index + 2);
+
+
+                if (floor(val) == val) {
+                    // the lua number is actually an integer
+                    tmp_luanumber = json_integer(static_cast <long> (floor(val)));
+                } else {
+                    // the lua number is a double
+                    tmp_luanumber = json_real(val);
+                }
+
                 if (tableobj != NULL) {
-                    json_object_set_new(tableobj, skey, json_real(val));
+                    json_object_set_new(tableobj, skey, tmp_luanumber);
                 }
                 else if (arrayobj != NULL) {
-                    json_array_append_new(arrayobj, json_real(val));
+                    json_array_append_new(arrayobj, tmp_luanumber);
                 }
                 else {
                     lua_pushstring(L, table_error);
@@ -1807,7 +1818,6 @@ namespace shttps {
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
 
-        int top = lua_gettop(L);
         int tmpfile_id = lua_tointeger(L, 1);
         const char *outfile = lua_tostring(L, 2);
 
@@ -2381,8 +2391,7 @@ namespace shttps {
 
     int LuaServer::executeChunk(const string &luastr) {
         if (luaL_dostring(L, luastr.c_str()) != 0) {
-            const char *luaerror = lua_tostring(L, -1);
-            throw Error(__file__, __LINE__, string("Lua error: ") + luaerror);
+            return -1;
         }
         int top = lua_gettop(L);
         if (top == 1) {

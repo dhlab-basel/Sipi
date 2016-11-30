@@ -32,7 +32,12 @@ sipi = {
     port = 1024,
 
     --
-    -- Number of seconds a connection (socket) remains open
+    -- Number of threads to use
+    --
+    nthreads = 8,
+
+    --
+    -- Number of seconds a connection (socket) remains open at maximum
     --
     keep_alive = 5,
 
@@ -122,6 +127,16 @@ sipi = {
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
 
+    --
+    -- Name of the logfile (a ".txt" is added...)
+    --
+    logfile = "sipi.log",
+
+    --
+    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
+    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    --
+    loglevel = "WARN",
 }
 
 admin = {

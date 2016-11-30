@@ -60,6 +60,8 @@ namespace Sipi {
         std::vector<shttps::LuaRoute> routes;
         std::string knora_path;
         std::string knora_port;
+        std::string logfile;
+        std::string loglevel;
         std::string docroot;
         std::string docroute;
         std::string jwt_secret;
@@ -115,6 +117,10 @@ namespace Sipi {
         inline std::string getKnoraPath(void) { return knora_path; }
 
         inline std::string getKnoraPort(void) { return knora_port; }
+
+        inline std::string getLoglevel(void) { return loglevel; }
+
+        inline std::string getLogfile(void) { return logfile; }
 
         inline std::string getDocRoot(void) { return docroot; }
 

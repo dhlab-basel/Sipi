@@ -59,7 +59,7 @@ namespace shttps {
     *
     * \returns Number of bytes read
     */
-    extern size_t safeGetline(std::istream& is, std::string& t);
+    extern size_t safeGetline(std::istream& is, std::string& t, bool debug = false);
 
    /*!
     * Function to parse the options of a HTTP header line
@@ -302,6 +302,8 @@ namespace shttps {
         std::map<std::string,std::string> header_out;     //!< Output header fields
         std::map<std::string,std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
+        std::istream *ins;          //!< incoming data stream
+        std::ostream *os;           //!< outgoing data stream
         std::string _tmpdir;        //!< directory used to temporary storage of files (e.g. uploads)
         StatusCodes status_code;    //!< Status code of response
         std::string status_string;  //!< Short description of status code
@@ -311,14 +313,10 @@ namespace shttps {
         bool _chunked_transfer_in;  //!< Input data is chunked
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
-        std::istream *ins;          //!< incoming data stream
-        std::ostream *os;           //!< outgoing data stream
         char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
         unsigned content_length;    //!< length of body in octets (used if not chunked transfer)
         std::string _content_type;   //!< Content-type (mime type of content)
-        unsigned next_chunk;        //!< not used yet (for reading chunks from incoming stream)
         std::ofstream *cachefile;   //!< pointer to cache file
-
         char *outbuf;               //!< If not NULL, pointer to the output buffer (buffered output used)
         size_t outbuf_size;         //!< Actual size of output buffer
         size_t outbuf_inc;          //!< Increment of outbuf buffer if it has to be enlarged
@@ -459,6 +457,8 @@ namespace shttps {
         */
         inline bool keepAlive(void) { return _keep_alive; }
 
+        inline void keepAlive(bool keep_alive_p) { _keep_alive = keep_alive_p; }
+
        /*!
         * Adds a keep-alive timeout to the socket
         *
@@ -466,7 +466,7 @@ namespace shttps {
         * \param[in] default_timeout Sets the default timeout of the
         * has not been a keep-alive header in the HTTP request.
         */
-        void setupKeepAlive(int sock, int default_timeout = 20);
+        int setupKeepAlive(int default_timeout = 20);
 
        /*!
         * Set the keep alive time (in seconds)

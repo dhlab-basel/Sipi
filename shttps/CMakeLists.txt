@@ -56,7 +56,8 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-add_definitions(${CMAKE_C_FLAGS} " -g")
+#dd_definitions(${CMAKE_C_FLAGS} " -g")
+add_definitions(${CMAKE_C_FLAGS} " -O3")
 set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS}")
 
 include(FindOpenSSL)
@@ -163,5 +164,3 @@ target_link_libraries(shttp-test ${LIBS} lua jansson magic z dl pthread)
 if(OPENSSL_FOUND)
     target_link_libraries(shttp-test ${OPENSSL_LIBRARIES})
 endif()
-
-

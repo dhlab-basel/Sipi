@@ -61,10 +61,23 @@ FILENAME_J216_DOWN="test_server/images/tif16tojp2.jp2"
 find_and_delete $FILENAME_J28_DOWN
 find_and_delete $FILENAME_J216_DOWN
 
+FILENAME_J2CJ_DOWN="test_server/images/jp2compressedtojpg.jpeg"
+FILENAME_J2RJ_DOWN="test_server/images/jp2Rtojpg.jpeg"
 
-bash test_server/test_generic.sh $PID_SIPI $FILENAME_J8_DOWN $FILENAME_J16_DOWN $JPEG_EXTENTION
-bash test_server/test_generic.sh $PID_SIPI $FILENAME_P8_DOWN $FILENAME_P16_DOWN $PNG_EXTENTION
-bash test_server/test_generic.sh $PID_SIPI $FILENAME_J28_DOWN $FILENAME_J216_DOWN $J2_EXTENTION
+find_and_delete $FILENAME_J2CJ_DOWN
+find_and_delete $FILENAME_J2RJ_DOWN
+
+FILENAME_J2CP_DOWN="test_server/images/jp2compressedtojpng.png"
+FILENAME_J2RP_DOWN="test_server/images/jp2Rtopng.png"
+
+find_and_delete $FILENAME_J2CP_DOWN
+find_and_delete $FILENAME_J2RP_DOWN
+
+bash test_server/test_generic_tif.sh $PID_SIPI $FILENAME_J8_DOWN $FILENAME_J16_DOWN $JPEG_EXTENTION
+bash test_server/test_generic_tif.sh $PID_SIPI $FILENAME_P8_DOWN $FILENAME_P16_DOWN $PNG_EXTENTION
+bash test_server/test_generic_tif.sh $PID_SIPI $FILENAME_J28_DOWN $FILENAME_J216_DOWN $J2_EXTENTION
+bash test_server/test_generic_jp2.sh $PID_SIPI $FILENAME_J2CJ_DOWN $FILENAME_J2RJ_DOWN $JPEG_EXTENTION
+bash test_server/test_generic_jp2.sh $PID_SIPI $FILENAME_J2CP_DOWN $FILENAME_J2RP_DOWN $PNG_EXTENTION
 
 
 kill $PID_SIPI

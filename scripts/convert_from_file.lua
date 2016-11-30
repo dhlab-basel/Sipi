@@ -23,7 +23,6 @@
 
 server.setBuffer()
 
-
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
 filename = server.post['filename']
@@ -31,14 +30,8 @@ filename = server.post['filename']
 
 -- check if all the expected params are set
 if originalFilename == nil or originalMimetype == nil or filename == nil then
-    result = {
-        status = 1,
-        message = "Parameters not set correctly"
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(400, PARAMETERS_INCORRECT)
 
     return
 end
@@ -47,23 +40,15 @@ end
 tmpdir = config.imgroot .. '/tmp/'
 sourcePath = tmpdir .. filename
 
--- check if soure is readable
+-- check if source is readable
 if not server.fs.is_readable(sourcePath) then
-    result = {
-        status = 1,
-        message = "File " .. filename .. " is not readable."
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(500, FILE_NOT_READBLE .. sourcePath)
 
     return
-
 end
 
 -- all params are set
-server.sendHeader("Content-Type", "application/json")
 
 --
 -- check if knora directory is available, if not, create it
@@ -82,14 +67,8 @@ check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
 
 -- if check returns false, the user's input is invalid
 if not check then
-    result = {
-        status = 1,
-        message = "Mimetypes and/or file extension are inconsistent."
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(400, MIMETYPES_INCONSISTENCY)
 
     return
 end
@@ -122,13 +101,5 @@ result = {
     original_filename = originalFilename,
     file_type = 'image'
 }
---
-jsonstr = server.table_to_json(result)
 
-
---for kk,vv in pairs(result) do
---    print(kk, " = ", vv)
---end
-
-server.print(jsonstr)
---]]
+send_success(result)

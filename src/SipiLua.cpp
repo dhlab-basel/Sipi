@@ -592,10 +592,22 @@ namespace Sipi {
             shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1); // does not change the stack
             lua_remove(L, -1); // remove from stack
             img->image->connection(conn);
-            img->image->write(ftype, "HTTP");
+            try {
+                img->image->write(ftype, "HTTP");
+            }
+            catch (SipiImageError &err) {
+                lua_pushstring(L, err.what());
+                return lua_error(L);
+            }
         }
         else {
-            img->image->write(ftype, imgpath);
+            try {
+                img->image->write(ftype, imgpath);
+            }
+            catch (SipiImageError &err) {
+                lua_pushstring(L, err.what());
+                return lua_error(L);
+            }
         }
 
         return 0;

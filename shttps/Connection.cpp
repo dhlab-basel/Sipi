@@ -48,7 +48,7 @@
 #include "Error.h"
 #include "Connection.h"
 #include "ChunkReader.h"
-
+#include "Server.h" // TEMPORARY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 static const char __file__[] = __FILE__;
 
 using namespace std;
@@ -127,41 +127,36 @@ namespace shttps {
     //=========================================================================
 
 
-    size_t safeGetline(std::istream &is, std::string& t)
+    size_t safeGetline(std::istream &is, std::string& t, bool debug)
     {
         t.clear();
 
-        // The characters in the stream are read one-by-one using a std::streambuf.
-        // That is faster than reading them one-by-one using the std::istream.
-        // Code that uses streambuf this way must be guarded by a sentry object.
-        // The sentry object performs various tasks,
-        // such as thread synchronization and updating the stream state.
-
-        std::istream::sentry se(is, true);
-        std::streambuf* sb = is.rdbuf();
-
+        if (debug) cerr << "++++ safeGetline ++++" << endl;
         size_t n = 0;
         for(;;) {
-            int c = sb->sbumpc();
-            n++;
+            int c;
+            c = is.get();
+            if (debug && (c != EOF)) cerr << "<-- \"" << (char) c << "\"" << endl;
             switch (c) {
                 case '\n':
+                    n++;
                     return n;
                 case '\r':
-                    if(sb->sgetc() == '\n') {
-                        sb->sbumpc();
+                    n++;
+                    if(is.peek() == '\n') {
+                        is.get();
                         n++;
                     }
                     return n;
                 case EOF:
-                    // Also handle the case when the last line has no line ending
-                    if(t.empty())
-                        is.setstate(std::ios::eofbit);
                     return n;
                 default:
+                    n++;
                     t += (char) c;
             }
         }
+        if (debug) cerr << "---- safeGetline ----" << endl;
+
     }
     //=========================================================================
 
@@ -292,6 +287,12 @@ namespace shttps {
                     if (opts.count("keep-alive") == 1) {
                         _keep_alive = true;
                     }
+                    if (opts.count("close") == 1) {
+                        _keep_alive = false;
+                    }
+                    else {
+                        _keep_alive = true; // keep_alive is the default with HTTP/1.1
+                    }
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
@@ -350,7 +351,7 @@ namespace shttps {
         outbuf_inc = 0;
         outbuf = NULL;
         header_sent = false;
-        _keep_alive = false;
+        _keep_alive = false;  // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
@@ -370,7 +371,7 @@ namespace shttps {
         _secure = false;
         cachefile = NULL;
         header_sent = false;
-        _keep_alive = false;
+        _keep_alive = false; // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
@@ -395,10 +396,11 @@ namespace shttps {
         string line;
         if ((safeGetline(*ins, line) == 0) || line.empty() ||ins->fail() || ins->eof()) {
             //
-            // we got either atimeout or a socket close (for shutdown of server)
+            // we got either a timeout or a socket close (for shutdown of server)
             //
             throw -1;
         }
+        _logger->info("REQUEST: ") << line;
 
         //
         // Parse first line of request
@@ -421,6 +423,7 @@ namespace shttps {
             }
 
             process_header();
+
             if (ins->fail() || ins->eof()) {
                 throw -1;
             }
@@ -836,7 +839,7 @@ namespace shttps {
     }
     //=============================================================================
 
-    void Connection::setupKeepAlive(int sock, int default_timeout)
+    int Connection::setupKeepAlive(int default_timeout)
     {
         if (_keep_alive) {
             header_out["Connection"] = "keep-alive";
@@ -844,18 +847,19 @@ namespace shttps {
                 _keep_alive_timeout = default_timeout;
             }
             if (_keep_alive_timeout > 0) {
-                struct timeval tv;
-                tv.tv_sec = _keep_alive_timeout;
-                tv.tv_usec = 0 ;
-                if (setsockopt (sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof tv)) {
-                    perror("setsockopt error");
-                    exit(2);
-                }
-                header_out["Keep-Alive"] = string("timeout=") + to_string(_keep_alive_timeout);
+                header_out["Keep-Alive"] = string("timeout=") +
+                to_string(_keep_alive_timeout) + string(", max=") +
+                to_string(100);
             }
         }
+        else  {
+            header_out["Connection"] = "close";
+            _keep_alive_timeout = 0;
+        }
+        return _keep_alive_timeout;
     }
     //=============================================================================
+
 
     void Connection::status(StatusCodes status_code_p, const string status_string_p)
     {
@@ -1433,17 +1437,23 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
 
-        if (!_chunked_transfer_out && (outbuf != NULL) && (outbuf_nbytes > 0)) {
-            *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
-        }
-        else if (n > 0) {
-            *os << "Content-Length: " << n << "\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
+        if (!_chunked_transfer_out) {
+            if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
+                *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
+            else if (n > 0) {
+                *os << "Content-Length: " << n << "\r\n\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
+            else {
+                *os << "Content-Length: " << n << "\r\n\r\n";
+                //*os << "\r\n";
+                if (os->eof() || os->fail()) throw -1;
+            }
         }
         else {
-            *os << "Content-Length: " << n << "\r\n\r\n";
-            //*os << "\r\n";
+            *os << "\r\n"; //we have to add only one more "\r\n" in this case
             if (os->eof() || os->fail()) throw -1;
         }
 
@@ -1482,4 +1492,3 @@ namespace shttps {
     //=============================================================================
 
 }
-

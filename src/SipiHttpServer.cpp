@@ -78,27 +78,27 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request!") << errmsg;
+                logger->error("Bad Request! ") << errmsg;
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden!") << errmsg;
+                logger->error("Forbidden! ") << errmsg;
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found!") << errmsg;
+                logger->error("Not Found! ") << errmsg;
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error!") << errmsg;
+                logger->error("Internal Server Error! ") << errmsg;
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented!") << errmsg;
+                logger->error("Not Implemented! ") << errmsg;
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable!") << errmsg;
+                logger->error("Service Unavailable! ") << errmsg;
                 break;
             default:
                 break; // do nothing
@@ -120,27 +120,27 @@ namespace Sipi {
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                logger->error("Bad Request!") << outss.str();
+                logger->error("Bad Request! ") << outss.str();
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                logger->error("Forbidden!") << outss.str();
+                logger->error("Forbidden! ") << outss.str();
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                logger->error("Not Found!") << outss.str();
+                logger->error("Not Found! ") << outss.str();
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                logger->error("Internal Server Error!") << outss.str();
+                logger->error("Internal Server Error! ") << outss.str();
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                logger->error("Not Implemented!") << outss.str();
+                logger->error("Not Implemented! ") << outss.str();
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                logger->error("Service Unavailable!") << outss.str();
+                logger->error("Service Unavailable! ") << outss.str();
                 break;
             default: break; // do nothing
         }
@@ -940,7 +940,10 @@ namespace Sipi {
                     conobj.status(Connection::OK);
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
-                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB);
+                    if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
+                        for (int i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                    }
+                    Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conobj.setChunkedTransfer();
                     if (cache != NULL) {
@@ -981,7 +984,6 @@ namespace Sipi {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
-                        break;
                     }
                     break;
                 }
@@ -1055,6 +1057,8 @@ namespace Sipi {
             return;
         }
 
+        conobj.flush();
+
         logger->info() << "GET: \"" << uri << "\": File: " << infile;
         return;
     }
@@ -1065,18 +1069,6 @@ namespace Sipi {
         conobj.status(Connection::OK);
         conobj.header("Content-Type", "image/x-icon");
         conobj.send(favicon_ico, favicon_ico_len);
-    }
-    //=========================================================================
-
-    static void admin_handler(Connection &conobj, shttps::LuaServer &luaserver, void *user_data, void *dummy)
-    {
-        conobj.status(Connection::OK);
-        conobj.header("Content-Type", "text/plain");
-        //conobj.add_header("Content-Length", "28");
-        conobj << "(1) Hello World, I'm here again!\n";
-        sleep(2);
-        conobj << "(2) Hello World, I'm here again!\n";
-        conobj.flush();
     }
     //=========================================================================
 
@@ -1103,8 +1095,8 @@ namespace Sipi {
     }
     //=========================================================================
 
-    SipiHttpServer::SipiHttpServer(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p)
-        : Server::Server(port_p, nthreads_p, userid_str, logfile_p)
+    SipiHttpServer::SipiHttpServer(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p, const std::string &loglevel_p)
+        : Server::Server(port_p, nthreads_p, userid_str, logfile_p, loglevel_p)
     {
         _salsah_prefix = "imgrep";
         _cache = NULL;
@@ -1124,10 +1116,10 @@ namespace Sipi {
         }
         catch (const SipiError &err) {
             _cache = NULL;
-            _logger->error("Couldn't open cache directory '") << cachedir_p << "'!";
             stringstream ss;
             ss << err;
-            _logger->error(ss.str());
+            _logger->warn("Couldn't open cache directory '") << cachedir_p << "'! Reason: " << ss.str();
+            debugmsg("Warning: Couldn't open cache directory '" + cachedir_p + "'! Reason: " + ss.str());
         }
     }
     //=========================================================================
@@ -1142,7 +1134,6 @@ namespace Sipi {
         _logger->info() << "Serving images from \"" << _imgroot << "\"";
         _logger->info() << "Salsah prefix \"" << _salsah_prefix << "\"";
 
-        addRoute(Connection::GET, "/admin", admin_handler);
         addRoute(Connection::GET, "/favcon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);
         addRoute(Connection::GET, "/admin/test", test_handler);

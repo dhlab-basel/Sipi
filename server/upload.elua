@@ -33,7 +33,10 @@
         newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
         filename = config.imgroot .. '/' .. newfilename[imgindex]
 
-        myimg[imgindex]:write(filename)
+        local status, errmsg = pcall(function(a,b) myimg[a]:write(b) end, imgindex, filename)
+        if not status then
+            server.print('Error converting image to j2k: ', errmsg)
+        end
 
         server.fs.unlink(tmppath)
 

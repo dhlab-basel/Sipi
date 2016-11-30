@@ -24,14 +24,6 @@
 
 server.setBuffer()
 
-server.sendHeader("Content-Type", "application/json")
 -- invalidate cookie
 server.sendHeader("Set-Cookie", "sid=deleted;Expires=Thu, 01 Jan 1970 00:00:00 GMT")
 
-result = {
-    status = 0
-}
-
-jsonstr = server.table_to_json(result)
-
-server.print(jsonstr)
