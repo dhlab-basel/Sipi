@@ -193,8 +193,9 @@ namespace Sipi {
     static void iiif_send_info(Connection &conobj, SipiHttpServer *serv, shttps::LuaServer &luaserver, vector<string> &params, const string &imgroot, bool prefix_as_path) {
         auto logger = Logger::getLogger(shttps::loggername);
         conobj.setBuffer(); // we want buffered output, since we send JSON text...
-        const string contenttype = conobj.header("content-type");
+        const string contenttype = conobj.header("accept");
 
+        conobj.header("Access-Control-Allow-Origin", "*");
         /*
         string infile; // path to file to convert and serve
         if (params[iiif_prefix] == salsah_prefix) {
@@ -286,9 +287,8 @@ namespace Sipi {
             send_error(conobj, Connection::BAD_REQUEST, "File not readable!");
             return;
         }
-
         if (!contenttype.empty() && (contenttype == "application/ld+json")) {
-            conobj.header("Content-Type", "application/ld-json");
+            conobj.header("Content-Type", "application/ld+json");
         }
         else {
             conobj.header("Content-Type", "application/json");
@@ -515,7 +515,7 @@ namespace Sipi {
         //
         // if we just get the base URL, we redirect to the image info document
         //
-        if (params.size() == 2) {
+        if (params.size() == 3) {
             string infile;
             if (prefix_as_path) {
                 infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" + urldecode(params[iiif_identifier]);
@@ -566,6 +566,10 @@ namespace Sipi {
 
         if (params.size() < 7) {
             send_error(conobj, Connection::BAD_REQUEST, "Query syntax has not enough parameters!");
+            return;
+        }
+        if (params.size() > 7) {
+            send_error(conobj, Connection::NOT_FOUND, "Too many \"/\"'s – imageid not found!");
             return;
         }
 
@@ -756,6 +760,7 @@ namespace Sipi {
             return;
         }
 
+
         float angle;
         bool mirror = rotation.get_rotation(angle);
 
@@ -833,7 +838,8 @@ namespace Sipi {
             (size.getType() == SipiSize::FULL) &&
             (angle == 0.0) &&
             (!mirror) && watermark.empty() &&
-            (quality_format.format() == in_format)
+            (quality_format.format() == in_format) &&
+            (quality_format.quality() == SipiQualityFormat::DEFAULT)
         ) {
             *logger << Logger::LogLevel::DEBUG <<"Sending unmodified file...." << Logger::LogAction::FLUSH;
             conobj.status(Connection::OK);
@@ -950,6 +956,20 @@ namespace Sipi {
             catch(Sipi::SipiError &err) {
                 send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
+            }
+        }
+
+        if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
+            switch (quality_format.quality()) {
+                case SipiQualityFormat::COLOR: {
+                    img.convertToIcc(icc_sRGB, 8); // for now, force 8 bit/sample
+                }
+                case SipiQualityFormat::GRAY: {
+                    img.convertToIcc(icc_GRAY_D50, 8); // for now, force 8 bit/sample
+                }
+                default: {
+                    // TODO: do nothing at the moment, bitonal is not yet supported...
+                }
             }
         }
 
