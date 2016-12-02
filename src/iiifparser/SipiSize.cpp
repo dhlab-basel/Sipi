@@ -215,7 +215,6 @@ namespace Sipi {
                     reduce_h++;
                 }
                 if (h != ny) {
-                    cerr << "no exact match h=" << h << " ny=" << ny << endl;
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
                     sf_h /= 2;

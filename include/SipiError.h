@@ -36,6 +36,7 @@
 #include <string>
 #include <exception>
 #include <stdexcept>
+#include <memory>
 
 #include "shttps/Logger.h"
 #include "shttps/Error.h"
