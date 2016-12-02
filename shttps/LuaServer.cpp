@@ -46,6 +46,8 @@
 
 #include "Logger.h"  // logging...
 #include "sole.hpp"
+#include "GetMimetype.h"
+
 
 #ifdef SHTTPS_ENABLE_SSL
 #include "jwt.h"
@@ -2188,6 +2190,44 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Lua: success, mimetype = server.mimetype(path)
+     */
+    static int lua_mimetype(lua_State *L) {
+        auto logger = Logger::getLogger(shttps::loggername);
+        string path;
+        int top = lua_gettop(L);
+        if (top < 1) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.mimetype()': no path given!");
+            return 2;
+        }
+        if (!lua_isstring(L, 1)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.mimetype()': path is not a string!");
+            return 2;
+        }
+        path = lua_tostring(L, 1);
+
+        lua_pop(L, top);
+
+        string mimetype;
+        try {
+            mimetype =  GetMimetype::getMimetype(path).first; // .second would be charset
+        }
+        catch (Error &err) {
+            lua_pushboolean(L, false);
+            string tmpstr = string("'server.mimetype(path) failed': ") + err.to_string();
+            lua_pushstring(L, tmpstr.c_str());
+            return 2;
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushstring(L, mimetype.c_str());
+        return 2;
+    }
 
     void LuaServer::setLuaPath(const string &path) {
         lua_getglobal(L, "package" );
@@ -2473,6 +2513,10 @@ namespace shttps {
         lua_rawset(L, -3); // table1
 
 #endif
+
+        lua_pushstring(L, "mimetype"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_mimetype); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "log"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_logger); // table1 - "index_L1" - function
