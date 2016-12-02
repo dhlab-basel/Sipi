@@ -35,6 +35,7 @@
 #include <vector>
 #include <memory>
 
+#include "Error.h"
 #include "LogStream.h"
 
 /*!
@@ -263,5 +264,11 @@ public:
     * Output operator for c-strings (NULL terminated!)
     */
     Logger& operator<< (const char *str);
+
+    /*!
+    * Output operator for Error
+    */
+    Logger& operator<< (const shttps::Error &err);
+
 };
 #endif

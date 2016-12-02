@@ -30,6 +30,8 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <memory>
+
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>

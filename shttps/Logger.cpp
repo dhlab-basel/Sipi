@@ -240,3 +240,9 @@ Logger& Logger::operator<< (const char *str) {
     }
     return *this;
 }
+
+Logger& Logger::operator<< (const shttps::Error &err) {
+    ostream *os = this;
+    *os << err;
+    return *this;
+}

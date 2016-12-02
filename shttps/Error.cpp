@@ -64,6 +64,7 @@ namespace shttps {
     ostream &operator<< (ostream &outstr, const Error &rhs)
     {
         outstr << endl << "SHTTPS-ERROR at [" << rhs.file << ": #" << rhs.line << "] " << endl;
+
         if (rhs.sysErrno != 0) {
             outstr << "System error: " << strerror(rhs.sysErrno) << endl;
         }
@@ -73,5 +74,3 @@ namespace shttps {
     //============================================================================
 
 }
-
-
