@@ -20,6 +20,8 @@
 
 -- Knora GUI-case: create a thumbnail
 
+require "send_response"
+
 server.setBuffer()
 
 for imgindex,imgparam in pairs(server.uploads) do

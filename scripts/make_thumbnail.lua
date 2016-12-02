@@ -20,6 +20,8 @@
 
 -- Knora GUI-case: create a thumbnail
 
+require "send_response"
+
 success, errormsg = server.setBuffer()
 if not success then
     return -1

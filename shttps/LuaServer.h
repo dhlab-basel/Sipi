@@ -130,6 +130,14 @@ namespace shttps {
         */
         void add_servertableentry(const std::string &name, const std::string &value);
 
+        /*!
+        * Add path to the lua package path for "require"
+        *
+        * \param[in] path The path
+        */
+        void setLuaPath(const std::string &path);
+
+
        /*!
         * Create the global values and functions
         *

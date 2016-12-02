@@ -20,6 +20,8 @@
 
 -- handles the Knora non GUI-case: Knora uploaded a file to sourcePath
 
+require "send_response"
+
 success, errmsg = server.setBuffer()
 if not success then
     server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.error)
@@ -114,12 +116,20 @@ end
 
 -- create thumbnail (jpg)
 success, thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
-thumbImgName = baseName .. '.jpg'
-thumbDims = thumbImg:dims()
 if not success then
     server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.error)
     return
 end
+
+thumbImgName = baseName .. '.jpg'
+
+success, thumbDims = thumbImg:dims()
+if not success then
+    server.log("thumbImg:dims() failed: " .. thumbDims, server.loglevel.error)
+    return
+end
+
+
 success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
 if not success then
     server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)

@@ -21,6 +21,8 @@
 -- Knora GUI-case: Sipi has already saved the file that is supposed to be converted
 -- the file was saved to: config.imgroot .. '/tmp/' (route make_thumbnail)
 
+require "send_response"
+
 success, errmsg = server.setBuffer()
 if not success then
     server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.error)
@@ -113,9 +115,24 @@ if not success then
     server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.error)
     return
 end
+
+success, thumbDims = thumbImg:dims()
+if not success then
+    server.log("thumbImg:dims failed: " .. thumbDims, server.loglevel.error)
+    return
+end
+
+
 thumbImgName = baseName .. '.jpg'
-thumbDims = thumbImg:dims()
-sucess, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+
+success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)
+    return
+end
+
+
+success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
 if not success then
     server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)
     return
