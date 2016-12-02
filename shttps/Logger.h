@@ -33,6 +33,7 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include <memory>
 
 #include "LogStream.h"
 

@@ -29,6 +29,7 @@
 #include <mutex>
 #include <string>
 #include <sys/time.h>
+#include <algorithm>
 
 #include "SipiConfig.h"
 
