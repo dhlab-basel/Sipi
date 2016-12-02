@@ -20,68 +20,112 @@
 
 -- Knora GUI-case: create a thumbnail
 
-server.setBuffer()
+require "send_response"
+
+success, errormsg = server.setBuffer()
+if not success then
+    return -1
+end
+
+--
+-- check if tmporary directory is available, if not, create it
+--
+local tmpdir = config.imgroot .. '/tmp/'
+local success, exists = server.fs.exists(tmpdir)
+if not success then
+    send_error(500, "Internal server error")
+    return -1
+end
+if not exists then
+    local success, result = server.fs.mkdir(tmpdir, 511)
+    if not success then
+        send_error(500, "Couldn't create tmpdir: " .. result)
+        return
+    end
+end
+
 
 for imgindex,imgparam in pairs(server.uploads) do
 
     --
-    -- print all upload parameters of the file
-    --
-    --print("List of Parameters...")
-    --for kk,vv in pairs(imgparam) do
-    --    print(kk, " = ", vv)
-    --end
-
-    --
-    -- check if tmporary directory is available, if not, create it
-    --
-    tmpdir = config.imgroot .. '/tmp/'
-    if  not server.fs.exists(tmpdir) then
-        server.fs.mkdir(tmpdir, 511)
-    end
-
-    --
     -- copy the file to a safe place
     --
-    tmpname = server.uuid62()
-    tmppath =  tmpdir .. tmpname
-    server.copyTmpfile(imgindex, tmppath)
+    local success, tmpname = server.uuid62()
+    if not success then
+        send_error(500, "Couldn't generate uuid62!")
+        return -1
+    end
+    local tmppath =  tmpdir .. tmpname
+    local success, result = server.copyTmpfile(imgindex, tmppath)
+    if not success then
+        send_error(500, "Couldn't copy uploaded file: " .. result)
+        return -1
+    end
+
 
     --
     -- create a SipiImage, already resized to the thumbnail size
     --
-    myimg = SipiImage.new(tmppath, {size = config.thumb_size})
+    local success, myimg = SipiImage.new(tmppath, {size = config.thumb_size})
+    if not success then
+        send_error(500, "Couldn't create thumbnail: " .. myimg)
+        return -1
+    end
 
-    filename = imgparam["origname"]
-    mimetype = imgparam["mimetype"]
+    local filename = imgparam["origname"]
+    local mimetype = imgparam["mimetype"]
 
-    check = myimg:mimetype_consistency(mimetype, filename)
+    local success, check = myimg:mimetype_consistency(mimetype, filename)
+    if not success then
+        send_error(500, "Couldn't check mimteype consistency: " .. check)
+        return -1
+    end
 
+    --
     -- if check returns false, the user's input is invalid
+    --
+
     if not check then
-
         send_error(400, MIMETYPES_INCONSISTENCY)
-
-        return
+        return -1
     end
 
     --
     -- get the dimensions and print them
     --
-    dims = myimg:dims()
+    local success, dims = myimg:dims()
+    if not success then
+        send_error(500, "Couldn't get image dimensions: " .. dims)
+        return -1
+    end
+
 
     --
     -- write the thumbnail file
     --
-    thumbsdir = config.imgroot .. '/thumbs/'
-    if  not server.fs.exists(thumbsdir) then
-        server.fs.mkdir(thumbsdir, 511)
+    local thumbsdir = config.imgroot .. '/thumbs/'
+    local success, exists = server.fs.exists(thumbsdir)
+    if not success then
+        send_error(500, "Internal server error")
+        return -1
+    end
+    if not exists then
+        local success, result = server.fs.mkdir(thumbsdir, 511)
+        if not success then
+            send_error(500, "Couldn't create thumbsdir: " .. result)
+            return -1
+        end
     end
 
-    thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
-    myimg:write(thumbname)
 
-    result = {
+    local thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
+    local success, result = myimg:write(thumbname)
+    if not success then
+        send_error(500, "Couldn't create thumbnail: " .. result)
+        return -1
+    end
+
+    answer = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
@@ -92,6 +136,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         file_type = 'IMAGE'
     }
 
-    send_success(result)
-
 end
+
+
+send_success(answer)

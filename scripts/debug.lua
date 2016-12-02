@@ -1,3 +1,4 @@
+--
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
 -- This file is part of Sipi.
@@ -17,15 +18,19 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
-if not authorize_api('admin.sipi.org', 'administrator', config.adminuser) then
-    return
+-- Knora GUI-case: create a thumbnail
+
+require "send_response"
+
+server.setBuffer()
+
+for imgindex,imgparam in pairs(server.uploads) do
+
 end
 
 result = {
-    status = 'OK'
+    me = "Lukas",
+    you = "not lukas"
 }
-local success, jsonresult = server.table_to_json(result)
-server.sendHeader('Content-type', 'application/json')
-server.sendStatus(200)
-server.print(jsonresult)
-server.shutdown()
+
+send_success(result)

@@ -26,7 +26,6 @@
 
 #include <iostream>
 #include <vector>
-#include <map>
 
 #include "LuaServer.h"
 

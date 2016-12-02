@@ -148,7 +148,7 @@ namespace Sipi {
 
 
     void SipiRegion::canonical(char *buf, int buflen) {
-        if (!canonical_ok) {
+        if (!canonical_ok && (coord_type != FULL)) {
             string msg = "Canonical coordinates not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }

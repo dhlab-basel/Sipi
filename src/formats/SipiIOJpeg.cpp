@@ -28,7 +28,6 @@
 #include <fstream>
 #include <cstdio>
 #include <cmath>
-#include <map>
 
 #include <stdio.h>
 
@@ -513,7 +512,9 @@ namespace Sipi {
         while (marker) {
             //fprintf(stderr, "#######################################################################\n");
             if (marker->marker == JPEG_COM) {
-                //fprintf(stderr, "Comment, length %ld:\n", (long) marker->data_length);
+                string emdatastr((char *) marker->data, marker->data_length);
+                SipiEssentials se(emdatastr);
+                img->essential_metadata(se);
             }
             else if (marker->marker == JPEG_APP0+1) { // EXIF, XMP MARKER....
                 //
@@ -797,7 +798,6 @@ namespace Sipi {
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
-
         //
         // TODO! Support incoming 16 bit images by converting the buffer to 8 bit!
         //
@@ -1027,6 +1027,24 @@ namespace Sipi {
 
             delete [] iptcchunk;
         }
+
+        SipiEssentials es = img->essential_metadata();
+        if (es.is_set()) {
+            try {
+                string esstr = es;
+                unsigned int len = esstr.length();
+                char sipi_buf[512 + 1];
+                strncpy(sipi_buf, esstr.c_str(), 512);
+                sipi_buf[512] = '\0';
+                jpeg_write_marker(&cinfo, JPEG_COM, (JOCTET *) sipi_buf, len);
+            }
+            catch (JpegError &jpgerr) {
+                jpeg_destroy_compress(&cinfo);
+                if (outfile != -1) close(outfile);
+                throw SipiImageError(__file__, __LINE__, jpgerr.what());
+            }
+        }
+
 
         row_stride = img->nx * img->nc;	/* JSAMPLEs per row in image_buffer */
 

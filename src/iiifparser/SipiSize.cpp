@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "shttps/spdlog/spdlog.h"
+#include "shttps/Logger.h"
 
 #include "shttps/Global.h"
 #include "SipiError.h"
@@ -45,6 +45,8 @@ using namespace std;
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
+
+    int SipiSize::limitdim = 32000;
 
     SipiSize::SipiSize(string str) {
         nx = ny = 0;
@@ -95,6 +97,10 @@ namespace Sipi {
                     size_type = SizeType::PIXELS_Y;
                }
             }
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
         }
     };
     //-------------------------------------------------------------------------
@@ -103,10 +109,14 @@ namespace Sipi {
         canonical_ok = false;
         if (nx_p <= 0) {
             ny = ny_p;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             size_type = SizeType::PIXELS_Y;
         }
         else if (ny_p <= 0) {
             nx = nx_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
             size_type = SizeType::PIXELS_X;
         }
         else if ((nx_p <= 0) && (ny_p <= 0)) {
@@ -115,6 +125,10 @@ namespace Sipi {
         else {
             nx = nx_p;
             ny = ny_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             if (maxdim) {
                 size_type = SizeType::MAXDIM;
             }
@@ -168,7 +182,7 @@ namespace Sipi {
     SipiSize::SizeType SipiSize::get_size(int img_w, int img_h, int &w_p, int &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
 
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
@@ -201,7 +215,6 @@ namespace Sipi {
                     reduce_h++;
                 }
                 if (h != ny) {
-                    cerr << "no exact match h=" << h << " ny=" << ny << endl;
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
                     sf_h /= 2;
@@ -350,8 +363,10 @@ namespace Sipi {
             }
         }
 
-        logger->debug() << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
+        stringstream ss;
+        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
+        *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
 
         w_p = w;
         h_p = h;
@@ -368,7 +383,7 @@ namespace Sipi {
 
     void SipiSize::canonical(char *buf, int buflen) {
         int n;
-        if (!canonical_ok) {
+        if (!canonical_ok && (size_type != SipiSize::FULL)) {
             string msg = "Canonical size not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
@@ -398,7 +413,7 @@ namespace Sipi {
                 break;
             }
             case SipiSize::FULL: {
-                n = snprintf(buf, buflen, "%d,%d", w, h);
+                n = snprintf(buf, buflen, "full"); // replace with "max" for version 3.0 of iiif
             }
         }
         if ((n < 0) || (n >= buflen)) {

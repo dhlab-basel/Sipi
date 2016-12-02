@@ -48,4 +48,3 @@ server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</t
 </table>
 </body>
 </html>
-

@@ -40,7 +40,7 @@
 
 
 #include "shttps/Global.h"
-#include "shttps/spdlog/spdlog.h"
+#include "shttps/Logger.h"
 
 static const char __file__[] = __FILE__;
 
@@ -348,7 +348,7 @@ namespace Sipi {
         TIFF_GET_FIELD (tif, TIFFTAG_PLANARCONFIG, &pc, PLANARCONFIG_CONTIG);
         if (pc != PLANARCONFIG_CONTIG) {
             TIFFClose(tif);
-            throw SipiError(__file__, __LINE__, "ERROR in read_watermark: Tag TIFFTAG_PLANARCONFIG is not PLANARCONFIG_CONTIG: " + wmfile);
+            throw SipiImageError(__file__, __LINE__, "ERROR in read_watermark: Tag TIFFTAG_PLANARCONFIG is not PLANARCONFIG_CONTIG: " + wmfile);
         }
         sll = nx*spp*bps/8;
         try {
@@ -381,11 +381,11 @@ namespace Sipi {
 
     static void tiffError(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->error("ERROR IN TIFF! Module: ") << module << " " << errmsg;
+            *logger << Logger::LogLevel::ERROR << "ERROR IN TIFF! Module: " << module << " Error: " << errmsg << Logger::LogAction::FLUSH;
         }
         else {
             cerr << "ERROR IN TIFF! Module: " << module << endl;
@@ -399,11 +399,11 @@ namespace Sipi {
 
     static void tiffWarning(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         if (logger != NULL) {
             char errmsg[512];
             vsnprintf(errmsg, 511, fmt, argptr);
-            logger->warn("ERROR IN TIFF! Module: ") << module << " " << errmsg;
+            *logger << Logger::LogLevel::WARNING << "ERROR IN TIFF! Module: " << module << "Warning: " << errmsg << Logger::LogAction::FLUSH;
         }
         else {
             cerr << "WARNING IN TIFF! Module: " << module << endl;
@@ -414,15 +414,40 @@ namespace Sipi {
     }
     //============================================================================
 
+    #define N(a) (sizeof(a) / sizeof (a[0]))
+    #define TIFFTAG_SIPIMETA 65111
+
+    static const TIFFFieldInfo xtiffFieldInfo[] = {
+        { TIFFTAG_SIPIMETA,  1, 1, TIFF_ASCII,  FIELD_CUSTOM, 1, 0, const_cast<char*>("SipiEssentialMetadata") },
+    };
+    //============================================================================
+
+    static TIFFExtendProc parent_extender = NULL;
+
+    static void registerCustomTIFFTags(TIFF *tif) {
+        /* Install the extended Tag field info */
+        TIFFMergeFieldInfo(tif, xtiffFieldInfo, N(xtiffFieldInfo));
+        if (parent_extender != NULL) (*parent_extender)(tif);
+    }
+    //============================================================================
+
+    void SipiIOTiff::initLibrary(void) {
+        static bool done = false;
+        if (!done) {
+            TIFFSetErrorHandler(tiffError);
+            TIFFSetWarningHandler(tiffWarning);
+
+            parent_extender = TIFFSetTagExtender(registerCustomTIFFTags);
+            done = true;
+        }
+    }
 
     bool SipiIOTiff::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
     {
     	TIFF *tif;
 
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
-        TIFFSetWarningHandler(NULL);
-        TIFFSetErrorHandler(NULL);
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
             TIFFSetErrorHandler(tiffError);
             TIFFSetWarningHandler(tiffWarning);
@@ -461,7 +486,7 @@ namespace Sipi {
             TIFF_GET_FIELD (tif, TIFFTAG_PLANARCONFIG, &planar, PLANARCONFIG_CONTIG);
             TIFF_GET_FIELD (tif, TIFFTAG_SAMPLEFORMAT, &safo, SAMPLEFORMAT_UINT);
 
-            unsigned short *es;
+            uint16 *es;
             int eslen;
             if (TIFFGetField(tif, TIFFTAG_EXTRASAMPLES, &eslen, &es) == 1) {
                 for (int i = 0; i < eslen; i++) img->es.push_back((ExtraSamples) es[i]);
@@ -550,7 +575,12 @@ namespace Sipi {
                     img->iptc = new SipiIptc(iptc_content, iptc_length);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
 
@@ -574,7 +604,12 @@ namespace Sipi {
                     img->xmp = new SipiXmp(xmp_content, xmp_length);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
 
@@ -590,7 +625,12 @@ namespace Sipi {
                     img->icc = new SipiIcc(icc_buf, icc_len);
                 }
                 catch (SipiError &err) {
-                    logger != NULL ? logger << err : cerr << err;
+                    if (logger == NULL) {
+                        cerr << err;
+                    }
+                    else {
+                        logger << err;
+                    }
                 }
             }
             else if (1 == TIFFGetField(tif, TIFFTAG_WHITEPOINT, &whitepoint)) {
@@ -642,6 +682,15 @@ namespace Sipi {
                 img->icc = new SipiIcc(whitepoint, primaries, tfunc, tfunc_len);
                 if (tfunc != NULL) delete [] tfunc;
                 if (primaries_del) delete [] primaries;
+            }
+
+            //
+            // Read SipiEssential metadata
+            //
+            char *emdatastr;
+            if (1 == TIFFGetField(tif, TIFFTAG_SIPIMETA, &emdatastr)) {
+                SipiEssentials se(emdatastr);
+                img->essential_metadata(se);
             }
 
 
@@ -833,11 +882,7 @@ namespace Sipi {
     bool SipiIOTiff::getDim(std::string filepath, int &width, int &height) {
     	TIFF *tif;
 
-        TIFFSetWarningHandler(NULL);
-        TIFFSetErrorHandler(NULL);
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
-            TIFFSetErrorHandler(tiffError);
-            TIFFSetWarningHandler(tiffWarning);
 
             //
             // OK, it's a TIFF file
@@ -867,14 +912,9 @@ namespace Sipi {
     {
         TIFF *tif;
         MEMTIFF *memtif = NULL;
+        uint32 rowsperstrip = (uint32) -1;
 
-        auto logger = spdlog::get(shttps::loggername);
-
-        int rows_per_strip = 65536 * img->bps / (img->nc * img->nx * 8);
-        if (rows_per_strip == 0) rows_per_strip = 1;
-
-        TIFFSetWarningHandler(tiffWarning);
-        TIFFSetErrorHandler(tiffError);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         if ((filepath == "-") || (filepath == "HTTP")) {
             memtif = memTiffOpen();
@@ -895,17 +935,21 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, msg);
             }
         }
+
         TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
         TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
-        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    rows_per_strip);
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
+        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,     TIFFDefaultStripSize(tif, rowsperstrip));
+        TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
+        TIFFSetField (tif, TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG);
         TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
-        TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, (uint16) img->nc);
-        TIFFSetField (tif, TIFFTAG_PHOTOMETRIC, img->photo);
-        TIFFSetField (tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+        TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);
         if (img->es.size() > 0) {
             TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
         }
+        TIFFSetField (tif, TIFFTAG_PHOTOMETRIC,     img->photo);
+
+
 
         //
         // let's get the TIFF metadata if there is some. We stored the TIFF metadata in the exifData meber variable!
@@ -962,7 +1006,12 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 
@@ -980,7 +1029,12 @@ namespace Sipi {
                 delete [] buf;
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 
@@ -998,22 +1052,35 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                logger != NULL ? logger << err : cerr << err;
+                if (logger == NULL) {
+                    cerr << err;
+                }
+                else {
+                    logger << err;
+                }
             }
         }
 
-        TIFFCheckpointDirectory(tif);
+        //
+        // Custom tag for SipiEssential metadata
+        //
+        SipiEssentials es = img->essential_metadata();
+        if (es.is_set()) {
+            string emdata = es;
+            TIFFSetField(tif, TIFFTAG_SIPIMETA, emdata.c_str());
+        }
+
+        //TIFFCheckpointDirectory(tif);
 
         for (int i = 0; i < img->ny; i++) {
             TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
         }
 
-        TIFFWriteDirectory(tif);
-
         //
         // write exif data
         //
         if (img->exif != NULL) {
+            TIFFWriteDirectory(tif);
             writeExif(img, tif);
         }
 

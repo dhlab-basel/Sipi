@@ -35,14 +35,15 @@
 --       'deny' : no access!
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
-function pre_flight(prefix, identifier, cookie)
+function pre_flight(prefix,identifier,cookie)
 
+    --
+    -- For Knora Sipi integration testing
+    -- Always the same test file is served
+    --
+    filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
 
-    if config.prefix_as_path then
-        filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
-    else
-        filepath = config.imgroot .. '/' .. identifier
-    end
+    print("serving test image " .. filepath)
 
     if prefix == "thumbs" then
         -- always allow thumbnails
@@ -70,20 +71,16 @@ function pre_flight(prefix, identifier, cookie)
 
         if session_id == nil then
             -- no session_id could be extracted
-            print("cookie key is invalid: " .. cookie)
+            print("cookie key is invalid")
         else
             knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
         end
     end
 
     knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
-    --print("knora_url: " .. knora_url)
+    print("knora_url: " .. knora_url)
 
-    success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
-    if not success then
-        server.log("Server.http() failed: " .. result, server.loglevel.error)
-        return deny
-    end
+    result = server.http("GET", knora_url, knora_cookie_header, 5000)
 
     -- check HTTP request was successful
     if not result.success then
@@ -98,14 +95,10 @@ function pre_flight(prefix, identifier, cookie)
         return 'deny'
     end
 
-    success, response_json = server.json_to_table(result.body)
-    if not success then
-        server.log("Server.http() failed: " .. response_json, server.loglevel.error)
-        return 'deny'
-    end
+    response_json = server.json_to_table(result.body)
 
-    --print("status: " .. response_json.status)
-    --print("permission code: " .. response_json.permissionCode)
+    print("status: " .. response_json.status)
+    print("permission code: " .. response_json.permissionCode)
 
     if response_json.status ~= 0 then
         -- something went wrong with the request, Knora returned a non zero status
@@ -129,3 +122,67 @@ function pre_flight(prefix, identifier, cookie)
 
 end
 -------------------------------------------------------------------------------
+
+
+-------------------------------------------------------------------------------
+-- String constants to be used in error messages
+-------------------------------------------------------------------------------
+MIMETYPES_INCONSISTENCY = "Submitted mimetypes and/or file extension are inconsistent"
+
+FILE_NOT_READBLE = "Submitted file path could not be read: "
+
+PARAMETERS_INCORRECT = "Parameters not set correctly"
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- This function is called from the route when an error occurred.
+-- Parameters:
+--     'status' (number):  HTTP status code to returned to the client
+--     'msg'    (string):  error message describing the problem that occurred
+--
+-- Returns:
+--    an unsuccessful HTTP response containing a JSON string with the member 'message'
+-------------------------------------------------------------------------------
+function send_error(status, msg)
+
+    if type(status) == "number" and status ~= 200 and type(msg) == "string" then
+
+        result = {
+            message = msg
+        }
+
+        http_status = status
+
+    else
+
+        result = {
+            message = "Unknown error. Please report this as a possible bug in a Sipi route."
+        }
+
+        http_status = 500
+
+    end
+
+    server.sendHeader("Content-Type", "application/json")
+    server.sendStatus(http_status)
+    jsonstr = server.table_to_json(result)
+
+    server.print(jsonstr)
+
+end
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- This function is called from the route when the request could
+-- be handled successfully.
+--
+-- Parameters:
+--     'result' (table):  HTTP status code to returned to the client
+--
+-- Returns:
+--    a JSON string that represents the table 'result'
+-------------------------------------------------------------------------------
+
+function send_success(result)
+    print ("send_success(result)")
+end

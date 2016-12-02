@@ -52,6 +52,7 @@
 
 
 #include "Global.h"
+#include "Logger.h"
 #include "SockStream.h"
 #include "Server.h"
 #include "LuaServer.h"
@@ -70,7 +71,7 @@ using namespace std;
 
 namespace shttps {
 
-    const char loggername[] = "shttps-logger"; // see Global.h !!
+    const char loggername[] = "SIPI"; // see Global.h !!
 
     typedef struct {
         int sock;
@@ -96,8 +97,9 @@ namespace shttps {
         catch (int i) {
             return;
         }
-        auto logger = spdlog::get(loggername);
-        logger->warn("No handler available! Host: ") << conn.host() << " Uri: " << conn.uri();
+        auto logger = Logger::getLogger(loggername);
+        *logger << Logger::LogLevel::WARNING << "No handler available! Host: " << conn.host() << " Uri: " << conn.uri() << Logger::LogAction::FLUSH;
+
         return;
     }
     //=========================================================================
@@ -108,7 +110,7 @@ namespace shttps {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
 
-        auto logger = spdlog::get(loggername);
+        auto logger = Logger::getLogger(loggername);
 
         string script = *((string *) hd);
 
@@ -117,7 +119,7 @@ namespace shttps {
             conn.header("Content-Type", "text/text; charset=utf-8");
             conn << "File not found\n";
             conn.flush();
-            logger->error("ScriptHandler: \"") << script << "\" not readable!";
+            *logger << Logger::LogLevel::ERROR  << "ScriptHandler: \"" << script << "\" not readable!" << Logger::LogAction::FLUSH;
             return;
         }
 
@@ -130,10 +132,10 @@ namespace shttps {
         try {
             if (extension == "lua") { // pure lua
                 ifstream inf;
-                inf.open(script);//open the input file
+                inf.open(script); //open the input file
 
                 stringstream sstr;
-                sstr << inf.rdbuf();//read the file
+                sstr << inf.rdbuf(); //read the file
                 string luacode = sstr.str();//str holds the content of the file
 
                 try {
@@ -153,7 +155,7 @@ namespace shttps {
                     catch(int i) {
                         return;
                     }
-                    logger->error("ScriptHandler: error executing lua script") << err;
+                    *logger << Logger::LogLevel::ERROR  << "ScriptHandler: error executing lua script:  \"" << err << "\"" << Logger::LogAction::FLUSH;
                     return;
                 }
                 conn.flush();
@@ -200,7 +202,7 @@ namespace shttps {
                         catch (int i) {
                             return;
                         }
-                        logger->error("ScriptHandler: error executing lua chunk! ") << err;
+                        *logger << Logger::LogLevel::ERROR  << "ScriptHandler: error executing lua chunk:  \"" << err << "\""<< Logger::LogAction::FLUSH;
                         return;
                     }
                 }
@@ -213,7 +215,7 @@ namespace shttps {
                 conn.header("Content-Type", "text/text; charset=utf-8");
                 conn << "Script has no valid extension: '" << extension << "' !";
                 conn.flush();
-                logger->error("ScriptHandler: error executing script, unknown extension: '") << extension << "' !";
+                *logger << Logger::LogLevel::ERROR  << "ScriptHandler: error executing script, unknown extension:  \"" << extension << "\"" << Logger::LogAction::FLUSH;
             }
         }
         catch (int i) {
@@ -229,7 +231,7 @@ namespace shttps {
             catch (int i) {
                 return;
             }
-            logger->error("FileHandler: internal error: ") << err;
+            *logger << Logger::LogLevel::ERROR  << "FileHandler: internal error:  \"" << err << "\"" << Logger::LogAction::FLUSH;
             return;
         }
     }
@@ -241,7 +243,7 @@ namespace shttps {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
 
-        auto logger = spdlog::get(loggername);
+        auto logger = Logger::getLogger(loggername);
 
         string docroot;
         string route;
@@ -271,7 +273,7 @@ namespace shttps {
             conn.header("Content-Type", "text/text; charset=utf-8");
             conn << "File not found\n";
             conn.flush();
-            logger->error("FileHandler: \"") << infile << "\" not readable";
+            *logger << Logger::LogLevel::ERROR  << "FileHandler: \"" << infile << "\" not readable" << Logger::LogAction::FLUSH;
             return;
         }
 
@@ -328,9 +330,10 @@ namespace shttps {
                         conn.flush();
                     }
                     catch(int i) {
+                        *logger << Logger::LogLevel::ERROR  << "FileHandler: error executing lua chunk!" << Logger::LogAction::FLUSH;
                         return;
                     }
-                    logger->error("FileHandler: error executing lua chunk: ") << err;
+                    *logger << Logger::LogLevel::ERROR  << "FileHandler: error executing lua chunk: " << err << Logger::LogAction::FLUSH;
                     return;
                 }
                 conn.flush();
@@ -375,9 +378,10 @@ namespace shttps {
                             conn.flush();
                         }
                         catch (int i) {
+                            *logger << Logger::LogLevel::ERROR  << "FileHandler: error executing lua chunk!" << Logger::LogAction::FLUSH;
                             return;
                         }
-                        logger->error("FileHandler: error executing lua chunk") << err;
+                        *logger << Logger::LogLevel::ERROR  << "FileHandler: error executing lua chunk: " << err << Logger::LogAction::FLUSH;
                         return;
                     }
                 }
@@ -401,9 +405,10 @@ namespace shttps {
                 conn.flush();
             }
             catch (int i) {
+                *logger << Logger::LogLevel::ERROR  << "FileHandler: error executing lua chunk!" << Logger::LogAction::FLUSH;
                 return;
             }
-            logger->error("FileHandler: internal error: ") << err;
+            *logger << Logger::LogLevel::ERROR  << "FileHandler: internal error: " << err << Logger::LogAction::FLUSH;
             return;
         }
     }
@@ -423,42 +428,37 @@ namespace shttps {
         running = false;
         _keep_alive_timeout = 20;
 
-        spdlog::set_async_mode(1048576);
-        _logger = spdlog::rotating_logger_mt(loggername, _logfilename, 1048576 * 20, 3, true);
-
-        if (_loglevel == "TRACE") {
-            spdlog::set_level(spdlog::level::trace);
-        }
-        else if (_loglevel == "DEBUG") {
-            spdlog::set_level(spdlog::level::debug);
+        Logger::LogLevel ll;
+        if (_loglevel == "DEBUG") {
+            ll = Logger::LogLevel::DEBUG;
         }
         else if (_loglevel == "INFO") {
-            spdlog::set_level(spdlog::level::info);
+            ll = Logger::LogLevel::INFORMATIONAL;
         }
         else if (_loglevel == "NOTICE") {
-            spdlog::set_level(spdlog::level::notice);
+            ll = Logger::LogLevel::NOTICE;
         }
         else if (_loglevel == "WARN") {
-            spdlog::set_level(spdlog::level::warn);
+            ll = Logger::LogLevel::WARNING;
         }
         else if (_loglevel == "ERROR") {
-            spdlog::set_level(spdlog::level::err);
+            ll = Logger::LogLevel::ERROR;
         }
         else if (_loglevel == "CRITICAL") {
-            spdlog::set_level(spdlog::level::critical);
+            ll = Logger::LogLevel::DEBUG;
         }
         else if (_loglevel == "ALERT") {
-            spdlog::set_level(spdlog::level::alert);
+            ll = Logger::LogLevel::ALERT;
         }
         else if (_loglevel == "EMER") {
-            spdlog::set_level(spdlog::level::emerg);
-        }
-        else if (_loglevel == "OFF") {
-            spdlog::set_level(spdlog::level::off);
+            ll = Logger::LogLevel::EMERGENCY;
         }
         else {
-            spdlog::set_level(spdlog::level::debug);
+            ll = Logger::LogLevel::ERROR;
         }
+
+        auto logger = Logger::createLogger(loggername, _logfilename, ll);
+
 
         //
         // Her we check if we have to change to a different uid. This can only be done
@@ -473,25 +473,25 @@ namespace shttps {
                 getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
                 if (res != NULL) {
                     if (setuid(pwd.pw_uid) == 0) {
-                        _logger->notice("Server will run as user ") << userid_str << " (" << getuid() << ")";
+                        *logger << Logger::LogLevel::INFORMATIONAL << "Server will run as user \"" << userid_str << "\" (" << getuid() << ")" << Logger::LogAction::FLUSH;
                         if (setgid(pwd.pw_gid) == 0) {
-                            _logger->notice("Server will run with group-id ") << getuid();
+                            *logger << Logger::LogLevel::INFORMATIONAL << "Server will run with group-id "  << getuid() << Logger::LogAction::FLUSH;
                         }
                         else {
-                            _logger->error("setgid() failed! Reason: ") << strerror(errno);
+                            *logger << Logger::LogLevel::ERROR << "setgid() failed! Reason: " << strerror(errno) << Logger::LogAction::FLUSH;
                         }
                     }
                     else {
-                        _logger->error("setuid() failed! Reason: ") << strerror(errno);
+                        *logger << Logger::LogLevel::ERROR << "setgid() failed! Reason: " << strerror(errno) << Logger::LogAction::FLUSH;
                     }
                 }
                 else {
-                    _logger->warn("Could not get uid of user \"") << userid_str << "\"! You must start SIPI as root!";
+                    *logger << Logger::LogLevel::ERROR << "Could not get uid of user \"" << userid_str << "\"! You must start SIPI as root!" << Logger::LogAction::FLUSH;
                 }
                 delete [] buffer;
             }
             else {
-                _logger->warn("Could not switch to user \"") << userid_str << "\"! You must start SIPI as root!";
+                *logger << Logger::LogLevel::ERROR << "Could not get uid of user \"" << userid_str << "\"! You must start SIPI as root!" << Logger::LogAction::FLUSH;
             }
         }
 
@@ -555,17 +555,17 @@ namespace shttps {
         int sockfd;
         struct sockaddr_in serv_addr;
 
-        auto logger = spdlog::get(loggername);
+        auto logger = Logger::getLogger(loggername);
 
         sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
         if (sockfd < 0) {
-            logger->emerg("Could not create socket: ") << strerror(errno);
+            *logger << Logger::LogLevel::ERROR << "Could not create socket: " << strerror(errno) << Logger::LogAction::FLUSH;
             exit(1);
         }
 
         int optval = 1;
         if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
-            logger->emerg("Could not set socket option: ") << strerror(errno);
+            *logger << Logger::LogLevel::ERROR << "Could not set socket option: " << strerror(errno) << Logger::LogAction::FLUSH;
             exit(1);
         }
 
@@ -578,12 +578,12 @@ namespace shttps {
 
         /* Now bind the host address using bind() call.*/
         if (::bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-            logger->emerg("Could not bind socket: ") << strerror(errno);
+            *logger << Logger::LogLevel::ERROR << "Could not bind socket: " << strerror(errno) << Logger::LogAction::FLUSH;
             exit(1);
         }
 
         if (::listen(sockfd, SOMAXCONN) < 0) {
-            logger->emerg("Could not listen on socket: ") << strerror(errno);
+            *logger << Logger::LogLevel::ERROR << "Could not listen on socket: " << strerror(errno) << Logger::LogAction::FLUSH;
             exit (1);
         }
         return sockfd;
@@ -620,24 +620,24 @@ namespace shttps {
     //=========================================================================
 
     static int close_socket(TData *tdata) {
-        auto logger = spdlog::get(loggername);
+        auto logger = Logger::getLogger(loggername);
 
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != NULL) {
             int sstat;
             while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
             if (sstat < 0) {
-                logger->warn("SSL socket error: shutdown of socket failed! Reason: ") << SSL_get_error(tdata->cSSL, sstat);
+                *logger << Logger::LogLevel::WARNING << "SSL socket error: shutdown of socket failed! Reason: " << SSL_get_error(tdata->cSSL, sstat) << Logger::LogAction::FLUSH;
             }
             SSL_free(tdata->cSSL);
             tdata->cSSL = NULL;
         }
 #endif
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
-            logger->warn("Error shutdown socket! Reason: ") << strerror(errno);
+            *logger << Logger::LogLevel::WARNING << "Error shutdown socket! Reason: " << strerror(errno) << Logger::LogAction::FLUSH;
         }
         if (close(tdata->sock) == -1) {
-            logger->warn("Error closing socket! Reason: ") << strerror(errno);
+            *logger << Logger::LogLevel::WARNING << "Error closing socket! Reason: " << strerror(errno) << Logger::LogAction::FLUSH;
         }
 
         return 0;
@@ -652,7 +652,7 @@ namespace shttps {
         TData *tdata = (TData *) arg;
         pthread_t my_tid = pthread_self();
 
-        auto logger = spdlog::get(loggername);
+        auto logger = Logger::getLogger(loggername);
 
         //
         // now we create the socket StreamSock
@@ -694,7 +694,7 @@ namespace shttps {
             readfds[0] = { tdata->commpipe_read, POLLIN, 0};
             readfds[1] = { tdata->sock, POLLIN, 0};
             if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
-                logger->error("Non-blocking poll failed: Line: ") << to_string(__LINE__);
+                *logger << Logger::LogLevel::ERROR << "Non-blocking poll failed: Line: " << __LINE__ << Logger::LogAction::FLUSH;
                 tstatus = CLOSE;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
@@ -742,7 +742,7 @@ namespace shttps {
             readfds[0] = { tdata->commpipe_read, POLLIN, 0};
             readfds[1] = { tdata->sock, POLLIN, 0};
             if (poll(readfds, 2, keep_alive*1000) < 0) {
-                logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
+                *logger << Logger::LogLevel::ERROR << "Blocking poll failed: Line: " << __LINE__ << Logger::LogAction::FLUSH;
                 tstatus = CLOSE;
                 idle_remove(my_tid);
                 break; // accept returned something strange – probably we want to shutdown the server
@@ -783,16 +783,16 @@ namespace shttps {
         delete sockstream;
 
         if (close(tdata->commpipe_read) == -1) {
-            logger->error("Commpipe_read close error: ") << string(strerror(errno));
+            *logger << Logger::LogLevel::ERROR << "Commpipe_read close error: " << strerror(errno) << Logger::LogAction::FLUSH;
         }
         int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
         if (compipe_write > 0) {
             if (close (compipe_write) == -1) {
-                logger->error("Commpipe_write close error: ") << string(strerror(errno));
+                *logger << Logger::LogLevel::ERROR << "Commpipe_write close error: " << strerror(errno) << Logger::LogAction::FLUSH;
             }
         }
         else {
-            logger->debug("Thread to stop does no longer exist...!");
+            *logger << Logger::LogLevel::DEBUG << "Thread to stop does no longer exist...!" << Logger::LogAction::FLUSH;
         }
         tdata->serv->remove_thread(pthread_self());
         tdata->serv->semaphore_leave();
@@ -806,7 +806,9 @@ namespace shttps {
 
     void Server::run()
     {
-        _logger->info("Starting shttps server... with ") << to_string(_nthreads) << " threads";
+        auto logger = Logger::getLogger(loggername);
+
+        *logger << Logger::LogLevel::INFORMATIONAL << "Starting shttps server... with " <<_nthreads << " threads" << Logger::LogAction::FLUSH;
 
         //
         // now we are adding the lua routes
@@ -814,13 +816,13 @@ namespace shttps {
         for (auto & route : _lua_routes) {
             route.script = _scriptdir + "/" + route.script;
             addRoute(route.method, route.route, ScriptHandler, &(route.script));
-            _logger->info("Added route '") << route.route << "' with script '" << route.script << "'";
+            *logger << Logger::LogLevel::INFORMATIONAL << "Added route " << route.route << " with script \""<< route.script<< "\"" << Logger::LogAction::FLUSH;
         }
         _sockfd = prepare_socket(port);
-        _logger->notice("Server listening on port ") << to_string(port);
+        *logger << Logger::LogLevel::INFORMATIONAL << "Server listening on port " << port << Logger::LogAction::FLUSH;
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
-            _logger->notice("Server listening on SSL port ") << to_string(_ssl_port);
+            *logger << Logger::LogLevel::INFORMATIONAL << "Server listening on SSL port " << _ssl_port << Logger::LogAction::FLUSH;
         }
 
         pipe(stoppipe); // ToDo: Errorcheck
@@ -839,7 +841,7 @@ namespace shttps {
             }
 
             if (poll(readfds, n_readfds, -1) < 0) {
-                _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: " << strerror(errno);
+                *logger << Logger::LogLevel::ERROR << "Blocking poll failed at line: " << __LINE__ <<" ERROR: " << strerror(errno) << Logger::LogAction::FLUSH;
                 running = false;
                 break;
             }
@@ -858,7 +860,7 @@ namespace shttps {
                 sock = _ssl_sockfd;
             }
             else {
-                _logger->error("Blocking poll failed at line: ") << to_string(__LINE__) << " ERROR: Strange!!";
+                *logger << Logger::LogLevel::ERROR << "Blocking poll failed at line: " << __LINE__ << " ERROR: strange thing happened!" << Logger::LogAction::FLUSH;
                 running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
@@ -867,7 +869,7 @@ namespace shttps {
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (newsockfs <= 0) {
-                _logger->error("::accept error! ERROR: ") << strerror(errno);
+                *logger << Logger::LogLevel::ERROR << "accept error! ERROR: " << strerror(errno) << Logger::LogAction::FLUSH;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
 
@@ -881,12 +883,16 @@ namespace shttps {
                 struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
                 peer_port = ntohs(s->sin_port);
                 inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+            }
+            else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
                 struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
             }
-            _logger->notice("Accepted connection from: ") << client_ip;
+            else {
+                peer_port = -1;
+            }
+            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << "Accepted connection from: " << client_ip << Logger::LogAction::FLUSH;
 
             TData *tmp = new TData;
             tmp->sock = newsockfs;
@@ -900,40 +906,50 @@ namespace shttps {
                 SSL_CTX *sslctx;
                 try {
                     if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == NULL) {
-                        _logger->error("OpenSSL error: 'SSL_CTX_new()' failed!");
+                        *logger << Logger::LogLevel::INFORMATIONAL << "OpenSSL error: 'SSL_CTX_new()' failed!" << Logger::LogAction::FLUSH;
                         throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_new()' failed!");
                     }
                     SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
                     if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
                         string msg = "OpenSSL error: 'SSL_CTX_use_certificate_file(\"" + _ssl_certificate + "\")' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
                         throw SSLError(__file__, __LINE__, msg);
                     }
                     if (SSL_CTX_use_PrivateKey_file(sslctx, _ssl_key.c_str(), SSL_FILETYPE_PEM) != 1) {
                         string msg = "OpenSSL error: 'SSL_CTX_use_PrivateKey_file(\"" + _ssl_certificate + "\")' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
                         throw SSLError(__file__, __LINE__, msg);
                     }
                     if (!SSL_CTX_check_private_key(sslctx)) {
-                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_CTX_check_private_key()' failed!");
+                        string msg = "OpenSSL error: 'SSL_CTX_check_private_key()' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                        throw SSLError(__file__, __LINE__, msg);
                     }
                     if ((cSSL = SSL_new(sslctx)) == NULL) {
-                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_new()' failed!");
+                        string msg = "OpenSSL error: 'SSL_new()' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                        throw SSLError(__file__, __LINE__, msg);
                     }
                     if (SSL_set_fd(cSSL, newsockfs) != 1) {
-                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_set_fd()' failed!");
+                        string msg = "OpenSSL error: 'SSL_set_fd()' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                        throw SSLError(__file__, __LINE__, msg);
                     }
 
                     //Here is the SSL Accept portion.  Now all reads and writes must use SS
                     int suc;
                     if ((suc = SSL_accept(cSSL)) <= 0) {
-                        throw SSLError(__file__, __LINE__, "OpenSSL error: 'SSL_accept()' failed!");
+                        string msg = "OpenSSL error: 'SSL_accept()' failed!";
+                        *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                        throw SSLError(__file__, __LINE__, msg);
                     }
                }
                 catch (SSLError &err) {
-                    _logger->error(err.to_string());
+                    *logger << Logger::LogLevel::ERROR << err.to_string() << Logger::LogAction::FLUSH;
                     int sstat;
                     while ((sstat = SSL_shutdown(cSSL)) == 0);
                     if (sstat < 0) {
-                        _logger->warn("SSL socket error: shutdown (2) of socket failed! Reason: ") << SSL_get_error(cSSL, sstat);
+                        *logger << Logger::LogLevel::WARNING << "SSL socket error: shutdown (2) of socket failed! Reason: " << SSL_get_error(cSSL, sstat) << Logger::LogAction::FLUSH;
                     }
                     SSL_free(cSSL);
                     cSSL = NULL;
@@ -955,7 +971,7 @@ namespace shttps {
                         Server::CommMsg::send(pipe_id);
                     }
                     else {
-                        _logger->debug("Thread to stop does no longer exist...!");
+                        *logger << Logger::LogLevel::DEBUG << "Thread to stop does no longer exist...!" << Logger::LogAction::FLUSH;
                     }
                 }
                 else {
@@ -966,7 +982,7 @@ namespace shttps {
             int commpipe[2];
 
             if (socketpair(PF_LOCAL, SOCK_STREAM, 0, commpipe) != 0) {
-                _logger->error("Creating pipe failed! ERROR: ") << strerror(errno);
+                *logger << Logger::LogLevel::WARNING << "Creating pipe failed! ERROR: " << strerror(errno) << Logger::LogAction::FLUSH;
                 running = false;
                 break;
             }
@@ -983,7 +999,7 @@ namespace shttps {
             //pthread_attr_setstacksize(&tattr, stacksize);
 
             if( pthread_create( &thread_id, &tattr,  process_request, (void *) tmp) < 0) {
-                _logger->error("Could not create thread") << strerror(errno);
+                *logger << Logger::LogLevel::ERROR << "Could not create thread " << strerror(errno) << Logger::LogAction::FLUSH;
                 running = false;
                 break;
             }
@@ -998,8 +1014,7 @@ namespace shttps {
             add_thread(thread_id, commpipe[0], tmp->sock);
 #endif
         }
-        _logger->notice("Server shutting down!");
-
+        *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << "Server shutting down!" << Logger::LogAction::FLUSH;
 
         //
         // let's send the close message to all running threads
@@ -1039,7 +1054,9 @@ namespace shttps {
 
     ThreadStatus Server::processRequest(istream *ins, ostream *os, string &peer_ip, int peer_port, bool secure, int &keep_alive)
     {
+        auto logger = Logger::getLogger(loggername);
         if (_tmpdir.empty()) {
+            *logger << Logger::LogLevel::WARNING << "_tmpdir is empty" << Logger::LogAction::FLUSH;
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
 
@@ -1069,8 +1086,9 @@ namespace shttps {
             //
             // Setting up the Lua server
             //
-            LuaServer luaserver(_initscript, true);
-            luaserver.createGlobals(conn);
+            LuaServer luaserver(conn, _initscript, true);
+            luaserver.setLuaPath(_scriptdir + "/?.lua"); // add the script dir to the standard search path fpr lua packages
+            //luaserver.createGlobals(conn);
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
@@ -1081,11 +1099,11 @@ namespace shttps {
                 handler(conn, luaserver, _user_data, hd);
             }
             catch (int i) {
-                _logger->debug("Possibly socket closed by peer!");
+                *logger << Logger::LogLevel::DEBUG << "Possibly socket closed by peer!" << Logger::LogAction::FLUSH;
                 return CLOSE; // or CLOSE ??
             }
             if (!conn.cleanupUploads()) {
-                _logger->error("Cleanup of uploaded files failed!");
+                *logger << Logger::LogLevel::ERROR << "Cleanup of uploaded files failed!" << Logger::LogAction::FLUSH;
             }
             if (conn.keepAlive()) {
                 return CONTINUE;
@@ -1095,12 +1113,12 @@ namespace shttps {
             }
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-            _logger->debug("Socket connection: timeout or socket closed from main");
+            *logger << Logger::LogLevel::DEBUG << "Socket connection: timeout or socket closed from main" << Logger::LogAction::FLUSH;
             return CLOSE;
         }
         catch(Error &err) {
             try {
-                _logger->error("Internal server error: ") << err;
+                *logger << Logger::LogLevel::DEBUG << "Internal server error: " << err  << Logger::LogAction::FLUSH;
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
                 stringstream ss;
@@ -1109,7 +1127,7 @@ namespace shttps {
                 *os << ss.str();
             }
             catch (int i) {
-                _logger->error("Possibly socket closed by peer!");
+                *logger << Logger::LogLevel::DEBUG << "Possibly socket closed by peer!"  << Logger::LogAction::FLUSH;
             }
             return CLOSE;
         }

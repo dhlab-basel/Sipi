@@ -31,6 +31,7 @@
 #include <csignal>
 #include <utility>
 
+#include "shttps/Logger.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
 #include "shttps/LuaSqlite.h"
@@ -104,14 +105,13 @@ static std::string fileType_string(FileType f_type) {
 
 static void sighandler(int sig) {
     std::cerr << std::endl << "Got SIGINT, stopping server gracefully...." << std::endl;
+    auto logger = Logger::getLogger(shttps::loggername);
     if (serverptr != NULL) {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, stopping server");
+        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, stopping server" << Logger::LogAction::FLUSH;
         serverptr->stop();
     }
     else {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, exiting server");
+        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, exiting server" << Logger::LogAction::FLUSH;
         exit(0);
     }
 }
@@ -119,8 +119,8 @@ static void sighandler(int sig) {
 
 
 static void broken_pipe_handler(int sig) {
-    auto logger = spdlog::get(shttps::loggername);
-    logger->info("Got BROKEN PIPE signal!");
+    auto logger = Logger::getLogger(shttps::loggername);
+    *logger << Logger::LogLevel::INFORMATIONAL << "Got BROKEN PIPE signal!" << Logger::LogAction::FLUSH;
 }
 //=========================================================================
 
@@ -256,6 +256,7 @@ int main (int argc, char *argv[]) {
         std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
     }
 
+    Sipi::SipiIOTiff::initLibrary();
 
     //
     // commandline processing....
@@ -272,12 +273,49 @@ int main (int argc, char *argv[]) {
     params.addParam(new Sipi::SipiParam("mirror", "Mirror the image", "none:horizontal:vertical", 1, "none"));
     params.addParam(new Sipi::SipiParam("rotate", "Rotate the image", 0.0F, 359.99999F, 1, 0.0F));
     params.addParam(new Sipi::SipiParam("salsah", "Special flag for SALSAH internal use", false));
+    params.addParam(new Sipi::SipiParam("compare", "compare to files", false));
     params.addParam(new Sipi::SipiParam("serverport", "Port of the webserver", 0, 65535, 1, 0));
     params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
     params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
     params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
-    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:NOTICE:WARN:ERROR:CRITICAL:ALERT:EMER:OFF", 1, "INFO"));
+    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF", 1, "INFO"));
     params.parseArgv ();
+
+
+    if (params["compare"].isSet()) {
+        std::string infname1;
+        try {
+            infname1 = params.getName();
+        }
+        catch (Sipi::SipiError &err) {
+            std::cerr << err;
+            exit (-1);
+        }
+
+        //
+        // get the output image name
+        //
+        std::string infname2;
+        try {
+            infname2 = params.getName();
+        }
+        catch (Sipi::SipiError &err) {
+            std::cerr << err;
+            exit (-1);
+        }
+        Sipi::SipiImage img1, img2;
+        img1.read(infname1);
+        img2.read(infname2);
+        bool result = img1 == img2;
+
+        if (!result) {
+            img1 -= img2;
+            img1.write("tif", "diff.tif");
+        }
+
+        return (result) ? 0 : -1;
+    }
+
 
     //
     // if a config file is given, we start sipi as IIIF compatible server
@@ -285,7 +323,8 @@ int main (int argc, char *argv[]) {
     if ((params["config"]).isSet()) {
         std::string configfile = (params["config"])[0].getValue(SipiStringType);
         try {
-            std::cout << std::endl << SIPI_VERSION << std::endl;
+            std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
+            std::cout << SIPI_BUILD_VERSION << std::endl;
             //read and parse the config file (config file is a lua script)
             shttps::LuaServer luacfg(configfile);
 
@@ -295,6 +334,10 @@ int main (int argc, char *argv[]) {
             //Create object SipiHttpServer
             Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
+
+            auto logger = Logger::getLogger(shttps::loggername);
+            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_DATE << Logger::LogAction::FLUSH;
+            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_VERSION << Logger::LogAction::FLUSH;
 
 #           ifdef SHTTPS_ENABLE_SSL
 
@@ -457,8 +500,13 @@ int main (int argc, char *argv[]) {
         // read the input image
         //
         Sipi::SipiImage img;
-        img.read(infname, region, size, format == "jpg"); //convert to bps=8 in case of JPG output
-
+        img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+        if (format == "jpg") {
+            img.to8bps();
+            if (img.getNalpha() > 0) {
+                img.removeChan(img.getNc() - 1);
+            }
+        }
         delete region;
         delete size;
 
@@ -534,7 +582,7 @@ int main (int argc, char *argv[]) {
             img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
         }
         catch (Sipi::SipiImageError &err) {
-            std::cerr << err.what() << std::endl;
+            std::cerr << err << std::endl;
         }
 
         if (params["salsah"].isSet()) {

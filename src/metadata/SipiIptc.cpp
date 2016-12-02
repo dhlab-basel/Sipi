@@ -19,9 +19,11 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SipiError.h"
+ */
+#include "SipiError.h"
 #include "SipiIptc.h"
 #include <stdlib.h>
+
 static const char __file__[] = __FILE__;
 
 using namespace std;

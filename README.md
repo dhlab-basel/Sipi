@@ -221,32 +221,67 @@ safe may be used!
 
 ### SIPI functions within Lua
 
-Sipi provides the following functions`and preset variables:
+Sipi provides the following functions:
 
-- `server.setBuffer([bufsize][,incsize])` : Activates the the connection buffer. Optionally the buffer size and increment size can be given.
-- `server.fs.ftype("path")` : Checks the filetype of a given filepath. Returns either "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
-- `server.fs.is_readable(filepath)` : Checks if a file is readable. Returns boolean.
-- `server.fs.is_writeable(filepath)` : Checks if a file is writeable. Returns boolean.
-- `server.fs.is_executable(filepath)` : Checks if a file is executable. Returns boolean.
-- `server.fs.exists(filepath)` : Checks if a file exists. Returns boolean.
-- `server.fs.unlink(filename)` : Deletes a file from the file system. The file must exist and the user must have write access.
-- `server.fs.mkdir(dirname, tonumber('0755', 8)` : Creates a new directory with given permissions.
-- `server.fs.mkdir(dirname)` : Creates a new directory.
-- `curdir = server.fs.getcwd()` : Gets the current working directory.
-- `oldir = server.fs.chdir(newdir)` : Change working directory.
-- `uuid = server.uuid()` : Generates a random version 4 uuid string.
-- `uuid62 = server.uuid62()` : Generates a base62-uuid string.
-- `uuid62 = server.uuid_to_base62(uuid)` : Converts a uuid-string to a base62 uuid.
-- `uuid = server.base62_to_uuid(uuid62)` : Converts a base62-uuid to a "normal" uuid.
-- `server.print("string"|var1 [,"string|var]...)` : Prints variables and/or strings to the HTTP connection
-- `result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`: Get's data from a http server. Parameters:
+- `success, errmsg = server.setBuffer([bufsize][,incsize])`:  
+Activates the the connection buffer. Optionally the buffer size and increment size can be given. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, filetype = server.fs.ftype("path")` :  
+Checks the filetype of a given filepath. Returns either true, filetype (one of )"FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN") or false, errormsg  
+
+- `success, readable = server.fs.is_readable(filepath)` :  
+Checks if a file is readable. Returns true, readable(boolean) on success or false, errormsg on failure.  
+
+- `success, writeable = server.fs.is_writeable(filepath)` :  
+Checks if a file is writeable. Returns true, writeable(boolean) on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.is_executable(filepath)` :  
+Checks if a file is executable. Returns true, executable(boolean) on success or false, errormsg on failure.  
+
+- `success, exists = server.fs.exists(filepath)` :  
+Checks if a file exists. Checks if a file exists. Returns true, exists(boolean) on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.unlink(filename)` :  
+Deletes a file from the file system. The file must exist and the user must have write access. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.mkdir(dirname, tonumber('0755', 8)` :  
+Creates a new directory with given permissions.  
+
+- `success, errormsg = server.fs.mkdir(dirname)` :  
+Creates a new directory. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.fs.rmdir(dirname)` :  
+Deletes a directory. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, curdir = server.fs.getcwd()` :  
+Gets the current working directory. Returns true, current_dir on success or false, errormsg on failure.  
+
+- `success, oldir = server.fs.chdir(newdir)` :  
+Change working directory. Returns true, olddir on success or false, errormsg on failure.  
+
+- `success, uuid = server.uuid()` :  
+Generates a random version 4 uuid string. Returns true, uuid on success or false, errormsg on failure.  
+
+- `success, uuid62 = server.uuid62()` :  
+Generates a base62-uuid string. Returns true, uuid62 on success or false, errormsg on failure.  
+
+- `success, uuid62 = server.uuid_to_base62(uuid)` :  
+Converts a uuid-string to a base62 uuid. Returns true, uuid62 on success or false, errormsg on failure.  
+
+- `success, uuid = server.base62_to_uuid(uuid62)` :  
+Converts a base62-uuid to a "normal" uuid. Returns true, uuid on success or false, errormsg on failure.  
+
+- `sucess, errormsg = server.print("string"|var1 [,"string|var]...)` :  
+Prints variables and/or strings to the HTTP connection. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, result = server.http(method, "http://server.domain[:port]/path/file" [, header] [, timeout])`:  
+Get's data from a http server. Parameters:
    - `method` : "GET" (only method allowed so far
    - `url` : complete url including optional port, but no authorization yet
    - `header` : optional table with HTTP-header key-value pairs
    - `timeout`: option number of milliseconds until the connect timeouts. The result is a table:
    ```lua
    result = {
-      success = true | false
       status_code = value -- HTTP status code returned
       erromsg = "error description" -- only if success is false
       header = {
@@ -262,7 +297,7 @@ Sipi provides the following functions`and preset variables:
    ```
    An example of usage:
    ```lua
-   result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
+   success, result = server.http("GET", "http://www.salsah.org/api/resources/1", 100)
 
    if (result.success) then
        server.print("<table>")
@@ -277,11 +312,45 @@ Sipi provides the following functions`and preset variables:
    else
       server.print("ERROR: ", result.errmsg)
    end
-   ```
-- `jsonstr = server.table_to_json(table)` : Convert a table to a JSON string.
-- `table = server.json_to_table(jsonstr)` : Convert a JSON string to a (nested) Lua table.
-- `server.sendHeader(key, value)` : Adds a new HTTP header field.
-- `server.requireAuth()` : Gets Basic HTTP authentification data. The result is a table:
+   ```  
+
+- `success, jsonstr = server.table_to_json(table)` :  
+Convert a table to a JSON string. Returns true, jsonstr on success or false, errormsg on failure.  
+
+- `success, table = server.json_to_table(jsonstr)` :  
+Convert a JSON string to a (nested) Lua table. Returns true, table on success or false, errormsg on failure.  
+
+- `success, errormsg = server.sendHeader(key, value)` :  
+Adds a new HTTP header field. Returns true, nil on success or false, errormsg on failure.  
+
+- `success, errormsg = server.sendCookie(key, value [, options-table])` :  
+Adds a new Cookie. Returns true, nil on success or false, errormsg on failure. options-table as Lua-table:
+    - path = "path allowed",
+    - domain = "domain allowed",
+    - expires = seconds,
+    - secure = true | false,
+    - http_only = true | false
+
+
+- `server.sendStatus() `:  
+Send HTTP status code. This function is always succesful and returns nothing!  
+
+- `success, token = server.generate_jwt(table)` :  
+Generate a Json Web Token (JWT) with the table as payload. Returns true, token on success or false, errormsg on failure. The table contains the jwt-claims. The following claims do have a predefined semantic(IntDate: The number of seconds from 1970-01-01T0:0:0Z):
+    - iss (string => StringOrURI) OPT: principal that issued the JWT.
+    - exp (number => IntDate) OPT: expiration time on or after which the token. MUST NOT be accepted for processing.
+    - nbf  (number => IntDate) OPT: identifies the time before which the token. MUST NOT be accepted for processing.
+    - iat (number => IntDate) OPT: identifies the time at which the JWT was issued.
+    - aud (string => StringOrURI) OPT: identifies the audience that the JWT is intended for. The audience value is a string -- typically, the base address of the resource being accessed, such as "https://contoso.com"
+    - prn (string => StringOrURI) OPT: identifies the subject of the JWT.
+    - jti (string => String) OPT: provides a unique identifier for the JWT.
+
+
+- `success, table = decode_jwt(token)` :  
+Decode a jwt token and return the content as table. Returns true, table on success or false, errormsg on failure.  
+
+- `success, table = server.requireAuth()` :  
+Gets Basic HTTP authentification data. Returns true, table on success or false, errormsg on failure. The result is a table:
   ```lua`
   {
     status = "BASIC" | "BEARER" | "NOAUTH" | "ERROR", -- NOAUTH means no authorization header
@@ -293,7 +362,12 @@ Sipi provides the following functions`and preset variables:
   ```
   Usage is as follows (example):
   ```lua
-  auth = server.requireAuth()
+  success, auth = server.requireAuth()
+  if not success then
+    server.sendStatus(501)
+    server.print("Error in getting authentification scheme!")
+    return -1
+  end
 
   if auth.status == 'BASIC' then
      --
@@ -305,8 +379,18 @@ Sipi provides the following functions`and preset variables:
            aud = "knora.org",
            user = auth.username
         }
-        token = server.generate_jwt(tokendata)
-        server.sendCookie('sipi', token, {path = '/', expires = 3600})
+        success, token = server.generate_jwt(tokendata)
+        if not success then
+            server.sendStatus(501)
+            server.print("Could not generate JWT!")
+            return -1
+        end
+        success, errormsg = server.sendCookie('sipi', token, {path = '/', expires = 3600})
+        if not success then
+            server.sendStatus(501)
+            server.print("Couldn't send cookie with JWT!")
+            return -1
+        end
      else
         server.sendStatus(401)
         server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
@@ -314,7 +398,12 @@ Sipi provides the following functions`and preset variables:
         return -1
      end
   elseif auth.status == 'BEARER' then
-     jwt = server.decode_jwt(auth.token)
+     success, jwt = server.decode_jwt(auth.token)
+     if not success then
+        server.sendStatus(501)
+        server.print("Couldn't deocde JWT!")
+        return -1
+     end
      if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
         server.sendStatus(401)
         server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
@@ -332,7 +421,21 @@ Sipi provides the following functions`and preset variables:
   end
 
   ```
-- `server.copyTmpfile()` : shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi.
+
+
+- `success, errormsg = server.copyTmpfile()` :  
+shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.  
+- `server.log(message, loglevel)` :  
+Writes a message into the logfile. Loglevels are
+    - server.loglevel.trace
+    - server.loglevel.debug
+    - server.loglevel.info
+    - server.loglevel.warning
+    - server.loglevel.error
+    - server.loglevel.critical
+    - server.loglevel.off
+
+Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available
 - `server.secure` : True, if we are an a secure https connection
 - `server.host` : The hostname of the SIPI server that was used in the request.
@@ -360,7 +463,9 @@ For example, using `local/bin/luarocks install --local package` the package will
 
 ## Sqlite3
 
-Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi:
+Sipi supports sqlite3 databases. There is a simple Lua extension built into Sipi.
+Please note that the sqlite3 function may produce Lua errors. It is recommended
+to use pcall to encapsulate access to the sqlite3 database.
 
 ### Opening a sqlite databases
 
@@ -383,11 +488,11 @@ free all resources.
 ```
 qry = db << 'SELECT * FROM image'
 ```
-or
+or, if you want to used a prepared query statment:
 ```
 qry = db << 'INSERT INTO image (id, description) VALUES (?,?)'
 ```
-`qry` will be a query object containing a prepared query. If the query object
+`qry` will then be a query object containing a prepared query. If the query object
 is not needed anymore, it may be destroyed by
 ```
 qry = ~qry
@@ -402,7 +507,7 @@ while (row) do
     row = qry()
 end
 ```
-or
+or, in order to use a prepared statment:
 ```
 qry('SGV_1960_00315', 'This is an image of a steam engine...')
 ```

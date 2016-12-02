@@ -16,34 +16,67 @@
         -- check if tmporary directory is available, if not, create it
         --
         tmpdir = config.imgroot .. '/tmp/'
-        if  not server.fs.exists(tmpdir) then
-            server.fs.mkdir(tmpdir, 511)
+        local success, exists = server.fs.exists(tmpdir)
+        if not success then
+            server.sendStatus(500)
+            server.log(exists, server.loglevel.error)
+            return false
+        end
+        if not exists then
+            local success, errmsg = server.fs.mkdir(tmpdir, 511)
+            if not success then
+                server.sendStatus(500)
+                server.log(errmsg, server.loglevel.error)
+                return false
+            end
         end
 
         --
         -- copy the file to a safe place
         --
-        tmppath =  tmpdir .. server.uuid62()
-        server.copyTmpfile(imgindex, tmppath)
+        local success, uuid62 = server.uuid62()
+        if not success then
+            server.sendStatus(500)
+            server.log(uuid62, server.loglevel.error)
+            return false
+        end
+        tmppath =  tmpdir .. uuid62
+        local success, errmsg = server.copyTmpfile(imgindex, tmppath)
+        if not success then
+            server.sendStatus(500)
+            server.log(errmsg, server.loglevel.error)
+            return false
+        end
 
-        myimg[imgindex] = SipiImage.new(tmppath)
+        success, gaga = SipiImage.new(tmppath)
+
+        if not success then
+            server.sendStatus(500)
+            server.log(gaga, server.loglevel.error)
+            return false
+        end
+        myimg[imgindex] = gaga
 
         filename = imgparam["origname"]
         n1, n2 = string.find(filename, '.', 1, true)
         newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
         filename = config.imgroot .. '/' .. newfilename[imgindex]
 
-        local status, errmsg = pcall(function(a,b) myimg[a]:write(b) end, imgindex, filename)
+        local status, errmsg = myimg[imgindex]:write(filename)
         if not status then
             server.print('Error converting image to j2k: ', errmsg)
         end
 
-        server.fs.unlink(tmppath)
-
+        success, errmsg = server.fs.unlink(tmppath)
+        if not success then
+            server.sendStatus(500)
+            server.log(errmsg, server.loglevel.error)
+            return false
+        end
     end
     for imgindex,fn in pairs(newfilename) do
         server.print('<tr><td>', fn,
-            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/pct:12.5/0/default.jpg" /></a></td></tr>')
+            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/,250/0/default.jpg" /></a></td></tr>')
     end
 
 </lua>

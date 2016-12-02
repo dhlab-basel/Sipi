@@ -29,8 +29,10 @@
 #ifndef __sipi_image_h
 #define __sipi_image_h
 
+#include <sstream>
+#include <utility>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 #include "SipiError.h"
 #include "SipiIO.h"
@@ -39,10 +41,12 @@
 #include "metadata/SipiIcc.h"
 #include "metadata/SipiIptc.h"
 #include "metadata/SipiExif.h"
+#include "metadata/SipiEssentials.h"
 #include "iiifparser/SipiRegion.h"
 #include "iiifparser/SipiSize.h"
 
 #include "shttps/Connection.h"
+#include "shttps/Hash.h"
 
 
 /*!
@@ -71,7 +75,7 @@ namespace Sipi {
         LINEARRAW = 34892   //!< Linear raw array for DNG and RAW formats. Not supported!
     } PhotometricInterpretation;
 
-    /*! The meaning of extra channels */
+    /*! The meaning of extra channels as used in the TIF format */
     typedef enum : unsigned short {
         UNSPECIFIED = 0,    //!< Unknown meaning
         ASSOCALPHA = 1,     //!< Associated alpha channel
@@ -129,17 +133,34 @@ namespace Sipi {
         inline SipiImageError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0)
         : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
 
-        /*!
-        * Output the error message
+       /*!
+        * Returns the error as string
         */
-        inline const char* what() const {
-            std::stringstream ss;
-            ss << "SipiImageError in \"" << file << "\" #" << line << " Message: " << errmsg;
-            if (errnum > 0) ss << " System-msg: " << strerror(errnum);
-            std::string tmpstr = ss.str();
-            std::cerr << tmpstr << std::endl;
-            return tmpstr.c_str();
+        inline std::string get_error(void) const {
+            stringstream ss;
+            ss << "SIPI-IMAGE-ERROR at [" << file << ": #" << line << "]";
+            if (errnum != 0) ss << ": " << strerror(errnum);
+            ss << ": " << errmsg;
+            return ss.str();
         }
+        //----------------------------------------------------------------------
+
+        inline friend std::ostream &operator<<(std::ostream &outstr, const SipiImageError &rhs)
+        {
+            outstr << endl << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]" << endl;
+            if (rhs.errnum != 0) outstr << "System error: " << strerror(rhs.errnum) << endl;
+            outstr << "Description : " << rhs.errmsg << endl;
+            return outstr;
+        }
+        //----------------------------------------------------------------------
+
+        inline friend std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiImageError &rhs)
+        {
+            *log << Logger::LogLevel::ERROR << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]: " << rhs.errmsg << Logger::LogAction::FLUSH;
+            return log;
+        }
+        //----------------------------------------------------------------------
+
     };
 
 
@@ -160,7 +181,7 @@ namespace Sipi {
         friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
-        static std::map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
+        static std::unordered_map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
         byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
         word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
     protected:
@@ -175,11 +196,11 @@ namespace Sipi {
         SipiIcc *icc;   //!< Pointer to instance of SipiIcc class (\ref SipiIcc), or NULL
         SipiIptc *iptc; //!< Pointer to instance of SipiIptc class (\ref SipiIptc), or NULL
         SipiExif *exif; //!< Pointer to instance of SipiExif class (\ref SipiExif), or NULL
-
+        SipiEssentials emdata; //!< Metadata to be stored in file header
         shttps::Connection *conobj; //!< Pointer to mongoose webserver connection data
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
     public:
-        static std::map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
+        static std::unordered_map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
         /*!
          * Default constructor. Creates an empty image
          */
@@ -191,6 +212,17 @@ namespace Sipi {
          * \param[in] img_p An existing instance if SipiImage
          */
         SipiImage(const SipiImage &img_p);
+
+       /*!
+        * Create an empty image with the pixel buffer available, but all pixels set to 0
+        *
+        * \param[in] nx_p Dimension in x direction
+        * \param[in] ny_p Dimension in y direction
+        * \param[in] nc_p Number of channels
+        * \param[in] bps_p Bits per sample, either 8 or 16 are allowed
+        * \param[in] photo_p The photometric interpretation
+        */
+        SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p);
 
         /*!
          * Checks if the actual mimetype of an image file corresponds to the indicated mimetype and the extension of the filename.
@@ -225,6 +257,37 @@ namespace Sipi {
          */
         ~SipiImage();
 
+       /*!
+        * Sets a pixel to a given value
+        *
+        * \param[in] x X position
+        * \param[in] y Y position
+        * \param[in] c Color channels
+        * \param[in] val Pixel value
+        */
+        inline void setPixel(int x, int y, int c, int val) {
+            if ((x < 0) || (x >= nx)) throw ((int) 1);
+            if ((y < 0) || (x >= ny)) throw ((int) 2);
+            if ((c < 0) || (x >= nc)) throw ((int) 3);
+            switch (bps) {
+                case 8: {
+                    if (val > 0xff) throw ((int) 4);
+                    register unsigned char *tmp = (unsigned char *) pixels;
+                    tmp[nc*(x*nx + y) + c] = (unsigned char) val;
+                    break;
+                }
+                case 16: {
+                    if (val > 0xffff) throw ((int) 5);
+                    register unsigned short *tmp = (unsigned short *) pixels;
+                    tmp[nc*(x*nx + y) + c] = (unsigned short) val;
+                    break;
+                }
+                default: {
+                    if (val > 0xffff) throw ((int) 6);
+                }
+            }
+        };
+
         /*!
          * Assignment operator
          *
@@ -256,12 +319,68 @@ namespace Sipi {
         */
          inline shttps::Connection *connection() { return conobj; };
 
+         inline void essential_metadata(const SipiEssentials &emdata_p) { emdata = emdata_p; }
+
+         inline SipiEssentials essential_metadata(void) { return emdata; }
+
+       /*!
+        * Read an image from the given path
+        *
+        * \param[in] filepath A string containing the path to the image file
+        * \param[in] region Pointer to a SipiRegion which indicates that we
+        *            are only interested in this regeion. The image will be cropped.
+        * \param[in] size Pointer to a size object. The image will be scaled accordingly
+        * \param[in] force_bps_8 We want in any case a 8 Bit/sample image. Reduce if necessary
+        *
+        * \throws SipiError
+        */
+        void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+
+       /*!
+        * Read an image that is to be considered an "original image". In this case
+        * a SipiEssentials object is created containing the original name, the
+        * original mime type. In addition also a checksum of the pixel values
+        * is added in order to guarantee the integrity of the image pixels.
+        * if the image is written as J2K or as TIFF image, these informations
+        * are added to the file header (in case of TIFF as a private tag 65111,
+        * in case of J2K as comment box).
+        * If the file read already contains a SipiEssentials as embedded metadata,
+        * it is not overwritten, put the embeded and pixel checksums are compared.
+        *
+        * \param[in] filepath A string containing the path to the image file
+        * \param[in] region Pointer to a SipiRegion which indicates that we
+        *            are only interested in this regeion. The image will be cropped.
+        * \param[in] size Pointer to a size object. The image will be scaled accordingly
+        * \param[in] htype The checksum method that should be used if the checksum is
+        *            being calculated for the first time.
+        *
+        * \returns true, if everythin worked. False, if the checksums do not match.
+        */
+        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype = shttps::HashType::sha256);
+
         /*!
-         * Read an image from the given path
+         * Read an image that is to be considered an "original image". In this case
+         * a SipiEssentials object is created containing the original name, the
+         * original mime type. In addition also a checksum of the pixel values
+         * is added in order to guarantee the integrity of the image pixels.
+         * if the image is written as J2K or as TIFF image, these informations
+         * are added to the file header (in case of TIFF as a private tag 65111,
+         * in case of J2K as comment box).
+         * If the file read already contains a SipiEssentials as embedded metadata,
+         * it is not overwritten, put the embeded and pixel checksums are compared.
          *
          * \param[in] filepath A string containing the path to the image file
+         * \param[in] region Pointer to a SipiRegion which indicates that we
+         *            are only interested in this regeion. The image will be cropped.
+         * \param[in] size Pointer to a size object. The image will be scaled accordingly
+         * \param[in] origname Original file name
+         * \param[in] htype The checksum method that should be used if the checksum is
+         *            being calculated for the first time.
+         *
+         * \returns true, if everythin worked. False, if the checksums do not match.
          */
-        void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype);
+
 
        /*!
         * Get the dimension of the image
@@ -270,8 +389,9 @@ namespace Sipi {
         * \param[out] width Width of the image in pixels
         * \param[out] height Height of the image in pixels
         */
-        void getDim(std::string filepath, int &width, int &height);
+        static void getDim(std::string filepath, int &width, int &height);
 
+        void getDim(int &width, int &height);
 
        /*!
         * Write an image to somewhere
@@ -359,6 +479,44 @@ namespace Sipi {
         */
         bool add_watermark(std::string wmfilename);
 
+
+       /*!
+        * Calcaulates the difference between 2 images.
+        *
+        * The differfence between 2 images can conatin (and usually will) negative values.
+        * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+        * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
+        * absolute values. Thus a new pixelvalue will be calculated as follows:
+        * ```
+        * int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+        * newval = (byte) ((oldval + maxmax)*UCHAR_MAX/(2*maxmax));
+        * ```
+        * \param[in] rhs right hand side of "-="
+        */
+        SipiImage &operator-=(const SipiImage &rhs);
+
+       /*!
+        * Calcaulates the difference between 2 images.
+        *
+        * The differfence between 2 images can conatin (and usually will) negative values.
+        * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+        * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
+        * absolute values. Thus a new pixelvalue will be calculated as follows:
+        * ```
+        * int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+        * newval = (byte) ((oldval + maxmax)*UCHAR_MAX/(2*maxmax));
+        * ```
+        *
+        * \param[in] lhs left-hand side of "-" operator
+        * \param[in] rhs right hand side of "-" operator
+        */
+        SipiImage &operator-(const SipiImage &rhs);
+
+        SipiImage &operator+=(const SipiImage &rhs);
+
+        SipiImage &operator+(const SipiImage &rhs);
+
+        bool operator== (const SipiImage &rhs);
 
         /*!
         * The overloaded << operator which is used to write the error message to the output

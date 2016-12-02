@@ -19,28 +19,24 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SockStream.h"
+ */
+#include "LogStream.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 
-#ifndef MSG_NOSIGNAL
-#define MSG_NOSIGNAL SO_NOSIGPIPE // for OS X
-#endif
-
 using namespace std;
-using namespace shttps;
 
-SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
-    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), sock(sock_p)
+LogStream::LogStream(const string &filename, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
+    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p)
 {
-#ifdef SHTTPS_ENABLE_SSL
-    cSSL = NULL;
-#endif
-
+    if ((fid = open(filename.c_str(), O_CREAT|O_APPEND|O_WRONLY, 0644)) == -1) {
+        cerr << "---ERROR----: " << filename << endl;
+    }
     in_buf = new char[in_bufsize + putback_size];
     char *end = in_buf + in_bufsize + putback_size;
     setg (end, end, end);
@@ -49,31 +45,15 @@ SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putb
     setp(out_buf, out_buf + out_bufsize);
 }
 
-#ifdef SHTTPS_ENABLE_SSL
 
-SockStream::SockStream(SSL *cSSL_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
-    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), cSSL(cSSL_p)
+LogStream::~LogStream()
 {
-    sock = -1;
-    in_buf = new char[in_bufsize + putback_size];
-    char *end = in_buf + in_bufsize + putback_size;
-    setg (end, end, end);
-
-    out_buf = new char[out_bufsize];
-    setp(out_buf, out_buf + out_bufsize);
-
-}
-
-#endif
-
-
-SockStream::~SockStream()
-{
+    close(fid);
     delete [] in_buf;
     delete [] out_buf;
 }
 
-streambuf::int_type SockStream::underflow(void)
+streambuf::int_type LogStream::underflow(void)
 {
     if (gptr() < egptr())
     {
@@ -87,21 +67,7 @@ streambuf::int_type SockStream::underflow(void)
     }
 
     ssize_t n;
-#ifdef SHTTPS_ENABLE_SSL
-    if (cSSL == NULL) {
-        n = read(sock, start, in_bufsize);
-    }
-    else {
-        if (SSL_get_shutdown(cSSL) == 0) {
-            n = SSL_read(cSSL, start, in_bufsize);
-        }
-        else {
-            n = 0;
-        }
-    }
-#else
-    n = read(sock, start, in_bufsize);
-#endif
+    n = read(fid, start, in_bufsize);
     if (n <= 0) {
         return traits_type::eof();
     }
@@ -110,7 +76,7 @@ streambuf::int_type SockStream::underflow(void)
     return traits_type::to_int_type(*gptr());
 }
 
-streambuf::int_type SockStream::overflow(streambuf::int_type ch)
+streambuf::int_type LogStream::overflow(streambuf::int_type ch)
 {
     if (ch == traits_type::eof()) {
         return ch; // do nothing;
@@ -120,21 +86,7 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
         size_t nn = 0;
         while (n > 0) {
             ssize_t tmp_n;
-#ifdef SHTTPS_ENABLE_SSL
-            if (cSSL == NULL) {
-                tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
-            }
-            else {
-                if (SSL_get_shutdown(cSSL) == 0) {
-                    tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
-                }
-                else {
-                    tmp_n = 0;
-                }
-            }
-#else
-            tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
-#endif
+            tmp_n = ::write(fid, out_buf + nn, n - nn);
             if (tmp_n <= 0) {
                 return traits_type::eof();
                 // we have a problem.... Possibly a broken pipe
@@ -154,27 +106,14 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
     return ch;
 }
 
-int SockStream::sync(void)
+int LogStream::sync(void)
 {
     std::ptrdiff_t n = pptr() - out_buf;
     size_t nn = 0;
     while (n > 0) {
         ssize_t tmp_n;
-#ifdef SHTTPS_ENABLE_SSL
-        if (cSSL == NULL) {
-            tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
-        }
-        else {
-            if (SSL_get_shutdown(cSSL) == 0) {
-                tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
-            }
-            else {
-                tmp_n = 0;
-            }
-        }
-#else
-        tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
-#endif
+        tmp_n = write(fid, out_buf + nn, n - nn);
+
         if (tmp_n <= 0) {
             return -1;
         }

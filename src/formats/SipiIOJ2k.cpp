@@ -28,13 +28,15 @@
 #include <fstream>
 #include <cstdio>
 
+#include <string.h>
+
 #include "shttps/Connection.h"
 #include "shttps/Global.h"
 
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
-#include "shttps/spdlog/spdlog.h"  // logging...
+#include "shttps/Logger.h"  // logging...
 
 
 // Kakadu core includes
@@ -130,9 +132,9 @@ namespace Sipi {
         KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = spdlog::get(shttps::loggername);
+            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                logger->warn(msg);
+                *logger << Logger::LogLevel::WARNING << msg << Logger::LogAction::FLUSH;
             }
         }
     };
@@ -150,9 +152,9 @@ namespace Sipi {
         KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = spdlog::get(shttps::loggername);
+            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                logger->error(msg);
+                *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
                 throw KDU_ERROR_EXCEPTION;
             }
         }
@@ -165,7 +167,7 @@ namespace Sipi {
     static bool is_jpx(const char *fname) {
         int inf;
         int retval = 0;
-        if ((inf = open(fname, O_RDONLY)) != NULL) {
+        if ((inf = open(fname, O_RDONLY)) !=-1) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
@@ -182,7 +184,7 @@ namespace Sipi {
 
 
     bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
@@ -228,7 +230,12 @@ namespace Sipi {
                                 img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << "*** " << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }
@@ -240,7 +247,12 @@ namespace Sipi {
                                 img->iptc = new SipiIptc(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }
@@ -252,7 +264,12 @@ namespace Sipi {
                                 img->exif = new SipiExif(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                if (logger == NULL) {
+                                    cerr << err;
+                                }
+                                else {
+                                    logger << err;
+                                }
                             }
                             delete [] buf;
                         }
@@ -271,6 +288,20 @@ namespace Sipi {
         codestream.create(input);
         //codestream.set_fussy(); // Set the parsing error tolerance.
         codestream.set_fast(); // No errors expected in input
+
+        //
+        // get SipiEssentials (if present) as codestream comment
+        //
+        kdu_codestream_comment comment = codestream.get_comment();
+        while (comment.exists()) {
+            const char *cstr = comment.get_text();
+            if (strncmp(cstr, "SIPI:", 5) == 0) {
+                SipiEssentials se(cstr + 5);
+                img->essential_metadata(se);
+                break;
+            }
+            comment = codestream.get_comment(comment);
+        }
 
         //
         // get the size of the full image (without reduce!)
@@ -566,8 +597,17 @@ namespace Sipi {
 
             codestream.create(&siz, output);
 
-            kdu_codestream_comment comment = codestream.add_comment();
-            comment.put_text("http://rosenthaler.org/sipi/1.0 B/");
+            //
+            // Custom tag for SipiEssential metadata
+            //
+            SipiEssentials es = img->essential_metadata();
+            if (es.is_set()) {
+                string esstr = es;
+                string emdata = "SIPI:" + esstr;
+                kdu_codestream_comment comment = codestream.add_comment();
+                comment.put_text(emdata.c_str());
+            }
+
 
             // Set up any specific coding parameters and finalize them.
 
