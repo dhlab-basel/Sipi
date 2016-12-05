@@ -1979,6 +1979,7 @@ namespace shttps {
      *
      */
     static int lua_copytmpfile(lua_State *L) {
+
         lua_getglobal(L, luaconnection);
         Connection *conn = (Connection *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
@@ -1990,11 +1991,28 @@ namespace shttps {
             lua_pushstring(L, "'lua_copytmpfile(from,to)': not enough parameters");
             return 2;
         }
-        int tmpfile_id = lua_tointeger(L, 1);
-        const char *outfile = lua_tostring(L, 2);
-        lua_pop(L, top); // clear stack
+
+        if (!lua_isinteger(L, 1)) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' must be an integer");
+            return 2;
+        }
 
         vector <Connection::UploadedFile> uploads = conn->uploads();
+
+        int tmpfile_id = lua_tointeger(L, 1);
+
+        // check if index exists in uploads
+        if (tmpfile_id < 1 || tmpfile_id > uploads.size()) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' is not a valid index");
+            return 2;
+        }
+
+        const char *outfile = lua_tostring(L, 2);
+        lua_pop(L, top); // clear stack
 
         string infile = uploads[tmpfile_id - 1].tmpname;
         ifstream source(infile, ios::binary);
@@ -2213,9 +2231,9 @@ namespace shttps {
 
         lua_pop(L, top);
 
-        string mimetype;
+        pair<string, string> mimetype;
         try {
-            mimetype =  GetMimetype::getMimetype(path).first; // .second would be charset
+            mimetype =  GetMimetype::getMimetype(path); // returns a pair of strings: mimetype and charset
         }
         catch (Error &err) {
             lua_pushboolean(L, false);
@@ -2225,7 +2243,16 @@ namespace shttps {
         }
 
         lua_pushboolean(L, true);
-        lua_pushstring(L, mimetype.c_str());
+
+        lua_createtable(L, 0, 2); // table
+
+        lua_pushstring(L, "mimetype"); // table - "mimetype"
+        lua_pushstring(L, mimetype.first.c_str()); // table - "mimetype" - <mimetype.first>
+        lua_rawset(L, -3); // table
+
+        lua_pushstring(L, "charset"); // table - "charset"
+        lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
+        lua_rawset(L, -3); // table
         return 2;
     }
 

@@ -27,7 +27,7 @@ sipi.log*.txt
 #
 lib
 local
-
+cmake-build-debug
 # ignore cache
 cache/
 
