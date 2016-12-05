@@ -2058,19 +2058,20 @@ namespace shttps {
 
         int tmpfile_id = lua_tointeger(L, 1);
 
-        // check if index exists in uploads
-        if (tmpfile_id < 1 || tmpfile_id > uploads.size()) {
+        string infile;
+        try {
+            infile = uploads.at(tmpfile_id - 1).tmpname;
+        } catch (const std::out_of_range& oor) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' is not a valid index");
+            lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' is not a valid index.");
             return 2;
         }
 
         const char *outfile = lua_tostring(L, 2);
         lua_pop(L, top); // clear stack
 
-        string infile = uploads[tmpfile_id - 1].tmpname;
-        ifstream source(infile, ios::binary);
+            ifstream source(infile, ios::binary);
         if (source.fail()) {
             lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open input file!");

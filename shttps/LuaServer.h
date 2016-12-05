@@ -30,6 +30,7 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <stdexcept>
 
 #include "Error.h"
 #include "Connection.h"
