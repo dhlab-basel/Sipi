@@ -169,7 +169,7 @@ if mediatype == IMAGE then
         ny_thumb = thumbDims.ny,
         original_mimetype = originalMimetype,
         original_filename = originalFilename,
-        file_type = 'image'
+        file_type = IMAGE
     }
 
     send_success(result)
@@ -178,25 +178,39 @@ elseif mediatype == TEXT then
 
     -- it is a text file
 
-
-
-    local success, tmpname = server.uuid62()
+    local success, filename = server.uuid62()
     if not success then
         send_error(500, "Couldn't generate uuid62!")
         return -1
     end
 
-    local filePath = knoraDir .. tmpname
+    -- check file extension
+    if not check_file_extension(mimetype.mimetype, originalFilename) then
+        send_error(400, MIMETYPES_INCONSISTENCY)
+        return
+    end
+
+    -- check mimetype
+    if (mimetype.mimetype ~= originalMimetype) then
+        send_error(400, MIMETYPES_INCONSISTENCY)
+        return
+    end
+
+    local filePath = knoraDir .. filename
 
     local success, result = server.fs.copyFile(sourcePath, filePath)
     if not success then
-        print(result)
-        send_error(500, "Couldn't copy file: " .. result)
+        send_error(400, "Couldn't copy file: " .. result)
         return -1
     end
 
     result = {
-        mimetype = mimetype.mimetype
+        mimetype = mimetype.mimetype,
+        charset = mimetype.charset,
+        file_type = TEXT,
+        filename = filename,
+        original_mimetype = originalMimetype,
+        original_filename = originalFilename
     }
 
     send_success(result)

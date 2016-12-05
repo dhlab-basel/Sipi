@@ -24,6 +24,13 @@ TEXT = "text"
 IMAGE= "image"
 
 -------------------------------------------------------------------------------
+-- Mimetype constants
+-------------------------------------------------------------------------------
+
+XML = "application/xml"
+PLAIN_TEXT = "plain/text"
+
+-------------------------------------------------------------------------------
 -- This function is called from the route to determine the media type (image, text file) of a given file.
 -- Parameters:
 --     'mimetype' (string):  the mimetype of the file.
@@ -50,6 +57,21 @@ function get_mediatype(mimetype)
     end
 
 
+end
 
+-------------------------------------------------------------------------------
+-- This function is called from the route to check the file extension of the given filename.
+-- Parameters:
+--     'mimetype' (string):  the mimetype of the file.
+--     `filename` (string): the name of the file excluding the file extension.
+--
+-- Returns:
+--    a boolean indicating whether the file extension is correct or not.
+-------------------------------------------------------------------------------
+function check_file_extension(mimetype, filename)
+
+    if (mimetype == XML) then
+        return string.sub(filename, -4) == ".xml"
+    end
 
 end
