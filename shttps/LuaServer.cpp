@@ -735,6 +735,60 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Copy a file from one location to another.
+     *
+     * LUA: server.fs.copyFile(source, target)
+     *
+     */
+    static int lua_fs_copyfile(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 2) {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_fs_copyfile(from,to)': not enough parameters");
+            return 2;
+        }
+
+        const char *infile = lua_tostring(L, 1);
+
+        ifstream source(infile, ios::binary);
+        // check if source is readable
+        if (source.fail()) {
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open source file!");
+            return 2;
+        }
+
+        string outfile = lua_tostring(L, 2);
+
+        lua_pop(L, top); // clear stack
+
+        ofstream dest(outfile, ios::binary);
+        if (dest.fail()) {
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_movefile(from,to)': Couldn't open output file!");
+            return 2;
+        }
+
+        dest << source.rdbuf();
+        if (dest.fail() || source.fail()) {
+            lua_pushboolean(L, false);
+            lua_pushstring(L,  "'lua_movetmpfile(from,to)': Copying data failed!");
+            return 2;
+        }
+
+        source.close();
+        dest.close();
+
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+
+        return 2;
+    }
+    //=========================================================================
+
     static const luaL_Reg fs_methods[] = {
             {"ftype", lua_fs_ftype},
             {"is_readable", lua_fs_is_readable},
@@ -746,6 +800,7 @@ namespace shttps {
             {"rmdir", lua_fs_rmdir},
             {"getcwd", lua_fs_getcwd},
             {"chdir", lua_fs_chdir},
+            {"copyFile", lua_fs_copyfile},
             {0,     0}
     };
     //=========================================================================
@@ -2044,8 +2099,6 @@ namespace shttps {
         return 2;
     }
     //=========================================================================
-
-
 
 #ifdef SHTTPS_ENABLE_SSL
     //

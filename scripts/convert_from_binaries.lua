@@ -186,12 +186,12 @@ elseif mediatype == TEXT then
         return -1
     end
 
-    local filepath = knoraDir .. tmpname
+    local filePath = knoraDir .. tmpname
 
-    local success, result = server.copyTmpfile(3, filepath)
+    local success, result = server.fs.copyFile(sourcePath, filePath)
     if not success then
         print(result)
-        send_error(500, "Couldn't copy uploaded file: " .. result)
+        send_error(500, "Couldn't copy file: " .. result)
         return -1
     end
 

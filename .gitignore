@@ -38,3 +38,6 @@ cache/
 *_icc.h
 /images/
 icc.zip
+
+# ignore log file
+sipi.log
