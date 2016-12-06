@@ -29,6 +29,12 @@ if not success then
     return
 end
 
+if server.post == nil then
+    send_error(400, PARAMETERS_INCORRECT)
+
+    return
+end
+
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
 filename = server.post['filename']
