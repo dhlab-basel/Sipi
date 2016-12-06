@@ -29,9 +29,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <map>
-
-#include "spdlog/spdlog.h"  // logging...
+#include <unordered_map>
+#include <algorithm>
 
 #include "Error.h"
 
@@ -70,7 +69,7 @@ namespace shttps {
     *
     * \returns map of options (all names converted to lower case!)
     */
-    extern std::map<std::string,std::string> parse_header_options(const std::string& options, bool form_encoded = false, char sep = ';');
+    extern std::unordered_map<std::string,std::string> parse_header_options(const std::string& options, bool form_encoded = false, char sep = ';');
 
    /*!
     * urldecode is used to decode an according to the HTTP-standard urlencoded string
@@ -295,12 +294,12 @@ namespace shttps {
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
         std::string _uri;         //!< uri of the request
-        std::map<std::string,std::string> get_params;     //!< parsed query string
-        std::map<std::string,std::string> post_params;    //!< parsed post parameters
-        std::map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
-        std::map<std::string,std::string> header_in;      //!< Input header fields
-        std::map<std::string,std::string> header_out;     //!< Output header fields
-        std::map<std::string,std::string> _cookies;       //!< Incoming cookies
+        std::unordered_map<std::string,std::string> get_params;     //!< parsed query string
+        std::unordered_map<std::string,std::string> post_params;    //!< parsed post parameters
+        std::unordered_map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
+        std::unordered_map<std::string,std::string> header_in;      //!< Input header fields
+        std::unordered_map<std::string,std::string> header_out;     //!< Output header fields
+        std::unordered_map<std::string,std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
         std::istream *ins;          //!< incoming data stream
         std::ostream *os;           //!< outgoing data stream
@@ -322,7 +321,6 @@ namespace shttps {
         size_t outbuf_inc;          //!< Increment of outbuf buffer if it has to be enlarged
         size_t outbuf_nbytes;       //!< number of bytes used so far in output buffer
         bool _reset_connection;     //!< true, if connection should be reset (e.g. cors)
-        std::shared_ptr<spdlog::logger> _logger; //!< logger...
 
        /*!
         * Read, process and parse the HTTP request header
@@ -534,9 +532,9 @@ namespace shttps {
         void corsHeader(const std::string &origin);
 
        /*!
-        * Returns a map of cookies
+        * Returns a unordered_map of cookies
         */
-        inline std::map<std::string,std::string> cookies (void) { return _cookies; };
+        inline std::unordered_map<std::string,std::string> cookies (void) { return _cookies; };
 
        /*!
         * Set a cookie

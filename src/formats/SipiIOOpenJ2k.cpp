@@ -36,7 +36,7 @@
 #include "SipiIOJ2k.h"
 
 #include "SipiIOOpenJ2k.h"
-#include "shttps/spdlog/spdlog.h"  // logging...
+#include "shttps/Logger.h"  // logging...
 
 #include "openjpeg.h"
 
@@ -75,7 +75,7 @@ namespace Sipi {
 
     bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         FILE *reader;
 
 
@@ -215,14 +215,14 @@ namespace Sipi {
 
     bool SipiIOOpenJ2k::getDim(std::string filepath, int &width, int &height)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
     }
     //=============================================================================
 
     void SipiIOOpenJ2k::write(SipiImage *img, string filepath, int quality)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
     }
     //=============================================================================

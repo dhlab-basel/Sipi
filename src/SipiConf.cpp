@@ -21,6 +21,7 @@
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SipiConf.h"
+#include <thread>
 
 namespace Sipi {
     SipiConf::SipiConf() { }

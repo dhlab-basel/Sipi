@@ -25,9 +25,11 @@
 #define __defined_sipi_cache_h
 
 #include <ctime>
-#include <map>
+#include <unordered_map>
 #include <mutex>
+#include <string>
 #include <sys/time.h>
+#include <algorithm>
 
 #include "SipiConfig.h"
 
@@ -110,8 +112,8 @@ namespace Sipi {
     private:
         std::mutex locking;
         std::string _cachedir; //!< path to the cache directory
-        std::map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
-        std::map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size
+        std::unordered_map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
+        std::unordered_map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size
         unsigned long long cachesize; //!< number of bytes in the cache
         unsigned long long max_cachesize; //!< maximum number of bytes that can be cached
         unsigned nfiles; //!< number of files in cache

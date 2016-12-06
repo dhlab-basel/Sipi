@@ -27,7 +27,6 @@
 #include <cctype>
 #include <locale>
 #include <new>
-#include <map>
 #include <iomanip>
 #include <sstream>
 #include <iostream>
@@ -90,7 +89,7 @@ namespace shttps {
     }
     //=========================================================================
 
-    map<string,string> parse_header_options(const string& options, bool form_encoded, char sep) {
+    unordered_map<string,string> parse_header_options(const string& options, bool form_encoded, char sep) {
         vector<string> params;
         size_t pos = 0;
         size_t old_pos = 0;
@@ -106,7 +105,7 @@ namespace shttps {
         if (old_pos != options.length()) {
             params.push_back(options.substr(old_pos, string::npos));
         }
-        map<string,string> q;
+        unordered_map<string,string> q;
         string name;
         string value;
         for (auto it = params.begin(); it != params.end(); it++) {
@@ -229,7 +228,7 @@ namespace shttps {
     }
     //=========================================================================
 
-    static map<string,string> parse_query_string(const string& query, bool form_encoded = false) {
+    static unordered_map<string,string> parse_query_string(const string& query, bool form_encoded = false) {
         vector<string> params;
         size_t pos = 0;
         size_t old_pos = 0;
@@ -246,7 +245,7 @@ namespace shttps {
         if (old_pos != query.length()) {
             params.push_back(query.substr(old_pos, string::npos));
         }
-        map<string,string> q;
+        unordered_map<string,string> q;
         for (auto it = params.begin(); it != params.end(); it++) {
             string name;
             string value;
@@ -283,7 +282,7 @@ namespace shttps {
                 string value = line.substr(pos + 1);
                 value = header_in[name] = trim(value);
                 if (name == "connection") {
-                    map<string,string> opts = parse_header_options(value, true);
+                    unordered_map<string,string> opts = parse_header_options(value, true);
                     if (opts.count("keep-alive") == 1) {
                         _keep_alive = true;
                     }
@@ -302,7 +301,7 @@ namespace shttps {
 
                 }
                 else if (name == "keep-alive") {
-                    map<string,string> opts = parse_header_options(value, true, ',');
+                    unordered_map<string,string> opts = parse_header_options(value, true, ',');
                     if (opts.count("timeout") == 1) {
                         _keep_alive_timeout = stoi(opts["timeout"]);
                     }
@@ -359,7 +358,6 @@ namespace shttps {
         content_length = 0;
         _finished = false;
         _reset_connection = false;
-        _logger = spdlog::get(loggername);
     }
     //=========================================================================
 
@@ -379,7 +377,6 @@ namespace shttps {
         content_length = 0;
         _finished = false;
         _reset_connection = false;
-        _logger = spdlog::get(loggername);
 
         status(OK); // thats the default...
 
@@ -400,7 +397,6 @@ namespace shttps {
             //
             throw -1;
         }
-        _logger->info("REQUEST: ") << line;
 
         //
         // Parse first line of request
@@ -557,8 +553,8 @@ namespace shttps {
                                     string value = line.substr(pos + 1);
                                     value = trim(value);
                                     if (name == "content-disposition") {
-                                        map <string, string> opts = parse_header_options(value, true);
-                                        map<string, string>::iterator it;
+                                        unordered_map <string, string> opts = parse_header_options(value, true);
+                                        unordered_map<string, string>::iterator it;
                                         for (it = opts.begin(); it != opts.end(); it++) {
                                             //cerr << "OPTS: " << it->first << "=" << it->second << endl;
                                             //How do I access each element without knowing any of its string-int values?
@@ -1437,7 +1433,11 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
 
-        if (!_chunked_transfer_out) {
+        if (_chunked_transfer_out) { // no content length, please!!!
+            *os << "\r\n"; //we have to add only one more "\r\n" in this case
+            if (os->eof() || os->fail()) throw -1;
+        }
+        else {
             if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
                 *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
                 if (os->eof() || os->fail()) throw -1;
@@ -1451,10 +1451,6 @@ namespace shttps {
                 //*os << "\r\n";
                 if (os->eof() || os->fail()) throw -1;
             }
-        }
-        else {
-            *os << "\r\n"; //we have to add only one more "\r\n" in this case
-            if (os->eof() || os->fail()) throw -1;
         }
 
         os->flush();

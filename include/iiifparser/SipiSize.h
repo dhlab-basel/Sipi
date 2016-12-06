@@ -55,6 +55,7 @@ namespace Sipi {
             REDUCE     //!< A reduce factor can be given, 0=no scaling, 1=0.5, 2=0.25, 3=0.125,...(Note: this is an extension to the IIIF standard) IIIF: "red:ii"
         } SizeType;
     private:
+        static int limitdim; //!< maximal dimension of an image
         SizeType size_type; //!< Holds the type of size/scaling parameters given
         float percent;      //!< if the scaling is given in percent, this holds the value
         int reduce;         //!< if the scaling is given by a reduce value

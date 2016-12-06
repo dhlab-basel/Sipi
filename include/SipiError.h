@@ -36,10 +36,9 @@
 #include <string>
 #include <exception>
 #include <stdexcept>
+#include <memory>
 
-#include "shttps/spdlog/spdlog.h"
-
-
+#include "shttps/Logger.h"
 #include "shttps/Error.h"
 
 /**
@@ -89,8 +88,14 @@ namespace Sipi {
          */
         friend std::ostream &operator<<(std::ostream &lhs, const SipiError &rhs);
 
-        friend std::ostream &operator<<(std::shared_ptr<spdlog::logger> log, const SipiError &rhs);
-
+       /*!
+        * Overload << to send an error to the logger
+        *
+        * \param[in] log Logger shared pointer
+        * \param[in] rhs Reference to an instance of a SipiError
+        * \returns Returns an shared_ptr to the logger
+        */
+        friend std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiError &rhs);
 
     };
 

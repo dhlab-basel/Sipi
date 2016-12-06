@@ -26,6 +26,7 @@
 #ifndef __shttp_server_h
 #define __shttp_server_h
 
+
 #include <map>
 #include <vector>
 #include <mutex>
@@ -36,10 +37,10 @@
 #include <unistd.h>
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
+#include <atomic>
 #include <netdb.h>      // Needed for the socket functions
 #include <sstream>      // std::stringstream
-
-#include "spdlog/spdlog.h"  // logging...
+#include <iostream>
 
 #ifdef SHTTPS_ENABLE_SSL
 #include "openssl/bio.h"
@@ -48,8 +49,11 @@
 #endif
 
 #include "Global.h"
+#include "Logger.h"
 #include "Connection.h"
 #include "LuaServer.h"
+
+
 
 #include "lua.hpp"
 
@@ -222,9 +226,6 @@ public:
         std::string _logfilename;
         std::string _loglevel;
 
-    protected:
-        std::shared_ptr<spdlog::logger> _logger;
-
     public:
         /*!
         * Create a server listening on the given port with the maximal number of threads
@@ -372,8 +373,9 @@ public:
         *
         * \param[in] loglevel_p set the loglevel
         */
-        inline void loglevel(spdlog::level::level_enum loglevel_p) {
-            spdlog::set_level(loglevel_p);
+        inline void loglevel(Logger::LogLevel loglevel_p) {
+            auto logger = Logger::getLogger(loggername);
+            logger->setLoglevel(loglevel_p);
         }
 
         /*!

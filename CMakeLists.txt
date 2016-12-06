@@ -29,8 +29,8 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
-string(TIMESTAMP VERSION "%Y-%m-%d %H:%M")
-set(SIPI_VERSION "Sipi Version 1.0 Beta (build ${VERSION})")
+string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
+set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
 
 #
 # Usually SIPI is compiled with all static libraries
@@ -98,9 +98,9 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 if(MAKE_DEBUG)
-    set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+    set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated -Woverloaded-virtual")
 else()
-    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated -Woverloaded-virtual")
 endif()
 
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -177,6 +177,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
+#add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
+#add_subdirectory(${EXT_PROJECTS_DIR}/freetype2)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
@@ -186,7 +188,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
-#add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
+
+#add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
 
 
@@ -203,7 +206,25 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 
+
+
+IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    FIND_PACKAGE(Git)
+    IF(GIT_FOUND)
+        EXECUTE_PROCESS(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            OUTPUT_VARIABLE "SIPI_BUILD_VERSION"
+            ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Git version: ${SIPI_BUILD_VERSION}" )
+    ELSE(GIT_FOUND)
+        SET(SIPI_BUILD_VERSION 0)
+    ENDIF(GIT_FOUND)
+ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+
 CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
+
 
 #
 # Here we get the ICC profiles from the Adobe website and prepare them for including
@@ -261,6 +282,7 @@ include_directories(
     ${COMMON_INCLUDE_FILES_DIR}/metadata
     ${COMMON_INCLUDE_FILES_DIR}/formats
     ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+    ${PROJECT_SOURCE_DIR}/shttps
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
@@ -275,6 +297,7 @@ add_executable(
         src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
         src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
         src/metadata/SipiExif.cpp include/metadata/SipiExif.h
+        src/metadata/SipiEssentials.cpp include/metadata/SipiEssentials.h
         src/SipiImage.cpp include/SipiImage.h
         src/formats/SipiIOTiff.cpp include/formats/SipiIOTiff.h
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
@@ -293,6 +316,9 @@ add_executable(
         src/SipiCommon.cpp include/SipiCommon.h
         shttps/Global.h
         shttps/Error.cpp shttps/Error.h
+        shttps/Hash.cpp shttps/Hash.h
+        shttps/LogStream.cpp shttps/LogStream.h
+        shttps/Logger.cpp shttps/Logger.h
         shttps/SockStream.cpp shttps/SockStream.h
         shttps/ChunkReader.cpp shttps/ChunkReader.h
         shttps/Connection.cpp shttps/Connection.h

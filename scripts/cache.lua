@@ -35,34 +35,48 @@ if server.method == 'GET' then
     end
 
 
-    jsonstr = server.table_to_json(flist)
+    local success, jsonstr = server.table_to_json(flist)
+    if not success then
+        server.sendStatus(500)
+        server.log(jsonstr, server.loglevel.err)
+        return false
+    end
 
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(200)
     server.print(jsonstr)
 elseif server.method == 'DELETE' then
     if server.content and server.content_type == 'application/json' then
-        todel = server.json_to_table(server.content)
+        local success, todel = server.json_to_table(server.content)
+        if not success then
+            server.sendStatus(500)
+            server.log(todel, server.loglevel.err)
+            return false
+        end
         for index,canonical in pairs(todel) do
             cache.delete(canonical)
         end
         result = {
             status = 'OK'
         }
-        jsonresult = server.table_to_json(result)
+        local success, jsonresult = server.table_to_json(result)
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(200);
         server.print(jsonresult)
     else
-        n = cache.purge()
+        local n = cache.purge()
         result = {
             status = 'OK',
             n = n
         }
-        jsonresult = server.table_to_json(result)
+        local success, jsonresult = server.table_to_json(result)
+        if not success then
+            server.sendStatus(500)
+            server.log(jsonstr, server.loglevel.err)
+            return false
+        end
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(200);
         server.print(jsonresult)
     end
 end
-

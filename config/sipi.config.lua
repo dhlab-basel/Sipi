@@ -24,7 +24,7 @@ sipi = {
     -- user under which the sipi server should run. Don't set (comment out) this configuration variable
     -- if SIPI should use the user which launches SIPI!
     --
-    userid = '_www',
+    -- userid = '_www',
 
     --
     -- port number the server is listening to
@@ -133,10 +133,9 @@ sipi = {
     logfile = "sipi.log",
 
     --
-    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
-    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "WARN",
+    loglevel = "WARNING",
 }
 
 admin = {

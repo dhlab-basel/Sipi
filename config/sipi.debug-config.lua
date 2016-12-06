@@ -57,7 +57,7 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = './config/sipi.init-knora-test.lua',
+    initscript = './config/sipi.init-debug.lua',
 
     --
     -- path to the caching directory
@@ -145,8 +145,8 @@ sipi = {
 routes = {
     {
         method = 'POST',
-        route = '/make_thumbnail',
-        script = 'make_thumbnail.lua'
+        route = '/debug',
+        script = 'debug.lua'
     },
     {
         method = 'POST',

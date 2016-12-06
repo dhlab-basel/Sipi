@@ -29,7 +29,6 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <map>
 
 #include "SipiError.h"
 #include "Template.h"

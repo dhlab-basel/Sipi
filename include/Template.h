@@ -24,7 +24,7 @@
 #define __template_h
 
 #include <string>
-#include <map>
+#include <unordered_map>
 
 /*!
  * \namespace Sipi Is used for all Sipi things.
@@ -34,7 +34,7 @@ namespace Sipi {
     class Template {
     private:
         std::string templatestr;
-        std::map<std::string,std::string> values;
+        std::unordered_map<std::string,std::string> values;
     public:
         Template(std::string &template_p) {templatestr = template_p; };
         void value(const std::string &name, const std::string &sval);
