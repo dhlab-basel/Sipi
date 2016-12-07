@@ -42,48 +42,24 @@ sourcePath = server.post['source']
 
 -- check if all the expected params are set
 if originalFilename == nil or originalMimetype == nil or sourcePath == nil then
-
     send_error(400, PARAMETERS_INCORRECT)
-
     return
 end
 
 -- all params are set
-
---
--- check if knora directory is available, if not, create it
---
-knoraDir = config.imgroot .. '/knora/'
-success, exists = server.fs.exists(knoraDir)
-if not success then
-    server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
-    return
-end
-if not exists then
-    success, errmsg = server.fs.mkdir(knoraDir, 511)
-    if not success then
-        server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
-        return
-    end
-end
-
-success, baseName = server.uuid62()
-if not success then
-    server.log("server.uuid62() failed: " .. baseName, server.loglevel.error)
-    return
-end
 
 -- check if source is readable
 
 success, readable = server.fs.is_readable(sourcePath)
 if not success then
     server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.error)
+    send_error(500, "server.fs.is_readable() failed")
     return
 end
+
 if not readable then
 
     send_error(500, FILE_NOT_READBLE .. sourcePath)
-
     return
 end
 
@@ -101,12 +77,39 @@ mediatype = get_mediatype(mimetype.mimetype)
 -- in case of an unsupported mimetype, the function returns false
 if not mediatype then
     send_error(400, "Mimetype '" .. mimetype.mimetype .. "' is not supported")
+    return
 end
 
 -- depending on the media type, decide what to do
 if mediatype == IMAGE then
 
     -- it is an image
+
+    --
+    -- check if knora directory is available, if not, create it
+    --
+    knoraDir = config.imgroot .. '/knora/'
+    success, exists = server.fs.exists(knoraDir)
+    if not success then
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+    end
+
+    if not exists then
+        success, errmsg = server.fs.mkdir(knoraDir, 511)
+        if not success then
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
+            send_error(500, "Knora directory could not be created on server")
+            return
+        end
+    end
+
+    success, baseName = server.uuid62()
+    if not success then
+        server.log("server.uuid62() failed: " .. baseName, server.loglevel.error)
+        send_error(500, "unique name could not be created")
+        return
+    end
+
 
     -- create full quality image (jp2)
     success, fullImg = SipiImage.new(sourcePath)
@@ -184,6 +187,24 @@ elseif mediatype == TEXT then
 
     -- it is a text file
 
+    --
+    -- check if knora directory is available, if not, create it
+    --
+    fileDir = config.docroot .. '/knora/'
+    success, exists = server.fs.exists(fileDir)
+    if not success then
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+    end
+
+    if not exists then
+        success, errmsg = server.fs.mkdir(fileDir, 511)
+        if not success then
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
+            send_error(500, "Knora directory could not be created on server")
+            return
+        end
+    end
+
     local success, filename = server.uuid62()
     if not success then
         send_error(500, "Couldn't generate uuid62!")
@@ -202,7 +223,7 @@ elseif mediatype == TEXT then
         return
     end
 
-    local filePath = knoraDir .. filename
+    local filePath = fileDir .. filename
 
     local success, result = server.fs.copyFile(sourcePath, filePath)
     if not success then

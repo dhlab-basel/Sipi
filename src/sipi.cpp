@@ -242,6 +242,11 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushstring(L, conf->getPassword().c_str());
     lua_rawset(L, -3); // table1
 
+    // TODO: in the sipi config file, there are different namespaces that are unified here (danger of collision)
+    lua_pushstring(L, "docroot"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getDocRoot().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_setglobal(L, "config");
 }
 
