@@ -2845,7 +2845,7 @@ namespace shttps {
         if (lua_pcall(L, n, LUA_MULTRET, 0) != LUA_OK) {
             const char *errormsg = lua_tostring(L, 1);
             lua_pop(L, 1);
-            throw Error(__file__, __LINE__, string("LuaServer::executeLuafunction failed: ") + errormsg);
+            throw Error(__file__, __LINE__, string("LuaServer::executeLuafunction '" + *funcname + "' failed: ") + errormsg);
         }
 
         int top = lua_gettop(L);
