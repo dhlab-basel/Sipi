@@ -85,16 +85,9 @@ function pre_flight(prefix, identifier, cookie)
         return 'deny'
     end
 
-    -- check HTTP request was successful
-    if not result.success then
-        print("Request to Knora failed: " .. result.errmsg)
-        -- deny request
-        return 'deny'
-    end
-
     if result.status_code ~= 200 then
-        print("Knora returned HTTP status code " .. ret.status)
-        print(result.body)
+        server.log("Knora returned HTTP status code " .. result.status_code)
+        server.log(result.body)
         return 'deny'
     end
 
