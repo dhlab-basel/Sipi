@@ -44,6 +44,10 @@ if not exists then
     end
 end
 
+if server.uploads == nil then
+    send_error(500, "no image uploaded")
+    return -1
+end
 
 for imgindex,imgparam in pairs(server.uploads) do
 
@@ -137,6 +141,5 @@ for imgindex,imgparam in pairs(server.uploads) do
     }
 
 end
-
 
 send_success(answer)
