@@ -1,4 +1,3 @@
-
 --
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
@@ -25,8 +24,8 @@
 --
 sipi = {
     --
-    -- user under which the sipi server should run. Don't set (comment out) this configuration variable
-    -- if SIPI should use the user which launches SIPI!
+    -- The user under which the Sipi server should run. Use this only if Sipi should setuid to a particular user after
+    -- starting. Otherwise, leave this commented out. If this setting is used, Sipi must be started as root.
     --
     -- userid = '_www',
 
