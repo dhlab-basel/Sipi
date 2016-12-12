@@ -33,7 +33,7 @@ class BasicSpec extends CoreSpec {
 
     "Sipi" should {
 
-        "return an image using the simulated Knora" in {
+        "return an image using the fake Knora" in {
             val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/knora/incunabula_0000003846.jpg/full/full/0/default.jpg"))
             val response: HttpResponse = Await.result(responseFuture, 3.seconds)
             assert(response.status === StatusCodes.OK)

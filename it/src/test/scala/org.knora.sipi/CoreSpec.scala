@@ -95,7 +95,7 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
     }
 
     override def beforeEach(): Unit = {
-        assert(sipiIsRunning, "Sipi is not running")
+        assert(sipiIsRunning)
     }
 
     override def beforeAll(): Unit = {
@@ -148,8 +148,7 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
 
         // Start the Sipi process.
 
-        println(s"Sipi command: $sipiCommand")
-
+        // println(s"Sipi command: $sipiCommand")
         val sipiProcess: Process = Process(sipiCommand, new File(SipiWorkingDir)).run(processLogger)
         sipiStartTime = new Date().getTime
 
