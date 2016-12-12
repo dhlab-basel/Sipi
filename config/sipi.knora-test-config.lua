@@ -47,7 +47,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './images', -- directory for Knora Sipi integration testing
+    imgroot = './test_server/images', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
