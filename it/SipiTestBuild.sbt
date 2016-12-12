@@ -52,7 +52,12 @@ lazy val sipiTestLibs = Seq(
     "com.typesafe.akka" %% "akka-stream" % akkaVersion % "test",
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % "test",
     "com.typesafe.akka" %% "akka-http" % akkaHttpVersion % "test",
-    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion % "test"
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion % "test",
+    "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % "test",
+    "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % "test",
+    "org.scala-lang.modules" %% "scala-xml" % "1.0.6" % "test",
+    "commons-io" % "commons-io" % "2.5" % "test"
 )
 
 scalacOptions += "-feature"

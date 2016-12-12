@@ -27,17 +27,17 @@ import scala.concurrent.duration.DurationInt
 /**
   * This Spec holds examples on how certain akka features can be used.
   */
-class ExampleSpec extends CoreSpec {
+class BasicSpec extends CoreSpec {
 
     implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(15).second)
 
-    "running an http request " should {
-        "succeed when getting the akka website " in {
-            /* Correct username and password */
-            val responseFuture = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+    "Sipi" should {
+
+        "return an image using the simulated Knora" in {
+            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/knora/incunabula_0000003846.jpg/full/full/0/default.jpg"))
             val response: HttpResponse = Await.result(responseFuture, 3.seconds)
-            log.debug(s"response: ${response.toString}")
             assert(response.status === StatusCodes.OK)
         }
+
     }
 }
