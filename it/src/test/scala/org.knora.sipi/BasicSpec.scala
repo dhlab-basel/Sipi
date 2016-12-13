@@ -21,7 +21,7 @@ import java.util
 
 import akka.http.scaladsl.model._
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 /**
@@ -32,14 +32,14 @@ class BasicSpec extends CoreSpec {
     "Sipi" should {
 
         "return an image" in {
-            val responseFuture = http.singleRequest(HttpRequest(uri = s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg"))
+            val responseFuture: Future[HttpResponse] = http.singleRequest(HttpRequest(uri = s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg"))
             val response: HttpResponse = Await.result(responseFuture, 10.seconds)
             assert(response.status == StatusCodes.OK)
         }
 
         "return a JPG file as a JPG containing the correct bytes" in {
-            val fileBytes = readFileAsBytes(new File(dataDir, "Leaves.jpg"))
-            val bytesFromSipi = downloadBytes(s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg")
+            val fileBytes: Array[Byte] = readFileAsBytes(new File(dataDir, "Leaves.jpg"))
+            val bytesFromSipi: Array[Byte] = downloadBytes(s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg")
             assert(util.Arrays.equals(fileBytes, bytesFromSipi))
         }
     }
