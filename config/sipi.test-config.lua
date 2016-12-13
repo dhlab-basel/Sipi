@@ -43,7 +43,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-     imgroot = './it/test_server/images',
+     imgroot = './it/_test_data/images',
     -- imgroot = './images',
 
     --
