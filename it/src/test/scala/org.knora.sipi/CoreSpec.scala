@@ -59,7 +59,7 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
 
     private val NginxWorkingDir = new java.io.File("../it/src/test/resources/nginx/")
     private val StartNginxCommand = s"nginx -p ${NginxWorkingDir.getAbsolutePath} -c nginx.conf"
-    private val StopNginxCommand = s"nginx -p ${NginxWorkingDir.getAbsolutePath} -s stop"
+    private val StopNginxCommand = s"nginx -p ${NginxWorkingDir.getAbsolutePath} -c nginx.conf -s stop"
 
     private var maybeSipiProcess: Option[Process] = None
     private var sipiStarted = false
