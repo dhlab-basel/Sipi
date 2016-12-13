@@ -16,12 +16,10 @@
 
 package org.knora.sipi
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.testkit.RouteTestTimeout
 import java.io.File
 import java.util
+
+import akka.http.scaladsl.model._
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -31,12 +29,10 @@ import scala.concurrent.duration.DurationInt
   */
 class BasicSpec extends CoreSpec {
 
-    implicit def default(implicit system: ActorSystem) = RouteTestTimeout(new DurationInt(15).second)
-
     "Sipi" should {
 
         "return an image" in {
-            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg"))
+            val responseFuture = http.singleRequest(HttpRequest(uri = s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg"))
             val response: HttpResponse = Await.result(responseFuture, 10.seconds)
             assert(response.status == StatusCodes.OK)
         }
