@@ -134,6 +134,9 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
       * Starts Sipi and waits for it to finish starting up.
       */
     private def startSipi(): Unit = {
+        // Make sure Sipi has a cache directory.
+        new File(SipiWorkingDir, "cache").mkdirs()
+
         // Make a ProcessLogger that can monitor Sipi's output to determine whether it has finished starting up.
         val processLogger = ProcessLogger({
             line =>
