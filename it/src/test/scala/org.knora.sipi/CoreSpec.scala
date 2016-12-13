@@ -21,20 +21,22 @@
 package org.knora.sipi
 
 import java.io.File
+import java.nio.file.Files
 import java.util.Date
 
 import akka.actor.ActorSystem
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes, _}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.commons.io.input.{Tailer, TailerListener, TailerListenerAdapter}
 import org.scalatest._
 
 import scala.concurrent.Await
-import scala.sys.process._
 import scala.concurrent.duration.DurationInt
+import scala.sys.process._
 
 
 /**
@@ -42,10 +44,13 @@ import scala.concurrent.duration.DurationInt
   */
 abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
     protected def actorRefFactory: ActorSystem = system
+
+    protected val http = Http(system)
     protected val log: LoggingAdapter = akka.event.Logging(system, this.getClass)
 
     protected val config: Config = ConfigFactory.load()
     protected val sipiBaseUrl: String = config.getString("test.sipi.base-url")
+    protected val dataDir: File = new File("..", config.getString("test.data-dir"))
 
     private val sipiConfigFile: String = config.getString("test.sipi.config-file")
     private val sipiReadyOutput = config.getString("test.sipi.ready-output")
@@ -55,9 +60,9 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
 
     private val sipiCommand = s"local/bin/sipi -config config/$sipiConfigFile"
     private val SipiLogFile = new File("../sipi.log")
-    private val SipiWorkingDir = new java.io.File("..").getCanonicalPath
+    private val SipiWorkingDir = new File("..").getCanonicalPath
 
-    private val NginxWorkingDir = new java.io.File("../it/src/test/resources/nginx/")
+    private val NginxWorkingDir = new File("../it/src/test/resources/nginx/")
     private val StartNginxCommand = s"nginx -p ${NginxWorkingDir.getAbsolutePath} -c nginx.conf"
     private val StopNginxCommand = s"nginx -p ${NginxWorkingDir.getAbsolutePath} -c nginx.conf -s stop"
 
@@ -83,7 +88,10 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
 
     private val tailer = Tailer.create(SipiLogFile, tailerListener, sipiLogFileDelayMillis)
 
-    def sipiIsRunning: Boolean = {
+    /**
+      * Returns `true` if Sipi is running.
+      */
+    protected def sipiIsRunning: Boolean = {
         if (sipiStarted) {
             maybeSipiProcess match {
                 case Some(sipiProcess) => sipiProcess.isAlive
@@ -92,6 +100,32 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
         } else {
             false
         }
+    }
+
+    /**
+      * Does an HTTP GET request to a URL and returns the response payload as a byte array.
+      *
+      * @param url the URL to send the request to.
+      * @return a byte array containing the response payload.
+      */
+    protected def downloadBytes(url: String): Array[Byte] = {
+        val responseFuture = for {
+            response: HttpResponse <- http.singleRequest(HttpRequest(method = HttpMethods.GET, uri = Uri(url)))
+            _ = assert(response.status == StatusCodes.OK)
+            responseBytes <- Unmarshal(response.entity).to[Array[Byte]]
+        } yield responseBytes
+
+        Await.result(responseFuture, 10.seconds)
+    }
+
+    /**
+      * Reads a file into a byte array.
+      *
+      * @param file the file to read.
+      * @return the contents of the file as a byte array.
+      */
+    protected def readFileAsBytes(file: File): Array[Byte] = {
+        Files.readAllBytes(file.toPath)
     }
 
     override def beforeEach(): Unit = {
@@ -113,7 +147,7 @@ abstract class CoreSpec extends Suite with ScalatestRouteTest with WordSpecLike 
         stopNginx()
     }
 
-    def getSipiLogOutput: String = {
+    protected def getSipiLogOutput: String = {
         tailerListener.getLogFileOutput
     }
 

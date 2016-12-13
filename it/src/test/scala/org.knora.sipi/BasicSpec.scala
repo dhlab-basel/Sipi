@@ -20,12 +20,14 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.RouteTestTimeout
+import java.io.File
+import java.util
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 /**
-  * This Spec holds examples on how certain akka features can be used.
+  * Tests basic features of Sipi.
   */
 class BasicSpec extends CoreSpec {
 
@@ -33,11 +35,16 @@ class BasicSpec extends CoreSpec {
 
     "Sipi" should {
 
-        "return an image using the fake Knora" in {
-            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/knora/incunabula_0000003846.jpg/full/full/0/default.jpg"))
-            val response: HttpResponse = Await.result(responseFuture, 3.seconds)
-            assert(response.status === StatusCodes.OK)
+        "return an image" in {
+            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/knora/Leaves.jpg/full/full/0/default.jpg"))
+            val response: HttpResponse = Await.result(responseFuture, 10.seconds)
+            assert(response.status == StatusCodes.OK)
         }
 
+        "return a JPG file as a JPG containing the correct bytes" in {
+            val fileBytes = readFileAsBytes(new File(dataDir, "Leaves.jpg"))
+            val bytesFromSipi = downloadBytes(s"$sipiBaseUrl/knora/Leaves.jpg/full/full/0/default.jpg")
+            assert(util.Arrays.equals(fileBytes, bytesFromSipi))
+        }
     }
 }

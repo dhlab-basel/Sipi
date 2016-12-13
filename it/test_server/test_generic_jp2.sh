@@ -51,10 +51,10 @@ FILENAME_DOWN_R=$3
 
 IMAGE_EXTENTION=$4
 
-curl -sSf -o "$FILENAME_DOWN_C" -O "http://localhost:1024/test_server/LeavesC.jp2/full/full/0/default.$IMAGE_EXTENTION"
+curl -sSf -o "$FILENAME_DOWN_C" -O "http://localhost:1024/knora/LeavesC.jp2/full/full/0/default.$IMAGE_EXTENTION"
 
 test_check $1 $FILENAME_DOWN_C
 
-curl -sSf -o "$FILENAME_DOWN_R" -O "http://localhost:1024/test_server/LeavesR.jp2/full/full/0/default.$IMAGE_EXTENTION"
+curl -sSf -o "$FILENAME_DOWN_R" -O "http://localhost:1024/knora/LeavesR.jp2/full/full/0/default.$IMAGE_EXTENTION"
 
 test_check $1 $FILENAME_DOWN_R

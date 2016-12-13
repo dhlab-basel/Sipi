@@ -46,7 +46,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test_server/images', -- directory for Knora Sipi integration testing
+    imgroot = './it/_test_data/images', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -56,7 +56,7 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = './config/sipi.init-knora-test.lua',
+    initscript = './config/sipi.init-knora.lua',
 
     --
     -- path to the caching directory

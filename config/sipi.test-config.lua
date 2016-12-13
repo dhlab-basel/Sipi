@@ -43,13 +43,12 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-     imgroot = './it/_test_data/images',
-    -- imgroot = './images',
+    imgroot = './it/_test_data/images',
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
     --
-    prefix_as_path = false,
+    prefix_as_path = true,
 
     --
     -- Lua script which is executed on initialization of the Lua interpreter

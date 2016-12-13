@@ -38,8 +38,8 @@ sleep 1.5
 
 PID_SIPI=$!
 JPEG_EXTENTION="jpg"
-FILENAME_J8_DOWN="it/_test_data/images/tif8tojpeg.jpeg"
-FILENAME_J16_DOWN="it/_test_data/images/tif16tojpeg.jpeg"
+FILENAME_J8_DOWN="it/_test_data/images/knora/tif8tojpeg.jpeg"
+FILENAME_J16_DOWN="it/_test_data/images/knora/tif16tojpeg.jpeg"
 
 
 find_and_delete $FILENAME_J8_DOWN
@@ -47,28 +47,28 @@ find_and_delete $FILENAME_J16_DOWN
 
 
 PNG_EXTENTION="png"
-FILENAME_P8_DOWN="it/_test_data/images/tif8topng.png"
-FILENAME_P16_DOWN="it/_test_data/images/tif16topng.png"
+FILENAME_P8_DOWN="it/_test_data/images/knora/tif8topng.png"
+FILENAME_P16_DOWN="it/_test_data/images/knora/tif16topng.png"
 
 find_and_delete $FILENAME_P8_DOWN
 find_and_delete $FILENAME_P16_DOWN
 
 
 J2_EXTENTION="jp2"
-FILENAME_J28_DOWN="it/_test_data/images/tif8tojp2.jp2"
-FILENAME_J216_DOWN="it/_test_data/images/tif16tojp2.jp2"
+FILENAME_J28_DOWN="it/_test_data/images/knora/tif8tojp2.jp2"
+FILENAME_J216_DOWN="it/_test_data/images/knora/tif16tojp2.jp2"
 
 find_and_delete $FILENAME_J28_DOWN
 find_and_delete $FILENAME_J216_DOWN
 
-FILENAME_J2CJ_DOWN="it/_test_data/images/jp2compressedtojpg.jpeg"
-FILENAME_J2RJ_DOWN="it/_test_data/images/jp2Rtojpg.jpeg"
+FILENAME_J2CJ_DOWN="it/_test_data/images/knora/jp2compressedtojpg.jpeg"
+FILENAME_J2RJ_DOWN="it/_test_data/images/knora/jp2Rtojpg.jpeg"
 
 find_and_delete $FILENAME_J2CJ_DOWN
 find_and_delete $FILENAME_J2RJ_DOWN
 
-FILENAME_J2CP_DOWN="it/_test_data/images/jp2compressedtojpng.png"
-FILENAME_J2RP_DOWN="it/_test_data/images/jp2Rtopng.png"
+FILENAME_J2CP_DOWN="it/_test_data/images/knora/jp2compressedtojpng.png"
+FILENAME_J2RP_DOWN="it/_test_data/images/knora/jp2Rtopng.png"
 
 find_and_delete $FILENAME_J2CP_DOWN
 find_and_delete $FILENAME_J2RP_DOWN
