@@ -36,14 +36,14 @@ class BasicSpec extends CoreSpec {
     "Sipi" should {
 
         "return an image" in {
-            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/knora/Leaves.jpg/full/full/0/default.jpg"))
+            val responseFuture = Http().singleRequest(HttpRequest(uri = s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg"))
             val response: HttpResponse = Await.result(responseFuture, 10.seconds)
             assert(response.status == StatusCodes.OK)
         }
 
         "return a JPG file as a JPG containing the correct bytes" in {
             val fileBytes = readFileAsBytes(new File(dataDir, "Leaves.jpg"))
-            val bytesFromSipi = downloadBytes(s"$sipiBaseUrl/knora/Leaves.jpg/full/full/0/default.jpg")
+            val bytesFromSipi = downloadBytes(s"$sipiBaseUrl/Leaves.jpg/full/full/0/default.jpg")
             assert(util.Arrays.equals(fileBytes, bytesFromSipi))
         }
     }
