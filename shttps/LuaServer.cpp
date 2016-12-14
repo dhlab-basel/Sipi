@@ -768,14 +768,14 @@ namespace shttps {
         ofstream dest(outfile, ios::binary);
         if (dest.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_movefile(from,to)': Couldn't open output file!");
+            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open output file!");
             return 2;
         }
 
         dest << source.rdbuf();
         if (dest.fail() || source.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L,  "'lua_movetmpfile(from,to)': Copying data failed!");
+            lua_pushstring(L,  "'lua_fs_copyfile(from,to)': Copying data failed!");
             return 2;
         }
 
@@ -2030,8 +2030,9 @@ namespace shttps {
      * and deletes it after the request has been served. This function is used to copy the file
      * to another location where it can be used/retrieved by shttps/sipi.
      *
-     * LUA: server.copyTmpfile()
-     *
+     * LUA: server.copyTmpfile(from, target)
+     * from:    an index (integer value) of array server.uploads.
+     * target:  an absolute path
      */
     static int lua_copytmpfile(lua_State *L) {
 
@@ -2060,7 +2061,7 @@ namespace shttps {
 
         string infile;
         try {
-            infile = uploads.at(tmpfile_id - 1).tmpname;
+            infile = uploads.at(tmpfile_id - 1).tmpname; // TODO: please clarify why the index has to be reduced by one (see line 2450)
         } catch (const std::out_of_range& oor) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
@@ -2446,6 +2447,8 @@ namespace shttps {
             lua_pushstring(L, "uploads"); // table1 - "index_L1"
             lua_createtable(L, 0, uploads.size());     // table1 - "index_L1" - table2
             for (unsigned i = 0; i < uploads.size(); i++) {
+                // TODO: please clarify why the index has to be increased by one (see line 2064)
+                // TODO: Most likely this is because lua arrays start with one (and not zero), could you please document that here and on line 2064?
                 lua_pushinteger(L, i + 1);             // table1 - "index_L1" - table2 - "index_L2"
                 lua_createtable(L, 0, uploads.size()); // "table1" - "index_L1" - "table2" - "index_L2" - "table3"
 
