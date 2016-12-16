@@ -32,8 +32,8 @@
 #include <utility>
 
 #include <stdlib.h>
-#include <curl/curl.h>
 
+#include "curl/curl.h"
 #include "shttps/Logger.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
@@ -245,34 +245,27 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_setglobal(L, "config");
 }
 
-namespace Sipi {
-    /*!
-     * Handles global initialisation and cleanup.
-     */
-    class SipiGlobal {
-    public:
-        SipiGlobal() {
-            curl_global_init(CURL_GLOBAL_ALL);
-        }
- 
-        ~SipiGlobal() {
-            curl_global_cleanup();
-        }
-    };
-}
 
 int main (int argc, char *argv[]) {
-    Sipi::SipiGlobal sipiGlobal;
+    class _SipiInit {
+    public:
+        _SipiInit() {
+            // Initialise libcurl.
+            curl_global_init(CURL_GLOBAL_ALL);
 
-    //
-    // register namespace sipi in xmp. Since this part of the XMP library is
-    // not reentrant, it must be done here in the main thread!
-    //
-    if (!Exiv2::XmpParser::initialize(Sipi::xmplock_func, &Sipi::xmp_mutex)) {
-        std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
-    }
+            // register namespace sipi in xmp. Since this part of the XMP library is
+            // not reentrant, it must be done here in the main thread!
+            if (!Exiv2::XmpParser::initialize(Sipi::xmplock_func, &Sipi::xmp_mutex)) {
+                std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
+            }
 
-    Sipi::SipiIOTiff::initLibrary();
+            Sipi::SipiIOTiff::initLibrary();
+        }
+ 
+        ~_SipiInit() {
+            curl_global_cleanup();
+        }
+    } sipiInit;
 
     //
     // commandline processing....

@@ -88,7 +88,7 @@ function pre_flight(prefix, identifier, cookie)
     end
 
     if result.status_code ~= 200 then
-        print("Knora returned HTTP status code " .. ret.status)
+        print("Knora returned HTTP status code " .. result.status_code)
         print(result.body)
         return 'deny'
     end

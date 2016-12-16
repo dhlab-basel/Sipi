@@ -37,6 +37,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include "curl/curl.h"
 #include "Global.h"
 #include "SockStream.h"
 #include "LuaServer.h"
@@ -79,27 +80,6 @@ namespace shttps {
         }
         throw Error(__file__, __LINE__, string("Lua panic: ") + errormsg);
     }
-    //=========================================================================
-
-    // trim from start
-    static inline std::string &ltrim(std::string &s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-        return s;
-    }
-    //=========================================================================
-
-    // trim from end
-    static inline std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-        return s;
-    }
-    //=========================================================================
-
-    // trim from both ends
-    static inline std::string &trim(std::string &s) {
-        return ltrim(rtrim(s));
-    }
-    //=========================================================================
 
     /*
      * base64.cpp and base64.h
@@ -954,69 +934,80 @@ namespace shttps {
 
         return 2;
     }
+
     //=========================================================================
 
-    static unordered_map<string,string> process_http_header(istream *ins, int &content_length, int &status_code)
-    {
-        //
-        // process header files
-        //
-        unordered_map<string,string> header;
-        bool eoh = false; //end of header reached
-        content_length = 0; // we don't know if we will get content...
-        string line;
-        while (!eoh && !ins->eof() && !ins->fail()) {
-            (void) safeGetline(*ins, line);
-            if (line.empty() || ins->fail() || ins->eof()) {
-                eoh = true;
-            } else {
-                size_t pos;
-                if ((line[0] == 'H') && (line[1] == 'T') && (line[2] == 'T') && (line[3] == 'P')) {
-                    //
-                    // we have the first line with the status code
-                    //
-                    pos = line.find(" ");
-                    if (pos == string::npos) {
-                        status_code = -1;
-                        header["ERRORMSG"] = string("header syntax: ") + line;
-                        return header;
-                    }
-                    string tmpstr = line.substr(pos + 1);
-                    pos = tmpstr.find(" ");
-                    if (pos == string::npos) {
-                        status_code = -1;
-                        header["ERRORMSG"] = string("header syntax: ") + line;
-                        return header;
-                    }
-                    string codestr = tmpstr.substr(0, pos);
-                    try {
-                        status_code = stoi(codestr);
-                    }
-                    catch(const std::invalid_argument& ia) {
-                        status_code = -1;
-                    }
-                }
-                else {
-                    size_t pos = line.find(':');
-                    string name = line.substr(0, pos);
-                    name = trim(name);
-                    asciitolower(name);
-                    string value = line.substr(pos + 1);
-                    value = header[name] = trim(value);
-                    if (name == "content-length") {
-                        content_length = stoi(value);
-                    }
-                    else if (name == "transfer-encoding") {
-                        if (value == "chunked") {
-                            content_length = -1;
-                        }
-                    }
-                }
-            }
+    // Indicates an error in a client HTTP connection. Thrown and caught only
+    // by lua_http_client() and its dependent functions.
+    class HttpError {
+    private:
+        int line;
+        string errormsg;
+    public:
+        inline HttpError(int line_p, string &errormsg_p) : line(line_p), errormsg(errormsg_p) {};
+        inline HttpError(int line_p, const char *errormsg_p) : line(line_p) { errormsg = errormsg_p; };
+        inline string what(void) {
+            stringstream ss;
+            ss << "Error #" << line << ": " << errormsg;
+            return ss.str();
         }
-        return header;
+    };
+
+    // libcurl variables for error strings and returned data
+     
+    // libcurl write callback function
+    static size_t curlWriter(char *data, size_t size, size_t nmemb, std::string *writerData) {
+        if (writerData == NULL) return 0;
+        writerData->append(data, size * nmemb);
+        return size * nmemb;
     }
-    //=========================================================================
+     
+    // libcurl connection initialization
+    static CURL* makeCurlClientConnection(const char *url, char* curlErrorBuffer, string* curlResponseBuffer)
+    {
+        CURLcode curlCode;
+        CURL* conn = curl_easy_init();
+
+        if (conn == NULL) {
+            throw HttpError(__LINE__, "Failed to create libcurl connection");
+        }
+
+        curlCode = curl_easy_setopt(conn, CURLOPT_ERRORBUFFER, curlErrorBuffer);
+
+        if (curlCode != CURLE_OK) {
+            throw HttpError(__LINE__, "Failed to set libcurl error buffer");
+        }
+
+        curlCode = curl_easy_setopt(conn, CURLOPT_URL, url);
+
+        if (curlCode != CURLE_OK) {
+            string errorMsg = string("Failed to set libcurl URL: ") + string(curlErrorBuffer);
+            throw HttpError(__LINE__,  errorMsg);
+        }
+
+        curlCode = curl_easy_setopt(conn, CURLOPT_FOLLOWLOCATION, 1L);
+
+        if (curlCode != CURLE_OK) {
+            string errorMsg = string("Failed to set libcurl redirect option: ") + string(curlErrorBuffer);
+            throw HttpError(__LINE__,  errorMsg);
+        }
+
+        curlCode = curl_easy_setopt(conn, CURLOPT_WRITEFUNCTION, curlWriter);
+
+        if (curlCode != CURLE_OK) {
+            string errorMsg = string("Failed to set libcurl writer: ") + string(curlErrorBuffer);
+            throw HttpError(__LINE__,  errorMsg);
+        }
+
+        curlCode = curl_easy_setopt(conn, CURLOPT_WRITEDATA, curlResponseBuffer);
+
+        if (curlCode != CURLE_OK) {
+            string errorMsg = string("Failed to set libcurl write data buffer: ") + string(curlErrorBuffer);
+            throw HttpError(__LINE__,  errorMsg);
+        }
+
+        return conn;
+    }
 
 
     /*!
@@ -1037,24 +1028,6 @@ namespace shttps {
      * }
      */
     static int lua_http_client(lua_State *L) {
-
-        //
-        // local exception class
-        //
-        class _HttpError {
-        private:
-            int line;
-            string errormsg;
-        public:
-            inline _HttpError(int line_p, string &errormsg_p) : line(line_p), errormsg(errormsg_p) {};
-            inline _HttpError(int line_p, const char *errormsg_p) : line(line_p) { errormsg = errormsg_p; };
-            inline string what(void) {
-                stringstream ss;
-                ss << "Error #" << line << ": " << errormsg;
-                return ss.str();
-            }
-        };
-
         int top = lua_gettop(L);
         if (top < 2) {
             lua_pop(L, top); // clear stack
@@ -1100,350 +1073,49 @@ namespace shttps {
             }
         }
 
-        bool secure = false; // is set true, if the url starts with "https"
-        int port = 80; // contains the port number, default is 80 (or 443, if https)
         string host; // contains the host name or IP-number
         string path; // path to document
 
         try {
-            //
-            // processing the URL given
-            //
-            if (url.find("http:") == 0) {
-                url = url.substr(7);
-            }
-            else if (url.find("https:") == 0) {
-                url = url.substr(8);
-                secure = true;
-                port = 443;
-            }
-            else {
-                lua_pop(L, top); // clear stack
-                lua_pushboolean(L, false);
-                lua_pushstring(L, "server.http: unknown or missing protocol in URL! must be \"http:\" or \"https\"!");
-                return 2;
-            }
-
-            size_t pos;
-            pos = url.find_first_of(":/");
-            if (pos == string::npos) {
-                host = url;
-                path = "/";
-            }
-            else {
-                host = url.substr(0, pos);
-                if (url[pos] == ':') { // we have a portnumber
-                    try {
-                        string rest_of_url = url.substr(pos + 1);
-                        size_t endpos = rest_of_url.find("/");
-                        string portstr;
-                        if (endpos == string::npos) {
-                            portstr = rest_of_url;
-                        }
-                        else {
-                            portstr = rest_of_url.substr(0, endpos);
-                        }
-                        port = stoi(portstr);
-                    }
-                    catch (const std::invalid_argument &ia) {
-                        string err = string("server.http: invalid portnumber! ") + string(ia.what());
-                        throw _HttpError(__LINE__, err);
-                    }
-                    pos = url.find("/");
-                    if (pos == string::npos) {
-                        path = "/";
-                    }
-                    else {
-                        path = url.substr(pos);
-                    }
-                }
-                else {
-                    path = url.substr(pos);
-                }
-            }
-
             if (method == "GET") { // the only method we support so far...
-                struct addrinfo *ai;
-                struct addrinfo hint;
+                // Use 
+                char curlErrorBuffer[CURL_ERROR_SIZE];
+                string curlResponseBuffer;
+                CURL* curlConn = makeCurlClientConnection(_url, curlErrorBuffer, &curlResponseBuffer);
+                auto start = get_time::now();
+                CURLcode curlCode = curl_easy_perform(curlConn);
+                curl_easy_cleanup(curlConn);
 
-                //
-                // resolve hostname etc. to get the IP address of server
-                //
-                memset(&hint, 0, sizeof hint);
-                hint.ai_family = PF_INET;
-                hint.ai_socktype = SOCK_STREAM;
-                hint.ai_protocol = IPPROTO_TCP;
-                int res;
-                if ((res = getaddrinfo(host.c_str(), NULL, &hint, &ai)) != 0) {
-                    lua_pop(L, top);
-                    string err = string("Couldn't resolve hostname! ") + string(gai_strerror(res));
-                    throw _HttpError(__LINE__, err);
+                if (curlCode != CURLE_OK) {
+                    string errorMsg = string("Failed to get ") + url + string(": ") + string(curlErrorBuffer);
+                    throw HttpError(__LINE__,  errorMsg);
                 }
-
-                //
-                // now we create the socket
-                //
-                int socketfd;
-                if ((socketfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1) {
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    string err = string("Could not create socket! ") + string(strerror(errno));
-                    throw _HttpError(__LINE__, err);
-                }
-
-                //
-                // now let's set the timeout of the socket
-                //
-                struct timeval tv;
-
-                tv.tv_sec = timeout / 1000;  // 30 Secs Timeout
-                tv.tv_usec = timeout % 1000;  // Not init'ing this can cause strange errors
-                if (setsockopt(socketfd, SOL_SOCKET, SO_RCVTIMEO, (char *) &tv, sizeof(struct timeval)) != 0) {
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    string err = string("Could not create socket! ") + string(strerror(errno));
-                    throw _HttpError(__LINE__, err);
-                }
-
-                //
-                // set the port number (assuming it is an AF_INET we got...
-                //
-                struct sockaddr_in *serv_addr = (struct sockaddr_in *) ai->ai_addr;
-
-                auto start = get_time::now(); // start elapsed time timer...
-
-                //
-                // connect the socket
-                //
-                serv_addr->sin_port = htons(port);
-                if (connect(socketfd, ai->ai_addr, ai->ai_addrlen) == -1) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    string err = string("Could not connect socket! ") + string(strerror(errno));
-                    throw _HttpError(__LINE__, err);
-                }
-
-#ifdef SHTTPS_ENABLE_SSL
-                SSL_CTX *ctx = NULL;
-                SSL *ssl = NULL;
-                if (secure) {
-                    ctx = SSL_CTX_new(SSLv23_client_method());
-                    ssl = SSL_new(ctx);
-                    SSL_set_fd(ssl, socketfd);
-                    if (SSL_connect(ssl) <= 0) {
-                        ssl = NULL;
-                        string err = "SSL_connect failed!";
-                        throw _HttpError(__LINE__, err);
-                    }
-                }
-
-                X509 *cert;
-                string certificate_subject;
-                string certificate_issuer;
-                cert = SSL_get_peer_certificate(ssl); /* get the server's certificate */
-                if (cert != NULL) {
-                    char *line;
-                    line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-                    certificate_subject = line;
-                    free(line);
-
-                    line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-                    certificate_issuer = line;
-                    free(line);
-
-                    X509_free(cert);
-                }
-
-#endif
-                //
-                // create the C++ streams
-                //
-                SockStream *sockstream = NULL;
-#ifdef SHTTPS_ENABLE_SSL
-                if (secure) {
-                    sockstream = new SockStream(ssl);
-                }
-                else {
-                    sockstream = new SockStream(socketfd);
-                }
-#else
-                sockstream = new SockStream(socketfd);
-#endif
-                istream ins(sockstream);
-                ostream os(sockstream);
-
-                //
-                // send the request header
-                //
-                os << "GET " << path << " HTTP/1.1\r\n";
-                if (os.fail() || os.eof()) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    throw _HttpError(__LINE__, "Connection dropped by peer!");
-                }
-                if (!host.empty()) {
-                    os << "Host: " << host << "\r\n";
-                    if (os.fail() || os.eof()) {
-                        close(socketfd);
-                        lua_pop(L, top);
-                        freeaddrinfo(ai);
-                        throw _HttpError(__LINE__, "Connection dropped by peer!");
-                    }
-                }
-                for (auto const &iterator : outheader) {
-                    os << iterator.first << ": " << iterator.second << "\r\n";
-                    if (os.fail() || os.eof()) {
-                        close(socketfd);
-                        lua_pop(L, top);
-                        freeaddrinfo(ai);
-                        throw _HttpError(__LINE__, "Connection dropped by peer!");
-                    }
-                }
-
-                os << "\r\n";
-                if (os.fail() || os.eof()) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    throw _HttpError(__LINE__, "Connection dropped by peer!");
-                }
-                os.flush();
-                if (os.fail() || os.eof()) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    throw _HttpError(__LINE__, "Connection dropped by peer!");
-                }
-
-                //
-                // let's process the header of the return HTTP-message
-                //
-                int content_length;
-                int status_code;
-                unordered_map <string, string> header = process_http_header(&ins, content_length, status_code);
-                if (status_code == -1) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    throw _HttpError(__LINE__, header["ERRORMSG"]);
-                }
-                if (ins.fail() || ins.eof()) {
-                    close(socketfd);
-                    lua_pop(L, top);
-                    freeaddrinfo(ai);
-                    throw _HttpError(__LINE__, "Couldn't read HTTP header: Connection dropped by peer!");
-                }
-
-                //
-                // now we read the data from the body of the HTTP-message
-                //
-                char *bodybuf = NULL;
-                if (content_length == -1) { // we expect chunked data
-                    try {
-                        ChunkReader ckrd(&ins);
-                        content_length = ckrd.readAll(&bodybuf);
-                    }
-                    catch (int ierr) { // i/o error
-                        close(socketfd);
-                        lua_pop(L, top);
-                        freeaddrinfo(ai);
-                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
-                    }
-                    catch (Error err) {
-                        close(socketfd);
-                        lua_pop(L, top);
-                        freeaddrinfo(ai);
-                        string errstr = string("Couldn't read HTTP data: ") + err.to_string();
-                        throw _HttpError(__LINE__, errstr);
-                    }
-                }
-                else {
-                    if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
-                        close(socketfd);
-                        lua_pop(L, top);
-                        freeaddrinfo(ai);
-                        throw _HttpError(__LINE__, "Couldn't read HTTP data: malloc failed!");
-                    }
-                    ins.read(bodybuf, content_length);
-                    if (ins.fail() || ins.eof()) {
-                        free(bodybuf);
-                        close(socketfd);
-                        freeaddrinfo(ai);
-                        throw _HttpError(__LINE__, "Couldn't read HTTP data: Connection dropped by peer!");
-                    }
-                    bodybuf[content_length] = '\0';
-                }
-
-#ifdef SHTTPS_ENABLE_SSL
-                if (secure) {
-                    SSL_free(ssl);
-                }
-#endif
-                delete sockstream;
-                close (socketfd);
-
-#ifdef SHTTPS_ENABLE_SSL
-                if (secure) {
-                    SSL_CTX_free(ctx);
-                }
-#endif
 
                 auto end = get_time::now();
                 auto diff = end - start;
                 int duration = chrono::duration_cast<ms>(diff).count();
 
+                long status_code;
+                curl_easy_getinfo(curlConn, CURLINFO_RESPONSE_CODE, &status_code);
+
                 lua_pushboolean(L, true); // we deliver a success!
+
                 //
                 // now let's build the Lua-table that's being returned
                 //
                 lua_createtable(L, 0, 0); // table
 
                 lua_pushstring(L, "status_code"); // table - "success"
-                lua_pushinteger(L, status_code); // table - "body" - true
-                lua_rawset(L, -3); // table
-
-#ifdef SHTTPS_ENABLE_SSL
-                if (!certificate_issuer.empty() || certificate_subject.empty()) {
-                    lua_pushstring(L, "certificate");
-                    lua_createtable(L, 0, header.size()); // table - "header" - table2
-
-                    lua_pushstring(L, "subject"); // table - "header" - table2 - headername
-                    lua_pushstring(L, certificate_subject.c_str()); // table - "header" - table2 - headername - headervalue
-                    lua_rawset(L, -3); // table - "header" - table2
-
-                    lua_pushstring(L, "issuer"); // table - "header" - table2 - headername
-                    lua_pushstring(L, certificate_issuer.c_str()); // table - "header" - table2 - headername - headervalue
-                    lua_rawset(L, -3); // table - "header" - table2
-
-                    lua_rawset(L, -3); // table
-                }
-#endif
-
-                lua_pushstring(L, "header"); // table1 - "header"
-                lua_createtable(L, 0, header.size()); // table - "header" - table2
-                for (auto const &iterator : header) {
-                    lua_pushstring(L, iterator.first.c_str()); // table - "header" - table2 - headername
-                    lua_pushstring(L, iterator.second.c_str()); // table - "header" - table2 - headername - headervalue
-                    lua_rawset(L, -3); // table - "header" - table2
-                }
+                lua_pushinteger(L, status_code); // table - "status_code" - status_code
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "body"); // table - "body"
-                lua_pushlstring(L, bodybuf, content_length); // table - "body" - bodybuf
+                lua_pushlstring(L, curlResponseBuffer.c_str(), curlResponseBuffer.length()); // table - "body" - curlResponseBuffer
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "duration"); // table - "duration"
                 lua_pushinteger(L, duration); // table - "duration" - duration
                 lua_rawset(L, -3); // table
-
-                //
-                // free resources used
-                //
-                free(bodybuf);
-                close(socketfd);
-                freeaddrinfo(ai);
 
                 return 2; // we return success and one table...
             }
@@ -1453,7 +1125,8 @@ namespace shttps {
                 return 2;
             }
         }
-        catch (_HttpError &err) {
+        catch (HttpError &err) {
+            lua_pop(L, top); // TODO: is this correct?
             lua_pushboolean(L, false);
             lua_pushstring(L, err.what().c_str()); // table - "errmsg" - errormsg
             return 2;
