@@ -31,6 +31,9 @@
 #include <csignal>
 #include <utility>
 
+#include <stdlib.h>
+#include <curl/curl.h>
+
 #include "shttps/Logger.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
@@ -104,15 +107,12 @@ static std::string fileType_string(FileType f_type) {
 };
 
 static void sighandler(int sig) {
-    std::cerr << std::endl << "Got SIGINT, stopping server gracefully...." << std::endl;
-    auto logger = Logger::getLogger(shttps::loggername);
+    // Any functions called in a signal handler must be asynchronous-safe.
+    // See https://www.securecoding.cert.org/confluence/display/c/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
+
     if (serverptr != NULL) {
-        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, stopping server" << Logger::LogAction::FLUSH;
+        // Server::stop() is asynchronous-safe.
         serverptr->stop();
-    }
-    else {
-        *logger << Logger::LogLevel::INFORMATIONAL << "Got SIGINT, exiting server" << Logger::LogAction::FLUSH;
-        exit(0);
     }
 }
 //=========================================================================
@@ -245,8 +245,24 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_setglobal(L, "config");
 }
 
+namespace Sipi {
+    /*!
+     * Handles global initialisation and cleanup.
+     */
+    class SipiGlobal {
+    public:
+        SipiGlobal() {
+            curl_global_init(CURL_GLOBAL_ALL);
+        }
+ 
+        ~SipiGlobal() {
+            curl_global_cleanup();
+        }
+    };
+}
 
 int main (int argc, char *argv[]) {
+    Sipi::SipiGlobal sipiGlobal;
 
     //
     // register namespace sipi in xmp. Since this part of the XMP library is
@@ -289,7 +305,7 @@ int main (int argc, char *argv[]) {
         }
         catch (Sipi::SipiError &err) {
             std::cerr << err;
-            exit (-1);
+            return EXIT_FAILURE;
         }
 
         //
@@ -301,7 +317,7 @@ int main (int argc, char *argv[]) {
         }
         catch (Sipi::SipiError &err) {
             std::cerr << err;
-            exit (-1);
+            return EXIT_FAILURE;
         }
         Sipi::SipiImage img1, img2;
         img1.read(infname1);
@@ -439,7 +455,7 @@ int main (int argc, char *argv[]) {
         }
         catch (Sipi::SipiError &err) {
             std::cerr << err;
-            exit (-1);
+            return EXIT_FAILURE;
         }
 
         //
@@ -451,7 +467,7 @@ int main (int argc, char *argv[]) {
         }
         catch (Sipi::SipiError &err) {
             std::cerr << err;
-            exit (-1);
+            return EXIT_FAILURE;
         }
 
         //
@@ -463,7 +479,7 @@ int main (int argc, char *argv[]) {
         }
         catch (Sipi::SipiError &err) {
             std::cerr << err;
-            exit (-1);
+            return EXIT_FAILURE;
         }
 
 
@@ -590,5 +606,6 @@ int main (int argc, char *argv[]) {
         }
 
     }
-    return 0;
+    
+    return EXIT_SUCCESS;
 }

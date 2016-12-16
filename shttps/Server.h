@@ -385,9 +385,12 @@ public:
 
         /*!
          * Stop the server gracefully (all destructors are called etc.) and the
-         * cache file is updated.
+         * cache file is updated. This function is asynchronous-safe, so it may be called
+         * from within a signal handler.
          */
         inline void stop(void) {
+            // POSIX declares write() to be asynchronous-safe.
+            // See https://www.securecoding.cert.org/confluence/display/c/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
             write(stoppipe[1], "@", 1);
         }
 

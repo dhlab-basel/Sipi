@@ -174,7 +174,7 @@ In the main directory, call:
 local/bin/sipi -config config/sipi.config.lua
 ```
 
-All operations are written to the log file `sipi.log.file`.
+All operations are written to the log file `sipi.log`.
 
 ## Serving an Image
 
