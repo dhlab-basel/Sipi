@@ -20,8 +20,13 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -33,9 +38,6 @@
 #include <cmath>
 #include <utility>
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 
 #include "SipiImage.h"
 #include "SipiError.h"
@@ -49,8 +51,6 @@
 
 #include "jansson.h"
 #include "favicon.h"
-
-#include "shttps/Logger.h"  // logging...
 
 #include "lua.hpp"
 
@@ -71,38 +71,36 @@ namespace Sipi {
 
 
     static void send_error(Connection &conobj, Connection::StatusCodes code, const string &errmsg) {
-        auto logger = Logger::getLogger(shttps::loggername);
         conobj.status(code);
         conobj.setBuffer();
         conobj.header("Content-Type", "text/plain");
-        *logger << Logger::LogLevel::ERROR << "GET: " << conobj.uri() << " failed: ";
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                *logger << "Bad Request! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Bad Request! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                *logger << "Forbidden! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Forbidden! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                *logger << "Not Found! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Found! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                *logger << "Internal Server Error! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Internal Server Error! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                *logger << "Not Implemented! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Implemented! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                *logger << "Service Unavailable! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Service Unavailable! %s", conobj.uri().c_str(), errmsg.c_str());
                 break;
             default:
-                *logger << "Unknown error! " << errmsg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Unknown error! %s", conobj.uri().c_str(), errmsg.c_str());
                 break; // do nothing
         }
         conobj << errmsg;
@@ -112,77 +110,71 @@ namespace Sipi {
 
 
     static void send_error(Connection &conobj, Connection::StatusCodes code, const SipiError &err) {
-        auto logger = Logger::getLogger(shttps::loggername);
         conobj.status(code);
         conobj.setBuffer();
         conobj.header("Content-Type", "text/plain");
-        stringstream outss;
-        outss << err;
-        *logger << Logger::LogLevel::ERROR << "GET: " << conobj.uri() << " failed: ";
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                *logger << "Bad Request! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Bad Request! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             case Connection::FORBIDDEN:
                 conobj << "Forbidden!";
-                *logger << "Forbidden! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Forbidden! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                *logger << "Not Found! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Found! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                *logger << "Internal Server Error! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Internal Server Error! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                *logger << "Not Implemented! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Implemented! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                *logger << "Service Unavailable! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Service Unavailable! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break;
             default:
-                *logger << "Unknown error! " << outss.str() << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Unknown error! %s", conobj.uri().c_str(), err.to_string().c_str());
                 break; // do nothing
         }
-        conobj << outss.str();
+        conobj << err.to_string();
         conobj.flush();
     }
     //=========================================================================
 
 
     static void send_error(Connection &conobj, Connection::StatusCodes code) {
-        auto logger = Logger::getLogger(shttps::loggername);
         conobj.status(code);
         conobj.setBuffer();
         conobj.header("Content-Type", "text/plain");
-        *logger << Logger::LogLevel::ERROR << "GET: " << conobj.uri() << " failed: ";
         switch (code) {
             case Connection::BAD_REQUEST:
                 conobj << "Bad Request!";
-                *logger << "Bad Request!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Bad Request!", conobj.uri().c_str());
                 break;
             case Connection::NOT_FOUND:
                 conobj << "Not Found!";
-                *logger << "Not Found!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Found!", conobj.uri().c_str());
                 break;
             case Connection::INTERNAL_SERVER_ERROR:
                 conobj << "Internal Server Error!";
-                *logger << "Internal Server Error!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Internal Server Error!", conobj.uri().c_str());
                 break;
             case Connection::NOT_IMPLEMENTED:
                 conobj << "Not Implemented!";
-                *logger << "Not Implemented!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Not Implemented!", conobj.uri().c_str());
                 break;
             case Connection::SERVICE_UNAVAILABLE:
                 conobj << "Service Unavailable!";
-                *logger << "Service Unavailable!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Service Unavailable!", conobj.uri().c_str());
                 break;
             default:
-                *logger << "Unknown error!" << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "GET: %s failed: Unknown error!", conobj.uri().c_str());
                 break; // do nothing
         }
         conobj.flush();
@@ -191,7 +183,6 @@ namespace Sipi {
 
 
     static void iiif_send_info(Connection &conobj, SipiHttpServer *serv, shttps::LuaServer &luaserver, vector<string> &params, const string &imgroot, bool prefix_as_path) {
-        auto logger = Logger::getLogger(shttps::loggername);
         conobj.setBuffer(); // we want buffered output, since we send JSON text...
         const string contenttype = conobj.header("accept");
 
@@ -391,7 +382,7 @@ namespace Sipi {
         //TODO and all the other CJSON obj?
         json_decref(root);
 
-        *logger << Logger::LogLevel::INFORMATIONAL << "info.json created from: " << infile << Logger::LogAction::FLUSH;
+        syslog(LOG_INFO, "info.json created from: %s", infile.c_str());
     }
     //=========================================================================
 
@@ -399,8 +390,6 @@ namespace Sipi {
     pair<string,string> SipiHttpServer::get_canonical_url(int tmp_w, int tmp_h, const string &host, const string &prefix, const string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format)
     {
         static const int canonical_len = 127;
-
-        auto logger = Logger::getLogger(shttps::loggername);
 
         char canonical_region[canonical_len + 1];
         char canonical_size[canonical_len + 1];
@@ -439,7 +428,7 @@ namespace Sipi {
                     (void) snprintf(canonical_rotation, canonical_len, "%1.1f", angle);
                 }
             }
-            *logger << Logger::LogLevel::DEBUG << "Rotation (canonical): " << canonical_rotation << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "Rotation (canonical): %s", canonical_rotation);
         }
         else {
             (void) snprintf(canonical_rotation, canonical_len, "0");
@@ -481,7 +470,6 @@ namespace Sipi {
 
     static void process_get_request(Connection &conobj, shttps::LuaServer &luaserver, void *user_data, void *dummy)
     {
-        auto logger = Logger::getLogger(shttps::loggername);
         SipiHttpServer *serv = (SipiHttpServer *) user_data;
 
         bool prefix_as_path = serv->prefix_as_path();
@@ -532,12 +520,12 @@ namespace Sipi {
                 conobj.header("Location", redirect);
                 conobj.header("Content-Type", "text/plain");
                 conobj << "Redirect to " << redirect;
-                *logger << Logger::LogLevel::INFORMATIONAL << "GET: redirect to \"" << redirect << "\"." << Logger::LogAction::FLUSH;
+                syslog(LOG_INFO, "GET: redirect to \"%s\"", redirect.c_str());
                 conobj.flush();
                 return;
             }
             else {
-                *logger << Logger::LogLevel::WARNING << "GET: \"" << infile << "\" not accessible!" << Logger::LogAction::FLUSH;
+                syslog(LOG_WARNING, "GET: \"%s\" no accessible!", infile.c_str());
                 send_error(conobj, Connection::NOT_FOUND);
                 conobj.flush();
                 return;
@@ -581,7 +569,7 @@ namespace Sipi {
             region = SipiRegion(params[iiif_region]);
             stringstream ss;
             ss << region;
-            *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -596,7 +584,7 @@ namespace Sipi {
             size = SipiSize(params[iiif_size]);
             stringstream ss;
             ss << size;
-            *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -611,7 +599,7 @@ namespace Sipi {
             rotation = SipiRotation(params[iiif_rotation]);
             stringstream ss;
             ss << rotation;
-            *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -623,7 +611,7 @@ namespace Sipi {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
             stringstream ss;
             ss << quality_format;
-            *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
             send_error(conobj, Connection::BAD_REQUEST, err);
@@ -841,7 +829,7 @@ namespace Sipi {
             (quality_format.format() == in_format) &&
             (quality_format.quality() == SipiQualityFormat::DEFAULT)
         ) {
-            *logger << Logger::LogLevel::DEBUG <<"Sending unmodified file...." << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "Sending unmodified file....");
             conobj.status(Connection::OK);
             conobj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
             conobj.header("Link", canonical_header);
@@ -870,12 +858,12 @@ namespace Sipi {
                 }
             }
             try {
-                *logger << Logger::LogLevel::INFORMATIONAL <<  "Sending file: \"" << infile << "\"" << Logger::LogAction::FLUSH;
+                syslog(LOG_INFO, "Sending file: \"%s\"", infile.c_str());
                 conobj.sendFile(infile);
             }
             catch(int err) {
                 // -1 was thrown
-                *logger << Logger::LogLevel::WARNING <<  "Browser unexpectedly closed connection" << Logger::LogAction::FLUSH;
+                syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                 return;
             }
             catch(Sipi::SipiError &err) {
@@ -888,14 +876,13 @@ namespace Sipi {
         if (quality_format.format() == SipiQualityFormat::PDF) {
             send_error(conobj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported!");
         }
-
-        *logger << Logger::LogLevel::DEBUG << "Checking for cache..." << Logger::LogAction::FLUSH;
+        syslog(LOG_DEBUG, "Checking for cache...");
 
         if (cache != NULL) {
-            *logger << Logger::LogLevel::DEBUG << "Cache found, testing for canonical '" << canonical << "'" << Logger::LogAction::FLUSH;
+            syslog(LOG_DEBUG, "Cache found, testing for canonical \"%s\"", canonical.c_str());
             string cachefile = cache->check(infile, canonical);
             if (!cachefile.empty()) {
-                *logger << Logger::LogLevel::DEBUG << "Using cachefile '" << cachefile << "'" << Logger::LogAction::FLUSH;
+                syslog(LOG_DEBUG, "Using cachefile \"%s\"", cachefile.c_str());
                 conobj.status(Connection::OK);
                 conobj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
                 conobj.header("Link", canonical_header);
@@ -920,12 +907,12 @@ namespace Sipi {
                     }
                 }
                 try {
-                    *logger << Logger::LogLevel::DEBUG << "Sending cachefile '" << cachefile << "'" << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Sending cachefile \"%s\"", cachefile.c_str());
                     conobj.sendFile(cachefile);
                 }
                 catch(int err) {
                     // -1 was thrown
-                    *logger << Logger::LogLevel::WARNING << "Browser unexpectedly closed connection" << Logger::LogAction::FLUSH;
+                    syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                     return;
                 }
                 catch(Sipi::SipiError &err) {
@@ -935,8 +922,7 @@ namespace Sipi {
                 return;
             }
         }
-
-        *logger << Logger::LogLevel::WARNING << "Nothing found in cache, reading and transforming file..." << Logger::LogAction::FLUSH;
+        syslog(LOG_WARNING, "Nothing found in cache, reading and transforming file...");
         Sipi::SipiImage img;
         try {
             img.read(infile, &region, &size, quality_format.format() == SipiQualityFormat::JPG);
@@ -985,7 +971,7 @@ namespace Sipi {
                 send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
-            *logger << Logger::LogLevel::INFORMATIONAL << "GET: \"" << uri << "\": adding watermark" << Logger::LogAction::FLUSH;
+            syslog(LOG_INFO, "GET: \"%s\": adding watermark", uri.c_str());
         }
 
 
@@ -995,7 +981,7 @@ namespace Sipi {
         string cachefile;
         if (cache != NULL) {
             cachefile = cache->getNewCacheName();
-            *logger << Logger::LogLevel::INFORMATIONAL << "Writing new cache file '" << cachefile << "'" << Logger::LogAction::FLUSH;
+            syslog(LOG_INFO, "Writing new cache file \"%s\"", cachefile.c_str());
         }
         try {
             switch (quality_format.format()) {
@@ -1012,22 +998,22 @@ namespace Sipi {
                     if (cache != NULL) {
                         conobj.openCacheFile(cachefile);
                     }
-                    *logger << Logger::LogLevel::DEBUG << "Before writing JPG..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Before writing JPG...");
                     try {
                         img.write("jpg", "HTTP");
                     }
                     catch (SipiImageError &err) {
-                        logger << err;
+                        syslog(LOG_ERR, "%s", err.to_string().c_str());
                         if (cache != NULL) {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
-                    *logger << Logger::LogLevel::DEBUG << "After writing JPG..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "After writing JPG...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        *logger << Logger::LogLevel::DEBUG << "Adding cachefile '" << cachefile << "' to internal list" << Logger::LogAction::FLUSH;
+                        syslog(LOG_INFO, "Adding cachefile \"%s\" to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
@@ -1037,7 +1023,7 @@ namespace Sipi {
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conobj.setChunkedTransfer();
-                    *logger << Logger::LogLevel::DEBUG << "Before writing J2K..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Before writing J2K...");
                     if (cache != NULL) {
                         conobj.openCacheFile(cachefile);
                     }
@@ -1045,13 +1031,13 @@ namespace Sipi {
                         img.write("jpx", "HTTP");
                     }
                     catch (SipiImageError &err) {
-                        logger << err;
+                        syslog(LOG_ERR, "%s", err.to_string().c_str());
                         if (cache != NULL) {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                     }
-                    *logger << Logger::LogLevel::DEBUG << "After writing J2K..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "After writing J2K...");
                     break;
                 }
                 case SipiQualityFormat::TIF: {
@@ -1059,7 +1045,7 @@ namespace Sipi {
                     conobj.header("Link", canonical_header);
                     conobj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
-                    *logger << Logger::LogLevel::DEBUG << "Before writing TIF..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Before writing TIF...");
                     if (cache != NULL) {
                         conobj.openCacheFile(cachefile);
                     }
@@ -1067,17 +1053,17 @@ namespace Sipi {
                         img.write("tif", "HTTP");
                     }
                     catch (SipiImageError &err) {
-                        logger << err;
+                        syslog(LOG_ERR, "%s", err.to_string().c_str());
                         if (cache != NULL) {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
-                    *logger << Logger::LogLevel::DEBUG << "After writing TIF..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "After writing TIF...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        *logger << Logger::LogLevel::DEBUG << "Adding cachefile '" << cachefile << "' to internal list" << Logger::LogAction::FLUSH;
+                        syslog(LOG_DEBUG, "Adding cachefile \"%s\" to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
@@ -1093,29 +1079,29 @@ namespace Sipi {
                     if (cache != NULL) {
                         conobj.openCacheFile(cachefile);
                     }
-                    *logger << Logger::LogLevel::DEBUG << "Before writing PNG..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Before writing PNG...");
                     try {
                         img.write("png", "HTTP");
                     }
                     catch (SipiImageError &err) {
-                        logger << err;
+                        syslog(LOG_ERR, "%s", err.to_string().c_str());
                         if (cache != NULL) {
                             conobj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
-                    *logger << Logger::LogLevel::DEBUG << "After writing PNG..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "After writing PNG...");
                     if (cache != NULL) {
                         conobj.closeCacheFile();
-                        *logger << Logger::LogLevel::DEBUG << "Adding cachefile '" << cachefile << "' to internal list" << Logger::LogAction::FLUSH;
+                        syslog(LOG_DEBUG, "Adding cachefile \"%s\" to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
                     }
                     break;
                 }
                 default: {
                     // emitt HTTP CODE 400 !!! Format not supported!
-                    *logger << Logger::LogLevel::WARNING << "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png" << Logger::LogAction::FLUSH;
+                    syslog(LOG_WARNING, "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png");
                     conobj.setBuffer();
                     conobj.status(Connection::BAD_REQUEST);
                     conobj.header("Content-Type", "text/plain");
@@ -1131,8 +1117,7 @@ namespace Sipi {
         }
 
         conobj.flush();
-
-        *logger << Logger::LogLevel::INFORMATIONAL << "GET: \"" << uri << "\": File: \"" << infile << "\"" << Logger::LogAction::FLUSH;
+        syslog(LOG_INFO, "GET: \"%s\": File: \"%s\"", uri.c_str(), infile.c_str());
         return;
     }
     //=========================================================================
@@ -1189,25 +1174,22 @@ namespace Sipi {
         }
         catch (const SipiError &err) {
             _cache = NULL;
-            stringstream ss;
-            ss << err;
-            auto logger = Logger::getLogger(shttps::loggername);
-            *logger << Logger::LogLevel::WARNING << "Couldn't open cache directory '" << cachedir_p << "'! Reason: " << ss.str() << Logger::LogAction::FLUSH;
-            debugmsg("Warning: Couldn't open cache directory '" + cachedir_p + "'! Reason: " + ss.str());
+            syslog(LOG_WARNING, "Couldn't open cache directory \"%s\"! Reason: %s", cachedir_p.c_str(), err.to_string().c_str());
         }
     }
     //=========================================================================
 
     void SipiHttpServer::run(void) {
 
-        auto logger = Logger::getLogger(shttps::loggername);
-        *logger << Logger::LogLevel::INFORMATIONAL << "SIPI server starting" << Logger::LogAction::FLUSH;
-
+        int old_ll = setlogmask(LOG_MASK(LOG_INFO));
+        syslog(LOG_INFO, "SIPI server starting...");
         //
         // setting the image root
         //
-        *logger << Logger::LogLevel::INFORMATIONAL << "Serving images from \"" << _imgroot << "\"" << Logger::LogAction::FLUSH;
-        *logger << Logger::LogLevel::INFORMATIONAL << "Salsah prefix \"" << _salsah_prefix << "\"" << Logger::LogAction::FLUSH;
+        syslog(LOG_INFO, "Serving images from \"%s\"", _imgroot.c_str());
+        syslog(LOG_INFO, "Salsah prefix \"%s\"", _salsah_prefix.c_str());
+        setlogmask(old_ll);
+
 
         addRoute(Connection::GET, "/favcon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);

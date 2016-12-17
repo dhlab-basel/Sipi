@@ -19,8 +19,11 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -34,7 +37,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "shttps/Logger.h"
 
 #include "shttps/Global.h"
 #include "SipiError.h"
@@ -181,8 +183,6 @@ namespace Sipi {
 
     SipiSize::SizeType SipiSize::get_size(int img_w, int img_h, int &w_p, int &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
-
-        auto logger = Logger::getLogger(shttps::loggername);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
@@ -366,7 +366,7 @@ namespace Sipi {
         stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
-        *logger << Logger::LogLevel::DEBUG << ss.str() << Logger::LogAction::FLUSH;
+        syslog(LOG_DEBUG, ss.str().c_str());
 
         w_p = w;
         h_p = h;

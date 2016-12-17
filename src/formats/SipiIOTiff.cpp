@@ -22,6 +22,9 @@
  */
 #include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+#include <stdarg.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -40,7 +43,6 @@
 
 
 #include "shttps/Global.h"
-#include "shttps/Logger.h"
 
 static const char __file__[] = __FILE__;
 
@@ -381,17 +383,8 @@ namespace Sipi {
 
     static void tiffError(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = Logger::getLogger(shttps::loggername);
-        if (logger != NULL) {
-            char errmsg[512];
-            vsnprintf(errmsg, 511, fmt, argptr);
-            *logger << Logger::LogLevel::ERROR << "ERROR IN TIFF! Module: " << module << " Error: " << errmsg << Logger::LogAction::FLUSH;
-        }
-        else {
-            cerr << "ERROR IN TIFF! Module: " << module << endl;
-            vfprintf (stderr, fmt, argptr);
-            cerr << "=============================" << endl;
-        }
+        syslog(LOG_ERR, "ERROR IN TIFF! Module: %s", module);
+        vsyslog(LOG_ERR, fmt, argptr);
         return;
     }
     //============================================================================
@@ -399,17 +392,8 @@ namespace Sipi {
 
     static void tiffWarning(const char* module, const char* fmt, va_list argptr)
     {
-        auto logger = Logger::getLogger(shttps::loggername);
-        if (logger != NULL) {
-            char errmsg[512];
-            vsnprintf(errmsg, 511, fmt, argptr);
-            *logger << Logger::LogLevel::WARNING << "ERROR IN TIFF! Module: " << module << "Warning: " << errmsg << Logger::LogAction::FLUSH;
-        }
-        else {
-            cerr << "WARNING IN TIFF! Module: " << module << endl;
-            vfprintf (stderr, fmt, argptr);
-            cerr << "=============================" << endl;
-        }
+        syslog(LOG_ERR, "ERROR IN TIFF! Module: %s", module);
+        vsyslog(LOG_ERR, fmt, argptr);
         return;
     }
     //============================================================================
@@ -445,8 +429,6 @@ namespace Sipi {
     bool SipiIOTiff::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
     {
     	TIFF *tif;
-
-        auto logger = Logger::getLogger(shttps::loggername);
 
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
             TIFFSetErrorHandler(tiffError);
@@ -575,12 +557,7 @@ namespace Sipi {
                     img->iptc = new SipiIptc(iptc_content, iptc_length);
                 }
                 catch (SipiError &err) {
-                    if (logger == NULL) {
-                        cerr << err;
-                    }
-                    else {
-                        logger << err;
-                    }
+                    syslog(LOG_ERR, "%s", err.to_string().c_str());
                 }
             }
 
@@ -604,12 +581,7 @@ namespace Sipi {
                     img->xmp = new SipiXmp(xmp_content, xmp_length);
                 }
                 catch (SipiError &err) {
-                    if (logger == NULL) {
-                        cerr << err;
-                    }
-                    else {
-                        logger << err;
-                    }
+                    syslog(LOG_ERR, "%s", err.to_string().c_str());
                 }
             }
 
@@ -625,12 +597,7 @@ namespace Sipi {
                     img->icc = new SipiIcc(icc_buf, icc_len);
                 }
                 catch (SipiError &err) {
-                    if (logger == NULL) {
-                        cerr << err;
-                    }
-                    else {
-                        logger << err;
-                    }
+                    syslog(LOG_ERR, "%s", err.to_string().c_str());
                 }
             }
             else if (1 == TIFFGetField(tif, TIFFTAG_WHITEPOINT, &whitepoint)) {
@@ -914,8 +881,6 @@ namespace Sipi {
         MEMTIFF *memtif = NULL;
         uint32 rowsperstrip = (uint32) -1;
 
-        auto logger = Logger::getLogger(shttps::loggername);
-
         if ((filepath == "-") || (filepath == "HTTP")) {
             memtif = memTiffOpen();
             tif = TIFFClientOpen("MEMTIFF", "wb", (thandle_t) memtif,
@@ -1006,12 +971,7 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                if (logger == NULL) {
-                    cerr << err;
-                }
-                else {
-                    logger << err;
-                }
+                syslog(LOG_ERR, "%s", err.to_string().c_str());
             }
         }
 
@@ -1029,12 +989,7 @@ namespace Sipi {
                 delete [] buf;
             }
             catch (SipiError &err) {
-                if (logger == NULL) {
-                    cerr << err;
-                }
-                else {
-                    logger << err;
-                }
+                syslog(LOG_ERR, "%s", err.to_string().c_str());
             }
         }
 
@@ -1052,12 +1007,7 @@ namespace Sipi {
                 }
             }
             catch (SipiError &err) {
-                if (logger == NULL) {
-                    cerr << err;
-                }
-                else {
-                    logger << err;
-                }
+                syslog(LOG_ERR, "%s", err.to_string().c_str());
             }
         }
 
