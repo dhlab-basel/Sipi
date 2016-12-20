@@ -84,7 +84,7 @@ function pre_flight(prefix, identifier, cookie)
     -- check HTTP request was successful
     if not success then
         server.log("Server.http() failed: " .. result, server.loglevel.error)
-        return deny
+        return 'deny'
     end
 
     if result.status_code ~= 200 then
