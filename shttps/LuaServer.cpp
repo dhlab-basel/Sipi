@@ -951,8 +951,6 @@ namespace shttps {
             return ss.str();
         }
     };
-
-    // libcurl variables for error strings and returned data
      
     // libcurl HTTP response body callback function
     static size_t curlWriterCallback(char *data, size_t size, size_t nitems, std::string *writerData) {
