@@ -1118,7 +1118,7 @@ namespace shttps {
         }
         catch(Error &err) {
             try {
-                *logger << Logger::LogLevel::DEBUG << "Internal server error: " << err  << Logger::LogAction::FLUSH;
+                *logger << Logger::LogLevel::DEBUG << "Internal server error: " << err << Logger::LogAction::FLUSH;
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
                 stringstream ss;

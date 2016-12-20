@@ -40,11 +40,12 @@
 namespace shttps {
 
     typedef struct {
-        enum {INT_TYPE, FLOAT_TYPE, STRING_TYPE} type;
+        enum {INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOLEAN_TYPE} type;
         struct {
             int i;
             float f;
             std::string s;
+            bool b;
         } value;
         //inline LuaValstruct() { type = }
     } LuaValstruct;

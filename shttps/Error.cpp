@@ -19,16 +19,16 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <cstring>
-#include <sstream>      // std::stringstream
+ */
+
+#include <sstream>      // std::ostringstream
 
 #include "Error.h"
 
-using namespace std;
 namespace shttps {
 
     Error::Error (const char *file_p, const int line_p, const char *msg, int errno_p)
-        : runtime_error(string(string(msg) + "\nFile: ") + string(file_p) + string(" Line: ") + std::to_string(line_p)),
+        : runtime_error(std::string(msg) + "\nFile: " + std::string(file_p) + std::string(" Line: ") + std::to_string(line_p)),
     line (line_p),
     file (file_p),
     message (msg),
@@ -39,8 +39,8 @@ namespace shttps {
     //============================================================================
 
 
-    Error::Error (const char *file_p, const int line_p, const string &msg, int errno_p)
-        : runtime_error(msg + string("\nFile: ") + string(file_p) + string(" Line: ") + std::to_string(line_p)),
+    Error::Error (const char *file_p, const int line_p, const std::string &msg, int errno_p)
+        : runtime_error(std::string(msg) + "\nFile: " + std::string(file_p) + std::string(" Line: ") + std::to_string(line_p)),
     line (line_p),
     file (file_p),
     message (msg),
@@ -50,26 +50,21 @@ namespace shttps {
     }
     //============================================================================
 
-    string Error::to_string(void)
+    std::string Error::to_string(void) const
     {
-        stringstream ss;
-        ss << "SHTTPS-ERROR at [" << file << ": " << line << "] ";
-        if (sysErrno != 0) ss << "System error: " << strerror(sysErrno) << " ";
-        ss << "Description: " << message;
-
-        return ss.str();
+        std::ostringstream errStream;
+        errStream << "Error at [" << file << ": " << line << "]";
+        if (sysErrno != 0) errStream << " (system error: " << std::strerror(sysErrno) << ")";
+        errStream << ": " << message;
+        return errStream.str();
     }
     //============================================================================
 
-    ostream &operator<< (ostream &outstr, const Error &rhs)
+    std::ostream &operator<< (std::ostream &outStream, const Error &rhs)
     {
-        outstr << endl << "SHTTPS-ERROR at [" << rhs.file << ": #" << rhs.line << "] " << endl;
-
-        if (rhs.sysErrno != 0) {
-            outstr << "System error: " << strerror(rhs.sysErrno) << endl;
-        }
-        outstr << "Description: " << rhs.message << endl;
-        return outstr;
+        std::string errStr = rhs.to_string();
+        outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+        return outStream;
     }
     //============================================================================
 

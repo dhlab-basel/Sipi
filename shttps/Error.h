@@ -45,12 +45,14 @@ namespace shttps {
         std::string file;    //!< Name of source code file where the exception has been thrown
         std::string message; //!< Description of the problem
         int sysErrno;        //!< If there is a system error number
+
     public:
 
         inline int getLine(void) const { return line; }
         inline std::string getFile(void) const { return file; }
         inline std::string getMessage(void) const { return message; }
         inline int getSysErrno(void) const { return sysErrno; }
+
         /*!
         * Constructor with all (char *) strings
         *
@@ -78,16 +80,16 @@ namespace shttps {
         *
         * \returns Error string
         */
-        std::string to_string(void);
+        std::string to_string(void) const;
 
         /*!
         * The overloaded << operator which is used to write the error message to the output
         *
-        * \param[in] lhs The output stream
+        * \param[in] outStream The output stream
         * \param[in] rhs Reference to an instance of a Error
         * \returns Returns an std::ostream object
         */
-        friend std::ostream &operator<< (std::ostream &outstr, const Error &rhs);
+        friend std::ostream &operator<< (std::ostream &outStream, const Error &rhs);
     };
 }
 
