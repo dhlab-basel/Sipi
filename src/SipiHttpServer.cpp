@@ -190,6 +190,7 @@ namespace Sipi {
     //=========================================================================
 
 
+
     static void iiif_send_info(Connection &conobj, SipiHttpServer *serv, shttps::LuaServer &luaserver, vector<string> &params, const string &imgroot, bool prefix_as_path) {
         auto logger = Logger::getLogger(shttps::loggername);
         conobj.setBuffer(); // we want buffered output, since we send JSON text...
@@ -240,18 +241,28 @@ namespace Sipi {
             lval[2].value.s = cookie.c_str();
 
             vector<LuaValstruct> rval;
-            rval = luaserver.executeLuafunction(&funcname, 3, lval);
+            try {
+                rval = luaserver.executeLuafunction(&funcname, 3, lval);
+            }
+            catch (shttps::Error err) {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                return;
+            }
 
             if (rval[0].type == LuaValstruct::STRING_TYPE) {
                 permission = rval[0].value.s;
             }
-            else { ; // error handling!
+            else {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
+                return;
             }
 
             if (rval[1].type == LuaValstruct::STRING_TYPE) {
                 infile = rval[1].value.s;
             }
-            else { ; // error handling!
+            else {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
+                return;
             }
 
             size_t pos = permission.find('=');
@@ -681,19 +692,29 @@ namespace Sipi {
             lval[2].value.s = cookie;
 
             vector<LuaValstruct> rval;
-            rval = luaserver.executeLuafunction(&funcname, 3, lval);
+            try {
+                rval = luaserver.executeLuafunction(&funcname, 3, lval);
+            }
+            catch (shttps::Error err) {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                return;
+            }
 
             if (rval[0].type == LuaValstruct::STRING_TYPE) {
                 permission = rval[0].value.s;
             }
-            else { ; // error handling!
+            else {
+                 send_error(conobj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
+                 return;
             }
 
             if (rval[1].type == LuaValstruct::STRING_TYPE) {
                 infile = rval[1].value.s;
             }
-            else { ; // error handling!
-            }
+            else {
+                send_error(conobj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
+                return;
+           }
 
             size_t pos = permission.find(':');
             string qualifier;
