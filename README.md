@@ -76,7 +76,7 @@ To compile SIPI on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install gettext`
 - `sudo apt-get install libreadline6 libreadline6-dev`
 - `sudo apt-get install libssl-dev`
-- `sudo apt-get install doxigen`
+- `sudo apt-get install doxygen`
 - `sudo apt-get install nginx`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
@@ -95,6 +95,7 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo apt-get install git`
 - `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
+- `sudo apt-get install doxygen`
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install nginx`
 
