@@ -42,7 +42,12 @@ function pre_flight(prefix,identifier,cookie)
     -- Always the same test file is served
     -- Make sure that this image file exists in config.imgroot
     --
-    filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+
+    if config.prefix_as_path then
+        filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
+    else
+        filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+    end
 
     if prefix == "thumbs" then
         -- always allow thumbnails
