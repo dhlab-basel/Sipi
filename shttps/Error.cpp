@@ -21,6 +21,7 @@
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <cstring>      // std::strerror
 #include <sstream>      // std::ostringstream
 
 #include "Error.h"
