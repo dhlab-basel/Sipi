@@ -154,12 +154,13 @@ namespace Sipi {
         }
         //----------------------------------------------------------------------
 
-        inline friend std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiImageError &rhs)
-        {
-            *log << Logger::LogLevel::ERROR << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]: " << rhs.errmsg << Logger::LogAction::FLUSH;
-            return log;
+        inline std::string to_string() const {
+            stringstream ss;
+            ss << "SIPI-IMAGE-ERROR at [" << file << ": #" << line << "]";
+            if (errnum != 0) ss << ": " << strerror(errnum);
+            ss << ": " << errmsg;
+            return ss.str();
         }
-        //----------------------------------------------------------------------
 
     };
 

@@ -37,6 +37,8 @@
 #include <unistd.h>
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
+#include <syslog.h>
+
 #include <atomic>
 #include <netdb.h>      // Needed for the socket functions
 #include <sstream>      // std::stringstream
@@ -49,7 +51,6 @@
 #endif
 
 #include "Global.h"
-#include "Logger.h"
 #include "Connection.h"
 #include "LuaServer.h"
 
@@ -373,9 +374,8 @@ public:
         *
         * \param[in] loglevel_p set the loglevel
         */
-        inline void loglevel(Logger::LogLevel loglevel_p) {
-            auto logger = Logger::getLogger(loggername);
-            logger->setLoglevel(loglevel_p);
+        inline void loglevel(int loglevel_p) {
+            setlogmask(LOG_UPTO(loglevel_p));
         }
 
         /*!

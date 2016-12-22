@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <syslog.h>
 
 #include "Global.h"
 #include "SockStream.h"
@@ -44,7 +45,6 @@
 #include "Server.h"
 #include "ChunkReader.h"
 
-#include "Logger.h"  // logging...
 #include "sole.hpp"
 #include "GetMimetype.h"
 
@@ -2147,10 +2147,9 @@ namespace shttps {
     * Lua: logger(message, level)
     */
     static int lua_logger(lua_State *L) {
-        auto logger = Logger::getLogger(shttps::loggername);
 
         string message;
-        int level = Logger::LogLevel::ERROR;
+        int level = LOG_ERR;
 
         int top = lua_gettop(L);
         if (top < 1) {
@@ -2178,7 +2177,7 @@ namespace shttps {
         }
 
         if (!message.empty()) {
-            *logger << (Logger::LogLevel) level << message << Logger::LogAction::FLUSH;
+            syslog(level, message.c_str());
         }
 
         lua_pop(L, top);
@@ -2194,7 +2193,6 @@ namespace shttps {
      * Lua: success, mimetype = server.mimetype(path)
      */
     static int lua_mimetype(lua_State *L) {
-        auto logger = Logger::getLogger(shttps::loggername);
         string path;
         int top = lua_gettop(L);
         if (top < 1) {
@@ -2525,12 +2523,38 @@ namespace shttps {
         lua_pushstring(L, "loglevel"); // table1 - "index_L1"
         lua_createtable(L, 0, 9); // table1 - "index_L1" - table2
 
-        map<Logger::LogLevel,string> lmap = Logger::getLevelMap();
-        for(auto const& l : lmap) {
-            lua_pushstring(L, l.second.c_str()); // table1 - "index_L1" - table2 - "index_L2"
-            lua_pushinteger(L, as_integer(l.first));
+            lua_pushstring(L, "LOG_EMERG"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_EMERG);
             lua_rawset(L, -3); // table1 - "index_L1" - table2
-        }
+
+            lua_pushstring(L, "LOG_ALERT"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_ALERT);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_CRIT"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_CRIT);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_ERR"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_ERR);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_WARNING"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_WARNING);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_NOTICE"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_NOTICE);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_INFO"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_INFO);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
+            lua_pushstring(L, "LOG_DEBUG"); // table1 - "index_L1" - table2 - "index_L2"
+            lua_pushinteger(L, LOG_DEBUG);
+            lua_rawset(L, -3); // table1 - "index_L1" - table2
+
         lua_rawset(L, -3); // table1
 
         lua_setglobal(L, servertablename);

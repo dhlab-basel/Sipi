@@ -45,9 +45,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <SipiCache.h>
+#include <syslog.h>
 
-#include "shttps/Logger.h"
 
 #include "SipiCache.h"
 #include "shttps/Global.h"
@@ -81,7 +80,6 @@ namespace Sipi {
     SipiCache::SipiCache(const string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
         : _cachedir(cachedir_p), max_cachesize(max_cachesize_p), max_nfiles(max_nfiles_p), cache_hysteresis(cache_hysteresis_p)
     {
-        auto logger = Logger::getLogger(shttps::loggername);
 
         if (access(_cachedir.c_str(), R_OK | W_OK | X_OK) != 0) {
             throw SipiError(__file__, __LINE__, "Cache directory not available", errno);
@@ -91,10 +89,7 @@ namespace Sipi {
         cachesize = 0;
         nfiles = 0;
 
-        *logger << Logger::LogLevel::INFORMATIONAL
-        << "Cache at '" << _cachedir << "' cachesize=" << max_cachesize
-        << " nfiles=" << max_nfiles << " hysteresis=" << cache_hysteresis
-        << Logger::LogAction::FLUSH;
+        syslog(LOG_INFO, "Cache at \"%s\" cachesize=%lld nfiles=%d hysteresis=%f", _cachedir.c_str(), max_cachesize, max_nfiles, cache_hysteresis);
         ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
 
         struct dirent **namelist;
@@ -105,7 +100,7 @@ namespace Sipi {
             streampos length = cachefile.tellg();
             cachefile.seekg (0, cachefile.beg);
             int n = length / sizeof (SipiCache::FileCacheRecord);
-            *logger << Logger::LogLevel::INFORMATIONAL << "Reading cache file..." << Logger::LogAction::FLUSH;
+            syslog(LOG_INFO, "Reading cache file...");
             for (int i = 0; i < n; i++) {
                 SipiCache::FileCacheRecord fr;
                 cachefile.read((char *) &fr, sizeof (SipiCache::FileCacheRecord));
@@ -114,7 +109,7 @@ namespace Sipi {
                     //
                     // we cannot find the file – probably it has been deleted => skip it
                     //
-                    *logger << Logger::LogLevel::DEBUG << "Cache could'nt find file '" << fr.cachepath << "' on disk!" << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Cache could'nt find file \"%s\" on disk!", fr.cachepath);
                     continue;
                 }
                 CacheRecord cr;
@@ -128,7 +123,7 @@ namespace Sipi {
                 cachesize += fr.fsize;
                 nfiles++;
                 cachetable[fr.canonical] = cr;
-                *logger << Logger::LogLevel::INFORMATIONAL << "File '" << cr.cachepath << "' adding to cache file!" << Logger::LogAction::FLUSH;
+                syslog(LOG_INFO, "FIle \"%s\" adding to cache", cr.cachepath.c_str());
             }
         }
 
@@ -150,7 +145,7 @@ namespace Sipi {
                 }
                 if (!found) {
                     string ff = _cachedir + "/" + file_on_disk;
-                    *logger << Logger::LogLevel::INFORMATIONAL << "File '" << file_on_disk << "' not in cache file! Deleting..." << Logger::LogAction::FLUSH;
+                    syslog(LOG_INFO, "File \"%s\" not in cache file! Deleting...", file_on_disk.c_str());
                     remove(ff.c_str());
                 }
                 free(namelist[n]);
@@ -172,9 +167,7 @@ namespace Sipi {
 
     SipiCache::~SipiCache()
     {
-        auto logger = Logger::getLogger(shttps::loggername);
-
-        *logger  << Logger::LogLevel::DEBUG << "Closing cache..." << Logger::LogAction::FLUSH;
+        syslog(LOG_DEBUG, "Closing cache...");
         string cachefilename = _cachedir + "/.sipicache";
 
         ofstream cachefile(cachefilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
@@ -190,7 +183,7 @@ namespace Sipi {
                 fr.fsize = ele.second.fsize;
                 fr.access_time = ele.second.access_time;
                 cachefile.write((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                *logger << Logger::LogLevel::DEBUG << "Writing '" << ele.second.cachepath << "' to cache file" << Logger::LogAction::FLUSH;
+                syslog(LOG_DEBUG, "Writing \"%s\" to cache file...", ele.second.cachepath.c_str());
             }
         }
         cachefile.close();
@@ -268,8 +261,6 @@ namespace Sipi {
     //============================================================================
 
     int SipiCache::purge(bool use_lock) {
-        auto logger = Logger::getLogger(shttps::loggername);
-
         if ((max_cachesize == 0) && (max_nfiles == 0)) return 0; // allow cache to grow indefinitely! dangerous!!
         int n = 0;
         if (((max_cachesize > 0) && (cachesize >= max_cachesize))
@@ -287,7 +278,7 @@ namespace Sipi {
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
-                *logger << Logger::LogLevel::DEBUG << "Purging from cache '" << cachetable[ele.canonical].cachepath << "'..." << Logger::LogAction::FLUSH;
+                syslog(LOG_DEBUG, "Purging from cache \"%s\"...", cachetable[ele.canonical].cachepath.c_str());
                 string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
                 ::remove(delpath.c_str());
                 cachesize -= cachetable[ele.canonical].fsize;
@@ -439,7 +430,6 @@ namespace Sipi {
     //============================================================================
 
     bool SipiCache::remove(const std::string &canonical_p) {
-        auto logger = Logger::getLogger(shttps::loggername);
         SipiCache::CacheRecord fr;
 
         locking.lock();
@@ -451,7 +441,7 @@ namespace Sipi {
             return false; // return empty string, because we didn't find the file in cache
         }
 
-        *logger << Logger::LogLevel::DEBUG << "Delete from cache '" << cachetable[canonical_p].cachepath << "'..." << Logger::LogAction::FLUSH;
+        syslog(LOG_DEBUG, "Delete from cache \"%s\"...", cachetable[canonical_p].cachepath.c_str());
         string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
         ::remove(delpath.c_str());
         cachesize -= cachetable[canonical_p].fsize;
