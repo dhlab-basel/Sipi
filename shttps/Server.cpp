@@ -943,7 +943,7 @@ namespace shttps {
                         *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
                         throw SSLError(__file__, __LINE__, msg);
                     }
-               }
+                }
                 catch (SSLError &err) {
                     *logger << Logger::LogLevel::ERROR << err.to_string() << Logger::LogAction::FLUSH;
                     int sstat;
