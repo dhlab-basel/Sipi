@@ -31,8 +31,6 @@
 
 #include "shttps/Hash.h"
 
-using namespace std;
-
 namespace Sipi {
 
     /*!

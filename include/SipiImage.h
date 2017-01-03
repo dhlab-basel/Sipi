@@ -133,34 +133,22 @@ namespace Sipi {
         inline SipiImageError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0)
         : file(file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
 
-       /*!
-        * Returns the error as string
-        */
-        inline std::string get_error(void) const {
-            stringstream ss;
-            ss << "SIPI-IMAGE-ERROR at [" << file << ": #" << line << "]";
-            if (errnum != 0) ss << ": " << strerror(errnum);
-            ss << ": " << errmsg;
-            return ss.str();
-        }
-        //----------------------------------------------------------------------
-
-        inline friend std::ostream &operator<<(std::ostream &outstr, const SipiImageError &rhs)
+        inline std::string to_string(void) const
         {
-            outstr << endl << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]" << endl;
-            if (rhs.errnum != 0) outstr << "System error: " << strerror(rhs.errnum) << endl;
-            outstr << "Description : " << rhs.errmsg << endl;
-            return outstr;
+            std::ostringstream errStream;
+            errStream << "Sipi image error at [" << file << ": " << line << "]";
+            if (errnum != 0) errStream << " (system error: " << std::strerror(errnum) << ")";
+            errStream << ": " << errmsg;
+            return errStream.str();
         }
-        //----------------------------------------------------------------------
+        //============================================================================
 
-        inline friend std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiImageError &rhs)
+        inline friend std::ostream &operator<< (std::ostream &outStream, const SipiImageError &rhs)
         {
-            *log << Logger::LogLevel::ERROR << "SIPI-IMAGE-ERROR at [" << rhs.file << ": #" << rhs.line << "]: " << rhs.errmsg << Logger::LogAction::FLUSH;
-            return log;
-        }
-        //----------------------------------------------------------------------
-
+            std::string errStr = rhs.to_string();
+            outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+            return outStream;
+    }
     };
 
 

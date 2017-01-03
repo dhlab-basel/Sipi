@@ -33,13 +33,11 @@
 #include "SipiError.h"
 #include "Template.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    void Template::value(const string &name, const string &sval) {
+    void Template::value(const std::string &name, const string &sval) {
         values[name] = sval;
     }
 
@@ -47,16 +45,16 @@ namespace Sipi {
         values[name] = string(cval);
     }
 
-    void Template::value(const string &name, int ival) {
+    void Template::value(const std::string &name, int ival) {
         values[name] = to_string(ival);
     }
 
-    void Template::value(const string &name, float fval) {
+    void Template::value(const std::string &name, float fval) {
         values[name] = to_string(fval);
     }
 
-    string Template::get(void) {
-        string result;
+    std::string Template::get(void) {
+        std::string result;
         size_t pos, old_pos = 0, epos = 0;
         while ((pos = templatestr.find("{{", old_pos)) != string::npos) {
             // we found somtheing to replace

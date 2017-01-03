@@ -98,8 +98,6 @@ a:12:{
 }
 */
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
@@ -110,9 +108,9 @@ namespace Sipi {
         int line;
     public:
         inline PhpException(std::string &msg_p, int line_p) : msg(msg_p), line(line_p) {}
-        inline PhpException(const char *msg_p, int line_p) { msg = string(msg_p); line = line_p; }
+        inline PhpException(const char *msg_p, int line_p) { msg = std::string(msg_p); line = line_p; }
         inline virtual const char* what() const throw() { return msg.c_str(); }
-        inline std::string get(void) { return msg + " #" + to_string(line); }
+        inline std::string get(void) { return msg + " #" + std::to_string(line); }
     };
 
     static char next (ifstream &in) {
@@ -122,7 +120,7 @@ namespace Sipi {
     }
 
     static int get_num (ifstream &in) {
-        ostringstream numstr;
+        std::ostringstream numstr;
         char c;
         while (((c = next(in)) != ':') && (c != ';')) {
             numstr << c;
@@ -143,14 +141,14 @@ namespace Sipi {
             case 's': {
                 len = get_num(in);
                 if ((sep = next(in)) != '"') throw PhpException("String start expected ('\"')!", __LINE__);
-                ostringstream s;
+                std::ostringstream s;
                 for (int i = 0; i < len; i++) s << next(in);
                 if ((sep = next(in)) != '"') throw PhpException("String end expected ('\"')!", __LINE__);
                 if ((sep = next(in)) != ';') throw PhpException("Value terminator expected (\";\")!", __LINE__);
                 return cJSON_CreateString(s.str().c_str());
             }
             case 'i': {
-                ostringstream ii;
+                std::ostringstream ii;
                 while ((c = next(in)) != ';') {
                     ii << c;
                 }
@@ -165,7 +163,7 @@ namespace Sipi {
             case 'O': {
                 len = get_num(in);
                 if ((sep = next(in)) != '"') throw PhpException("String start expected ('\"')!", __LINE__);
-                ostringstream cname;
+                std::ostringstream cname;
                 for (int i = 0; i < len; i++) cname << next(in);
                 if ((sep = next(in)) != '"') throw PhpException("String end expected ('\"')!", __LINE__);
                 if ((sep = next(in)) != ':') throw PhpException("Separator expected (\":\")!", __LINE__);
@@ -179,7 +177,7 @@ namespace Sipi {
                     if ((sep = next(in)) != ':') throw PhpException("Separator expected (\":\")!", __LINE__);
                     len = get_num(in);
                     if ((sep = next(in)) != '"') throw PhpException("String start expected ('\"')!", __LINE__);
-                    ostringstream key;
+                    std::ostringstream key;
                     for (int i = 0; i < len; i++) key << next(in);
                     if ((sep = next(in)) != '"') throw PhpException("String end expected ('\"')!", __LINE__);
                     if ((sep = next(in)) != ';') throw PhpException("Value terminator expected (\";\")!", __LINE__);
@@ -198,7 +196,7 @@ namespace Sipi {
                 for (int i = 0; i < len; i++) {
                     c = next(in);
                     if ((sep = next(in)) != ':') throw PhpException("Separator expected (\":\")!", __LINE__);
-                    ostringstream key;
+                    std::ostringstream key;
                     switch (c) {
                         case 'i': {
                             int ii = get_num(in);
@@ -236,11 +234,11 @@ namespace Sipi {
         //inf = std::move(inf_p);
 		inf = inf_p;
         char c;
-        ostringstream name;
+        std::ostringstream name;
         while ((c = next(*inf)) != '|') {
             name << c;
         }
-        string objname = name.str();
+        std::string objname = name.str();
 
         cJSON *session;
         try {
@@ -254,7 +252,7 @@ namespace Sipi {
         cJSON *obj;
 
         if ((obj = cJSON_GetObjectItem(session, "lang")) != NULL) {
-            lang = string(obj->valuestring);
+            lang = std::string(obj->valuestring);
         }
 
         if ((obj = cJSON_GetObjectItem(session, "language_id")) != NULL) {

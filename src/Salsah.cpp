@@ -41,27 +41,25 @@
 
 #include <mariadb/mysql.h>
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
     typedef enum {MYSQL_STRING, MYSQL_INTEGER, MYSQL_FLOAT} MysqlDatatype;
 
-    static int salsah_query_mysql(MYSQL *mysql, const string &sqlstr, vector<map<string,string>> &res) {
+    static int salsah_query_mysql(MYSQL *mysql, const std::string &sqlstr, std::vector<std::map<std::string, std::string>> &res) {
         int n = 0;
         if (mysql_query (mysql, sqlstr.c_str()) == 0) {
-            MYSQL_RES *result = mysql_store_result (mysql);
+            MYSQL_RES *result = mysql_store_result(mysql);
             MYSQL_ROW row;
             MYSQL_FIELD *fields;
-            unsigned int nfields = mysql_num_fields (result);
+            unsigned int nfields = mysql_num_fields(result);
             fields = mysql_fetch_fields(result); //fields[i].name
             if (mysql_num_rows(result) > 0) {
                 while ((row = mysql_fetch_row (result)) != NULL) {
-                    map<string,string> m;
+                    std::map<std::string, std::string> m;
                     for (unsigned int i = 0; i < nfields; i++) {
-                        m[string(fields[i].name)] = string(row[i] ? row[i] : "NULL");
+                        m[std::string(fields[i].name)] = std::string(row[i] ? row[i] : "NULL");
                     }
                     res.push_back(m);
                     n++;
@@ -73,12 +71,12 @@ namespace Sipi {
     //=========================================================================
 
 
-    Salsah::ResourceRights Salsah::salsah_get_resource_and_rights(int res_id, const string &quality, int person_id, int project_id) {
+    Salsah::ResourceRights Salsah::salsah_get_resource_and_rights(int res_id, const std::string &quality, int person_id, int project_id) {
         MYSQL mysql;
-        map<string,string> res;
+        std::map<std::string, std::string> res;
         int n;
 
-        string query1 = R"(SELECT `location`.`protocol` AS protocol,
+        std::string query1 = R"(SELECT `location`.`protocol` AS protocol,
         `location`.`filename` AS filename,
         `location`.`origname` AS origname,
         `location`.`resource_id` AS res_id,
@@ -99,15 +97,15 @@ namespace Sipi {
         WHERE (`qualityparam`.`name` = '{{QNAME}}') AND (`location`.`resource_id` = {{RESID}})
         )";
 
-        string query2 = R"(SELECT * FROM `resource_rights` WHERE `resource_id` = {{RESID}})";
+        std::string query2 = R"(SELECT * FROM `resource_rights` WHERE `resource_id` = {{RESID}})";
 
-        string query3 = R"(SELECT * FROM `resource` WHERE (`id` = {{RESID}}))";
+        std::string query3 = R"(SELECT * FROM `resource` WHERE (`id` = {{RESID}}))";
 
-        string query4 = R"(SELECT * FROM `person_in_project` WHERE (`person_id` = {{PERSONID}}) AND (`project_id` = {{PROJECTID}}))";
+        std::string query4 = R"(SELECT * FROM `person_in_project` WHERE (`person_id` = {{PERSONID}}) AND (`project_id` = {{PROJECTID}}))";
 
-        string query5 = R"(SELECT * FROM `person_in_group` WHERE (`person_id` = {{PERSONID}}))";
+        std::string query5 = R"(SELECT * FROM `person_in_group` WHERE (`person_id` = {{PERSONID}}))";
 
-        mysql_init (&mysql);
+        mysql_init(&mysql);
         if (!mysql_real_connect (&mysql, "localhost", "salsah", "imago", "salsah", 0, NULL, 0)) {
             throw SipiError(__file__, __LINE__, mysql_error (&mysql));
         }
@@ -116,13 +114,13 @@ namespace Sipi {
         Template templ1(query1);
         templ1.value(string("QNAME"), quality);
         templ1.value(string("RESID"), res_id);
-        string sql1 = templ1.get();
-        vector<map<string,string>> resarr1;
+        std::string sql1 = templ1.get();
+        std::vector<std::map<std::string, std::string>> resarr1;
         n = salsah_query_mysql(&mysql, sql1, resarr1);
         if (n != 1) {
-            throw SipiError(__file__, __LINE__, "Resource not existing or not unqiue! (n=" + to_string(n) + ")");
+            throw SipiError(__file__, __LINE__, "Resource not existing or not unqiue! (n=" + std::to_string(n) + ")");
         }
-        map<string,string> &res1 = resarr1[0];
+        std::map<std::string, std::string> &res1 = resarr1[0];
         filepath = res1["basepath"] + "/" + quality + "/" + res1["filename"];
         cerr << "FILEPATH IS \"" << filepath << "\"" << endl;
         try {
@@ -135,10 +133,10 @@ namespace Sipi {
 
         Template templ2(query2);
         templ2.value(string("RESID"), res_id);
-        string sql2 = templ2.get();
-        vector<map<string,string>> resarr2;
+        std::string sql2 = templ2.get();
+        std::vector<std::map<std::string, std::string>> resarr2;
         n = salsah_query_mysql(&mysql, sql2, resarr2);
-        unordered_map<int,int> resrights;
+        std::unordered_map<int,int> resrights;
         try {
             for (int i = 0; i < n; i++) {
                 resrights[stoi(resarr2[i]["group_id"])] = stoi(resarr2[i]["access_rights"]);
@@ -150,28 +148,28 @@ namespace Sipi {
 
         Template templ3(query3);
         templ3.value(string("RESID"), res_id);
-        string sql3 = templ3.get();
-        vector<map<string,string>> resarr3;
+        std::string sql3 = templ3.get();
+        std::vector<std::map<std::string, std::string>> resarr3;
         n = salsah_query_mysql(&mysql, sql3, resarr3);
         if (n != 1) {
-            throw SipiError(__file__, __LINE__, "Resource not existing or not unqiue! (n=" + to_string(n) + ")");
+            throw SipiError(__file__, __LINE__, "Resource not existing or not unqiue! (n=" + std::to_string(n) + ")");
         }
         int res_project_id = stoi(resarr3[0]["project_id"]);
         int res_person_id = stoi(resarr3[0]["person_id"]);
 
         if ((user_id >= 0) && project_id >= 0) {
             Template templ4(query4);
-            templ4.value(string("PERSONID"), user_id);
-            templ4.value(string("PROJECTID"), project_id);
-            string sql4 = templ4.get();
-            vector<map<string,string>> resarr4;
+            templ4.value(std::string("PERSONID"), user_id);
+            templ4.value(std::string("PROJECTID"), project_id);
+            std::string sql4 = templ4.get();
+            std::vector<std::map<std::string, std::string>> resarr4;
             n = salsah_query_mysql(&mysql, sql4, resarr4);
             if ((n == 1) && (stoi(resarr4[0]["admin_rights"]) >= ADMIN_ROOT)) {
                 return RESOURCE_ACCESS_RIGHTS;
             }
         }
 
-        vector<int> mygroups;
+        std::vector<int> mygroups;
         if ((user_id >= 0) && (user_id == res_person_id)) {
             mygroups.push_back(GROUP_OWNER);
         }
@@ -186,9 +184,9 @@ namespace Sipi {
         }
 
         Template templ5(query5);
-        templ5.value(string("PERSONID"), user_id);
-        string sql5 = templ5.get();
-        vector<map<string,string>> resarr5;
+        templ5.value(std::string("PERSONID"), user_id);
+        std::string sql5 = templ5.get();
+        std::vector<std::map<std::string, std::string>> resarr5;
         n = salsah_query_mysql(&mysql, sql5, resarr5);
 
         mysql_close(&mysql);
@@ -206,20 +204,20 @@ namespace Sipi {
     }
     //=========================================================================
 
-    Salsah::Salsah(shttps::Connection *conobj, const string &res_id_str) {
+    Salsah::Salsah(shttps::Connection *conobj, const std::string &res_id_str) {
         user_id = -1;
         active_project = -1;
         // int lang_id = 0;
         rights = RESOURCE_ACCESS_NONE;
 
-        string cookie = conobj->header("Cookie");
+        std::string cookie = conobj->header("Cookie");
         if (!cookie.empty()) {
             size_t pos = cookie.find('=');
-            string name = cookie.substr(0, pos);
-            string value = cookie.substr(pos + 1, string::npos);
+            std::string name = cookie.substr(0, pos);
+            std::string value = cookie.substr(pos + 1, std::string::npos);
             if (name == "SALSAH") {
-                string sessfile_name = "/var/tmp/sess_" + value;
-                ifstream sessfile(sessfile_name);
+                std::string sessfile_name = "/var/tmp/sess_" + value;
+                std::ifstream sessfile(sessfile_name);
                 if (sessfile.fail()) {
                     throw SipiError(__file__, __LINE__, "Cannot find session file at\"" + sessfile_name + "\"!");
                 }
@@ -237,17 +235,17 @@ namespace Sipi {
 
 
         size_t pos;
-        if ((pos = res_id_str.find(':')) == string::npos) {
+        if ((pos = res_id_str.find(':')) == std::string::npos) {
             throw SipiError(__file__, __LINE__, "Resource-ID contains no quality name. Syntax: \"res_id:quality\" !");
         }
-        string numeric_res_id_str = res_id_str.substr(0, pos);
-        string quality = res_id_str.substr(pos + 1,  string::npos);
+        std::string numeric_res_id_str = res_id_str.substr(0, pos);
+        std::string quality = res_id_str.substr(pos + 1,  std::string::npos);
         int res_id;
         try {
             res_id = stoi(numeric_res_id_str);
         }
         catch (const std::invalid_argument& ia) {
-            throw SipiError(__file__, __LINE__, string("Resource-ID if image not an integer:  \"") + ia.what() + string("\" !"));
+            throw SipiError(__file__, __LINE__, std::string("Resource-ID if image not an integer:  \"") + ia.what() + std::string("\" !"));
         }
 
         rights = salsah_get_resource_and_rights(res_id, quality, user_id, active_project);

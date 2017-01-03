@@ -80,20 +80,15 @@ function pre_flight(prefix, identifier, cookie)
     --print("knora_url: " .. knora_url)
 
     success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
-    if not success then
-        server.log("Server.http() failed: " .. result, server.loglevel.error)
-        return deny
-    end
 
     -- check HTTP request was successful
-    if not result.success then
-        print("Request to Knora failed: " .. result.errmsg)
-        -- deny request
+    if not success then
+        server.log("Server.http() failed: " .. result, server.loglevel.error)
         return 'deny'
     end
 
     if result.status_code ~= 200 then
-        print("Knora returned HTTP status code " .. ret.status)
+        print("Knora returned HTTP status code " .. result.status_code)
         print(result.body)
         return 'deny'
     end
