@@ -23,6 +23,8 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -36,7 +38,6 @@
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
-#include "shttps/Logger.h"  // logging...
 
 
 // Kakadu core includes
@@ -132,9 +133,8 @@ namespace Sipi {
         KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                *logger << Logger::LogLevel::WARNING << msg << Logger::LogAction::FLUSH;
+                syslog(LOG_WARNING, "%s", msg.c_str());
             }
         }
     };
@@ -152,9 +152,8 @@ namespace Sipi {
         KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "%s", msg.c_str());
                 throw KDU_ERROR_EXCEPTION;
             }
         }
@@ -184,8 +183,6 @@ namespace Sipi {
 
 
     bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        auto logger = Logger::getLogger(shttps::loggername);
-
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
@@ -230,12 +227,7 @@ namespace Sipi {
                                 img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -247,12 +239,7 @@ namespace Sipi {
                                 img->iptc = new SipiIptc(buf, len);
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -264,12 +251,7 @@ namespace Sipi {
                                 img->exif = new SipiExif(buf, len);
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }

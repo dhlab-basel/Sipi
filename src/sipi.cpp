@@ -23,6 +23,7 @@
  * \brief Implements a simple HTTP server.
  *
  */
+#include <syslog.h>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -30,11 +31,9 @@
 #include <thread>
 #include <csignal>
 #include <utility>
-
 #include <stdlib.h>
 
 #include "curl/curl.h"
-#include "shttps/Logger.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
 #include "shttps/LuaSqlite.h"
@@ -119,8 +118,7 @@ static void sighandler(int sig) {
 
 
 static void broken_pipe_handler(int sig) {
-    auto logger = Logger::getLogger(shttps::loggername);
-    *logger << Logger::LogLevel::INFORMATIONAL << "Got BROKEN PIPE signal!" << Logger::LogAction::FLUSH;
+    syslog(LOG_INFO, "Got BROKEN PIPE signal!");
 }
 //=========================================================================
 
@@ -344,9 +342,10 @@ int main (int argc, char *argv[]) {
             Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
-            auto logger = Logger::getLogger(shttps::loggername);
-            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_DATE << Logger::LogAction::FLUSH;
-            *logger << Logger::LogLevel::INFORMATIONAL << Logger::LogAction::FORCE << SIPI_BUILD_VERSION << Logger::LogAction::FLUSH;
+            int old_ll = setlogmask(LOG_MASK(LOG_INFO));
+            syslog(LOG_INFO, SIPI_BUILD_DATE);
+            syslog(LOG_INFO, SIPI_BUILD_VERSION);
+            setlogmask(old_ll);
 
 #           ifdef SHTTPS_ENABLE_SSL
 

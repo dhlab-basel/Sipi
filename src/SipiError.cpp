@@ -22,6 +22,9 @@
  */
 #include <stdlib.h>
 #include <cstring>
+#include <sstream>
+
+
 #include "SipiError.h"
 
 using namespace std;
@@ -48,10 +51,11 @@ namespace Sipi {
     }
     //============================================================================
 
-    std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiError &rhs)
+    string SipiError::to_string() const
     {
-        *log << Logger::LogLevel::ERROR << "SIPI-ERROR at [" << rhs.getFile() << ": #" << rhs.getLine() << "]: " << rhs.getMessage() << Logger::LogAction::FLUSH;
-        return log;
+        stringstream ss;
+        ss << "SIPI-ERROR at [" << getFile() << ": #" << getLine() << "]: " << getMessage();
+        return ss.str();
     }
 
 }
