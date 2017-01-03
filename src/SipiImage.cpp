@@ -36,8 +36,6 @@
 #include "formats/SipiIOPng.h"
 #include "shttps/GetMimetype.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 
@@ -113,13 +111,13 @@ namespace Sipi {
     SipiImage::SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p)
     : nx(nx_p), ny(ny_p), nc(nc_p), bps(bps_p), photo(photo_p) {
         if (((photo == MINISWHITE) || (photo == MINISBLACK)) && !((nc == 1) || (nc == 2))) {
-            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels");
         }
         if ((photo == RGB) && !((nc == 3) || (nc == 4))) {
-            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels!");
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels");
         }
         if ((bps != 8) && (bps != 16)) {
-            throw SipiImageError(__file__, __LINE__, "Bits per samples not supported by SIPI!");
+            throw SipiImageError(__file__, __LINE__, "Bits per samples not supported by Sipi");
         }
         size_t bufsiz;
         switch (bps) {
@@ -139,7 +137,7 @@ namespace Sipi {
             pixels = new byte[bufsiz];
         }
         else {
-            throw SipiImageError(__file__, __LINE__, "Image with noe content!");
+            throw SipiImageError(__file__, __LINE__, "Image with no content");
         }
         xmp = NULL;
         icc = NULL;
@@ -205,7 +203,7 @@ namespace Sipi {
     {
         try
         {
-            string actual_mimetype = shttps::GetMimetype::getMimetype(path).first;
+            std::string actual_mimetype = shttps::GetMimetype::getMimetype(path).first;
 
             if (actual_mimetype != given_mimetype) {
                 //std::cerr << actual_mimetype << " does not equal " << given_mimetype << std::endl;
@@ -229,7 +227,7 @@ namespace Sipi {
         }
         catch (std::out_of_range& e)
         {
-            stringstream ss;
+            std::stringstream ss;
             ss << "Unsupported file type: \"" << filename;
             throw SipiImageError(__file__, __LINE__, ss.str());
         }
@@ -242,23 +240,23 @@ namespace Sipi {
 
     void SipiImage::read(std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         size_t pos = filepath.find_last_of('.');
-        string fext = filepath.substr(pos + 1);
-        string _fext;
+        std::string fext = filepath.substr(pos + 1);
+        std::string _fext;
 
         bool got_file = false;
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[string("tif")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("tif")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[string("jpg")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpg")]->read(this, filepath, region, size, force_bps_8);
         }
         else if (_fext == "png") {
-            got_file = io[string("png")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("png")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jp2") || (_fext == "jpx") || (_fext == "j2k")) {
-            got_file = io[string("jpx")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpx")]->read(this, filepath, region, size, force_bps_8);
         }
 
         if (!got_file) {
@@ -267,26 +265,26 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiImageError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file " + filepath);
         }
     }
     //============================================================================
 
-    bool SipiImage::readOriginal(const string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
+    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
             internal_hash.add_data(pixels, nx*ny*nc*bps/8);
-            string checksum = internal_hash.hash();
-            string origname = shttps::getFileName(filepath);
-            string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            std::string checksum = internal_hash.hash();
+            std::string origname = shttps::getFileName(filepath);
+            std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
             essential_metadata(emdata);
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
             internal_hash.add_data(pixels, nx*ny*nc*bps/8);
-            string checksum = internal_hash.hash();
+            std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
             }
@@ -296,20 +294,20 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::readOriginal(const string &filepath, SipiRegion *region, SipiSize *size, const string &origname, shttps::HashType htype) {
+    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype) {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
             internal_hash.add_data(pixels, nx*ny*nc*bps/8);
-            string checksum = internal_hash.hash();
-            string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            std::string checksum = internal_hash.hash();
+            std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
             essential_metadata(emdata);
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
             internal_hash.add_data(pixels, nx*ny*nc*bps/8);
-            string checksum = internal_hash.hash();
+            std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
             }
@@ -318,25 +316,25 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::getDim(string filepath, int &width, int &height) {
+    void SipiImage::getDim(std::string filepath, int &width, int &height) {
         size_t pos = filepath.find_last_of('.');
-        string fext = filepath.substr(pos + 1);
-        string _fext;
+        std::string fext = filepath.substr(pos + 1);
+        std::string _fext;
 
         bool got_file = false;
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[string("tif")]->getDim(filepath, width, height);
+            got_file = io[std::string("tif")]->getDim(filepath, width, height);
         }
         else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[string("jpg")]->getDim(filepath, width, height);
+            got_file = io[std::string("jpg")]->getDim(filepath, width, height);
         }
         else if (_fext == "png") {
-            got_file = io[string("png")]->getDim(filepath, width, height);
+            got_file = io[std::string("png")]->getDim(filepath, width, height);
         }
         else if ((_fext == "jp2") || (_fext == "jpx")) {
-            got_file = io[string("jpx")]->getDim(filepath, width, height);
+            got_file = io[std::string("jpx")]->getDim(filepath, width, height);
         }
 
         if (!got_file) {
@@ -345,7 +343,7 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiImageError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file " + filepath);
         }
     }
     //============================================================================
@@ -384,7 +382,7 @@ namespace Sipi {
                     break;
                 }
                 default: {
-                    throw SipiImageError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + to_string(nc) + "!");
+                    throw SipiImageError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + std::to_string(nc));
                 }
             }
         }
@@ -407,7 +405,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + to_string(bps) + ")!");
+                throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + std::to_string(bps) + ")");
             }
         }
         cmsDoTransform(hTransform, inbuf, outbuf, nx*ny);
@@ -448,7 +446,7 @@ namespace Sipi {
 
     void SipiImage::removeChan(unsigned int chan) {
         if ((nc == 1) || (chan >= nc)) {
-            string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
+            std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
             throw SipiImageError(__file__, __LINE__, msg);
         }
         if (es.size() > 0) {
@@ -457,7 +455,7 @@ namespace Sipi {
             }
             else if (nc > 3) { // it's probably an alpha channel
                 if ((nc == 4) && (photo == SEPARATED)) {  // oh no – 4 channes, but CMYK
-                    string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
+                    std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
                     throw SipiImageError(__file__, __LINE__, msg);
                 }
                 else {
@@ -465,7 +463,7 @@ namespace Sipi {
                 }
             }
             else {
-                string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
+                std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
                 throw SipiImageError(__file__, __LINE__, msg);
             }
         }
@@ -501,7 +499,7 @@ namespace Sipi {
         }
         else {
             if (bps != 8) {
-                string msg = "Bits per sample is not supported for operation: " + to_string(bps);
+                std::string msg = "Bits per sample is not supported for operation: " + std::to_string(bps);
                 throw SipiImageError(__file__, __LINE__, msg);
             }
         }
@@ -1077,11 +1075,11 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::add_watermark(string wmfilename) {
+    bool SipiImage::add_watermark(std::string wmfilename) {
         int wm_nx, wm_ny, wm_nc;
     	byte *wmbuf = read_watermark(wmfilename, wm_nx, wm_ny, wm_nc);
         if (wmbuf == NULL) {
-            throw SipiImageError(__file__, __LINE__, "Cannot read watermark file=\"" + wmfilename + "\" !");
+            throw SipiImageError(__file__, __LINE__, "Cannot read watermark file " + wmfilename);
         }
 
         float *xlut = new float[nx];
@@ -1129,10 +1127,10 @@ namespace Sipi {
         SipiImage *new_rhs = NULL;
 
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
-            stringstream ss;
-            ss << "Image op: images not compatible!" << endl;
-            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << endl;
-            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << endl;
+            std::stringstream ss;
+            ss << "Image op: images not compatible" << std::endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << std::endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << std::endl;
             throw SipiImageError(__file__, __LINE__, ss.str());
         }
 
@@ -1175,7 +1173,7 @@ namespace Sipi {
             default: {
                 delete [] diffbuf;
                 if (new_rhs != NULL) delete new_rhs;
-                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
 
@@ -1217,7 +1215,7 @@ namespace Sipi {
             default: {
                 delete [] diffbuf;
                 if (new_rhs != NULL) delete new_rhs;
-                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
 
@@ -1239,10 +1237,10 @@ namespace Sipi {
         SipiImage *new_rhs = NULL;
 
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
-            stringstream ss;
-            ss << "Image op: images not compatible!" << endl;
-            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << endl;
-            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << endl;
+            std::stringstream ss;
+            ss << "Image op: images not compatible" << std::endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << std::endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << std::endl;
             throw SipiImageError(__file__, __LINE__, ss.str());
         }
 
@@ -1285,7 +1283,7 @@ namespace Sipi {
             default: {
                 delete [] diffbuf;
                 if (new_rhs != NULL) delete new_rhs;
-                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
 
@@ -1324,7 +1322,7 @@ namespace Sipi {
             default: {
                 delete [] diffbuf;
                 if (new_rhs != NULL) delete new_rhs;
-                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported!");
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
 
@@ -1364,29 +1362,29 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    ostream &operator<< (ostream &outstr, const SipiImage &rhs) {
-        outstr << endl << "SipiImage with the following parameters:" << endl;
-        outstr << "nx    = " << to_string(rhs.nx) << endl;
-        outstr << "ny    = " << to_string(rhs.ny) << endl;
-        outstr << "nc    = " << to_string(rhs.nc) << endl;
-        outstr << "es    = " << to_string(rhs.es.size()) << endl;
-        outstr << "bps   = " << to_string(rhs.bps) << endl;
-        outstr << "photo = " << to_string(rhs.photo) << endl;
+    std::ostream &operator<< (std::ostream &outstr, const SipiImage &rhs) {
+        outstr << std::endl << "SipiImage with the following parameters:" << std::endl;
+        outstr << "nx    = " << std::to_string(rhs.nx) << std::endl;
+        outstr << "ny    = " << std::to_string(rhs.ny) << std::endl;
+        outstr << "nc    = " << std::to_string(rhs.nc) << std::endl;
+        outstr << "es    = " << std::to_string(rhs.es.size()) << std::endl;
+        outstr << "bps   = " << std::to_string(rhs.bps) << std::endl;
+        outstr << "photo = " << std::to_string(rhs.photo) << std::endl;
         if (rhs.xmp) {
-            outstr << "XMP-Metadata: " << endl
-                << *(rhs.xmp) << endl;
+            outstr << "XMP-Metadata: " << std::endl
+                << *(rhs.xmp) << std::endl;
         }
         if (rhs.iptc) {
-            outstr << "IPTC-Metadata: " << endl
-                << *(rhs.iptc) << endl;
+            outstr << "IPTC-Metadata: " << std::endl
+                << *(rhs.iptc) << std::endl;
         }
         if (rhs.exif) {
-            outstr << "EXIF-Metadata: " << endl
-                << *(rhs.exif) << endl;
+            outstr << "EXIF-Metadata: " << std::endl
+                << *(rhs.exif) << std::endl;
         }
         if (rhs.icc) {
-            outstr << "ICC-Metadata: " << endl
-                << *(rhs.icc) << endl;
+            outstr << "ICC-Metadata: " << std::endl
+                << *(rhs.icc) << std::endl;
         }
         return outstr;
     }

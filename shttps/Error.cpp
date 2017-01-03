@@ -53,19 +53,19 @@ namespace shttps {
 
     std::string Error::to_string(void) const
     {
-        std::ostringstream errStream;
-        errStream << "Error at [" << file << ": " << line << "]";
-        if (sysErrno != 0) errStream << " (system error: " << std::strerror(sysErrno) << ")";
-        errStream << ": " << message;
-        return errStream.str();
+        std::ostringstream err_stream;
+        err_stream << "Error at [" << file << ": " << line << "]";
+        if (sysErrno != 0) err_stream << " (system error: " << std::strerror(sysErrno) << ")";
+        err_stream << ": " << message;
+        return err_stream.str();
     }
     //============================================================================
 
-    std::ostream &operator<< (std::ostream &outStream, const Error &rhs)
+    std::ostream &operator<< (std::ostream &out_stream, const Error &rhs)
     {
         std::string errStr = rhs.to_string();
-        outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
-        return outStream;
+        out_stream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+        return out_stream;
     }
     //============================================================================
 

@@ -35,7 +35,6 @@ static const char __file__[] = __FILE__;
  * the use of Exiv2::Xmp for processing XMP. We just transfer the XMP string as is. This
  * is bad, since we are not able to modifiy it. But we'll try again with Exiv2 v0.26!
  */
-using namespace std;
 
 namespace Sipi {
 
@@ -55,7 +54,7 @@ namespace Sipi {
     }
     //=========================================================================
 
-    SipiXmp::SipiXmp(const string &xmp) {
+    SipiXmp::SipiXmp(const std::string &xmp) {
         __xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
         return; // provisional code until Exiv2::Xmp is threadsafe
         try {
@@ -86,7 +85,7 @@ namespace Sipi {
     //============================================================================
 
     SipiXmp::SipiXmp(const char *xmp, int len) {
-        string buf(xmp, len);
+        std::string buf(xmp, len);
         __xmpstr = buf; // provisional code until Exiv2::Xmp is threadsafe
         return; // provisional code until Exiv2::Xmp is threadsafe
 
@@ -135,7 +134,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    ostream &operator<< (ostream &outstr, const SipiXmp &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiXmp &rhs) {
         for (Exiv2::XmpData::const_iterator md = rhs.xmpData.begin();
         md != rhs.xmpData.end(); ++md) {
             outstr << std::setfill(' ') << std::left

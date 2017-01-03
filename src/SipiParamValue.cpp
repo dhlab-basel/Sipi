@@ -50,7 +50,7 @@ namespace Sipi {
   SipiParamValue::SipiParamValue (const SipiParamValue &p) {
     dataType = p.dataType;
     if (dataType == SipiString) {
-      sval = new string (*(p.sval));
+      sval = new std::string (*(p.sval));
     }
     else {
       val = p.val;
@@ -62,7 +62,7 @@ namespace Sipi {
   SipiParamValue::SipiParamValue (const SipiParamValue *p) {
     dataType = p->dataType;
     if (dataType == SipiString) {
-      sval = new string (*(p->sval));
+      sval = new std::string (*(p->sval));
     }
     else {
       val = p->val;
@@ -84,13 +84,13 @@ namespace Sipi {
 
   SipiParamValue::SipiParamValue (const char *str) {
     dataType = SipiString;
-    sval = new string (str);
+    sval = new std::string (str);
   }
   //============================================================================
 
   SipiParamValue::SipiParamValue (const string &s) {
     dataType = SipiString;
-    sval = new string (s);
+    sval = new std::string (s);
   }
   //============================================================================
 
@@ -106,7 +106,7 @@ namespace Sipi {
   SipiParamValue &SipiParamValue::operator= (const SipiParamValue &rhs) {
     dataType = rhs.dataType;
     if (dataType == SipiString) {
-      sval = new string (*(rhs.sval));
+      sval = new std::string (*(rhs.sval));
     }
     else {
       val = rhs.val;
@@ -129,9 +129,9 @@ namespace Sipi {
 	break;
       }
       case SipiString: {
-	ostringstream ostr;
+	std::ostringstream ostr;
 	ostr << rhs;
-	sval = new string (ostr.str());
+	sval = new std::string (ostr.str());
 	break;
       }
       default: {
@@ -155,9 +155,9 @@ namespace Sipi {
 	break;
       }
       case SipiString: {
-	ostringstream ostr;
+	std::ostringstream ostr;
 	ostr << rhs;
-	sval = new string (ostr.str());
+	sval = new std::string (ostr.str());
 	break;
       }
       default: {
@@ -171,7 +171,7 @@ namespace Sipi {
 
 
   SipiParamValue &SipiParamValue::operator= (const char *rhs) {
-    istringstream instr (rhs);
+    std::istringstream instr (rhs);
     switch (dataType) {
       case SipiInteger: {
 	instr >> ival;
@@ -183,12 +183,12 @@ namespace Sipi {
       }
       case SipiString: {
 	delete sval;
-	sval = new string (rhs);
+	sval = new std::string (rhs);
 	break;
       }
       default: {
 	dataType = SipiString;
-	sval = new string (rhs);
+	sval = new std::string (rhs);
       }
     }
     return *this;
@@ -197,7 +197,7 @@ namespace Sipi {
 
 
  SipiParamValue & SipiParamValue::operator= (const std::string &rhs) {
-    istringstream instr (rhs);
+    std::istringstream instr (rhs);
     switch (dataType) {
       case SipiInteger: {
 	instr >> ival;
@@ -209,12 +209,12 @@ namespace Sipi {
       }
       case SipiString: {
 	delete sval;
-	sval = new string (rhs);
+	sval = new std::string (rhs);
 	break;
       }
       default: {
 	dataType = SipiString;
-	sval = new string (rhs);
+	sval = new std::string (rhs);
       }
     }
     return *this;
@@ -270,12 +270,12 @@ namespace Sipi {
   string SipiParamValue::getValue (const string &dummy) {
     switch (dataType) {
       case SipiInteger: {
-	ostringstream ostr;
+	std::ostringstream ostr;
 	ostr << ival;
 	return ostr.str();
       }
       case SipiFloat: {
-	ostringstream ostr;
+	std::ostringstream ostr;
 	ostr << fval;
 	return ostr.str();
       }
@@ -291,7 +291,7 @@ namespace Sipi {
   //============================================================================
 
 
-  ostream &operator<< (ostream &outstr, const SipiParamValue &rhs) {
+  std::ostream &operator<< (std::ostream &outstr, const SipiParamValue &rhs) {
     switch (rhs.dataType) {
       case SipiInteger:
 	outstr << rhs.ival;

@@ -44,8 +44,6 @@
 #define MAX_BYTES_IN_MARKER  65533	/* maximum data len of a JPEG marker */
 
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 
@@ -56,12 +54,12 @@ namespace Sipi {
     /*!
      * Special exception within the JPEG routines which can be caught separately
      */
-    class JpegError : public runtime_error {
+    class JpegError : public std::runtime_error {
     public:
-        inline JpegError() : runtime_error("!! JPEG_ERROR !!") {}
-        inline JpegError(const char *msg) : runtime_error(msg) {}
+        inline JpegError() : std::runtime_error("!! JPEG_ERROR !!") {}
+        inline JpegError(const char *msg) : std::runtime_error(msg) {}
         inline const char* what() const noexcept {
-            return runtime_error::what();
+            return std::runtime_error::what();
         }
     };
     //------------------------------------------------------------------
@@ -195,7 +193,7 @@ namespace Sipi {
     //=============================================================================
 
     static void file_source_skip_input_data(struct jpeg_decompress_struct *cinfo, long num_bytes) {
-        cerr << "file_source_skip_input_data" << endl;
+        std::cerr << "file_source_skip_input_data" << std::endl;
         if (num_bytes > 0) {
             while (num_bytes > (long) cinfo->src->bytes_in_buffer) {
                 num_bytes -= (long) cinfo->src->bytes_in_buffer;
@@ -512,7 +510,7 @@ namespace Sipi {
         while (marker) {
             //fprintf(stderr, "#######################################################################\n");
             if (marker->marker == JPEG_COM) {
-                string emdatastr((char *) marker->data, marker->data_length);
+                std::string emdatastr((char *) marker->data, marker->data_length);
                 SipiEssentials se(emdatastr);
                 img->essential_metadata(se);
             }
@@ -578,7 +576,7 @@ namespace Sipi {
                         img->xmp = new SipiXmp(xmpstr);
                     }
                     catch (SipiError &err) {
-                        cerr << "Failed to parse XMP... xmp_len = " << xmp_len << endl;
+                        std::cerr << "Failed to parse XMP... xmp_len = " << xmp_len << std::endl;
                     }
 
                 }
@@ -844,25 +842,25 @@ namespace Sipi {
         switch (img->photo) {
             case MINISWHITE:
             case MINISBLACK: {
-                if (img->nc != 1) throw SipiImageError(__file__, __LINE__, "Num of components not 1 (nc = " + to_string(img->nc) + ")!");
+                if (img->nc != 1) throw SipiImageError(__file__, __LINE__, "Num of components not 1 (nc = " + std::to_string(img->nc) + ")!");
                 cinfo.in_color_space = JCS_GRAYSCALE;
                 cinfo.jpeg_color_space = JCS_GRAYSCALE;
                 break;
             }
             case RGB: {
-                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + to_string(img->nc) + ")!");
+                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
                 cinfo.in_color_space = JCS_RGB;
                 cinfo.jpeg_color_space = JCS_RGB;
                 break;
             }
             case SEPARATED: {
-                if (img->nc != 4) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + to_string(img->nc) + ")!");
+                if (img->nc != 4) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
                 cinfo.in_color_space = JCS_CMYK;
                 cinfo.jpeg_color_space = JCS_CMYK;
                 break;
             }
             case YCBCR: {
-                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + to_string(img->nc) + ")!");
+                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
                 cinfo.in_color_space = JCS_YCbCr;
                 cinfo.jpeg_color_space = JCS_YCbCr;
                 break;
@@ -934,7 +932,7 @@ namespace Sipi {
                 buf = img->xmp->xmpBytes(len);
             }
             catch (SipiError &err) {
-                cerr << err << endl;
+                std::cerr << err << std::endl;
             }
             char start[] = "http://ns.adobe.com/xap/1.0/\000";
             size_t start_l = sizeof(start) - 1; // remove trailing '\0';
@@ -993,7 +991,7 @@ namespace Sipi {
             delete [] buf;
             delete [] iccchunk;
             if (n_towrite != 0) {
-                cerr << "Hoppla!" << endl;
+                std::cerr << "Hoppla!" << std::endl;
             }
         }
 
@@ -1031,7 +1029,7 @@ namespace Sipi {
         SipiEssentials es = img->essential_metadata();
         if (es.is_set()) {
             try {
-                string esstr = es;
+                std::string esstr = es;
                 unsigned int len = esstr.length();
                 char sipi_buf[512 + 1];
                 strncpy(sipi_buf, esstr.c_str(), 512);

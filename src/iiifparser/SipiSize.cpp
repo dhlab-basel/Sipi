@@ -42,15 +42,13 @@
 #include "SipiError.h"
 #include "SipiSize.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
     int SipiSize::limitdim = 32000;
 
-    SipiSize::SipiSize(string str) {
+    SipiSize::SipiSize(std::string str) {
         nx = ny = 0;
         percent = 0.;
         canonical_ok = false;
@@ -59,9 +57,9 @@ namespace Sipi {
         if (str.empty() || (str == "full")) {
             size_type = SizeType::FULL;
         }
-        else if (str.find("pct") != string::npos) {
+        else if (str.find("pct") != std::string::npos) {
             size_type = SizeType::PERCENTS;
-            string tmpstr = str.substr(4);
+            std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%f", &percent);
             if (n != 1) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"pct:float\" !");
@@ -69,9 +67,9 @@ namespace Sipi {
             if (percent < 0.0) percent = 1.0;
             if (percent > 100.0) percent = 100.0;
         }
-        else if (str.find("red") != string::npos) {
+        else if (str.find("red") != std::string::npos) {
             size_type = SizeType::REDUCE;
-            string tmpstr = str.substr(4);
+            std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%d", &reduce);
             if (n != 1) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"red:int\" !");
@@ -144,7 +142,7 @@ namespace Sipi {
     bool SipiSize::operator >(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w > s.w) || (h > s.h));
@@ -154,7 +152,7 @@ namespace Sipi {
     bool SipiSize::operator >=(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w >= s.w) || (h >= s.h));
@@ -164,7 +162,7 @@ namespace Sipi {
     bool SipiSize::operator <(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w < s.w) && (h < s.h));
@@ -174,7 +172,7 @@ namespace Sipi {
     bool SipiSize::operator <=(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w <= s.w) && (h <= s.h));
@@ -363,10 +361,10 @@ namespace Sipi {
             }
         }
 
-        stringstream ss;
+        std::stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
-        syslog(LOG_DEBUG, ss.str().c_str());
+        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         w_p = w;
         h_p = h;
@@ -384,7 +382,7 @@ namespace Sipi {
     void SipiSize::canonical(char *buf, int buflen) {
         int n;
         if (!canonical_ok && (size_type != SipiSize::FULL)) {
-            string msg = "Canonical size not determined!";
+            std::string msg = "Canonical size not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         switch (size_type) {
@@ -425,13 +423,13 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (ostream &outstr, const SipiSize &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiSize &rhs) {
         outstr << "IIIF-Server Size parameter:";
         outstr << "  Size type: " << rhs.size_type;
         outstr
-            << " | percent = " << to_string(rhs.percent)
-            << " | nx = " << to_string(rhs.nx)
-            << " | ny = " << to_string(rhs.ny);
+            << " | percent = " << std::to_string(rhs.percent)
+            << " | nx = " << std::to_string(rhs.nx)
+            << " | ny = " << std::to_string(rhs.ny);
         return outstr;
     };
     //-------------------------------------------------------------------------

@@ -49,12 +49,12 @@
 /*!
  * \mainpage
  *
- * # SIPI – Simple Image Presentation Interface #
+ * # Sipi – Simple Image Presentation Interface #
  *
- * SIPI is a package that can be used to convert images from/to different formats while
- * preserving as much metadata thats embeded in the file headers a possible. SIPI is also
+ * Sipi is a package that can be used to convert images from/to different formats while
+ * preserving as much metadata thats embeded in the file headers a possible. Sipi is also
  * able to do some conversions, especially some common color space transformation using
- * ICC profiles. Currently SIPI supports the following file formats
+ * ICC profiles. Currently Sipi supports the following file formats
  *
  * - TIFF
  * - JPEG2000
@@ -68,7 +68,7 @@
  *
  * ## Commandline Use ##
  *
- * For simple conversions, SIPI is being used from the command line (in a terminal window). The
+ * For simple conversions, Sipi is being used from the command line (in a terminal window). The
  * format is usually
  *
  *     sipi [options] <infile> <outfile>

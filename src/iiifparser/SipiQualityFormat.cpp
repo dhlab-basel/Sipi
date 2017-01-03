@@ -41,8 +41,6 @@
 
 #include <string>
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
@@ -106,7 +104,7 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (ostream &outstr, const SipiQualityFormat &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiQualityFormat &rhs) {
         outstr << "IIIF-Server QualityFormat parameter: ";
         outstr << "  Quality: " << rhs.quality_type;
         outstr << " | Format: " << rhs.format_type;

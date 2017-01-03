@@ -26,8 +26,6 @@
 
 static const char __file__[] = __FILE__;
 
-using namespace std;
-
 namespace Sipi {
 
     SipiIptc::SipiIptc(const unsigned char *iptc, unsigned int len) {
@@ -49,7 +47,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    ostream &operator<< (ostream &outstr, SipiIptc &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, SipiIptc &rhs) {
         Exiv2::IptcData::iterator end = rhs.iptcData.end();
         for (Exiv2::IptcData::iterator md = rhs.iptcData.begin(); md != end; ++md) {
             outstr << std::setw(44) << std::setfill(' ') << std::left
