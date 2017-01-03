@@ -40,10 +40,14 @@ function pre_flight(prefix,identifier,cookie)
     --
     -- For Knora Sipi integration testing
     -- Always the same test file is served
+    -- Make sure that this image file exists in config.imgroot
     --
-    filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
 
-    print("serving test image " .. filepath)
+    if config.prefix_as_path then
+        filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
+    else
+        filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+    end
 
     if prefix == "thumbs" then
         -- always allow thumbnails
@@ -78,27 +82,24 @@ function pre_flight(prefix,identifier,cookie)
     end
 
     knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
-    print("knora_url: " .. knora_url)
 
-    result = server.http("GET", knora_url, knora_cookie_header, 5000)
-
-    -- check HTTP request was successful
-    if not result.success then
-        print("Request to Knora failed: " .. result.errmsg)
-        -- deny request
+    success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
+    if not success then
+        server.log("server.http() failed: " .. result, server.loglevel.ERROR)
         return 'deny'
     end
 
     if result.status_code ~= 200 then
-        print("Knora returned HTTP status code " .. ret.status)
-        print(result.body)
+        server.log("Knora returned HTTP status code " .. result.status_code)
+        server.log(result.body)
         return 'deny'
     end
 
-    response_json = server.json_to_table(result.body)
-
-    print("status: " .. response_json.status)
-    print("permission code: " .. response_json.permissionCode)
+    success, response_json = server.json_to_table(result.body)
+    if not success then
+        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.ERROR)
+        return 'deny'
+    end
 
     if response_json.status ~= 0 then
         -- something went wrong with the request, Knora returned a non zero status

@@ -28,11 +28,9 @@
 
 static const char __file__[] = __FILE__;
 
-using namespace std;
-
 namespace Sipi {
 
-    string SipiEssentials::hash_type_string(void) const {
+    std::string SipiEssentials::hash_type_string(void) const {
         std::string hash_type_str;
         switch (_hash_type) {
             case shttps::HashType::none:    hash_type_str = "none";   break;

@@ -27,8 +27,6 @@
 
 #include "SipiError.h"
 
-using namespace std;
-
 namespace Sipi {
 
     SipiError::SipiError(const char *file_p, const int line_p, const char *msg, int errno_p)
@@ -36,26 +34,27 @@ namespace Sipi {
     //============================================================================
 
 
-    SipiError::SipiError(const char *file_p, const int line_p, const string &msg, int errno_p)
+    SipiError::SipiError(const char *file_p, const int line_p, const std::string &msg, int errno_p)
             : Error(file_p, line_p, msg, errno_p) {}
     //============================================================================
 
-    ostream &operator<<(ostream &outstr, const SipiError &rhs)
+    std::string SipiError::to_string(void) const
     {
-      outstr << endl << "SIPI-ERROR at [" << rhs.getFile() << ": #" << rhs.getLine() << "]" << endl;
-      if (rhs.getSysErrno() != 0) {
-        outstr << "System error: " << strerror(rhs.getSysErrno()) << endl;
-      }
-      outstr << "Description: " << rhs.getMessage() << endl;
-      return outstr;
+        std::ostringstream errStream;
+        errStream << "Sipi Error at [" << file << ": " << line << "]";
+        if (sysErrno != 0) errStream << " (system error: " << std::strerror(sysErrno) << ")";
+        errStream << ": " << message;
+        return errStream.str();
     }
     //============================================================================
 
-    string SipiError::to_string() const
+    std::ostream &operator<< (std::ostream &outStream, const SipiError &rhs)
     {
-        stringstream ss;
-        ss << "SIPI-ERROR at [" << getFile() << ": #" << getLine() << "]: " << getMessage();
-        return ss.str();
+        std::string errStr = rhs.to_string();
+        outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+        return outStream;
     }
+    //============================================================================
+
 
 }

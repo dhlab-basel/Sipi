@@ -354,7 +354,7 @@ namespace Sipi {
 
         SipiRegion *region = NULL;
         SipiSize *size = NULL;
-        string original;
+        std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
         if (top == 2) {
             if (lua_istable(L, 2)) {
@@ -418,7 +418,7 @@ namespace Sipi {
                     else if (strcmp(param, "hash") == 0) {
                         if (lua_isstring(L, -1)) {
                             const char *tmpstr = lua_tostring(L, -1);
-                            string hashstr = tmpstr;
+                            std::string hashstr = tmpstr;
                             if (hashstr == "md5") {
                                 htype = shttps::HashType::md5;
                             }
@@ -477,7 +477,7 @@ namespace Sipi {
             delete size;
             lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
-            stringstream ss;
+            std::stringstream ss;
             ss << "'SipiImage.new()': ";
             ss << err;
             lua_pushstring(L, ss.str().c_str());
@@ -510,7 +510,7 @@ namespace Sipi {
             catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
-                stringstream ss;
+                std::stringstream ss;
                 ss << "'SipiImage.dims()': " << err;
                 lua_pushstring(L, ss.str().c_str());
                 return 2;
@@ -577,7 +577,7 @@ namespace Sipi {
         }
         catch (SipiImageError &err) {
             lua_pushboolean(L, false);
-            stringstream ss;
+            std::stringstream ss;
             ss << "'SipiImage.mimetype_consistency()': " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
@@ -613,7 +613,7 @@ namespace Sipi {
         }
         catch (SipiError &err) {
             lua_pushboolean(L, false);
-            stringstream ss;
+            std::stringstream ss;
             ss << "'SipiImage.crop()': " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
@@ -654,7 +654,7 @@ namespace Sipi {
         }
         catch (SipiError &err) {
             lua_pushboolean(L, false);
-            stringstream ss;
+            std::stringstream ss;
             ss << "'SipiImage.scale()': " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
@@ -722,7 +722,7 @@ namespace Sipi {
         }
         catch(SipiImageError &err) {
             lua_pushboolean(L, false);
-            stringstream ss;
+            std::stringstream ss;
             ss << "'SipiImage.watermark()': " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
@@ -802,7 +802,7 @@ namespace Sipi {
             catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
-                lua_pushstring(L, err.get_error().c_str());
+                lua_pushstring(L, err.to_string().c_str());
                 return 2;
             }
         }
@@ -813,7 +813,7 @@ namespace Sipi {
             catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
-                lua_pushstring(L, err.get_error().c_str());
+                lua_pushstring(L, err.to_string().c_str());
                 return 2;
             }
         }
@@ -872,7 +872,7 @@ namespace Sipi {
         }
         catch (SipiImageError &err) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, err.get_error().c_str());
+            lua_pushstring(L, err.to_string().c_str());
             return 2;
         }
 
