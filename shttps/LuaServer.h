@@ -162,24 +162,14 @@ namespace shttps {
         */
         int executeChunk(const std::string &luastr);
 
-       /*!
-        * Executes a Lua function that either is defined in C or in Lua
-        *
-        * \param[in] funcname Name of the function
-        * \param[in] n Number of arguments
-        * \returns vector of LuaValstruct containing the result of the execution of the lua function
-        */
-        std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, ...);
-
         /*!
          * Executes a Lua function that either is defined in C or in Lua
          *
          * \param[in] funcname Name of the function
-         * \param[in] n Number of arguments
-         * \param[in] lv Array of LuaValstruct values
+         * \param[in] lvs vector of function parameters
          * \returns vector of LuaValstruct containing the result of the execution of the lua function
          */
-        std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, LuaValstruct *lv);
+        std::vector<LuaValstruct> executeLuafunction(const std::string& funcname, std::vector<LuaValstruct>& lvs);
 
         /*!
          * Executes a Lua function that either is defined in C or in Lua
@@ -188,7 +178,7 @@ namespace shttps {
          * \param[in] n Number of arguments
          * \returns true if function with given name exists
          */
-        bool luaFunctionExists(const std::string *funcname);
+        bool luaFunctionExists(const std::string& funcname);
     };
 
 }

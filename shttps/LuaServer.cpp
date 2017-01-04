@@ -998,7 +998,7 @@ namespace shttps {
         int line;
         std::string errorMsg;
     public:
-        inline HttpError(int line_p, std::string &errormsg_p) : line(line_p), errorMsg(errormsg_p) {};
+        inline HttpError(int line_p, const std::string &errormsg_p) : line(line_p), errorMsg(errormsg_p) {};
         inline HttpError(int line_p, const char *errormsg_p) : line(line_p) { errorMsg = errormsg_p; };
         inline std::string what(void) {
             std::stringstream ss;
@@ -1053,27 +1053,30 @@ namespace shttps {
             }
 
             try {
-                // Tell Curl not to use signal handlers. This is required in multi-threaded applications.
-                if (curl_easy_setopt(_conn, CURLOPT_NOSIGNAL, 1L) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set CURLOPT_NOSIGNAL: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
-                }
-
                 // Set the connection object's error message buffer.
                 if (curl_easy_setopt(_conn, CURLOPT_ERRORBUFFER, _curlErrorBuffer) != CURLE_OK) {
                     throw HttpError(__LINE__, "Failed to set libcurl error buffer");
                 }
 
+                // Tell Curl not to use signal handlers. This is required in multi-threaded applications.
+                if (curl_easy_setopt(_conn, CURLOPT_NOSIGNAL, 1L) != CURLE_OK) {
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set CURLOPT_NOSIGNAL: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
+                }
+
                 // Set the connection URL.
                 if (curl_easy_setopt(_conn, CURLOPT_URL, url.c_str()) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl URL: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl URL: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Set the connection timeout.
                 if (curl_easy_setopt(_conn, CURLOPT_CONNECTTIMEOUT_MS, timeout) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set connection timeout: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set connection timeout: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Set the HTTP request headers.
@@ -1086,38 +1089,44 @@ namespace shttps {
                 }
 
                 if (curl_easy_setopt(_conn, CURLOPT_HTTPHEADER, chunk) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set HTTP headers: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set HTTP headers: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Tell the connection to follow redirects.
                 if (curl_easy_setopt(_conn, CURLOPT_FOLLOWLOCATION, 1L) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl redirect option: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl redirect option: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Register a function for handling the connection's response data.
                 if (curl_easy_setopt(_conn, CURLOPT_WRITEFUNCTION, curlWriterCallback) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl writer callback: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl writer callback: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Set the connection's response data buffer.
                 if (curl_easy_setopt(_conn, CURLOPT_WRITEDATA, &responseBody) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl response data buffer: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl response data buffer: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Register a fiunction for handling the connection's response headers.
                 if (curl_easy_setopt(_conn, CURLOPT_HEADERFUNCTION, curlHeaderCallback) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl response header callback: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl response header callback: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
 
                 // Set the object that will collect the respnse headers.
                 if (curl_easy_setopt(_conn, CURLOPT_HEADERDATA, &responseHeaders) != CURLE_OK) {
-                    std::string errorMsg = std::string("Failed to set libcurl response header object: ") + std::string(_curlErrorBuffer);
-                    throw HttpError(__LINE__,  errorMsg);
+                    std::ostringstream errMsg;
+                    errMsg << "Failed to set libcurl response header object: " << _curlErrorBuffer;
+                    throw HttpError(__LINE__,  errMsg.str());
                 }
             } catch (HttpError &err) {
                 curl_easy_cleanup(_conn);
@@ -1127,10 +1136,9 @@ namespace shttps {
 
         void doGetRequest() {
             if (curl_easy_perform(_conn) != CURLE_OK) {
-                std::ostringstream errStream;
-                errStream << "HTTP GET request to " << _url << " failed: " << _curlErrorBuffer;
-                std::string errorMsg = errStream.str();
-                throw HttpError(__LINE__, errorMsg);
+                std::ostringstream errMsg;
+                errMsg << "HTTP GET request to " << _url << " failed: " << _curlErrorBuffer;
+                throw HttpError(__LINE__, errMsg.str());
             }
         }
 
@@ -2601,41 +2609,44 @@ namespace shttps {
     //=========================================================================
 
 
-    std::vector<LuaValstruct> LuaServer::executeLuafunction(const std::string *funcname, int n, LuaValstruct *lv) {
-        if (lua_getglobal(L, funcname->c_str()) != LUA_TFUNCTION) {
+    std::vector<LuaValstruct> LuaServer::executeLuafunction(const std::string& funcname, std::vector<LuaValstruct>& lvs) {
+        if (lua_getglobal(L, funcname.c_str()) != LUA_TFUNCTION) {
             lua_settop(L, 0); // clear stack
-            std::string errorMsg = std::string("LuaServer::executeLuafunction: Function not found: ") + *funcname;
-            throw Error(__file__, __LINE__, errorMsg);
+            std::ostringstream errMsg;
+            errMsg << "LuaServer::executeLuafunction: function " << funcname << " not found";
+            throw Error(__file__, __LINE__, errMsg.str());
         }
-        for (int i = 0; i < n; i++) {
-            switch (lv[i].type) {
+
+        for (auto lv : lvs) {
+            switch (lv.type) {
                 case LuaValstruct::INT_TYPE: {
-                    lua_pushinteger(L, lv[i].value.i);
+                    lua_pushinteger(L, lv.value.i);
                     break;
                 }
                 case LuaValstruct::FLOAT_TYPE: {
-                    lua_pushnumber(L, lv[i].value.f);
+                    lua_pushnumber(L, lv.value.f);
                     break;
                 }
                 case LuaValstruct::STRING_TYPE: {
-                    lua_pushstring(L, lv[i].value.s.c_str());
+                    lua_pushstring(L, lv.value.s.c_str());
                     break;
                 }
                 case LuaValstruct::BOOLEAN_TYPE: {
-                    lua_pushboolean(L, lv[i].value.b);
+                    lua_pushboolean(L, lv.value.b);
                     break;
                 }
             }
-
         }
 
-        if (lua_pcall(L, n, LUA_MULTRET, 0) != LUA_OK) {
-            const char *errorMsg = lua_tostring(L, 1);
+        if (lua_pcall(L, lvs.size(), LUA_MULTRET, 0) != LUA_OK) {
+            std::string luaErrorMsg(lua_tostring(L, 1));
             lua_settop(L, 0); // clear stack
-            throw Error(__file__, __LINE__, std::string("LuaServer::executeLuafunction " + *funcname + " failed: ") + errorMsg);
+            std::ostringstream errMsg;
+            errMsg << "LuaServer::executeLuafunction: function " << funcname << " failed: " << luaErrorMsg;
+            throw Error(__file__, __LINE__, errMsg.str());
         }
 
-         int top = lua_gettop(L);
+        int top = lua_gettop(L);
         std::vector<LuaValstruct> retval;
 
         LuaValstruct tmplv;
@@ -2659,16 +2670,15 @@ namespace shttps {
             else if (lua_isnil(L,i)) {
                 std::string luaTypeName = std::string(lua_typename(L, i));
                 std::ostringstream errStream;
-                errStream << "Lua function " << *funcname << " returned nil";
+                errStream << "Lua function " << funcname << " returned nil";
                 std::string errorMsg = errStream.str();
                 throw Error(__file__, __LINE__, errorMsg);
             }
             else {
                 std::string luaTypeName = std::string(lua_typename(L, i));
-                std::ostringstream errStream;
-                errStream << "Lua function " << *funcname << " returned a value of type " << luaTypeName << ", which is not supported";
-                std::string errorMsg = errStream.str();
-                throw Error(__file__, __LINE__, errorMsg);
+                std::ostringstream errMsg;
+                errMsg << "Lua function " << funcname << " returned a value of type " << luaTypeName << ", which is not supported";
+                throw Error(__file__, __LINE__, errMsg.str());
             }
             retval.push_back(tmplv);
         }
@@ -2681,8 +2691,8 @@ namespace shttps {
     //=========================================================================
 
 
-    bool LuaServer::luaFunctionExists(const std::string *funcname) {
-        int ltype = lua_getglobal(L, funcname->c_str());
+    bool LuaServer::luaFunctionExists(const std::string& funcname) {
+        int ltype = lua_getglobal(L, funcname.c_str());
         lua_pop(L, 1);
         return (ltype == LUA_TFUNCTION);
     }
