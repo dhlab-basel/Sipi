@@ -12,7 +12,8 @@ ExternalProject_Add(project_zlib
         CONFIGURE_COMMAND ${COMMON_SRCS}/zlib-1.2.10/configure --prefix=${COMMON_LOCAL} --static --shared --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
-        )
+	INSTALL_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} install INSTALL_TOP=${COMMON_LOCAL}
+)
 ExternalProject_Get_Property(project_zlib install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(z SHARED IMPORTED GLOBAL)
