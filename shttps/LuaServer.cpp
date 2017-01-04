@@ -209,7 +209,7 @@ namespace shttps {
      */
     LuaServer::LuaServer() {
         if ((L = luaL_newstate()) == NULL) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -221,7 +221,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn) {
         if ((L = luaL_newstate()) == NULL) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -236,7 +236,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(const std::string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == NULL) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -267,7 +267,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == NULL) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter!");
+            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -318,7 +318,7 @@ namespace shttps {
             else {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.setbuffer([bufize][, incsize])': requires bufsize size as integer!");
+                lua_pushstring(L, "'server.setbuffer([bufize][, incsize])': requires bufsize size as integer");
                 return 2;
             }
         }
@@ -329,7 +329,7 @@ namespace shttps {
             else {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.setbuffer([bufize][, incsize])': requires incsize size as integer!");
+                lua_pushstring(L, "'server.setbuffer([bufize][, incsize])': requires incsize size as integer");
                 return 2;
             }
         }
@@ -366,15 +366,15 @@ namespace shttps {
 
         int top = lua_gettop(L);
         if (top < 1) {
-            lua_pop(L, top);
+            lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.ftype()': parameter missing!");
+            lua_pushstring(L, "'server.fs.ftype()': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
-            lua_pop(L, top);
+            lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.ftype()': filename is not a string!");
+            lua_pushstring(L, "'server.fs.ftype()': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -425,13 +425,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_readable(filename)': parameter missing!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_readable(filename)': filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_readable(filename)': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -457,13 +457,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_writeable(filename)': parameter missing!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_writeable(filename)': filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_writeable(filename)': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -489,13 +489,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_executable(filename)': parameter missing!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.is_executable(filename)': filename is not a string!");
+            lua_pushstring(L, "'server.fs.is_executable(filename)': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -521,13 +521,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.exists(filename)': parameter missing!");
+            lua_pushstring(L, "'server.fs.exists(filename)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.exists(filename)': filename is not a string!");
+            lua_pushstring(L, "'server.fs.exists(filename)': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -555,13 +555,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.unlink(filename)': parameter missing!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.unlink(filename)': filename is not a string!");
+            lua_pushstring(L, "'server.fs.unlink(filename)': filename is not a string");
             return 2;
         }
         const char *filename = lua_tostring(L, 1);
@@ -589,19 +589,19 @@ namespace shttps {
         if (top < 2) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': parameter missing!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': dirname is not a string!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': dirname is not a string");
             return 2;
         }
         if (!lua_isinteger(L, 2)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': mask is not an integer!");
+            lua_pushstring(L, "'server.fs.mkdir(dirname, mask)': mask is not an integer");
             return 2;
         }
         const char *dirname = lua_tostring(L, 1);
@@ -630,13 +630,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.rmdir(dirname)': parameter missing!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.rmdir(dirname)': dirname is not a string!");
+            lua_pushstring(L, "'server.fs.rmdir(dirname)': dirname is not a string");
             return 2;
         }
         const char *dirname = lua_tostring(L, 1);
@@ -684,13 +684,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.chdir(dirname)': parameter missing!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.fs.chdir(dirname)': dirname is not a string!");
+            lua_pushstring(L, "'server.fs.chdir(dirname)': dirname is not a string");
             return 2;
         }
         const char *dirname = lua_tostring(L, 1);
@@ -724,7 +724,7 @@ namespace shttps {
         int top = lua_gettop(L);
 
         if (top < 2) {
-            lua_pop(L, top);
+            lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_fs_copyfile(from,to)': not enough parameters");
             return 2;
@@ -736,7 +736,7 @@ namespace shttps {
         // check if source is readable
         if (source.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open source file!");
+            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open source file");
             return 2;
         }
 
@@ -747,14 +747,14 @@ namespace shttps {
         std::ofstream dest(outfile, std::ios::binary);
         if (dest.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open output file!");
+            lua_pushstring(L, "'lua_fs_copyfile(from,to)': Couldn't open output file");
             return 2;
         }
 
         dest << source.rdbuf();
         if (dest.fail() || source.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L,  "'lua_fs_copyfile(from,to)': Copying data failed!");
+            lua_pushstring(L,  "'lua_fs_copyfile(from,to)': Copying data failed");
             return 2;
         }
 
@@ -820,13 +820,13 @@ namespace shttps {
         if (top != 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid parameter missing!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid is not a string!");
+            lua_pushstring(L, "'server.uuid_tobase62(uuid)': uuid is not a string");
             return 2;
         }
         const char *uuidstr = lua_tostring(L, 1);
@@ -851,13 +851,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 parameter missing!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 is not a string!");
+            lua_pushstring(L, "'server.base62_to_uuid(uuid62)': uuid62 is not a string");
             return 2;
         }
         const char *uuidb62 = lua_tostring(L, 1);
@@ -893,7 +893,7 @@ namespace shttps {
                 catch(int ierr) {
                     lua_settop(L, 0); // clear stack
                     lua_pushboolean(L, false);
-                    lua_pushstring(L, "Sending data to connection failed!");
+                    lua_pushstring(L, "Sending data to connection failed");
                     return 2;
                 }
                 catch(Error &err) {
@@ -959,7 +959,7 @@ namespace shttps {
                         lua_rawset(L, -3); // table
 
                         lua_pushstring(L, "message"); // table - "username"
-                        lua_pushstring(L, "Auth-string not valid!"); // table - "username" - <username>
+                        lua_pushstring(L, "Auth-string not valid"); // table - "username" - <username>
                         lua_rawset(L, -3); // table
                     }
                 }
@@ -981,7 +981,7 @@ namespace shttps {
                 lua_rawset(L, -3); // table
 
                 lua_pushstring(L, "message"); // table - "username"
-                lua_pushstring(L, "Auth-type not known!"); // table - "username" - <username>
+                lua_pushstring(L, "Auth-type not known"); // table - "username" - <username>
                 lua_rawset(L, -3); // table
             }
         }
@@ -1262,14 +1262,14 @@ namespace shttps {
 
         lua_settop(L, 0); // clear stack
         lua_pushboolean(L, false);
-        lua_pushstring(L, "Unknown error – shouldn't happen!"); // table - "errmsg" - errorMsg
+        lua_pushstring(L, "Unknown error"); // table - "errmsg" - errorMsg
         return 2;
     }
     //=========================================================================
 
 
     static json_t *subtable(lua_State *L, int index) {
-        std::string table_error("server.table_to_json(table): datatype inconsistency!");
+        std::string table_error("server.table_to_json(table): datatype inconsistency");
         json_t *tableobj = NULL;
         json_t *arrayobj = NULL;
         json_t *tmp_luanumber = NULL;
@@ -1385,13 +1385,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
+            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing");
             return 2;
         }
         if (!lua_istable(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
+            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table");
             return 2;
         }
 
@@ -1421,7 +1421,7 @@ namespace shttps {
 
     static void lua_jsonobj(lua_State *L, json_t *obj) {
         if (!json_is_object(obj)) {
-            throw std::string("'lua_jsonobj expects object!");
+            throw std::string("'lua_jsonobj expects object");
         }
 
         lua_createtable(L, 0, 0);
@@ -1472,7 +1472,7 @@ namespace shttps {
 
     static void lua_jsonarr(lua_State *L, json_t *arr) {
         if (!json_is_array(arr)) {
-            throw std::string("'lua_jsonarr expects array!");
+            throw std::string("'lua_jsonarr expects array");
         }
 
         lua_createtable(L, 0, 0);
@@ -1530,13 +1530,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr parameter missing!");
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr parameter missing");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr is not a string!");
+            lua_pushstring(L, "'server.json_to_table(jsonstr)': jsonstr is not a string");
             return 2;
         }
 
@@ -1567,7 +1567,7 @@ namespace shttps {
             else {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.json_to_table(jsonstr)': Not a valid json string!");
+                lua_pushstring(L, "'server.json_to_table(jsonstr)': Not a valid json string");
                 return 2;
             }
         }
@@ -1614,7 +1614,7 @@ namespace shttps {
         if (top != 2) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.sendHeader(key,val)': Invalid number of parameters!");
+            lua_pushstring(L, "'server.sendHeader(key,val)': Invalid number of parameters");
             return 2;
         }
         const char *hkey = lua_tostring(L, 1);
@@ -1651,7 +1651,7 @@ namespace shttps {
         if ((top < 2) || (top > 3)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid number of parameters!");
+            lua_pushstring(L, "'server.sendCookie(name, value[, options])': Invalid number of parameters");
             return 2;
         }
         const char *ckey = lua_tostring(L, 1);
@@ -1663,7 +1663,7 @@ namespace shttps {
             if (!lua_istable(L, 3)) {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.sendCookie(name, value[, options])': options is not a lua-table!");
+                lua_pushstring(L, "'server.sendCookie(name, value[, options])': options is not a lua-table");
                 return 2;
             }
             lua_pushnil(L);  /* first key */
@@ -1680,7 +1680,7 @@ namespace shttps {
                     else {
                         lua_settop(L, 0); // clear stack
                         lua_pushboolean(L, false);
-                        lua_pushstring(L, "'server.sendCookie(name, value[, options])': option name is not a string!");
+                        lua_pushstring(L, "'server.sendCookie(name, value[, options])': option name is not a string");
                         return 2;
                     }
                     if (optname == "path") {
@@ -1689,7 +1689,7 @@ namespace shttps {
                             cookie.path(path);
                         }
                         else {
-                            throw std::string("'server.sendCookie(name, value[, options])': path is not string!");
+                            throw std::string("'server.sendCookie(name, value[, options])': path is not string");
                         }
                     }
                     else if (optname == "domain") {
@@ -1698,7 +1698,7 @@ namespace shttps {
                             cookie.domain(domain);
                         }
                         else {
-                            throw std::string("'server.sendCookie(name, value[, options])': domain is not string!");
+                            throw std::string("'server.sendCookie(name, value[, options])': domain is not string");
                         }
                     }
                     else if (optname == "expires") {
@@ -1707,7 +1707,7 @@ namespace shttps {
                             cookie.expires(expires);
                         }
                         else {
-                            throw std::string("'server.sendCookie(name, value[, options])': expires is not integer!");
+                            throw std::string("'server.sendCookie(name, value[, options])': expires is not integer");
                         }
                     }
                     else if (optname == "secure") {
@@ -1716,7 +1716,7 @@ namespace shttps {
                             if (secure) cookie.secure(secure);
                         }
                         else {
-                            throw std::string("'server.sendCookie(name, value[, options])': secure is not boolean!");
+                            throw std::string("'server.sendCookie(name, value[, options])': secure is not boolean");
                         }
                     }
                     else if (optname == "http_only") {
@@ -1725,7 +1725,7 @@ namespace shttps {
                             if (http_only) cookie.httpOnly(http_only);
                         }
                         else {
-                            throw std::string("'server.sendCookie(name, value[, options])': http_only is not boolean!");
+                            throw std::string("'server.sendCookie(name, value[, options])': http_only is not boolean");
                         }
                     }
                     else {
@@ -1799,7 +1799,7 @@ namespace shttps {
         }
 
         if (!lua_isinteger(L, 1)) {
-            lua_pop(L, top);
+            lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' must be an integer");
             return 2;
@@ -1814,7 +1814,7 @@ namespace shttps {
         try {
             infile = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
         } catch (const std::out_of_range& oor) {
-            lua_pop(L, top);
+            lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "'lua_copytmpfile(from,to)': parameter 'from' is not a valid index.");
             return 2;
@@ -1827,7 +1827,7 @@ namespace shttps {
 
         if (source.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open input file!");
+            lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open input file");
             return 2;
         }
 
@@ -1835,7 +1835,7 @@ namespace shttps {
 
         if (dest.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open output file!");
+            lua_pushstring(L, "'lua_copytmpfile(from,to)': Couldn't open output file");
             return 2;
         }
 
@@ -1843,7 +1843,7 @@ namespace shttps {
 
         if (dest.fail() || source.fail()) {
             lua_pushboolean(L, false);
-            lua_pushstring(L,  "'lua_copytmpfile(from,to)': Copying data failed!");
+            lua_pushstring(L,  "'lua_copytmpfile(from,to)': Copying data failed");
             return 2;
         }
 
@@ -1884,13 +1884,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing!");
+            lua_pushstring(L, "'server.table_to_json(table)': table parameter missing");
             return 2;
         }
         if (!lua_istable(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table!");
+            lua_pushstring(L, "'server.table_to_json(table)': table is not a lua-table");
             return 2;
         }
 
@@ -1900,7 +1900,7 @@ namespace shttps {
         if (jwt_new(&jwt) != 0) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.table_to_json(table)': Creating token failed!");
+            lua_pushstring(L, "'server.table_to_json(table)': Creating token failed");
             return 2;
         }
         jwt_set_alg(jwt, JWT_ALG_HS256, (unsigned char *) conn->server()->jwt_secret().c_str(), conn->server()->jwt_secret().size());
@@ -1924,7 +1924,7 @@ namespace shttps {
         if (top != 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.decode_jwt(token)': error in parameter list!");
+            lua_pushstring(L, "'server.decode_jwt(token)': error in parameter list");
             return 2;
         }
 
@@ -1983,13 +1983,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.log()': no message given!");
+            lua_pushstring(L, "'server.log()': no message given");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.log()': message is not a string!");
+            lua_pushstring(L, "'server.log()': message is not a string");
             return 2;
         }
         message = lua_tostring(L, 1);
@@ -1998,7 +1998,7 @@ namespace shttps {
             if (!lua_isinteger(L, 2)) {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.log()': level is not integer!");
+                lua_pushstring(L, "'server.log()': level is not integer");
                 return 2;
             }
             level = lua_tointeger(L, 2);
@@ -2026,13 +2026,13 @@ namespace shttps {
         if (top < 1) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': no path given!");
+            lua_pushstring(L, "'server.mimetype()': no path given");
             return 2;
         }
         if (!lua_isstring(L, 1)) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': path is not a string!");
+            lua_pushstring(L, "'server.mimetype()': path is not a string");
             return 2;
         }
         path = lua_tostring(L, 1);
@@ -2557,7 +2557,7 @@ namespace shttps {
                             route.method = Connection::HttpMethod::OTHER;
                         }
                         else {
-                            throw Error(__file__, __LINE__, "Unknown HTTP method!");
+                            throw Error(__file__, __LINE__, std::string("Unknown HTTP method") + method);
                         }
                         break;
                     case 1:
@@ -2587,7 +2587,7 @@ namespace shttps {
                 throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg);
             }
             else {
-                throw Error(__file__, __LINE__, "LuaServer::executeChunk failed!");
+                throw Error(__file__, __LINE__, "LuaServer::executeChunk failed");
             }
         }
         int top = lua_gettop(L);
