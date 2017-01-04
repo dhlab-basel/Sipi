@@ -38,7 +38,6 @@
 #include <stdexcept>
 #include <memory>
 
-#include "shttps/Logger.h"
 #include "shttps/Error.h"
 
 /**
@@ -80,6 +79,11 @@ namespace Sipi {
         SipiError(const char *file, const int line, const std::string &msg, int errno_p = 0);
 
         /*!
+        * Convert the error into a string message
+        */
+        std::string to_string() const;
+
+        /*!
          * The overloaded << operator which is used to write the error message to the output
          *
          * \param[in] lhs The output stream
@@ -87,15 +91,6 @@ namespace Sipi {
          * \returns Returns an std::ostream object
          */
         friend std::ostream &operator<<(std::ostream &lhs, const SipiError &rhs);
-
-       /*!
-        * Overload << to send an error to the logger
-        *
-        * \param[in] log Logger shared pointer
-        * \param[in] rhs Reference to an instance of a SipiError
-        * \returns Returns an shared_ptr to the logger
-        */
-        friend std::shared_ptr<Logger> &operator<<(std::shared_ptr<Logger> &log, const SipiError &rhs);
 
     };
 

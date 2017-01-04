@@ -43,6 +43,7 @@ example "config/sipi.config.lua" for instructions.
    - libpng16
    - log4cpp-1.1.2rc1
    - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
+- nginx for testing
 
 In the root directory, the directory `cache` must be created.
 
@@ -52,6 +53,7 @@ In the root directory, the directory `cache` must be created.
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
 - install openssl: `brew install openssl`
+- install nginx: `brew install nginx`
 
 ### CentOS (V7)
 - `sudo yum install gcc-c++`
@@ -64,6 +66,7 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum install unzip`
 - `sudo yum install patch`
 - `sudo yum install openssl-devel`
+- `sudo yum install nginx`
 
 ### Debian (>= V8.0 jessie)
 To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -73,13 +76,15 @@ To compile SIPI on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install gettext`
 - `sudo apt-get install libreadline6 libreadline6-dev`
 - `sudo apt-get install libssl-dev`
-- `sudo apt-get install doxigen`
+- `sudo apt-get install doxygen`
+- `sudo apt-get install nginx`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
-debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch,
-go to the Sipi dicrectory and run
+debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch, go to the Sipi dicrectory and run:
 
-`sudo bash debian-cmake-patch.sh`
+```
+$ sudo bash debian-cmake-patch.sh
+```
 
 ### Ubuntu (>= V14)
 - `sudo apt-get update`
@@ -90,7 +95,9 @@ go to the Sipi dicrectory and run
 - `sudo apt-get install git`
 - `sudo apt-get install cmake`
 - `sudo apt-get install libssl-dev`
+- `sudo apt-get install doxygen`
 - `sudo apt-get install libreadline-dev`
+- `sudo apt-get install nginx`
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -100,6 +107,7 @@ go to the Sipi dicrectory and run
 - `sudo yum install cmake`
 - `sudo yum install readline-devel`
 - `sudo yum install openssl-devel`
+- `sudo yum install nginx`
 
 ### OpenSUSe
 NOTE: not yet ready ready problem with library names...
@@ -111,7 +119,7 @@ NOTE: not yet ready ready problem with library names...
 - `sudo zypper install patch`
 - `sudo zypper install readline-devel`
 - `sudo zypper install openssl-devel`
-
+- `sudo zypper install nginx`
 
 
 ### IDEs
@@ -167,7 +175,7 @@ In the main directory, call:
 local/bin/sipi -config config/sipi.config.lua
 ```
 
-All operations are written to the log file `sipi.log.file`.
+All operations are written to the log file `sipi.log`.
 
 ## Serving an Image
 
@@ -426,14 +434,16 @@ Gets Basic HTTP authentification data. Returns true, table on success or false, 
 - `success, errormsg = server.copyTmpfile()` :  
 shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.  
 - `server.log(message, loglevel)` :  
-Writes a message into the logfile. Loglevels are
-    - server.loglevel.trace
-    - server.loglevel.debug
-    - server.loglevel.info
-    - server.loglevel.warning
-    - server.loglevel.error
-    - server.loglevel.critical
-    - server.loglevel.off
+Writes a message into the logfile. Loglevels are the ones supported by
+[syslog(3)](https://linux.die.net/man/3/syslog):
+    - server.loglevel.LOG_EMERG
+    - server.loglevel.LOG_ALERT
+    - server.loglevel.LOG_CRIT
+    - server.loglevel.LOG_ERR
+    - server.loglevel.LOG_WARNING
+    - server.loglevel.LOG_NOTICE
+    - server.loglevel.LOG_INFO
+    - server.loglevel.LOG_DEBUG
 
 Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available

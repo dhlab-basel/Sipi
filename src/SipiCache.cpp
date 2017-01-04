@@ -45,25 +45,19 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <SipiCache.h>
+#include <syslog.h>
 
-#include "shttps/Logger.h"
 
 #include "SipiCache.h"
 #include "shttps/Global.h"
 #include "SipiError.h"
 
-
-using namespace std;
-
 static const char __file__[] = __FILE__;
-
-//static std::mutex locking; //!< used for locking the operation for caching (since SIPI uses multithreading)
 
 namespace Sipi {
 
     typedef struct _AListEle {
-        string canonical;
+        std::string canonical;
         time_t access_time;
         off_t fsize;
         bool operator < (const _AListEle& str) const {
@@ -78,43 +72,39 @@ namespace Sipi {
     } AListEle;
 
 
-    SipiCache::SipiCache(const string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
+    SipiCache::SipiCache(const std::string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
         : _cachedir(cachedir_p), max_cachesize(max_cachesize_p), max_nfiles(max_nfiles_p), cache_hysteresis(cache_hysteresis_p)
     {
-        auto logger = Logger::getLogger(shttps::loggername);
 
         if (access(_cachedir.c_str(), R_OK | W_OK | X_OK) != 0) {
             throw SipiError(__file__, __LINE__, "Cache directory not available", errno);
         }
 
-        string cachefilename = _cachedir + "/.sipicache";
+        std::string cachefilename = _cachedir + "/.sipicache";
         cachesize = 0;
         nfiles = 0;
 
-        *logger << Logger::LogLevel::INFORMATIONAL
-        << "Cache at '" << _cachedir << "' cachesize=" << max_cachesize
-        << " nfiles=" << max_nfiles << " hysteresis=" << cache_hysteresis
-        << Logger::LogAction::FLUSH;
-        ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
+        syslog(LOG_INFO, "Cache at \"%s\" cachesize=%lld nfiles=%d hysteresis=%f", _cachedir.c_str(), max_cachesize, max_nfiles, cache_hysteresis);
+        std::ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
 
         struct dirent **namelist;
         int n;
 
         if (!cachefile.fail()) {
             cachefile.seekg (0, cachefile.end);
-            streampos length = cachefile.tellg();
+            std::streampos length = cachefile.tellg();
             cachefile.seekg (0, cachefile.beg);
             int n = length / sizeof (SipiCache::FileCacheRecord);
-            *logger << Logger::LogLevel::INFORMATIONAL << "Reading cache file..." << Logger::LogAction::FLUSH;
+            syslog(LOG_INFO, "Reading cache file...");
             for (int i = 0; i < n; i++) {
                 SipiCache::FileCacheRecord fr;
                 cachefile.read((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                string accesspath = _cachedir + "/" + fr.cachepath;
+                std::string accesspath = _cachedir + "/" + fr.cachepath;
                 if (access(accesspath.c_str(), R_OK) != 0) {
                     //
                     // we cannot find the file – probably it has been deleted => skip it
                     //
-                    *logger << Logger::LogLevel::DEBUG << "Cache could'nt find file '" << fr.cachepath << "' on disk!" << Logger::LogAction::FLUSH;
+                    syslog(LOG_DEBUG, "Cache could'nt find file \"%s\" on disk!", fr.cachepath);
                     continue;
                 }
                 CacheRecord cr;
@@ -128,7 +118,7 @@ namespace Sipi {
                 cachesize += fr.fsize;
                 nfiles++;
                 cachetable[fr.canonical] = cr;
-                *logger << Logger::LogLevel::INFORMATIONAL << "File '" << cr.cachepath << "' adding to cache file!" << Logger::LogAction::FLUSH;
+                syslog(LOG_INFO, "FIle \"%s\" adding to cache", cr.cachepath.c_str());
             }
         }
 
@@ -143,14 +133,14 @@ namespace Sipi {
         else {
             while (n--) {
                 if (namelist[n]->d_name[0] == '.') continue; // files beginning with "." are not removed
-                string file_on_disk = namelist[n]->d_name;
+                std::string file_on_disk = namelist[n]->d_name;
                 bool found = false;
                 for (const auto &ele : cachetable) {
                     if (ele.second.cachepath == file_on_disk) found = true;
                 }
                 if (!found) {
-                    string ff = _cachedir + "/" + file_on_disk;
-                    *logger << Logger::LogLevel::INFORMATIONAL << "File '" << file_on_disk << "' not in cache file! Deleting..." << Logger::LogAction::FLUSH;
+                    std::string ff = _cachedir + "/" + file_on_disk;
+                    syslog(LOG_INFO, "File \"%s\" not in cache file! Deleting...", file_on_disk.c_str());
                     remove(ff.c_str());
                 }
                 free(namelist[n]);
@@ -172,12 +162,10 @@ namespace Sipi {
 
     SipiCache::~SipiCache()
     {
-        auto logger = Logger::getLogger(shttps::loggername);
+        syslog(LOG_DEBUG, "Closing cache...");
+        std::string cachefilename = _cachedir + "/.sipicache";
 
-        *logger  << Logger::LogLevel::DEBUG << "Closing cache..." << Logger::LogAction::FLUSH;
-        string cachefilename = _cachedir + "/.sipicache";
-
-        ofstream cachefile(cachefilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+        std::ofstream cachefile(cachefilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
         if (!cachefile.fail()) {
             for (const auto &ele : cachetable) {
                 SipiCache::FileCacheRecord fr;
@@ -190,7 +178,7 @@ namespace Sipi {
                 fr.fsize = ele.second.fsize;
                 fr.access_time = ele.second.access_time;
                 cachefile.write((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                *logger << Logger::LogLevel::DEBUG << "Writing '" << ele.second.cachepath << "' to cache file" << Logger::LogAction::FLUSH;
+                syslog(LOG_DEBUG, "Writing \"%s\" to cache file...", ele.second.cachepath.c_str());
             }
         }
         cachefile.close();
@@ -268,13 +256,11 @@ namespace Sipi {
     //============================================================================
 
     int SipiCache::purge(bool use_lock) {
-        auto logger = Logger::getLogger(shttps::loggername);
-
         if ((max_cachesize == 0) && (max_nfiles == 0)) return 0; // allow cache to grow indefinitely! dangerous!!
         int n = 0;
         if (((max_cachesize > 0) && (cachesize >= max_cachesize))
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
-            vector<AListEle> alist;
+            std::vector<AListEle> alist;
 
             if (use_lock) locking.lock();
 
@@ -287,8 +273,8 @@ namespace Sipi {
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
-                *logger << Logger::LogLevel::DEBUG << "Purging from cache '" << cachetable[ele.canonical].cachepath << "'..." << Logger::LogAction::FLUSH;
-                string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
+                syslog(LOG_DEBUG, "Purging from cache \"%s\"...", cachetable[ele.canonical].cachepath.c_str());
+                std::string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
                 ::remove(delpath.c_str());
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
@@ -303,7 +289,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    std::string SipiCache::check(const string &origpath_p, const string &canonical_p)
+    std::string SipiCache::check(const std::string &origpath_p, const std::string &canonical_p)
     {
         struct stat fileinfo;
         SipiCache::CacheRecord fr;
@@ -317,7 +303,7 @@ namespace Sipi {
         time_t mtime = fileinfo.st_mtime;
 #endif
 
-        string res;
+        std::string res;
         locking.lock();
         try {
             fr = cachetable.at(canonical_p);
@@ -344,31 +330,31 @@ namespace Sipi {
     }
     //============================================================================
 
-    string SipiCache::getNewCacheName(void)
+    std::string SipiCache::getNewCacheName(void)
     {
         //
         // create a unique temporary filename
         //
-        string tmpname = _cachedir + "/cache_XXXXXXXXXX";
+        std::string tmpname = _cachedir + "/cache_XXXXXXXXXX";
         char *writable = new char[tmpname.size() + 1];
         std::copy(tmpname.begin(), tmpname.end(), writable);
         writable[tmpname.size()] = '\0'; // don't forget the terminating 0
 
         if (mktemp(writable) == NULL) {
-            throw SipiError(__file__, __LINE__, string("Couldn't create temporary file \"") + string(writable) + string("\"!"), errno);
+            throw SipiError(__file__, __LINE__, std::string("Couldn't create temporary file ") + std::string(writable), errno);
         }
-        tmpname = string(writable);
+        tmpname = std::string(writable);
         delete[] writable;
 
         return tmpname;
     }
     //============================================================================
 
-    void SipiCache::add(const string &origpath_p, const string &canonical_p, const string &cachepath_p, int img_w_p, int img_h_p)
+    void SipiCache::add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, int img_w_p, int img_h_p)
     {
         size_t pos = cachepath_p.rfind('/');
-        string cachepath;
-        if (pos != string::npos) {
+        std::string cachepath;
+        if (pos != std::string::npos) {
             cachepath = cachepath_p.substr(pos + 1);
         }
         else {
@@ -408,7 +394,7 @@ namespace Sipi {
         //
         try {
             SipiCache::CacheRecord tmp_fr = cachetable.at(canonical_p);
-            string toremove = _cachedir + "/" + tmp_fr.cachepath;
+            std::string toremove = _cachedir + "/" + tmp_fr.cachepath;
             ::remove(toremove.c_str());
             cachesize -= tmp_fr.fsize;
             --nfiles;
@@ -439,7 +425,6 @@ namespace Sipi {
     //============================================================================
 
     bool SipiCache::remove(const std::string &canonical_p) {
-        auto logger = Logger::getLogger(shttps::loggername);
         SipiCache::CacheRecord fr;
 
         locking.lock();
@@ -451,8 +436,8 @@ namespace Sipi {
             return false; // return empty string, because we didn't find the file in cache
         }
 
-        *logger << Logger::LogLevel::DEBUG << "Delete from cache '" << cachetable[canonical_p].cachepath << "'..." << Logger::LogAction::FLUSH;
-        string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
+        syslog(LOG_DEBUG, "Delete from cache \"%s\"...", cachetable[canonical_p].cachepath.c_str());
+        std::string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
         ::remove(delpath.c_str());
         cachesize -= cachetable[canonical_p].fsize;
         cachetable.erase(canonical_p);
@@ -464,7 +449,7 @@ namespace Sipi {
     //============================================================================
 
     void SipiCache::loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm) {
-        vector<AListEle> alist;
+        std::vector<AListEle> alist;
 
         for (const auto &ele : cachetable) {
             AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
@@ -498,7 +483,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiCache::getSize(const string &origname_p, int &img_w, int &img_h) {
+    bool SipiCache::getSize(const std::string &origname_p, int &img_w, int &img_h) {
         struct stat fileinfo;
         if (stat(origname_p.c_str(), &fileinfo) != 0) {
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origname_p + "\"!", errno);

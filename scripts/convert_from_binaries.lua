@@ -25,7 +25,7 @@ require "get_mediatype"
 
 success, errmsg = server.setBuffer()
 if not success then
-    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.error)
+    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.LOG_ERR)
     send_error(500, "buffer could not be set correctly")
     return
 end
@@ -52,7 +52,7 @@ end
 
 success, readable = server.fs.is_readable(sourcePath)
 if not success then
-    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.error)
+    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.LOG_ERR)
     send_error(500, "server.fs.is_readable() failed")
     return
 end
@@ -67,7 +67,7 @@ end
 success, mimetype = server.mimetype(sourcePath)
 
 if not success then
-    server.log("server.mimetype() failed: " .. exists, server.loglevel.ERROR)
+    server.log("server.mimetype() failed: " .. exists, server.loglevel.LOG_ERR)
     send_error(500, "mimetype of file could not be determined")
 end
 
@@ -91,13 +91,13 @@ if mediatype == IMAGE then
     knoraDir = config.imgroot .. '/knora/'
     success, exists = server.fs.exists(knoraDir)
     if not success then
-        server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
     end
 
     if not exists then
         success, errmsg = server.fs.mkdir(knoraDir, 511)
         if not success then
-            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.LOG_ERR)
             send_error(500, "Knora directory could not be created on server")
             return
         end
@@ -105,7 +105,7 @@ if mediatype == IMAGE then
 
     success, baseName = server.uuid62()
     if not success then
-        server.log("server.uuid62() failed: " .. baseName, server.loglevel.error)
+        server.log("server.uuid62() failed: " .. baseName, server.loglevel.LOG_ERR)
         send_error(500, "unique name could not be created")
         return
     end
@@ -114,13 +114,13 @@ if mediatype == IMAGE then
     -- create full quality image (jp2)
     success, fullImg = SipiImage.new(sourcePath)
     if not success then
-        server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.error)
+        server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.LOG_ERR)
         return
     end
 
     success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
     if not success then
-        server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.error)
+        server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.LOG_ERR)
         return
     end
 
@@ -135,20 +135,20 @@ if mediatype == IMAGE then
     fullImgName = baseName .. '.jpx'
     success, fullDims = fullImg:dims()
     if not success then
-        server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.error)
+        server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
         return
     end
 
     success, errmsg = fullImg:write(knoraDir .. fullImgName)
     if not success then
-        server.log("fullImg:write() failed: " .. errmsg, server.loglevel.error)
+        server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
     end
 
     -- create thumbnail (jpg)
     success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
     if not success then
-        server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.error)
+        server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.LOG_ERR)
         return
     end
 
@@ -156,14 +156,14 @@ if mediatype == IMAGE then
 
     success, thumbDims = thumbImg:dims()
     if not success then
-        server.log("thumbImg:dims() failed: " .. thumbDims, server.loglevel.error)
+        server.log("thumbImg:dims() failed: " .. thumbDims, server.loglevel.LOG_ERR)
         return
     end
 
 
     success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
     if not success then
-        server.log("thumbImg:write failed: " .. errmsg, server.loglevel.error)
+        server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
     end
 
@@ -193,13 +193,13 @@ elseif mediatype == TEXT then
     fileDir = config.docroot .. '/knora/'
     success, exists = server.fs.exists(fileDir)
     if not success then
-        server.log("server.fs.exists() failed: " .. exists, server.loglevel.error)
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
     end
 
     if not exists then
         success, errmsg = server.fs.mkdir(fileDir, 511)
         if not success then
-            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.error)
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.LOG_ERR)
             send_error(500, "Knora directory could not be created on server")
             return
         end

@@ -38,14 +38,11 @@
 #include "SipiError.h"
 #include "SipiRotation.h"
 
-
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    SipiRotation::SipiRotation(string str) {
+    SipiRotation::SipiRotation(std::string str) {
         int n;
         if (str.empty()) {
             mirror = false;
@@ -78,10 +75,10 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<<(ostream &outstr, const SipiRotation &rhs) {
+    std::ostream &operator<<(std::ostream &outstr, const SipiRotation &rhs) {
         outstr << "IIIF-Server Rotation parameter:";
         outstr << "  Mirror " << rhs.mirror;
-        outstr << " | rotation = " << to_string(rhs.rotation);
+        outstr << " | rotation = " << std::to_string(rhs.rotation);
         return outstr;
     };
     //-------------------------------------------------------------------------

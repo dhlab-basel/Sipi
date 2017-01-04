@@ -23,6 +23,8 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -36,7 +38,6 @@
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
-#include "shttps/Logger.h"  // logging...
 
 
 // Kakadu core includes
@@ -54,7 +55,6 @@
 
 using namespace kdu_core;
 using namespace kdu_supp;
-using namespace std;
 
 static const char __file__[] = __FILE__;
 
@@ -126,15 +126,14 @@ namespace Sipi {
     */
     class KduSipiWarning : public kdu_core::kdu_message {
     private:
-        string msg;
+        std::string msg;
     public:
         KduSipiWarning() : kdu_message() { msg = "KAKADU-WARNING: "; }
         KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                *logger << Logger::LogLevel::WARNING << msg << Logger::LogAction::FLUSH;
+                syslog(LOG_WARNING, "%s", msg.c_str());
             }
         }
     };
@@ -146,15 +145,14 @@ namespace Sipi {
     */
     class KduSipiError : public kdu_core::kdu_message {
     private:
-        string msg;
+        std::string msg;
     public:
         KduSipiError() : kdu_message() { msg = "KAKADU-ERROR: "; }
         KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
         void put_text( const char * str) { msg += str; }
         void flush(bool end_of_message = false) {
-            auto logger = Logger::getLogger(shttps::loggername);
             if (end_of_message) {
-                *logger << Logger::LogLevel::ERROR << msg << Logger::LogAction::FLUSH;
+                syslog(LOG_ERR, "%s", msg.c_str());
                 throw KDU_ERROR_EXCEPTION;
             }
         }
@@ -183,9 +181,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        auto logger = Logger::getLogger(shttps::loggername);
-
+    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
@@ -230,12 +226,7 @@ namespace Sipi {
                                 img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -247,12 +238,7 @@ namespace Sipi {
                                 img->iptc = new SipiIptc(buf, len);
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -264,12 +250,7 @@ namespace Sipi {
                                 img->exif = new SipiExif(buf, len);
                             }
                             catch(SipiError &err) {
-                                if (logger == NULL) {
-                                    cerr << err;
-                                }
-                                else {
-                                    logger << err;
-                                }
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -414,7 +395,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + to_string(space));
+                        throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
             }
@@ -542,7 +523,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    void SipiIOJ2k::write(SipiImage *img, string filepath, int quality) {
+    void SipiIOJ2k::write(SipiImage *img, std::string filepath, int quality) {
         kdu_customize_warnings(&kdu_sipi_warn);
         kdu_customize_errors(&kdu_sipi_error);
 
@@ -602,8 +583,8 @@ namespace Sipi {
             //
             SipiEssentials es = img->essential_metadata();
             if (es.is_set()) {
-                string esstr = es;
-                string emdata = "SIPI:" + esstr;
+                std::string esstr = es;
+                std::string emdata = "SIPI:" + esstr;
                 kdu_codestream_comment comment = codestream.add_comment();
                 comment.put_text(emdata.c_str());
             }

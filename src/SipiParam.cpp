@@ -49,9 +49,6 @@ extern "C"
 #include "SipiParamValue.h"
 #include "SipiParam.h"
 
-
-using namespace std;
-
 namespace Sipi {
 
     SipiParam::SipiParam (void) {
@@ -155,7 +152,7 @@ namespace Sipi {
         char *tok = NULL;
         while ((tok = strsep (&tmpstr, ":")) != NULL) {
             if (*tok != '\0') {
-                string stmp = tok;
+                std::string stmp = tok;
                 options.push_back (stmp);
             }
         }
@@ -174,10 +171,10 @@ namespace Sipi {
     //============================================================================
 
 
-    void SipiParam::parseArgv (vector<string> &argv) {
+    void SipiParam::parseArgv (std::vector<std::string> &argv) {
         if (argv.empty()) return;
-        string dash = "-";
-        vector<string>::iterator iter = argv.begin();
+        std::string dash = "-";
+        std::vector<std::string>::iterator iter = argv.begin();
 
         while (iter != argv.end()) {
             if ((*iter) == (dash + name)) {
@@ -217,14 +214,14 @@ namespace Sipi {
     }
     //============================================================================
 
-    ostream &operator<< (ostream &outstr, SipiParam &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, SipiParam &rhs) {
         outstr << "  -" << rhs.name << ": " << rhs.description << " (";
         if (rhs.min.isDefined() && rhs.max.isDefined()) {
             outstr  << "Range: [" << rhs.min << " - " << rhs.max << "] ";
         }
         if (rhs.options.size() > 0) {
             outstr << "Options: ";
-            vector<string>::iterator iter = rhs.options.begin();
+            std::vector<std::string>::iterator iter = rhs.options.begin();
             while (iter != rhs.options.end()) {
                 if (iter != rhs.options.begin()) outstr << "|";
                 outstr << "'" << *iter << "'";

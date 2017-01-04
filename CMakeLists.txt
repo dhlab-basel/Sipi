@@ -171,6 +171,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 
+add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
@@ -317,8 +318,6 @@ add_executable(
         shttps/Global.h
         shttps/Error.cpp shttps/Error.h
         shttps/Hash.cpp shttps/Hash.h
-        shttps/LogStream.cpp shttps/LogStream.h
-        shttps/Logger.cpp shttps/Logger.h
         shttps/SockStream.cpp shttps/SockStream.h
         shttps/ChunkReader.cpp shttps/ChunkReader.h
         shttps/Connection.cpp shttps/Connection.h
@@ -334,7 +333,7 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()

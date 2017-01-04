@@ -27,12 +27,6 @@
 
 static const char __file__[] = __FILE__;
 
-extern "C" {
-
-}
-
-using namespace std;
-
 namespace Sipi {
 
     SipiExif::SipiExif() {
@@ -122,7 +116,7 @@ namespace Sipi {
                 denominator = (int) (INT_MAX / f);
             }
         }
-        return make_pair(numerator, denominator);
+        return std::make_pair(numerator, denominator);
     }
     //============================================================================
 
@@ -148,16 +142,16 @@ namespace Sipi {
             numerator = UINT_MAX;
             denominator = (int) (UINT_MAX / f);
         }
-        return make_pair(numerator, denominator);
+        return std::make_pair(numerator, denominator);
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const string &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const std::string &val_p) {
         exifData[key_p.c_str()] = val_p.c_str();
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const string &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const std::string &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::asciiString);
         v->read((unsigned char *) val_p.c_str(), val_p.size(), Exiv2::littleEndian);
@@ -168,12 +162,12 @@ namespace Sipi {
     //............................................................................
     // float values and float arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const float &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const float &val_p) {
         exifData[key_p] = toRational(val_p);
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const float *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const float *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::tiffFloat);
         v->read((unsigned char *) vals_p, len*sizeof(float), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -181,7 +175,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const float &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const float &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::tiffFloat);
         v->read((unsigned char *) &val_p, sizeof(float), Exiv2::littleEndian);
@@ -189,7 +183,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const float *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const float *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::tiffFloat);
         v->read((unsigned char *) vals_p, len*sizeof(float), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -200,12 +194,12 @@ namespace Sipi {
     //............................................................................
     // short values and short arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const short &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const short &val_p) {
         exifData[key_p] = val_p;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const short *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const short *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedShort);
         v->read((unsigned char *) vals_p, len*sizeof(short), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -213,7 +207,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const short &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const short &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedShort );
         v->read((unsigned char *) &val_p, sizeof(short), Exiv2::littleEndian);
@@ -221,7 +215,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const short *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const short *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedShort);
         v->read((unsigned char *) vals_p, len*sizeof(short), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -232,12 +226,12 @@ namespace Sipi {
     //............................................................................
     // unsigned short values and unsigned short arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const unsigned short &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned short &val_p) {
         exifData[key_p] = val_p;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const unsigned short *vals_p, int unsigned len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned short *vals_p, int unsigned len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedShort);
         v->read((unsigned char *) vals_p, len*sizeof(unsigned short), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -245,7 +239,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned short &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned short &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedShort);
         v->read((unsigned char *) &val_p, sizeof(unsigned short), Exiv2::littleEndian);
@@ -254,7 +248,7 @@ namespace Sipi {
     //============================================================================
 
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned short *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned short *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedShort);
         v->read((unsigned char *) vals_p, len*sizeof(unsigned short), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -266,12 +260,12 @@ namespace Sipi {
     //............................................................................
     // int values and int arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const int &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const int &val_p) {
         exifData[key_p] = val_p;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const int *vals_p, int unsigned len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const int *vals_p, int unsigned len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedLong);
         v->read((unsigned char *) vals_p, len*sizeof(int), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -279,7 +273,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const int &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const int &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedLong);
         v->read((unsigned char *) &val_p, sizeof(int), Exiv2::littleEndian);
@@ -287,7 +281,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const int *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const int *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedLong);
         v->read((unsigned char *) vals_p, len*sizeof(int), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -298,12 +292,12 @@ namespace Sipi {
     //............................................................................
     // unsigned int values and unsigned int arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const unsigned int &val_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned int &val_p) {
         exifData[key_p] = val_p;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const unsigned int *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned int *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedLong);
         v->read((unsigned char *) vals_p, len*sizeof(unsigned int), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -311,7 +305,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned int &val_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned int &val_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedLong);
         v->read((unsigned char *) &val_p, sizeof(unsigned int), Exiv2::littleEndian);
@@ -319,7 +313,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned int *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned int *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedLong);
         v->read((unsigned char *) vals_p, len*sizeof(unsigned int), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -330,12 +324,12 @@ namespace Sipi {
     //............................................................................
     // Rational values and Rational arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const Exiv2::Rational &r) {
+    void SipiExif::addKeyVal(const std::string &key_p, const Exiv2::Rational &r) {
         exifData[key_p] = r;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const Exiv2::Rational *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const Exiv2::Rational *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedRational);
         v->read((unsigned char *) vals_p, len*sizeof(Exiv2::Rational), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -343,12 +337,12 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const int &val1_p, const int &val2_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const int &val1_p, const int &val2_p) {
         exifData[key_p] = Exiv2::Rational(val1_p, val2_p);
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const Exiv2::Rational &r) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const Exiv2::Rational &r) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedRational);
         v->read((unsigned char *) &r, sizeof(Exiv2::Rational), Exiv2::littleEndian);
@@ -356,7 +350,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const Exiv2::Rational *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const Exiv2::Rational *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedRational);
         v->read((unsigned char *) vals_p, len*sizeof(Exiv2::Rational), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -364,7 +358,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const int &val1_p, const int &val2_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const int &val1_p, const int &val2_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::signedRational);
         Exiv2::Rational val = Exiv2::Rational(val1_p, val2_p);
@@ -376,12 +370,12 @@ namespace Sipi {
     //............................................................................
     // unsigned Rational values and unsigned Rational arrays
     //
-    void SipiExif::addKeyVal(const string &key_p, const Exiv2::URational &ur) {
+    void SipiExif::addKeyVal(const std::string &key_p, const Exiv2::URational &ur) {
         exifData[key_p] = ur;
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const Exiv2::URational *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const Exiv2::URational *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedRational);
         v->read((unsigned char *) vals_p, len*sizeof(Exiv2::URational), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -389,12 +383,12 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(const string &key_p, const unsigned int &val1_p, const unsigned int &val2_p) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned int &val1_p, const unsigned int &val2_p) {
         exifData[key_p] = Exiv2::URational(val1_p, val2_p);
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const Exiv2::URational &ur) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const Exiv2::URational &ur) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedRational);
         v->read((unsigned char *) &ur, sizeof(Exiv2::URational), Exiv2::littleEndian);
@@ -402,7 +396,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const Exiv2::URational *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const Exiv2::URational *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedRational);
         v->read((unsigned char *) vals_p, len*sizeof(Exiv2::URational), Exiv2::littleEndian);
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -410,7 +404,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned int &val1_p, const unsigned int &val2_p) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned int &val1_p, const unsigned int &val2_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::unsignedRational);
         Exiv2::URational val = Exiv2::URational(val1_p, val2_p);
@@ -423,7 +417,7 @@ namespace Sipi {
     //............................................................................
     // Undefined data
     //
-    void SipiExif::addKeyVal(const string &key_p, const unsigned char *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(const std::string &key_p, const unsigned char *vals_p, unsigned int len) {
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::undefined);
         v->read(vals_p, len*sizeof(unsigned char), Exiv2::littleEndian);
         Exiv2::ExifKey key(key_p);
@@ -431,7 +425,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiExif::addKeyVal(uint16_t tag, const string &groupName, const unsigned char *vals_p, unsigned int len) {
+    void SipiExif::addKeyVal(uint16_t tag, const std::string &groupName, const unsigned char *vals_p, unsigned int len) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::Value::AutoPtr v = Exiv2::Value::create(Exiv2::undefined);
         v->read(vals_p, len*sizeof(unsigned char), Exiv2::littleEndian);
@@ -446,7 +440,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // string values
     //
-    bool SipiExif::getValByKey(const string key_p, string &str_p) {
+    bool SipiExif::getValByKey(const std::string key_p, std::string &str_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -459,7 +453,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, string &str_p) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::string &str_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -471,7 +465,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<string> &str_p) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<std::string> &str_p) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -489,7 +483,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // unsigned char values
     //
-    bool SipiExif::getValByKey(const string key_p, unsigned char &uc) {
+    bool SipiExif::getValByKey(const std::string key_p, unsigned char &uc) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -502,7 +496,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, unsigned char &uc) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, unsigned char &uc) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -515,7 +509,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<unsigned char> &vuc) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<unsigned char> &vuc) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -532,7 +526,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // float values
     //
-    bool SipiExif::getValByKey(const string key_p, float &f) {
+    bool SipiExif::getValByKey(const std::string key_p, float &f) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -545,7 +539,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, float &f) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, float &f) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -558,7 +552,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<float> &f) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<float> &f) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -576,7 +570,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // Rational values
     //
-    bool SipiExif::getValByKey(const string key_p, Exiv2::Rational &r) {
+    bool SipiExif::getValByKey(const std::string key_p, Exiv2::Rational &r) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -589,7 +583,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, Exiv2::Rational &r) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, Exiv2::Rational &r) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -602,7 +596,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<Exiv2::Rational> &r) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<Exiv2::Rational> &r) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -620,7 +614,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // short values
     //
-    bool SipiExif::getValByKey(const string key_p, short &s) {
+    bool SipiExif::getValByKey(const std::string key_p, short &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -633,7 +627,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, short &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, short &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -646,7 +640,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<short> &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<short> &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -664,7 +658,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // unsigned short values
     //
-    bool SipiExif::getValByKey(const string key_p, unsigned short &s) {
+    bool SipiExif::getValByKey(const std::string key_p, unsigned short &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -677,7 +671,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, unsigned short &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, unsigned short &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -690,7 +684,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<unsigned short> &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<unsigned short> &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -708,7 +702,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // int values
     //
-    bool SipiExif::getValByKey(const string key_p, int &s) {
+    bool SipiExif::getValByKey(const std::string key_p, int &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -721,7 +715,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, int &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, int &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -734,7 +728,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<int> &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<int> &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -752,7 +746,7 @@ namespace Sipi {
     //____________________________________________________________________________
     // unsigned int values
     //
-    bool SipiExif::getValByKey(const string key_p, unsigned int &s) {
+    bool SipiExif::getValByKey(const std::string key_p, unsigned int &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(key_p);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -765,7 +759,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, unsigned int &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, unsigned int &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -778,7 +772,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiExif::getValByKey(uint16_t tag, const string &groupName, vector<unsigned int> &s) {
+    bool SipiExif::getValByKey(uint16_t tag, const std::string &groupName, std::vector<unsigned int> &s) {
         Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
         Exiv2::ExifData::iterator pos = exifData.findKey(key);
         if (pos == exifData.end()) {
@@ -793,7 +787,7 @@ namespace Sipi {
     //============================================================================
 
 
-    ostream &operator<< (ostream &outstr, SipiExif &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, SipiExif &rhs) {
         Exiv2::ExifData::const_iterator end = rhs.exifData.end();
         for (Exiv2::ExifData::const_iterator i = rhs.exifData.begin(); i != end; ++i) {
             const char* tn = i->typeName();

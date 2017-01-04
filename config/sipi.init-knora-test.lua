@@ -42,7 +42,12 @@ function pre_flight(prefix,identifier,cookie)
     -- Always the same test file is served
     -- Make sure that this image file exists in config.imgroot
     --
-    filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+
+    if config.prefix_as_path then
+        filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
+    else
+        filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+    end
 
     if prefix == "thumbs" then
         -- always allow thumbnails
@@ -80,7 +85,7 @@ function pre_flight(prefix,identifier,cookie)
 
     success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
     if not success then
-        server.log("server.http() failed: " .. result, server.loglevel.ERROR)
+        server.log("server.http() failed: " .. result, server.loglevel.LOG_ERR)
         return 'deny'
     end
 
@@ -92,7 +97,7 @@ function pre_flight(prefix,identifier,cookie)
 
     success, response_json = server.json_to_table(result.body)
     if not success then
-        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.ERROR)
+        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.LOG_ERR)
         return 'deny'
     end
 

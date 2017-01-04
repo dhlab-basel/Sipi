@@ -19,8 +19,10 @@ sipi
 *~
 .idea/
 SipiConfig.h
-sipi.log*.txt
+sipi.log*
 /extsrcs/
+/cmake-build-debug/
+target
 
 #
 # Cmake things to be ignored
@@ -38,6 +40,3 @@ cache/
 *_icc.h
 /images/
 icc.zip
-
-# ignore log file
-sipi.log

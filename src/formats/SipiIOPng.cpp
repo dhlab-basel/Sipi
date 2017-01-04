@@ -45,8 +45,6 @@
 #  define PNG_iTXt_SUPPORTED 1
 #endif
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
@@ -458,7 +456,7 @@ namespace Sipi {
 
         SipiEssentials es = img->essential_metadata();
         if (es.is_set()) {
-            string esstr = es;
+            std::string esstr = es;
             unsigned int len = esstr.length();
             char sipi_buf[512 + 1];
             strncpy(sipi_buf, esstr.c_str(), 512);

@@ -30,9 +30,6 @@
 #include "SipiError.h"
 #include "SipiCmdParams.h"
 
-using namespace std;
-//using namespace Magick;
-
 namespace Sipi {
 
     SipiCmdParams::SipiCmdParams (int argc, char *argv[], const char *infostr) {
@@ -48,7 +45,7 @@ namespace Sipi {
 
 
     SipiCmdParams::~SipiCmdParams (void) {
-        map<const string, SipiParam *, ltstr>::iterator indx = params.begin();
+        std::map<const std::string, SipiParam *, ltstr>::iterator indx = params.begin();
         while (indx != params.end()) {
             delete params[(*indx).first];
             indx++;
@@ -57,39 +54,39 @@ namespace Sipi {
     //============================================================================
 
     void SipiCmdParams::print_usage(void) {
-        map<const string, SipiParam *, ltstr>::iterator indx = params.begin();
-        cout << endl << "usage: " << argv[0] << " ";
+        std::map<const std::string, SipiParam *, ltstr>::iterator indx = params.begin();
+        std::cout << std::endl << "usage: " << argv[0] << " ";
         while (indx != params.end()) {
-            cout << " -" << params[(*indx).first]->getName ();
+            std::cout << " -" << params[(*indx).first]->getName ();
             for (int i = 0; i < params[(*indx).first]->numOfValues (); i++) {
                 switch ((*(params[(*indx).first]))[i].getType()) {
                     case SipiInteger: {
-                        cout << " i";
+                        std::cout << " i";
                         break;
                     }
                     case SipiFloat: {
-                        cout << " f";
+                        std::cout << " f";
                         break;
                     }
                     case SipiString: {
-                        cout << " s";
+                        std::cout << " s";
                         break;
                     }
                     default: {
                     }
                 }
                 if (params[(*indx).first]->numOfValues () > 1) {
-                    cout << "_" << i;
+                    std::cout << "_" << i;
                 }
             }
             indx++;
         }
-        cout << endl;
-        cout << "Description: " << info << endl;
-        cout << "Parameters:" << endl;
+        std::cout << std::endl;
+        std::cout << "Description: " << info << std::endl;
+        std::cout << "Parameters:" << std::endl;
         indx = params.begin();
         while (indx !=  params.end()) {
-            cout << *(params[(*indx).first]) << endl;
+            std::cout << *(params[(*indx).first]) << std::endl;
             indx++;
         }
     }
@@ -103,7 +100,7 @@ namespace Sipi {
             print_usage();
             exit(0);
         }
-        vector<string>::iterator iter = argv.begin();
+        std::vector<std::string>::iterator iter = argv.begin();
         while (iter != argv.end()) {
             if (*iter == "--help") {
                 print_usage();
@@ -112,7 +109,7 @@ namespace Sipi {
             iter++;
         }
 
-        map<const string, SipiParam *, ltstr>::iterator indx = params.begin();
+        std::map<const std::string, SipiParam *, ltstr>::iterator indx = params.begin();
         while (indx != params.end()) {
             SipiParam *p = params[(*indx).first];
             p->parseArgv (argv);
@@ -128,7 +125,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    string SipiCmdParams::getName (void) {
+    std::string SipiCmdParams::getName (void) {
         if (fnames != argv.end()) {
             return *fnames++;
         }
@@ -138,7 +135,7 @@ namespace Sipi {
         }
     }
 
-    SipiParam &SipiCmdParams::operator[] (const string &name) {
+    SipiParam &SipiCmdParams::operator[] (const std::string &name) {
         return *(params[name]);
     }
     //============================================================================

@@ -49,9 +49,6 @@
 /* position 45: "\xff\x52" */
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
 
-
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
