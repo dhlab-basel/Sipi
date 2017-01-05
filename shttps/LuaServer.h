@@ -165,11 +165,11 @@ namespace shttps {
         /*!
          * Executes a Lua function that either is defined in C or in Lua
          *
-         * \param[in] funcname Name of the function
-         * \param[in] lvs vector of function parameters
+         * \param[in] funcname the name of the function to be called
+         * \param[in] lvals vector of parameters to be passed to the function
          * \returns vector of LuaValstruct containing the result of the execution of the lua function
          */
-        std::vector<LuaValstruct> executeLuafunction(const std::string& funcname, std::vector<LuaValstruct>& lvs);
+        std::vector<LuaValstruct> executeLuafunction(const std::string& funcname, std::vector<LuaValstruct>& lvals);
 
         /*!
          * Executes a Lua function that either is defined in C or in Lua
