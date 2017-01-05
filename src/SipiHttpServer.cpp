@@ -1164,7 +1164,7 @@ namespace Sipi {
         setlogmask(old_ll);
 
 
-        addRoute(Connection::GET, "/favcon.ico", favicon_handler);
+        addRoute(Connection::GET, "/favicon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);
         addRoute(Connection::GET, "/admin/test", test_handler);
         addRoute(Connection::GET, "/admin/exit", exit_handler);
