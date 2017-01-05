@@ -29,7 +29,6 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
-#include <csignal>
 #include <utility>
 #include <stdlib.h>
 
@@ -78,9 +77,6 @@ Sipi::SipiHttpServer *serverptr = NULL;
 Sipi::SipiConf sipiConf;
 enum FileType {image, video, audio, text, binary};
 
-static sig_t old_sighandler;
-static sig_t old_broken_pipe_handler;
-
 static std::string fileType_string(FileType f_type) {
     std::string type_string;
 
@@ -104,25 +100,6 @@ static std::string fileType_string(FileType f_type) {
 
     return type_string;
 };
-
-static void sighandler(int sig) {
-    // Any functions called in a signal handler must be asynchronous-safe.
-    // See https://www.securecoding.cert.org/confluence/display/c/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
-
-    if (serverptr != NULL) {
-        // Server::stop() is asynchronous-safe.
-        serverptr->stop();
-    }
-}
-//=========================================================================
-
-
-static void broken_pipe_handler(int sig) {
-    syslog(LOG_INFO, "Got BROKEN PIPE signal!");
-}
-//=========================================================================
-
-
 
 
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
@@ -270,6 +247,7 @@ int main (int argc, char *argv[]) {
         }
     } sipiInit;
 
+ 
     //
     // commandline processing....
     //
@@ -420,9 +398,8 @@ int main (int argc, char *argv[]) {
             }
 
             serverptr = &server;
-            old_sighandler = signal(SIGINT, sighandler);
-            old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
             server.run();
+
         }
         catch (shttps::Error &err) {
             std::cerr << err << std::endl;
@@ -438,8 +415,6 @@ int main (int argc, char *argv[]) {
         Sipi::SipiHttpServer server((params["serverport"])[0].getValue (SipiIntType), nthreads);
         server.imgroot((params["imgroot"])[0].getValue(SipiStringType));
         serverptr = &server;
-        old_sighandler = signal(SIGINT, sighandler);
-        old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
         server.run();
     }
     else {
