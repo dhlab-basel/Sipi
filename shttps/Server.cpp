@@ -65,6 +65,9 @@ static std::mutex debugio; // mutex to protect debugging messages from threads
 
 static std::vector<pthread_t> idle_thread_ids;
 
+// The signal caught by the sig_thread function, used only for debugging.
+static int signal_result = 0;
+
 namespace shttps {
 
     const char loggername[] = "Sipi"; // see Global.h !!
@@ -80,6 +83,39 @@ namespace shttps {
         Server *serv;
     } TData;
     //=========================================================================
+
+    /*!
+     * Starts a thread just to catch all signals sent to the server process.
+     * If it receives SIGINT, tells the server to stop.
+     */
+    static void *sig_thread(void *arg) {
+        Server *serverptr = (Server *) arg;
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGPIPE);
+        sigaddset(&set, SIGINT);
+
+        int s, sig;
+
+        for (;;) {
+            if ((s = sigwait(&set, &sig)) != 0) {
+                signal_result = -1;
+                return NULL;
+            }
+
+            signal_result = sig;
+
+            if (sig == SIGINT) {
+                serverptr->stop();
+                return NULL;
+            }
+            else {
+                signal_result = -1;
+                return NULL;
+            }
+        }
+    }
+   //=========================================================================
 
 
     static void default_handler(Connection &conn, LuaServer &lua, void *user_data, void *hd)
@@ -638,8 +674,6 @@ namespace shttps {
 
     static void *process_request(void *arg)
     {
-        signal(SIGPIPE, SIG_IGN);
-
         TData *tdata = (TData *) arg;
         pthread_t my_tid = pthread_self();
 
@@ -774,6 +808,7 @@ namespace shttps {
         if (close(tdata->commpipe_read) == -1) {
             syslog(LOG_ERR, "Commpipe_write close error at [%s: %d]: %m", __file__, __LINE__);
         }
+
         int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
         if (compipe_write > 0) {
             if (close (compipe_write) == -1) {
@@ -783,7 +818,9 @@ namespace shttps {
         else {
             syslog(LOG_DEBUG, "Thread to stop does not exist");
         }
+
         tdata->serv->remove_thread(pthread_self());
+
         tdata->serv->semaphore_leave();
 
         delete tdata;
@@ -795,6 +832,19 @@ namespace shttps {
 
     void Server::run()
     {
+        // Start a thread just to catch signals sent to the server process.
+        pthread_t sighandler_thread;
+        sigset_t set;
+        sigemptyset(&set);
+        sigaddset(&set, SIGINT);
+        sigaddset(&set, SIGPIPE);
+
+        int res;
+        if ((res = pthread_sigmask(SIG_BLOCK, &set, NULL)) != 0) {
+            syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", res);
+        }
+        res = pthread_create(&sighandler_thread, NULL, &sig_thread, (void *) this);
+
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Starting shttps server with %d threads", _nthreads);
         setlogmask(old_ll);
@@ -988,16 +1038,10 @@ namespace shttps {
 
             tmp->commpipe_read = commpipe[1]; // read end;
 
-            //
-            // we create detached threads because we will not be able to use pthread_join()
-            //
             pthread_attr_t tattr;
             pthread_attr_init(&tattr);
-            pthread_attr_setdetachstate(&tattr, PTHREAD_CREATE_DETACHED);
-            //int stacksize = (PTHREAD_STACK_MIN + 1024*1024*3);
-            //pthread_attr_setstacksize(&tattr, stacksize);
 
-            if( pthread_create( &thread_id, &tattr,  process_request, (void *) tmp) < 0) {
+            if (pthread_create(&thread_id, &tattr,  process_request, (void *) tmp) < 0) {
                 syslog(LOG_ERR, "Could not create thread at [%s: %d]: %m", __file__, __LINE__);
                 running = false;
                 break;
@@ -1016,6 +1060,7 @@ namespace shttps {
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server shutting down");
         setlogmask(old_ll);
+
 
         //
         // let's send the close message to all running threads
@@ -1037,11 +1082,16 @@ namespace shttps {
         // we have closed all sockets, now we can wait for the threads to terminate
         //
         for (int i = 0; i < num_active_threads; i++) {
-            pthread_join(ptid[i], NULL);
+            int err;
+            if ((err = pthread_join(ptid[i], NULL)) != 0) {
+                syslog(LOG_ERR, "pthread_join failed with error code %d", err);
+            }
         }
 
         delete [] ptid;
-    }
+
+        // std::cerr << "signal_result is " << signal_result << std::endl;
+   }
     //=========================================================================
 
 
