@@ -434,14 +434,16 @@ Gets Basic HTTP authentification data. Returns true, table on success or false, 
 - `success, errormsg = server.copyTmpfile()` :  
 shttp saves uploaded files in a temporary location (given by the config variable "tmpdir") and deletes it after the request has been served. This function is used to copy the file to another location where it can be used/retrieved by shttps/sipi. Returns true, nil on success or false, errormsg on failure.  
 - `server.log(message, loglevel)` :  
-Writes a message into the logfile. Loglevels are
-    - server.loglevel.trace
-    - server.loglevel.debug
-    - server.loglevel.info
-    - server.loglevel.warning
-    - server.loglevel.error
-    - server.loglevel.critical
-    - server.loglevel.off
+Writes a message into the logfile. Loglevels are the ones supported by
+[syslog(3)](https://linux.die.net/man/3/syslog):
+    - server.loglevel.LOG_EMERG
+    - server.loglevel.LOG_ALERT
+    - server.loglevel.LOG_CRIT
+    - server.loglevel.LOG_ERR
+    - server.loglevel.LOG_WARNING
+    - server.loglevel.LOG_NOTICE
+    - server.loglevel.LOG_INFO
+    - server.loglevel.LOG_DEBUG
 
 Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available

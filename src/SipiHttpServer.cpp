@@ -58,6 +58,10 @@ using namespace shttps;
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
+    /*!
+     * The name of the Lua function that checks permissions before a file is returned to an HTTP client.
+     */
+    static const std::string pre_flight_func_name = "pre_flight";
 
     typedef enum {
         iiif_prefix = 0,			//!< http://{url}/*{prefix}*/{id}/{region}/{size}/{rotation}/{quality}.{format}
@@ -68,24 +72,39 @@ namespace Sipi {
         iiif_qualityformat = 5,		//!< http://{url}/{prefix}/{id}/{region}/{size}/{rotation}/*{quality}.{format}*
     } IiifParams;
 
+    /*!
+     * Sends an HTTP error response to the client, and logs the error if appropriate.
+     *
+     * \param conn_obj the server connection.
+     * \param code the HTTP status code to be returned.
+     * \param errmsg the error message to be returned.
+     */
     static void send_error(Connection &conn_obj, Connection::StatusCodes code, const std::string &errmsg) {
         conn_obj.status(code);
         conn_obj.setBuffer();
         conn_obj.header("Content-Type", "text/plain");
 
         std::string http_err_name;
+        bool log_err(true); // True if the error should be logged.
 
         switch (code) {
             case Connection::BAD_REQUEST:
                 http_err_name = "Bad Request";
+                // log_err = false;
                 break;
 
             case Connection::FORBIDDEN:
                 http_err_name = "Forbidden";
+                // log_err = false;
+                break;
+
+            case Connection::UNAUTHORIZED:
+                http_err_name = "Unauthorized";
                 break;
 
             case Connection::NOT_FOUND:
                 http_err_name = "Not Found";
+                // log_err = false;
                 break;
 
             case Connection::INTERNAL_SERVER_ERROR:
@@ -94,6 +113,7 @@ namespace Sipi {
 
             case Connection::NOT_IMPLEMENTED:
                 http_err_name = "Not Implemented";
+                // log_err = false;
                 break;
 
             case Connection::SERVICE_UNAVAILABLE:
@@ -105,33 +125,139 @@ namespace Sipi {
                 break;
         }
 
-        std::stringstream log_msg_stream;
-        log_msg_stream << "GET " << conn_obj.uri() << " failed (" << http_err_name << ")";
+        // Send an error message to the client.
 
         conn_obj << http_err_name;
 
         if (!errmsg.empty()) {
-            log_msg_stream << ": " << errmsg;
             conn_obj << ": " << errmsg;
         }
 
-        syslog(LOG_ERR, "%s", log_msg_stream.str().c_str());
         conn_obj.flush();
+
+        // Log the error if appropriate.
+
+        if (log_err) {
+            std::stringstream log_msg_stream;
+            log_msg_stream << "GET " << conn_obj.uri() << " failed (" << http_err_name << ")";
+
+
+            if (!errmsg.empty()) {
+                log_msg_stream << ": " << errmsg;
+            }
+
+            syslog(LOG_ERR, "%s", log_msg_stream.str().c_str());
+        }
+
     }
     //=========================================================================
 
-
+    /*!
+     * Sends an HTTP error response to the client, and logs the error if appropriate.
+     *
+     * \param conn_obj the server connection.
+     * \param code the HTTP status code to be returned.
+     * \param err an exception describing the error.
+     */
     static void send_error(Connection &conn_obj, Connection::StatusCodes code, const SipiError &err) {
         send_error(conn_obj, code, err.to_string());
     }
     //=========================================================================
 
-
+    /*!
+     * Sends an HTTP error response to the client, and logs the error if appropriate.
+     *
+     * \param conn_obj the server connection.
+     * \param code the HTTP status code to be returned.
+     */
     static void send_error(Connection &conn_obj, Connection::StatusCodes code) {
         send_error(conn_obj, code, "");
     }
     //=========================================================================
 
+    /*!
+     * Gets the IIIF prefix, IIIF identifier, and cookie from the HTTP request, and passes them to the Lua pre-flight function (whose
+     * name is given by the constant pre_flight_func_name).
+     *
+     * Returns the return values of the pre-flight function as a std::pair containing a permission string and (optionally) a file path.
+     * Throws SipiError if an error occurs.
+     *
+     * \param conn_obj the server connection.
+     * \param luaserver the Lua server that will be used to call the function.
+     * \param params the HTTP request parameters.
+     */
+    static std::pair<std::string, std::string> call_pre_flight(Connection &conn_obj, shttps::LuaServer &luaserver, std::vector<std::string> &params) {
+        // The permission and optional file path that the pre_fight function returns.
+        std::string permission;
+        std::string infile;
+
+        // The paramters to be passed to the pre-flight function.
+        std::vector<LuaValstruct> lvals;
+
+        // The first parameter is the IIIF prefix.
+        LuaValstruct iiif_prefix_param;
+        iiif_prefix_param.type = LuaValstruct::STRING_TYPE;
+        iiif_prefix_param.value.s = urldecode(params[iiif_prefix]);
+        lvals.push_back(iiif_prefix_param);
+
+        // The second parameter is the IIIF identifier.
+        LuaValstruct iiif_identifier_param;
+        iiif_identifier_param.type = LuaValstruct::STRING_TYPE;
+        iiif_identifier_param.value.s = urldecode(params[iiif_identifier]);
+        lvals.push_back(iiif_identifier_param);
+
+        // The third parameter is the HTTP cookie.
+        LuaValstruct cookie_param;
+        std::string cookie = conn_obj.header("cookie");
+        cookie_param.type = LuaValstruct::STRING_TYPE;
+        cookie_param.value.s = cookie;
+        lvals.push_back(cookie_param);
+
+        // Call the pre-flight function.
+        std::vector<LuaValstruct> rvals = luaserver.executeLuafunction(pre_flight_func_name, lvals);
+
+        // If it returned nothing, that's an error.
+        if (rvals.empty()) {
+            std::ostringstream err_msg;
+            err_msg << "Lua function " << pre_flight_func_name << " must return at least one value";
+            throw SipiError(__file__, __LINE__, err_msg.str());
+        }
+
+        // The first return value is the permission code.
+        auto permission_return_val = rvals.at(0);
+
+        // The permission code must be a string.
+        if (permission_return_val.type == LuaValstruct::STRING_TYPE) {
+            permission = permission_return_val.value.s;
+        } else {
+            std::ostringstream err_msg;
+            err_msg << "The permission value returned by Lua function " << pre_flight_func_name << " was not a string";
+            throw SipiError(__file__, __LINE__, err_msg.str());
+        }
+
+        // If the permission code is "allow", there must also be a file path.
+        if (permission == "allow") {
+            if (rvals.size() == 2) {
+                auto infile_return_val = rvals.at(1);
+
+                // The file path mudst be a string.
+                if (infile_return_val.type == LuaValstruct::STRING_TYPE) {
+                    infile = infile_return_val.value.s;
+                } else {
+                    std::ostringstream err_msg;
+                    err_msg << "The file path returned by Lua function " << pre_flight_func_name << " was not a string";
+                    throw SipiError(__file__, __LINE__, err_msg.str());
+                }
+            } else {
+                std::ostringstream err_msg;
+                err_msg << "Lua function " << pre_flight_func_name << " returned permission 'allow', but it did not return a file path";
+                throw SipiError(__file__, __LINE__, err_msg.str());
+            }
+        } 
+
+        // Return the permission code and file path, if any, as a std::pair.
+        return std::make_pair(permission, infile);
+    }
 
 
     static void iiif_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver, std::vector<std::string> &params, const std::string &imgroot, bool prefix_as_path) {
@@ -164,63 +290,30 @@ namespace Sipi {
         }
         */
 
-        std::string infile;
-        std::string permission;
+        
         //
         // here we start the lua script which checks for permissions
         //
-        const std::string funcname = "pre_flight";
-        if (luaserver.luaFunctionExists(&funcname)) {
-            LuaValstruct lval[3];
-            lval[0].type = LuaValstruct::STRING_TYPE;
-            lval[0].value.s = urldecode(params[iiif_prefix]);
 
-            lval[1].type = LuaValstruct::STRING_TYPE;
-            lval[1].value.s = urldecode(params[iiif_identifier]);
+        std::string permission;
+        std::string infile;
 
-            std::string cookie = conn_obj.header("cookie");
-            lval[2].type = LuaValstruct::STRING_TYPE;
-            lval[2].value.s = cookie.c_str();
+        if (luaserver.luaFunctionExists(pre_flight_func_name)) {
+            std::pair<std::string, std::string> pre_flight_return_values;
 
-            std::vector<LuaValstruct> rval;
             try {
-                rval = luaserver.executeLuafunction(&funcname, 3, lval);
-            }
-            catch (shttps::Error err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params);
+            } catch (SipiError& err) {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
 
-            if (rval[0].type == LuaValstruct::STRING_TYPE) {
-                permission = rval[0].value.s;
-            }
-            else {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
-                return;
-            }
+            permission = pre_flight_return_values.first;
+            infile = pre_flight_return_values.second;
 
-            if (rval[1].type == LuaValstruct::STRING_TYPE) {
-                infile = rval[1].value.s;
-            }
-            else {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
-                return;
-            }
-
-            size_t pos = permission.find('=');
-            std::string qualifier;
-            if (pos != std::string::npos) {
-                qualifier = permission.substr(pos + 1);
-                permission = permission.substr(0, pos);
-            }
             if (permission != "allow") {
-                if (permission == "restricted") {
-                    std::cerr << "Qualifier=" << qualifier << std::endl;
-                }
-                else {
-                    send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
-                    return;
-                }
+                send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
+                return;
             }
         }
         else {
@@ -607,53 +700,27 @@ namespace Sipi {
         }
         */
 
-
+        //
+        // here we start the lua script which checks for permissions
+        //
 
         std::string infile;  // path to the input file on the server
         std::string permission; // the permission string
         std::string watermark; // path to watermark file, or empty, if no watermark required
         SipiSize restriction_size; // size of restricted image... (SizeType::FULL if unrestricted)
 
-        //
-        // here we start the lua script which checks for permissions
-        //
-        const std::string funcname = "pre_flight";
-        if (luaserver.luaFunctionExists(&funcname)) {
-            LuaValstruct lval[3];
-            lval[0].type = LuaValstruct::STRING_TYPE;
-            lval[0].value.s = urldecode(params[iiif_prefix]);
+        if (luaserver.luaFunctionExists(pre_flight_func_name)) {
+            std::pair<std::string, std::string> pre_flight_return_values;
 
-            lval[1].type = LuaValstruct::STRING_TYPE;
-            lval[1].value.s = urldecode(params[iiif_identifier]);
-
-            std::string cookie = conn_obj.header("cookie");
-            lval[2].type = LuaValstruct::STRING_TYPE;
-            lval[2].value.s = cookie;
-
-            std::vector<LuaValstruct> rval;
             try {
-                rval = luaserver.executeLuafunction(&funcname, 3, lval);
-            }
-            catch (shttps::Error err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params);
+            } catch (SipiError& err) {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
 
-            if (rval[0].type == LuaValstruct::STRING_TYPE) {
-                permission = rval[0].value.s;
-            }
-            else {
-                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
-                 return;
-            }
-
-            if (rval[1].type == LuaValstruct::STRING_TYPE) {
-                infile = rval[1].value.s;
-            }
-            else {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Lua function pre_flight must return two strings");
-                return;
-           }
+            permission = pre_flight_return_values.first;
+            infile = pre_flight_return_values.second;
 
             size_t pos = permission.find(':');
             std::string qualifier;

@@ -85,7 +85,7 @@ function authorize_page(issuer, audience, username, password)
             local success, jwt = server.decode_jwt(token)
             if not success then
                 server.sendStatus(500)
-                server.log(jwt, server.loglevel.err)
+                server.log(jwt, server.loglevel.LOG_ERR)
                 return false
             end
             if (jwt.iss ~= issuer) or (jwt.aud ~= audience) or (jwt.user ~= username) then
@@ -93,7 +93,7 @@ function authorize_page(issuer, audience, username, password)
                 server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
                 return false
             end
-            server.log("Accessing protected page...", server.loglevel.err)
+            server.log("Accessing protected page...", server.loglevel.LOG_ERR)
         else
             --
             -- otherwise we require an authentification header
@@ -102,7 +102,7 @@ function authorize_page(issuer, audience, username, password)
 
             if not success then
                 server.sendStatus(500)
-                server.log(auth, server.loglevel.err)
+                server.log(auth, server.loglevel.LOG_ERR)
                 return false
             end
 
@@ -119,7 +119,7 @@ function authorize_page(issuer, audience, username, password)
                     success, token = server.generate_jwt(tokendata)
                     if not success then
                         server.sendStatus(500)
-                        server.log(token, server.loglevel.err)
+                        server.log(token, server.loglevel.LOG_ERR)
                         return false
                     end
                     server.sendCookie('sipi', token, {path = '/', expires = 3600})
@@ -133,7 +133,7 @@ function authorize_page(issuer, audience, username, password)
                 local success, jwt = server.decode_jwt(auth.token)
                 if not success then
                     server.sendStatus(500)
-                    server.log(jwt, server.loglevel.err)
+                    server.log(jwt, server.loglevel.LOG_ERR)
                     return false
                 end
                 if (jwt.iss ~= issuer) or (jwt.aud ~= audience) or (jwt.user ~= username) then
@@ -188,7 +188,7 @@ function authorize_api(issuer, audience, username)
     local success, auth = server.requireAuth()
     if not success then
         server.sendStatus(500)
-        server.log(auth, server.loglevel.err)
+        server.log(auth, server.loglevel.LOG_ERR)
         return false
     end
 
@@ -202,7 +202,7 @@ function authorize_api(issuer, audience, username)
     local success, jwt = server.decode_jwt(auth.token)
     if not success then
         server.sendStatus(500)
-        server.log(jwt, server.loglevel.err)
+        server.log(jwt, server.loglevel.LOG_ERR)
         return false
     end
     if (jwt.iss ~= issuer) or (jwt.aud ~= audience) or (jwt.user ~= username) then

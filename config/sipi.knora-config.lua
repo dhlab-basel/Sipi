@@ -101,6 +101,12 @@ sipi = {
 
 }
 
+
+fileserver = {
+    docroot = './server',
+    docroute = '/server'
+}
+
 --
 -- here we define routes that are handled by lua scripts. A route is a defined url:
 -- http://<server-DNS>/<route>

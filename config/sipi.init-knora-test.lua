@@ -85,7 +85,7 @@ function pre_flight(prefix,identifier,cookie)
 
     success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
     if not success then
-        server.log("server.http() failed: " .. result, server.loglevel.ERROR)
+        server.log("server.http() failed: " .. result, server.loglevel.LOG_ERR)
         return 'deny'
     end
 
@@ -97,7 +97,7 @@ function pre_flight(prefix,identifier,cookie)
 
     success, response_json = server.json_to_table(result.body)
     if not success then
-        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.ERROR)
+        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.LOG_ERR)
         return 'deny'
     end
 

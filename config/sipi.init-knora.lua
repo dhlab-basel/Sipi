@@ -83,19 +83,19 @@ function pre_flight(prefix, identifier, cookie)
 
     -- check HTTP request was successful
     if not success then
-        server.log("Server.http() failed: " .. result, server.loglevel.error)
+        server.log("Server.http() failed: " .. result, server.loglevel.LOG_ERR)
         return 'deny'
     end
 
     if result.status_code ~= 200 then
-        print("Knora returned HTTP status code " .. result.status_code)
-        print(result.body)
+        server.log("Knora returned HTTP status code " .. result.status_code)
+        server.log(result.body)
         return 'deny'
     end
 
     success, response_json = server.json_to_table(result.body)
     if not success then
-        server.log("Server.http() failed: " .. response_json, server.loglevel.error)
+        server.log("Server.http() failed: " .. response_json, server.loglevel.LOG_ERR)
         return 'deny'
     end
 
