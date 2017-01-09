@@ -253,7 +253,7 @@ namespace Sipi {
                 err_msg << "Lua function " << pre_flight_func_name << " returned permission 'allow', but it did not return a file path";
                 throw SipiError(__file__, __LINE__, err_msg.str());
             }
-        } 
+        }
 
         // Return the permission code and file path, if any, as a std::pair.
         return std::make_pair(permission, infile);
@@ -290,7 +290,7 @@ namespace Sipi {
         }
         */
 
-        
+
         //
         // here we start the lua script which checks for permissions
         //
@@ -986,17 +986,22 @@ namespace Sipi {
         }
 
         if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
+            SipiIcc target_icc;
             switch (quality_format.quality()) {
                 case SipiQualityFormat::COLOR: {
-                    img.convertToIcc(icc_sRGB, 8); // for now, force 8 bit/sample
+                    target_icc = SipiIcc(icc_sRGB);
+                    break;
                 }
                 case SipiQualityFormat::GRAY: {
-                    img.convertToIcc(icc_GRAY_D50, 8); // for now, force 8 bit/sample
+                    target_icc = SipiIcc(icc_GRAY_D50);
+                    break;
                 }
                 default: {
-                    // TODO: do nothing at the moment, bitonal is not yet supported...
+                    target_icc = SipiIcc(icc_GRAY_D50);
+                    // TODO: add dithering here and convert to B/W image...
                 }
             }
+            img.convertToIcc(target_icc, 8); // for now, force 8 bit/sample
         }
 
         //
@@ -1013,7 +1018,6 @@ namespace Sipi {
             }
             syslog(LOG_INFO, "GET %s: adding watermark", uri.c_str());
         }
-
 
         img.connection(&conn_obj);
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");

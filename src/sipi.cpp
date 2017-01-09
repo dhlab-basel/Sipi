@@ -241,13 +241,13 @@ int main (int argc, char *argv[]) {
 
             Sipi::SipiIOTiff::initLibrary();
         }
- 
+
         ~_SipiInit() {
             curl_global_cleanup();
         }
     } sipiInit;
 
- 
+
     //
     // commandline processing....
     //
@@ -578,6 +578,6 @@ int main (int argc, char *argv[]) {
         }
 
     }
-    
+
     return EXIT_SUCCESS;
 }

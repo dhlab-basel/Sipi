@@ -880,7 +880,7 @@ namespace Sipi {
 
         if ((filepath == "-") || (filepath == "HTTP")) {
             memtif = memTiffOpen();
-            tif = TIFFClientOpen("MEMTIFF", "wb", (thandle_t) memtif,
+            tif = TIFFClientOpen("MEMTIFF", "w", (thandle_t) memtif,
                 memTiffReadProc,
                 memTiffWriteProc,
                 memTiffSeekProc,
@@ -891,7 +891,7 @@ namespace Sipi {
             );
         }
         else {
-            if ((tif = TIFFOpen (filepath.c_str(), "wb")) == NULL) {
+            if ((tif = TIFFOpen (filepath.c_str(), "w")) == NULL) {
                 if (memtif != NULL) memTiffFree(memtif);
                 std::string msg = "TIFFopen of \"" + filepath + "\" failed!";
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
@@ -901,7 +901,7 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
         TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
-        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,     TIFFDefaultStripSize(tif, rowsperstrip));
+        TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    TIFFDefaultStripSize(tif, rowsperstrip));
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
         TIFFSetField (tif, TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG);
         TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
@@ -1018,7 +1018,6 @@ namespace Sipi {
         }
 
         //TIFFCheckpointDirectory(tif);
-
         for (int i = 0; i < img->ny; i++) {
             TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
         }
