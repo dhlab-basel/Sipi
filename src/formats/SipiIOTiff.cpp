@@ -903,20 +903,21 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    TIFFDefaultStripSize(tif, rowsperstrip));
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
         TIFFSetField (tif, TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG);
+        bool its_1_bit = false;
         if ((img->photo == PhotometricInterpretation::MINISWHITE) || (img->photo == PhotometricInterpretation::MINISBLACK)) {
-            bool its_1_bit = true;
+            its_1_bit = true;
             if (img->bps == 8) {
                 byte *scan = img->pixels;
-                for (i = 0; i < img->nx*img->ny) {
-                    if ((scan[i] != 0) || (scan != 255)) {
+                for (int i = 0; i < img->nx*img->ny; i++) {
+                    if ((scan[i] != 0) && (scan[i] != 255)) {
                         its_1_bit = false;
                     }
                 }
             }
             else if (img->bps == 16) {
                 word *scan = (word *) img->pixels;
-                for (i = 0; i < img->nx*img->ny) {
-                    if ((scan[i] != 0) || (scan != 65535)) {
+                for (int i = 0; i < img->nx*img->ny; i++) {
+                    if ((scan[i] != 0) && (scan[i] != 65535)) {
                         its_1_bit = false;
                     }
                 }
@@ -1043,7 +1044,7 @@ namespace Sipi {
         }
 
         //TIFFCheckpointDirectory(tif);
-        if ((img->photo == PhotometricInterpretation::MINISWHITE) || (img->photo == PhotometricInterpretation::MINISBLACK)) {
+        if (its_1_bit) {
             unsigned int sll;
             unsigned char *buf = cvrt8BitTo1bit(*img, sll);
             for (int i = 0; i < img->ny; i++) {
@@ -1442,7 +1443,7 @@ namespace Sipi {
     unsigned char *SipiIOTiff::cvrt8BitTo1bit(const SipiImage &img, unsigned int &sll) {
         static unsigned char mask[8] = {128,64,32,16,8,4,2,1};
 
-        unsigned int x, y, k;
+        unsigned int x, y;
 
         if ((img.photo != PhotometricInterpretation::MINISWHITE) && (img.photo != PhotometricInterpretation::MINISBLACK)) {
             throw Sipi::SipiImageError(__file__, __LINE__, "Photometric interpretation is not MINISWHITE or  MINISBLACK");
@@ -1455,10 +1456,20 @@ namespace Sipi {
 
         sll = (img.nx + 7) / 8;
         unsigned char *outbuf = new unsigned char[sll*img.ny];
-        memset(outbuf, 0L, sll*img.ny);
-        for (y = 0; y < img.ny; y++) {
-            for (x = 0; x < img.nx; x++) {
-                outbuf[y*sll + (x / 8)] |= (img.pixels[y*img.nx + x] > 128) ? !mask[x % 8] : mask[x % 8];
+        if (img.photo == PhotometricInterpretation::MINISBLACK) {
+            memset(outbuf, 0L, sll*img.ny);
+            for (y = 0; y < img.ny; y++) {
+                for (x = 0; x < img.nx; x++) {
+                    outbuf[y*sll + (x / 8)] |= (img.pixels[y*img.nx + x] > 128) ? mask[x % 8] : !mask[x % 8];
+                }
+            }
+        }
+        else { // must be MINISWHITE
+            memset(outbuf, -1L, sll*img.ny);
+            for (y = 0; y < img.ny; y++) {
+                for (x = 0; x < img.nx; x++) {
+                    outbuf[y*sll + (x / 8)] |= (img.pixels[y*img.nx + x] > 128) ? !mask[x % 8] : mask[x % 8];
+                }
             }
         }
         return outbuf;

@@ -1098,17 +1098,12 @@ namespace Sipi {
         for (int y = 0; y< ny; y++) {
             for (int x = 0; x < nx; x++){
                 short oldpixel = outbuf[y*nx + x];
-                if (photo == MINISBLACK) {
-                    outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
-                }
-                else {
-                    outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
-                }
-                int properr  = oldpixel - outbuf[y*nx + x];
-                if (x < (nx - 1)) outbuf[y*nx + (x + 1)] += 7.0/16 * properr;
-                if ((x > 0) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x - 1)] += 3.0/16 * properr;
-                if (y < (ny - 1)) outbuf[(y + 1)*nx + x] += 5.0/16 * properr;
-                if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += 1.0/16 * properr;
+                outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
+                int properr  = (oldpixel - outbuf[y*nx + x]);
+                if (x < (nx - 1)) outbuf[y*nx + (x + 1)] += (7 * properr) >> 4;
+                if ((x > 0) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x - 1)] += (3 * properr) >> 4;
+                if (y < (ny - 1)) outbuf[(y + 1)*nx + x] += (5 * properr) >> 4;
+                if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += properr >> 4;
             }
         }
         for (int i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
