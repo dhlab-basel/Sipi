@@ -58,6 +58,7 @@ In the root directory, the directory `cache` must be created.
 - install nginx: `brew install nginx`
 - install Python 3: `brew install python3`
 - install Pytest: `pip3 install pytest`
+- install the Python `requests` module: `pip3 install requests`
 
 ### CentOS (V7)
 - `sudo yum install gcc-c++`
@@ -73,6 +74,7 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum install nginx`
 - `sudo yum install python35 python35-pip`
 - `pip3 install pytest`
+- `pip3 install requests`
 
 ### Debian (>= V8.0 jessie)
 To compile Sipi on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -86,6 +88,7 @@ To compile Sipi on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
 - `pip3 install pytest`
+- `pip3 install requests`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
 debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch, go to the Sipi dicrectory and run:
@@ -108,6 +111,7 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
 - `pip3 install pytest`
+- `pip3 install requests`
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -134,6 +138,7 @@ NOTE: not yet ready ready problem with library names...
 - `sudo zypper install nginx`
 - `sudo zypper install python3`
 - `pip3 install pytest`
+- `pip3 install requests`
 
 ### IDEs
 
