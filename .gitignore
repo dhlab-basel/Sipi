@@ -17,6 +17,7 @@ sipi
 *.jpx
 .DS_Store
 *~
+*.pyc
 .idea/
 SipiConfig.h
 sipi.log*
