@@ -1,7 +1,29 @@
+# Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
+# Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
+# This file is part of Sipi.
+# Sipi is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# Sipi is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# Additional permission under GNU AGPL version 3 section 7:
+# If you modify this Program, or any covered work, by linking or combining
+# it with Kakadu (or a modified version of that library) or Adobe ICC Color
+# Profiles (or a modified version of that library) or both, containing parts
+# covered by the terms of the Kakadu Software Licence or Adobe Software Licence,
+# or both, the licensors of this Program grant you additional permission
+# to convey the resulting work.
+# See the GNU Affero General Public License for more details.
+# You should have received a copy of the GNU Affero General Public
+# License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
+
 import pytest
 import configparser
 import os
-import shlex, signal
+import shlex
+import signal
 import subprocess
 from threading import Thread
 import time
@@ -105,37 +127,52 @@ class SipiTestManager:
         nginx_args = shlex.split(self.stop_nginx_command)
         assert subprocess.run(nginx_args).returncode == 0, "nginx failed to stop"        
 
-    def download_file(self, url, headers=None):
+    def download_file(self, url, headers=None, suffix=None):
         """
             Makes an HTTP request and downloads the response content to a temporary file.
-            Returns a NamedTemporaryFile object that has been written to and closed.
+            Returns the absolute path of the temporary file.
         """
 
         response = requests.get(url, headers=headers, stream=True)
         response.raise_for_status()
-        temp_file = tempfile.NamedTemporaryFile(delete=False)
+        temp_fd, temp_file_path = tempfile.mkstemp(suffix=suffix)
+        temp_file = os.fdopen(temp_fd, mode="wb")
 
         for chunk in response.iter_content(chunk_size=8192):
             temp_file.write(chunk)
 
         temp_file.close()
-        return temp_file
+        return temp_file_path
 
-    def compare(self, url_path, filename, headers=None):
+    def compare(self, url_path, filename, headers=None, just_size=False):
         """
-            Downloads a file and compares it with another file on disk.
+            Downloads a file and compares it with a temporary file on disk. If the two are equivalent,
+            deletes the temporary file, otherwise throws an exception.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             filename: the name of a file in the test data directory, containing the expected data.
             headers: an optional dictionary of request headers.
-
-            Returns True if the files contain the same data.
+            just_size: if True, just checks that the files have the same number of bytes.
         """
 
-        original_file_path = os.path.join(self.data_dir, filename)
+        expected_file_path = os.path.join(self.data_dir, filename)
+        expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
         url = "{}/{}".format(self.sipi_base_url, url_path)
-        downloaded_file = self.download_file(url, headers)
-        return filecmp.cmp(original_file_path, downloaded_file.name)
+        downloaded_file_path = self.download_file(url, headers=headers, suffix=expected_file_extension)
+
+        if just_size:
+            downloaded_file_size = os.stat(downloaded_file_path).st_size
+            expected_file_size = os.stat(expected_file_path).st_size
+
+            if downloaded_file_size == expected_file_size:
+                os.remove(downloaded_file_path)
+            else:
+                assert False, "The size of the downloaded file {} ({} bytes) does not equal the size of the expected file {} ({} bytes)".format(downloaded_file_path, downloaded_file_size, expected_file_path, expected_file_size)
+        else:
+            if filecmp.cmp(downloaded_file_path, expected_file_path):
+                os.remove(downloaded_file_path)
+            else:
+                assert False, "Downloaded file {} is different from expected file {}".format(downloaded_file_path, expected_file_path)
 
 
 class ProcessOutputReader:
