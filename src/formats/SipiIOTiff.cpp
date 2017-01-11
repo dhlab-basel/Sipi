@@ -439,7 +439,6 @@ namespace Sipi {
             (void) TIFFSetWarningHandler(NULL);
 
             if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &(img->nx)) == 0) {
-                std::cerr << "TIFF image file \"" << filepath << "\" Error getting TIFFTAG_IMAGEWIDTH !" << std::endl;
                 TIFFClose(tif);
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
@@ -904,14 +903,40 @@ namespace Sipi {
         TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    TIFFDefaultStripSize(tif, rowsperstrip));
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
         TIFFSetField (tif, TIFFTAG_PLANARCONFIG,    PLANARCONFIG_CONTIG);
-        TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
+        if ((img->photo == PhotometricInterpretation::MINISWHITE) || (img->photo == PhotometricInterpretation::MINISBLACK)) {
+            bool its_1_bit = true;
+            if (img->bps == 8) {
+                byte *scan = img->pixels;
+                for (i = 0; i < img->nx*img->ny) {
+                    if ((scan[i] != 0) || (scan != 255)) {
+                        its_1_bit = false;
+                    }
+                }
+            }
+            else if (img->bps == 16) {
+                word *scan = (word *) img->pixels;
+                for (i = 0; i < img->nx*img->ny) {
+                    if ((scan[i] != 0) || (scan != 65535)) {
+                        its_1_bit = false;
+                    }
+                }
+            }
+            if (its_1_bit) {
+                TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) 1);
+                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4); // that's out default....
+            }
+            else {
+                TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
+            }
+        }
+        else {
+            TIFFSetField (tif, TIFFTAG_BITSPERSAMPLE,   (uint16) img->bps);
+        }
         TIFFSetField (tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);
         if (img->es.size() > 0) {
             TIFFSetField (tif, TIFFTAG_EXTRASAMPLES, img->es.size(), img->es.data());
         }
         TIFFSetField (tif, TIFFTAG_PHOTOMETRIC,     img->photo);
-
-
 
         //
         // let's get the TIFF metadata if there is some. We stored the TIFF metadata in the exifData meber variable!
@@ -1018,8 +1043,18 @@ namespace Sipi {
         }
 
         //TIFFCheckpointDirectory(tif);
-        for (int i = 0; i < img->ny; i++) {
-            TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
+        if ((img->photo == PhotometricInterpretation::MINISWHITE) || (img->photo == PhotometricInterpretation::MINISBLACK)) {
+            unsigned int sll;
+            unsigned char *buf = cvrt8BitTo1bit(*img, sll);
+            for (int i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, buf + i*sll, i, 0);
+            }
+            delete [] buf;
+        }
+        else {
+            for (int i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
+            }
         }
 
         //
@@ -1353,6 +1388,10 @@ namespace Sipi {
 
         unsigned int x, y, k;
 
+        if ((img->photo != PhotometricInterpretation::MINISWHITE) && (img->photo != PhotometricInterpretation::MINISBLACK)) {
+            throw Sipi::SipiImageError(__file__, __LINE__, "Photometric interpretation is not MINISWHITE or  MINISBLACK");
+        }
+
         if (img->bps != 1) {
             std::string msg = "Bits per sample is not 1 but: " + std::to_string(img->bps);
             throw Sipi::SipiImageError(__file__, __LINE__, msg);
@@ -1397,6 +1436,32 @@ namespace Sipi {
         img->pixels = outbuf;
         delete [] inbuf;
         img->bps = 8;
+    }
+    //============================================================================
+
+    unsigned char *SipiIOTiff::cvrt8BitTo1bit(const SipiImage &img, unsigned int &sll) {
+        static unsigned char mask[8] = {128,64,32,16,8,4,2,1};
+
+        unsigned int x, y, k;
+
+        if ((img.photo != PhotometricInterpretation::MINISWHITE) && (img.photo != PhotometricInterpretation::MINISBLACK)) {
+            throw Sipi::SipiImageError(__file__, __LINE__, "Photometric interpretation is not MINISWHITE or  MINISBLACK");
+        }
+
+        if (img.bps != 8) {
+            std::string msg = "Bits per sample is not 8 but: " + std::to_string(img.bps);
+            throw Sipi::SipiImageError(__file__, __LINE__, msg);
+        }
+
+        sll = (img.nx + 7) / 8;
+        unsigned char *outbuf = new unsigned char[sll*img.ny];
+        memset(outbuf, 0L, sll*img.ny);
+        for (y = 0; y < img.ny; y++) {
+            for (x = 0; x < img.nx; x++) {
+                outbuf[y*sll + (x / 8)] |= (img.pixels[y*img.nx + x] > 128) ? !mask[x % 8] : mask[x % 8];
+            }
+        }
+        return outbuf;
     }
     //============================================================================
 

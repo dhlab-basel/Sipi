@@ -1077,6 +1077,47 @@ namespace Sipi {
     //============================================================================
 
 
+    bool SipiImage::toBitonal(void) {
+        if ((photo != MINISBLACK) && (photo != MINISWHITE)) {
+            convertToIcc(SipiIcc(icc_GRAY_D50), 8);
+        }
+
+
+        bool doit = false; // will be set true if we find a value not equal 0 or 255
+        for (int i = 0; i < nx*ny; i++) {
+            if (!doit && (pixels[i] != 0) && (pixels[i] != 255)) doit = true;
+        }
+        if (!doit) return true; // we have to do nothing, it's already bitonal
+
+        short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
+        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        for (int i = 0; i < nx*ny; i++) {
+            outbuf[i] = pixels[i];  // copy buffer
+        }
+
+        for (int y = 0; y< ny; y++) {
+            for (int x = 0; x < nx; x++){
+                short oldpixel = outbuf[y*nx + x];
+                if (photo == MINISBLACK) {
+                    outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
+                }
+                else {
+                    outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
+                }
+                int properr  = oldpixel - outbuf[y*nx + x];
+                if (x < (nx - 1)) outbuf[y*nx + (x + 1)] += 7.0/16 * properr;
+                if ((x > 0) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x - 1)] += 3.0/16 * properr;
+                if (y < (ny - 1)) outbuf[(y + 1)*nx + x] += 5.0/16 * properr;
+                if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += 1.0/16 * properr;
+            }
+        }
+        for (int i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
+        delete [] outbuf;
+        return true;
+    }
+    //============================================================================
+
+
     bool SipiImage::add_watermark(std::string wmfilename) {
         int wm_nx, wm_ny, wm_nc;
     	byte *wmbuf = read_watermark(wmfilename, wm_nx, wm_ny, wm_nc);

@@ -513,10 +513,34 @@ namespace Sipi {
             }
         }
 
+        std::string format;
+        if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
+            switch (quality_format.quality()) {
+                case SipiQualityFormat::COLOR: {
+                    format = "/color.";
+                    break;
+                }
+                case SipiQualityFormat::GRAY: {
+                    format = "/gray.";
+                    break;
+                }
+                case SipiQualityFormat::BITONAL: {
+                    format = "/bitonal.";
+                    break;
+                }
+                default: {
+                    format = "/default.";
+                }
+            }
+        }
+        else {
+            format = "/default.";
+        }
+
         (void) snprintf(canonical_header, canonical_header_len, "<http://%s/%s/%s/%s/%s/%s/default.%s>; rel=\"canonical\"",
                         host.c_str(), prefix.c_str(), identifier.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
         std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
-                           std::string(canonical_size) + "/" + std::string(canonical_rotation) + "/default." + std::string(ext);
+                           std::string(canonical_size) + "/" + std::string(canonical_rotation) + format + std::string(ext);
 
         return make_pair(canonical_header, canonical);
     }
@@ -986,22 +1010,24 @@ namespace Sipi {
         }
 
         if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
-            SipiIcc target_icc;
             switch (quality_format.quality()) {
                 case SipiQualityFormat::COLOR: {
-                    target_icc = SipiIcc(icc_sRGB);
+                    img.convertToIcc(SipiIcc(icc_sRGB), 8); // for now, force 8 bit/sample
                     break;
                 }
                 case SipiQualityFormat::GRAY: {
-                    target_icc = SipiIcc(icc_GRAY_D50);
+                    img.convertToIcc(SipiIcc(icc_GRAY_D50), 8); // for now, force 8 bit/sample
+                    break;
+                }
+                case SipiQualityFormat::BITONAL: {
+                    img.toBitonal();
                     break;
                 }
                 default: {
-                    target_icc = SipiIcc(icc_GRAY_D50);
-                    // TODO: add dithering here and convert to B/W image...
+                    send_error(conn_obj, Connection::BAD_REQUEST, "Invalid quality specificer");
+                    return;
                 }
             }
-            img.convertToIcc(target_icc, 8); // for now, force 8 bit/sample
         }
 
         //

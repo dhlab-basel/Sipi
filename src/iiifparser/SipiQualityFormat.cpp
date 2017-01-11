@@ -68,7 +68,7 @@ namespace Sipi {
             quality_type = SipiQualityFormat::GRAY;
         }
         else if (quality == "bitonal") {
-            quality_type = SipiQualityFormat::COLOR;
+            quality_type = SipiQualityFormat::BITONAL;
         }
         else {
             throw SipiError(__file__, __LINE__, "IIIF Error reading Quality parameter  \"" + quality + "\" !");
