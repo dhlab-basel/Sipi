@@ -25,6 +25,7 @@
  */
 #include <syslog.h>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -40,6 +41,7 @@
 #include "SipiCmdParams.h"
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
+#include "optionparser.h"
 
 #include "jansson.h"
 #include "shttps/GetMimetype.h"
@@ -224,7 +226,41 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
     lua_setglobal(L, "config");
 }
+enum  optionIndex { UNKNOWN, CONFIGFILE, FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
+                    SKIPMETA, MIRROR, ROTATE, SALSAH, COMPARE, SERVERPORT, NTHREADS,
+                    IMGROOT, LOGLEVEL
+                  };
+const option::Descriptor usage[] =
+{
+    {
+        UNKNOWN, 0, "", "",option::Arg::None, "USAGE: example [options]\n\n"
+        "Options:"
+    },
 
+    {CONFIGFILE, 0,"c", "config", option::Arg::None, "  --config, -c  \tConfiguration file for webserver." },
+    {FORMAT, 0,"f", "format", option::Arg::None, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
+    {ICC, 0,"I", "ICC", option::Arg::None, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
+    {QUALITY, 0, "q", "quality", option::Arg::None, "  --quality, -q  \tQuality (compression) 1:100" },
+    {REGION, 0, "r", "region", option::Arg::None, "  --region, -r  \tSelect region of interest (x,y,w,h)" },
+    {REDUCE, 0, "R", "Reduce", option::Arg::None, "  --Reduce, -R  \tReduce image size by factor (Cannot be used together with \"-size\" and \"-scale\"."},
+    {SIZE, 0, "s", "size", option::Arg::None, "  --size, -s  \tResize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")" },
+    {SCALE, 0, "S", "Scale", option::Arg::None, "  --Scale, -S  \tResize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")" },
+    {SKIPMETA, 0, "k", "skipmeta", option::Arg::None, "  --skipmeta, -k  \tSkip the given metadata none:all" },
+    {MIRROR, 0, "m", "mirror", option::Arg::None, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
+    {ROTATE, 0, "o", "rotate", option::Arg::None, "  --rotate, -o  \tRotate the image (0:360)" },
+    {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use" },
+    {COMPARE, 0, "C", "Compare", option::Arg::None, "  --Compare, -c  \tCompare two files" },
+    {SERVERPORT, 0, "p", "serverport", option::Arg::None, "  --serverport, -p  \tPort of the webserver" },
+    {NTHREADS, 0, "t", "nthreads", option::Arg::None, "  --nthreads, -t  \tNumber of threads for webserver" },
+    {IMGROOT, 0, "i", "imgroot", option::Arg::None, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
+    {LOGLEVEL, 0, "l", "loglevel", option::Arg::None, "  --loglevel, -l  \tLogging level TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF" },
+    {
+        UNKNOWN, 0, "", "",option::Arg::None, "\nExamples:\n"
+        "  example --unknown -- --this_is_no_option\n"
+        "  example -unk --plus -ppp file1 file2\n"
+    },
+    {0,0,nullptr,nullptr,0,nullptr}
+};
 
 int main (int argc, char *argv[]) {
     class _SipiInit {
@@ -270,6 +306,7 @@ int main (int argc, char *argv[]) {
     params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
     params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF", 1, "INFO"));
     params.parseArgv ();
+
 
 
     if (params["compare"].isSet()) {
