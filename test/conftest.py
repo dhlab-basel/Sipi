@@ -30,6 +30,7 @@ import time
 import requests
 import tempfile
 import filecmp
+import shutil
 
 @pytest.fixture(scope="session")
 def manager():
@@ -51,8 +52,14 @@ class SipiTestManager:
         self.config = configparser.ConfigParser()
         with open(os.path.abspath("config.ini")) as config_file:
             self.config.read_file(config_file)
-        
+
         self.sipi_working_dir = os.path.abspath("..")
+
+        # Ensure Sipi doesn't use caching in tests.
+        sipi_cache_dir = os.path.join(self.sipi_working_dir, "cache")
+        if os.path.isdir(sipi_cache_dir):
+            shutil.rmtree(sipi_cache_dir)
+
         sipi_config = self.config["Sipi"]
         self.sipi_config_file = sipi_config["config-file"]
         self.sipi_command = "local/bin/sipi -config config/{}".format(self.sipi_config_file)
