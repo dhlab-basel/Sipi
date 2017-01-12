@@ -11,10 +11,6 @@ sipi
 #
 # other files to be ignored
 #
-#*.tif
-*.jp2
-#*.jpg
-*.jpx
 .DS_Store
 *~
 *.pyc
@@ -24,6 +20,7 @@ sipi.log*
 /extsrcs/
 /cmake-build-debug/
 target
+__pycache__/
 
 #
 # Cmake things to be ignored

@@ -49,8 +49,9 @@ class SipiTestManager:
         """Reads config.ini."""
 
         self.config = configparser.ConfigParser()
-        self.config.read("config.ini")
-
+        with open("config.ini") as config_file:
+            self.config.read_file(config_file)
+        
         self.sipi_working_dir = os.path.abspath("..")
         sipi_config = self.config["Sipi"]
         self.sipi_config_file = sipi_config["config-file"]
@@ -82,7 +83,7 @@ class SipiTestManager:
         self.sipi_process = subprocess.Popen(sipi_args, cwd=self.sipi_working_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         self.sipi_output_reader = ProcessOutputReader(self.sipi_process.stdout, check_for_ready_output)
 
-        # Wait until Sipi says it"s ready to receive requests.
+        # Wait until Sipi says it's ready to receive requests.
         while (not self.sipi_started) and (not self.sipi_took_too_long):
             time.sleep(0.2)
             if (time.time() - sipi_start_time > self.sipi_start_wait):
