@@ -312,7 +312,7 @@ inline bool exists_file(const std::string& name){
 }
 
 int main (int argc, char *argv[]) {
-    /*class _SipiInit {
+    class _SipiInit {
     public:
         _SipiInit() {
             // Initialise libcurl.
@@ -331,7 +331,6 @@ int main (int argc, char *argv[]) {
             curl_global_cleanup();
         }
     } sipiInit;
-*/
 
 
     //
