@@ -49,7 +49,7 @@ class SipiTestManager:
         """Reads config.ini."""
 
         self.config = configparser.ConfigParser()
-        with open("config.ini") as config_file:
+        with open(os.path.abspath("config.ini")) as config_file:
             self.config.read_file(config_file)
         
         self.sipi_working_dir = os.path.abspath("..")
