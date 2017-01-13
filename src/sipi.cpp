@@ -228,7 +228,7 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 }
 enum  optionIndex { UNKNOWN, CONFIGFILE, FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
                     SKIPMETA, MIRROR, ROTATE, SALSAH, COMPARE, SERVERPORT, NTHREADS,
-                    IMGROOT, LOGLEVEL
+                    IMGROOT, LOGLEVEL, HELP
                   };
 const option::Descriptor usage[] =
 {
@@ -237,7 +237,7 @@ const option::Descriptor usage[] =
         "Options:"
     },
 
-    {CONFIGFILE, 0,"c", "config", option::Arg::None, "  --config, -c  \tConfiguration file for webserver." },
+    {CONFIGFILE, 0,"c", "config", option::Arg::Optional, "  --config=filename, -c=filename  \tConfiguration file for webserver." },
     {FORMAT, 0,"f", "format", option::Arg::None, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
     {ICC, 0,"I", "ICC", option::Arg::None, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
     {QUALITY, 0, "q", "quality", option::Arg::None, "  --quality, -q  \tQuality (compression) 1:100" },
@@ -249,11 +249,12 @@ const option::Descriptor usage[] =
     {MIRROR, 0, "m", "mirror", option::Arg::None, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
     {ROTATE, 0, "o", "rotate", option::Arg::None, "  --rotate, -o  \tRotate the image (0:360)" },
     {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use" },
-    {COMPARE, 0, "C", "Compare", option::Arg::None, "  --Compare, -c  \tCompare two files" },
-    {SERVERPORT, 0, "p", "serverport", option::Arg::None, "  --serverport, -p  \tPort of the webserver" },
+    {COMPARE, 0, "", "Compare", option::Arg::None, "  --Compare=file1 --Compare=file2,  \tCompare two files" },
+    {SERVERPORT, 0, "p", "serverport", option::Arg::Optional, "  --serverport, -p  \tPort of the webserver" },
     {NTHREADS, 0, "t", "nthreads", option::Arg::None, "  --nthreads, -t  \tNumber of threads for webserver" },
     {IMGROOT, 0, "i", "imgroot", option::Arg::None, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
     {LOGLEVEL, 0, "l", "loglevel", option::Arg::None, "  --loglevel, -l  \tLogging level TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF" },
+    {HELP, 0,"", "help",option::Arg::None, "  --help  \tPrint usage and exit." },
     {
         UNKNOWN, 0, "", "",option::Arg::None, "\nExamples:\n"
         "  example --unknown -- --this_is_no_option\n"
@@ -263,7 +264,7 @@ const option::Descriptor usage[] =
 };
 
 int main (int argc, char *argv[]) {
-    class _SipiInit {
+    /*class _SipiInit {
     public:
         _SipiInit() {
             // Initialise libcurl.
@@ -282,73 +283,76 @@ int main (int argc, char *argv[]) {
             curl_global_cleanup();
         }
     } sipiInit;
+*/
 
+    argc-=(argc>0);
+    argv+=(argc>0); // skip program name argv[0] if present
+    option::Stats  stats(usage, argc, argv);
+    std::vector<option::Option> options(stats.options_max);
+    std::vector<option::Option> buffer(stats.buffer_max);
+    option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
-    //
-    // commandline processing....
-    //
-    Sipi::SipiCmdParams params (argc, argv, "A generic image format converter preserving the metadata");
-    params.addParam(new Sipi::SipiParam("format", "Output format", "jpx:jpg:tif:png", 1, "jpx"));
-    params.addParam(new Sipi::SipiParam("icc", "Convert to ICC profile", "none:sRGB:AdobeRGB:GRAY", 1, "none"));
-    params.addParam(new Sipi::SipiParam("quality", "Quality (compression)", 1, 100, 1, 80));
-    params.addParam(new Sipi::SipiParam("region", "Select region of interest (x,y,w,h)", -1, 9999, 4, 0, 0, -1, -1));
-    params.addParam(new Sipi::SipiParam("reduce", "Reduce image size by factor (Cannot be used together with \"-size\" and \"-scale\")", 0, 5, 1, 0));
-    params.addParam(new Sipi::SipiParam("size", "Resize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")", 0, 999999, 2, 0, 0));
-    params.addParam(new Sipi::SipiParam("scale", "Resize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")", 0.0F, 1000.F, 1, 100.F));
-    params.addParam(new Sipi::SipiParam("skipmeta", "Skip the given metadata", "none:all", 1, "none"));
-    params.addParam(new Sipi::SipiParam("mirror", "Mirror the image", "none:horizontal:vertical", 1, "none"));
-    params.addParam(new Sipi::SipiParam("rotate", "Rotate the image", 0.0F, 359.99999F, 1, 0.0F));
-    params.addParam(new Sipi::SipiParam("salsah", "Special flag for SALSAH internal use", false));
-    params.addParam(new Sipi::SipiParam("compare", "compare to files", false));
-    params.addParam(new Sipi::SipiParam("serverport", "Port of the webserver", 0, 65535, 1, 0));
-    params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
-    params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
-    params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
-    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF", 1, "INFO"));
-    params.parseArgv ();
+    if (parse.error()){
+        return EXIT_FAILURE;
+    }else if (options[HELP] || argc == 0)
+    {
+        option::printUsage(std::cout, usage);
+        return EXIT_SUCCESS;
+    }else if (options[COMPARE] && options[COMPARE].count()==2)
+    {
 
-
-
-    if (params["compare"].isSet()) {
-        std::string infname1;
-        try {
-            infname1 = params.getName();
+        std::string infname1,infname2;
+        for( option::Option* opt = options[COMPARE]; opt; opt = opt->next())
+        {
+            try
+            {
+                if(opt->isFirst())
+                {
+                    infname1 = std::string(opt->arg);
+                }
+                else
+                {
+                    infname2 = std::string(opt->arg);
+                }
+                std::cout <<"comparing files: " << infname1 <<" and "<< infname2 << std::endl;
+            }
+            catch(std::logic_error& err)
+            {
+                std::cerr<<"wrong syntax"<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
-        catch (Sipi::SipiError &err) {
-            std::cerr << err;
-            return EXIT_FAILURE;
-        }
 
-        //
-        // get the output image name
-        //
-        std::string infname2;
-        try {
-            infname2 = params.getName();
-        }
-        catch (Sipi::SipiError &err) {
-            std::cerr << err;
-            return EXIT_FAILURE;
-        }
         Sipi::SipiImage img1, img2;
         img1.read(infname1);
         img2.read(infname2);
         bool result = img1 == img2;
 
-        if (!result) {
+        if (!result)
+        {
             img1 -= img2;
             img1.write("tif", "diff.tif");
         }
 
         return (result) ? 0 : -1;
-    }
-
-
     //
     // if a config file is given, we start sipi as IIIF compatible server
     //
-    if ((params["config"]).isSet()) {
-        std::string configfile = (params["config"])[0].getValue(SipiStringType);
+    }else if (options[CONFIGFILE]) {
+        std::string configfile;
+        for( option::Option* opt = options[CONFIGFILE]; opt; opt = opt->next())
+        {
+            try
+            {
+                configfile = std::string(opt->arg);
+                std::cout <<"config file: " << configfile << std::endl;
+            }
+            catch(std::logic_error& err)
+            {
+                std::cerr<<"  --config=filename, -c=filename  \tConfiguration file for webserver."<<std::endl;
+                return EXIT_FAILURE;
+            }
+        }
         try {
             std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
             std::cout << SIPI_BUILD_VERSION << std::endl;
@@ -441,8 +445,11 @@ int main (int argc, char *argv[]) {
         catch (shttps::Error &err) {
             std::cerr << err << std::endl;
         }
+    }else{
+        option::printUsage(std::cout, usage);
+        return EXIT_SUCCESS;
     }
-
+/*
     //
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
@@ -589,16 +596,14 @@ int main (int argc, char *argv[]) {
 
         //std::cout << img << std::endl;
 
-        /*
-        std::cerr << ">>>> Sipi::SipiIcc rgb_icc = Sipi::SipiIcc(Sipi::icc_AdobeRGB):" << std::endl;
-        Sipi::SipiIcc rgb_icc(Sipi::icc_AdobeRGB);
+        //std::cerr << ">>>> Sipi::SipiIcc rgb_icc = Sipi::SipiIcc(Sipi::icc_AdobeRGB):" << std::endl;
+        //Sipi::SipiIcc rgb_icc(Sipi::icc_AdobeRGB);
 
-        std::cerr << ">>>> img.convertToIcc(rgb_icc, 8):" << std::endl;
-        img.convertToIcc(rgb_icc, 8);
+        //std::cerr << ">>>> img.convertToIcc(rgb_icc, 8):" << std::endl;
+        //img.convertToIcc(rgb_icc, 8);
 
-        std::cout << img << std::endl;
-        std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
-        */
+        //std::cout << img << std::endl;
+        //std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
 
         //
         // write the output file
@@ -615,6 +620,6 @@ int main (int argc, char *argv[]) {
         }
 
     }
-
+*/
     return EXIT_SUCCESS;
 }
