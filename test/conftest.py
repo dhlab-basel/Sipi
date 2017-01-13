@@ -65,7 +65,9 @@ class SipiTestManager:
         self.sipi_config_file = sipi_config["config-file"]
         self.sipi_command = "build/sipi -config config/{}".format(self.sipi_config_file)
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
-        self.sipi_base_url = sipi_config["base-url"]
+        self.sipi_port = sipi_config["port"]
+        self.sipi_prefix = sipi_config["prefix"]
+        self.sipi_base_url = "http://localhost:{}/{}".format(self.sipi_port, self.sipi_prefix)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -77,6 +79,8 @@ class SipiTestManager:
         self.nginx_working_dir = os.path.abspath("nginx")
         self.start_nginx_command = "nginx -p {} -c nginx.conf".format(self.nginx_working_dir)
         self.stop_nginx_command = "nginx -p {} -c nginx.conf -s stop".format(self.nginx_working_dir)
+
+        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.sipi_prefix)
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -101,7 +105,11 @@ class SipiTestManager:
         # Start a Sipi process and capture its output.
         sipi_args = shlex.split(self.sipi_command)
         sipi_start_time = time.time()
-        self.sipi_process = subprocess.Popen(sipi_args, cwd=self.sipi_working_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+        self.sipi_process = subprocess.Popen(sipi_args,
+            cwd=self.sipi_working_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True)
         self.sipi_output_reader = ProcessOutputReader(self.sipi_process.stdout, check_for_ready_output)
 
         # Wait until Sipi says it's ready to receive requests.
@@ -205,6 +213,19 @@ class SipiTestManager:
                 os.remove(downloaded_file_path)
             else:
                 raise SipiTestError("Downloaded file {} is different from expected file {}".format(downloaded_file_path, expected_file_path))
+
+
+    def run_iiif_validator(self):
+        """Runs the IIIF validator."""
+
+        validator_process_args = shlex.split(self.iiif_validator_command)
+        validator_process = subprocess.run(validator_process_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines = True)
+
+        if validator_process.returncode != 0:
+            raise SipiTestError("IIIF validation failed:\n" + validator_process.stdout)
 
 
 class SipiTestError(Exception):
