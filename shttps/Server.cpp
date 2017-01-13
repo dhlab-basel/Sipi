@@ -94,6 +94,7 @@ namespace shttps {
         sigemptyset(&set);
         sigaddset(&set, SIGPIPE);
         sigaddset(&set, SIGINT);
+        sigaddset(&set, SIGTERM);
 
         int s, sig;
 
@@ -105,12 +106,10 @@ namespace shttps {
 
             signal_result = sig;
 
-            if (sig == SIGINT) {
+            // If we get SIGINT or SIGTERM, shut down the server.
+            // Ignore any other signals.
+            if (sig == SIGINT || sig == SIGTERM) {
                 serverptr->stop();
-                return NULL;
-            }
-            else {
-                signal_result = -1;
                 return NULL;
             }
         }
@@ -837,6 +836,7 @@ namespace shttps {
         sigset_t set;
         sigemptyset(&set);
         sigaddset(&set, SIGINT);
+        sigaddset(&set, SIGTERM);
         sigaddset(&set, SIGPIPE);
 
         int res;

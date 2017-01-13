@@ -341,6 +341,10 @@ if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()
 
+add_custom_target(check
+        DEPENDS sipi
+        COMMAND pytest
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin
