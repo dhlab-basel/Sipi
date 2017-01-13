@@ -185,8 +185,8 @@ make
 ## Run the automated tests
 
 ```bash
-cd test
-pytest
+cd build
+make check
 ```
 
 ## Running the Sipi server
