@@ -46,6 +46,7 @@ example "config/sipi.config.lua" for instructions.
 - For testing:
   - nginx
   - Python 3.5 or newer
+  - libmagic
 
 In the root directory, the directory `cache` must be created.
 
@@ -55,12 +56,14 @@ In the root directory, the directory `cache` must be created.
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
 - install openssl: `brew install openssl`
+- install libmagic: `brew inwtall libmagic`
 - install nginx: `brew install nginx`
 - install Python 3: `brew install python3`
 - Install Python modules:
   - `pip3 install pytest`
   - `pip3 install requests`
   - `pip3 install psutil`
+  - `pip3 install iiif_validator`
 
 ### CentOS (V7)
 - `sudo yum install gcc-c++`
@@ -75,9 +78,11 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum install openssl-devel`
 - `sudo yum install nginx`
 - `sudo yum install python35 python35-pip`
+- `sudo yum install file-devel`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### Debian (>= V8.0 jessie)
 To compile Sipi on Debian (>= 8), the following packages have to be installed with apt-get:
@@ -90,9 +95,11 @@ To compile Sipi on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install doxygen`
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
+- `sudo apt-get install libmagic-dev`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
 debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch, go to the Sipi dicrectory and run:
@@ -114,9 +121,11 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
+- `sudo apt-get install libmagic-dev`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -127,9 +136,12 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo yum install readline-devel`
 - `sudo yum install openssl-devel`
 - `sudo yum install nginx`
+- `sudo yum install file-devel`
 - `sudo yum install python35 python35-pip`
 - `pip3 install pytest`
+- `pip3 install requests`
 - `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### OpenSUSe
 NOTE: not yet ready ready problem with library names...
@@ -143,9 +155,11 @@ NOTE: not yet ready ready problem with library names...
 - `sudo zypper install openssl-devel`
 - `sudo zypper install nginx`
 - `sudo zypper install python3`
+- `sudo zypper install libmagic-dev`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### IDEs
 
