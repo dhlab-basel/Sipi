@@ -179,7 +179,7 @@ make
 
 ```bash
 cd test
-py.test
+pytest
 ```
 
 ## Running the Sipi server
@@ -231,8 +231,6 @@ In the `pre_flight` function, permission checking can be implemented. In the cas
 ## Converting an Image
 
 To convert an image to a specified format, an HTTP request can be sent to a convert route as defined in the sipi config file (see `config/sipi.knora-config.lua`).
-
-For use with Knora, you find test scripts and test images in the folder `test-server`.
 
 ## Create Documentation
 
@@ -569,19 +567,6 @@ frame <args> gives information about a specific frame from the stack.
 info locals gives you information about any local variables on the stack.
 
 ```
-
-## Test Scripts (bash)
-
-to run the test, move to the main directory (where this README file is) and run:
-
-
-```
-bash test_launcher.sh
-```
-
-the bash scripts return 0 if everything went fine.
-
-
 
 ## Commit Message Schema
 
