@@ -237,7 +237,7 @@ const option::Descriptor usage[] =
         "Options:"
     },
 
-    {CONFIGFILE, 0,"c", "config", option::Arg::Optional, "  --config=filename, -c=filename  \tConfiguration file for webserver." },
+    {CONFIGFILE, 0,"c", "config", option::Arg::Optional, "  --config=filename, -cfilename  \tConfiguration file for webserver." },
     {FORMAT, 0,"f", "format", option::Arg::None, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
     {ICC, 0,"I", "ICC", option::Arg::None, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
     {QUALITY, 0, "q", "quality", option::Arg::None, "  --quality, -q  \tQuality (compression) 1:100" },
@@ -249,7 +249,7 @@ const option::Descriptor usage[] =
     {MIRROR, 0, "m", "mirror", option::Arg::None, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
     {ROTATE, 0, "o", "rotate", option::Arg::None, "  --rotate, -o  \tRotate the image (0:360)" },
     {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use" },
-    {COMPARE, 0, "", "Compare", option::Arg::None, "  --Compare=file1 --Compare=file2,  \tCompare two files" },
+    {COMPARE, 0, "C", "Compare", option::Arg::None, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files" },
     {SERVERPORT, 0, "p", "serverport", option::Arg::Optional, "  --serverport, -p  \tPort of the webserver" },
     {NTHREADS, 0, "t", "nthreads", option::Arg::None, "  --nthreads, -t  \tNumber of threads for webserver" },
     {IMGROOT, 0, "i", "imgroot", option::Arg::None, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
@@ -349,7 +349,7 @@ int main (int argc, char *argv[]) {
             }
             catch(std::logic_error& err)
             {
-                std::cerr<<"  --config=filename, -c=filename  \tConfiguration file for webserver."<<std::endl;
+                std::cerr<<"  --config=filename, -cfilename  \tConfiguration file for webserver."<<std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -449,11 +449,12 @@ int main (int argc, char *argv[]) {
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
     }
-/*
+
     //
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
-    else if ((params["serverport"])[0].getValue (SipiIntType) > 0) {
+	/*
+    else if (options[SERVERPORT] && options[IMGROOT]) {
         int nthreads = (params["nthreads"])[0].getValue (SipiIntType);
         if (nthreads == -1) nthreads = std::thread::hardware_concurrency();
         Sipi::SipiHttpServer server((params["serverport"])[0].getValue (SipiIntType), nthreads);
@@ -461,6 +462,7 @@ int main (int argc, char *argv[]) {
         serverptr = &server;
         server.run();
     }
+
     else {
         //
         // get the input image name
