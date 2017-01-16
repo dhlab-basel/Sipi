@@ -47,6 +47,7 @@ example "config/sipi.config.lua" for instructions.
   - nginx
   - Python 3.5 or newer
   - libmagic
+  - GraphicsMagick
 
 In the root directory, the directory `cache` must be created.
 
@@ -58,6 +59,7 @@ In the root directory, the directory `cache` must be created.
 - install openssl: `brew install openssl`
 - install libmagic: `brew inwtall libmagic`
 - install nginx: `brew install nginx`
+- install GraphicsMagick: `brew install graphicsmagick --with-jasper`
 - install Python 3: `brew install python3`
 - Install Python modules:
   - `pip3 install pytest`
@@ -96,6 +98,7 @@ To compile Sipi on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
 - `sudo apt-get install libmagic-dev`
+- `sudo apt-get install graphicsmagick`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
@@ -122,6 +125,7 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo apt-get install nginx`
 - `sudo apt-get install python3`
 - `sudo apt-get install libmagic-dev`
+- `sudo apt-get install graphicsmagick`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
@@ -138,6 +142,7 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo yum install nginx`
 - `sudo yum install file-devel`
 - `sudo yum install python35 python35-pip`
+- `sudo yum install GraphicsMagick`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`
@@ -156,6 +161,7 @@ NOTE: not yet ready ready problem with library names...
 - `sudo zypper install nginx`
 - `sudo zypper install python3`
 - `sudo zypper install libmagic-dev`
+- `sudo zypper install GraphicsMagick`
 - `pip3 install pytest`
 - `pip3 install requests`
 - `pip3 install psutil`

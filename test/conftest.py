@@ -58,8 +58,10 @@ class SipiTestManager:
 
         # Ensure Sipi doesn't use caching in tests.
         sipi_cache_dir = os.path.join(self.sipi_working_dir, "cache")
-        if os.path.isdir(sipi_cache_dir):
+        try:
             shutil.rmtree(sipi_cache_dir)
+        except OSError:
+            pass
 
         sipi_config = self.config["Sipi"]
         self.sipi_config_file = sipi_config["config-file"]
@@ -71,6 +73,7 @@ class SipiTestManager:
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
+        self.sipi_log_file = os.path.abspath("sipi.log")
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
@@ -82,7 +85,7 @@ class SipiTestManager:
 
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.sipi_prefix)
 
-        self.compare_command = "compare -metric MAE {} {} null:"
+        self.compare_command = "gm compare -metric MAE {} {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -103,6 +106,12 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
+
+        # Remove any Sipi log file from a previous run.
+        try:
+            os.remove(self.sipi_config_file)
+        except OSError:
+            pass
 
         # Start a Sipi process and capture its output.
         sipi_args = shlex.split(self.sipi_command)
@@ -194,7 +203,7 @@ class SipiTestManager:
     def compare_bytes(self, url_path, filename, headers=None):
         """
             Downloads a temporary file and compares it with an existing file on disk. If the two are equivalent,
-            deletes the temporary file, otherwise raises an exception.
+            deletes the temporary file, otherwise writes Sipi's output to sipi.log and raises an exception.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             filename: the name of a file in the test data directory, containing the expected data.
@@ -208,13 +217,15 @@ class SipiTestManager:
         if filecmp.cmp(downloaded_file_path, expected_file_path):
             os.remove(downloaded_file_path)
         else:
-            raise SipiTestError("Downloaded file {} is different from expected file {}".format(downloaded_file_path, expected_file_path))
+            self.write_sipi_log()
+            raise SipiTestError("Downloaded file {} is different from expected file {} (wrote {})".format(downloaded_file_path, expected_file_path, self.sipi_log_file))
 
     def compare_images(self, url_path, filename, headers=None):
         """
             Downloads a temporary image file and compares it with an existing image file on disk, using ImageMagick's
             'compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
-            otherwise raises an exception.
+            otherwise writes Sipi's output to sipi.log and raises an exception. Note that this method does not compare image
+            metadata.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             filename: the name of a file in the test data directory, containing the expected data.
@@ -230,13 +241,22 @@ class SipiTestManager:
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        if compare_process.returncode != 0 or (not compare_process.stdout.startswith("0 (0)")):
-            raise SipiTestError("Image {} is different from image {}: 'compare' returned '{}'".format(downloaded_file_path, expected_file_path, compare_process.stdout))
+        total_mean_absolute_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
+
+        if compare_process.returncode != 0 or total_mean_absolute_error != "0.0":
+            self.write_sipi_log()
+            raise SipiTestError("Downloaded image {} is different from expected image {} (wrote {}):\n{}".format(downloaded_file_path, expected_file_path, self.sipi_log_file, compare_process.stdout))
 
         os.remove(downloaded_file_path)
 
+    def write_sipi_log(self):
+        """Writes Sipi's output to a log file."""
+        
+        with open(self.sipi_log_file, "w") as file:
+            file.write(self.get_sipi_output())
+
     def run_iiif_validator(self):
-        """Runs the IIIF validator."""
+        """Runs the IIIF validator. If validation fails, writes Sipi's output to sipi.log and raises an exception."""
 
         validator_process_args = shlex.split(self.iiif_validator_command)
         validator_process = subprocess.run(validator_process_args,
@@ -245,7 +265,8 @@ class SipiTestManager:
             universal_newlines = True)
 
         if validator_process.returncode != 0:
-            raise SipiTestError("IIIF validation failed:\n" + validator_process.stdout)
+            self.write_sipi_log()
+            raise SipiTestError("IIIF validation failed (wrote {}):\n{}".format(self.sipi_log_file, validator_process.stdout))
 
 
 class SipiTestError(Exception):
