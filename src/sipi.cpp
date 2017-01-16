@@ -230,6 +230,37 @@ enum  optionIndex { UNKNOWN, CONFIGFILE, FORMAT, ICC, QUALITY, REGION, REDUCE, S
                     SKIPMETA, MIRROR, ROTATE, SALSAH, COMPARE, SERVERPORT, NTHREADS,
                     IMGROOT, LOGLEVEL, HELP
                   };
+option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
+{
+    if (option.arg != 0)
+    {
+        try
+        {
+            std::string str(option.arg);
+            switch(option.index())
+            {
+            case FORMAT:
+                if(str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
+            case ICC:
+                if(str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
+            case MIRROR:
+                if(str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
+            case LOGLEVEL:
+                if(str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
+            case SKIPMETA:
+                if(str=="none" || str=="all") return option::ARG_OK;
+            }
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<"Option '"<< option<< "' not a valid argument"<<std::endl;
+            return option::ARG_ILLEGAL;
+        }
+    }
+
+    if (msg) std::cerr<<"Option '"<< option<< "' requires "<<option.desc->help;
+    return option::ARG_ILLEGAL;
+}
 const option::Descriptor usage[] =
 {
     {
@@ -237,23 +268,23 @@ const option::Descriptor usage[] =
         "Options:"
     },
 
-    {CONFIGFILE, 0,"c", "config", option::Arg::Optional, "  --config=filename, -cfilename  \tConfiguration file for webserver." },
-    {FORMAT, 0,"f", "format", option::Arg::None, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
-    {ICC, 0,"I", "ICC", option::Arg::None, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
-    {QUALITY, 0, "q", "quality", option::Arg::None, "  --quality, -q  \tQuality (compression) 1:100" },
-    {REGION, 0, "r", "region", option::Arg::None, "  --region, -r  \tSelect region of interest (x,y,w,h)" },
-    {REDUCE, 0, "R", "Reduce", option::Arg::None, "  --Reduce, -R  \tReduce image size by factor (Cannot be used together with \"-size\" and \"-scale\"."},
-    {SIZE, 0, "s", "size", option::Arg::None, "  --size, -s  \tResize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")" },
-    {SCALE, 0, "S", "Scale", option::Arg::None, "  --Scale, -S  \tResize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")" },
-    {SKIPMETA, 0, "k", "skipmeta", option::Arg::None, "  --skipmeta, -k  \tSkip the given metadata none:all" },
-    {MIRROR, 0, "m", "mirror", option::Arg::None, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
-    {ROTATE, 0, "o", "rotate", option::Arg::None, "  --rotate, -o  \tRotate the image (0:360)" },
+    {CONFIGFILE, 0,"c", "config", option::Arg::NonEmpty, "  --config=filename, -cfilename  \tConfiguration file for webserver." },
+    {FORMAT, 0,"f", "format", SipiMultiChoice, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
+    {ICC, 0,"I", "ICC", SipiMultiChoice, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
+    {QUALITY, 0, "q", "quality", option::Arg::NumericI, "  --quality, -q  \tQuality (compression) 1:100" },
+    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region, -r  \tSelect region of interest (x,y,w,h)" },
+    {REDUCE, 0, "R", "Reduce", option::Arg::NonEmpty, "  --Reduce, -R  \tReduce image size by factor (Cannot be used together with \"-size\" and \"-scale\"."},
+    {SIZE, 0, "s", "size", option::Arg::NonEmpty, "  --size, -s  \tResize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")" },
+    {SCALE, 0, "S", "Scale", option::Arg::NonEmpty, "  --Scale, -S  \tResize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")" },
+    {SKIPMETA, 0, "k", "skipmeta", SipiMultiChoice, "  --skipmeta, -k  \tSkip the given metadata none:all" },
+    {MIRROR, 0, "m", "mirror", SipiMultiChoice, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
+    {ROTATE, 0, "o", "rotate", option::Arg::NumericI, "  --rotate, -o  \tRotate the image (0:360)" },
     {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use" },
-    {COMPARE, 0, "C", "Compare", option::Arg::None, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files" },
-    {SERVERPORT, 0, "p", "serverport", option::Arg::Optional, "  --serverport, -p  \tPort of the webserver" },
-    {NTHREADS, 0, "t", "nthreads", option::Arg::None, "  --nthreads, -t  \tNumber of threads for webserver" },
-    {IMGROOT, 0, "i", "imgroot", option::Arg::None, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
-    {LOGLEVEL, 0, "l", "loglevel", option::Arg::None, "  --loglevel, -l  \tLogging level TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF" },
+    {COMPARE, 0, "C", "Compare", option::Arg::NonEmpty, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files" },
+    {SERVERPORT, 0, "p", "serverport", option::Arg::NonEmpty, "  --serverport, -p  \tPort of the webserver" },
+    {NTHREADS, 0, "t", "nthreads", option::Arg::NonEmpty, "  --nthreads, -t  \tNumber of threads for webserver" },
+    {IMGROOT, 0, "i", "imgroot", option::Arg::NonEmpty, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
+    {LOGLEVEL, 0, "l", "loglevel", SipiMultiChoice, "  --loglevel, -l  \tLogging level TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:OFF" },
     {HELP, 0,"", "help",option::Arg::None, "  --help  \tPrint usage and exit." },
     {
         UNKNOWN, 0, "", "",option::Arg::None, "\nExamples:\n"
@@ -262,7 +293,6 @@ const option::Descriptor usage[] =
     },
     {0,0,nullptr,nullptr,0,nullptr}
 };
-
 int main (int argc, char *argv[]) {
     /*class _SipiInit {
     public:
@@ -340,11 +370,10 @@ int main (int argc, char *argv[]) {
     //
     }else if (options[CONFIGFILE]) {
         std::string configfile;
-        for( option::Option* opt = options[CONFIGFILE]; opt; opt = opt->next())
-        {
+
             try
             {
-                configfile = std::string(opt->arg);
+                configfile = std::string(options[CONFIGFILE].arg);
                 std::cout <<"config file: " << configfile << std::endl;
             }
             catch(std::logic_error& err)
@@ -352,7 +381,7 @@ int main (int argc, char *argv[]) {
                 std::cerr<<"  --config=filename, -cfilename  \tConfiguration file for webserver."<<std::endl;
                 return EXIT_FAILURE;
             }
-        }
+
         try {
             std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
             std::cout << SIPI_BUILD_VERSION << std::endl;
@@ -445,24 +474,41 @@ int main (int argc, char *argv[]) {
         catch (shttps::Error &err) {
             std::cerr << err << std::endl;
         }
-    }else{
-        option::printUsage(std::cout, usage);
-        return EXIT_SUCCESS;
-    }
-
     //
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
-	/*
-    else if (options[SERVERPORT] && options[IMGROOT]) {
-        int nthreads = (params["nthreads"])[0].getValue (SipiIntType);
-        if (nthreads == -1) nthreads = std::thread::hardware_concurrency();
-        Sipi::SipiHttpServer server((params["serverport"])[0].getValue (SipiIntType), nthreads);
-        server.imgroot((params["imgroot"])[0].getValue(SipiStringType));
+    }else if(options[SERVERPORT] && options[IMGROOT]) {
+        unsigned short nthreads = 0;
+        if(options[NTHREADS])
+        {
+            nthreads = std::stoi(options[NTHREADS].arg);
+            if (nthreads < 1 || nthreads > std::thread::hardware_concurrency())
+            {
+                std::cerr << "incorrect number of threads, maximum supported number is: "<<std::thread::hardware_concurrency() << std::endl;
+                nthreads =std::thread::hardware_concurrency();
+            }
+        }else{
+            nthreads =std::thread::hardware_concurrency();
+        }
+
+        Sipi::SipiHttpServer server(std::stoi(options[SERVERPORT].arg), nthreads);
+        try
+        {
+            server.imgroot(std::string(options[IMGROOT].arg));
+        }
+        catch(std::logic_error& err)
+        {
+            std::cerr<<"  --imgroot, -i  \tRoot directory containing the images (webserver)"<<std::endl;
+            return EXIT_FAILURE;
+        }
         serverptr = &server;
         server.run();
-    }
 
+    } else{
+        option::printUsage(std::cout, usage);
+        return EXIT_FAILURE;
+    }
+	/*
     else {
         //
         // get the input image name
