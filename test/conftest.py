@@ -230,11 +230,8 @@ class SipiTestManager:
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        if compare_process.returncode != 0:
-            raise SipiTestError("Image comparison failed:\n" + compare_process.stdout)
-
-        if not compare_process.stdout.startswith("0 (0)"):
-            raise SipiTestError("Image {} is different from image {}: image distortion is {}".format(downloaded_file_path, expected_file_path, compare_process.stdout))
+        if compare_process.returncode != 0 or (not compare_process.stdout.startswith("0 (0)")):
+            raise SipiTestError("Image {} is different from image {}: 'compare' returned '{}'".format(downloaded_file_path, expected_file_path, compare_process.stdout))
 
         os.remove(downloaded_file_path)
 
