@@ -7,9 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_zlib
         INSTALL_DIR ${COMMON_LOCAL}
-        URL http://zlib.net/zlib-1.2.10.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/zlib-1.2.10
-        CONFIGURE_COMMAND ${COMMON_SRCS}/zlib-1.2.10/configure --prefix=${COMMON_LOCAL} --static --shared --libdir=${CONFIGURE_LIBDIR}
+        URL http://zlib.net/zlib-1.2.11.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/zlib-1.2.11
+        CONFIGURE_COMMAND ${COMMON_SRCS}/zlib-1.2.11/configure --prefix=${COMMON_LOCAL} --static --shared --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
 	INSTALL_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} install INSTALL_TOP=${COMMON_LOCAL}
