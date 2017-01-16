@@ -26,41 +26,41 @@ import pytest
 class TestConversions:
 
     def test_tif8_to_jpg(self, manager):
-        """convert Leaves8.tif to a JPG file containing the expected number of bytes"""
-        manager.compare("Leaves8.tif/full/full/0/default.jpg", "Leaves8.jpg", just_size=True)
+        """convert Leaves8.tif to JPG"""
+        manager.compare_images("Leaves8.tif/full/full/0/default.jpg", "Leaves8.jpg")
 
     def test_tif8_to_png(self, manager):
-        """convert Leaves8.tif to a PNG file containing the expected number of bytes"""
-        manager.compare("Leaves8.tif/full/full/0/default.png", "Leaves8.png", just_size=True)
+        """convert Leaves8.tif to PNG"""
+        manager.compare_images("Leaves8.tif/full/full/0/default.png", "Leaves8.png")
 
     def test_tif8_to_jp2(self, manager):
-        """convert Leaves8.tif to a JP2 file containing the expected bytes"""
-        manager.compare("Leaves8.tif/full/full/0/default.jp2", "Leaves8.jp2")
+        """convert Leaves8.tif to JP2"""
+        manager.compare_images("Leaves8.tif/full/full/0/default.jp2", "Leaves8.jp2")
 
     def test_tif16_to_jpg(self, manager):
-        """convert Leaves16.tif to a JPG file containing the expected number of bytes"""
-        manager.compare("Leaves16.tif/full/full/0/default.jpg", "Leaves16.jpg", just_size=True)
+        """convert Leaves16.tif to JPG"""
+        manager.compare_images("Leaves16.tif/full/full/0/default.jpg", "Leaves16.jpg")
 
     def test_tif16_to_png(self, manager):
-        """convert Leaves16.tif to a PNG file containing the expected bytes"""
-        manager.compare("Leaves16.tif/full/full/0/default.png", "Leaves16.png")
+        """convert Leaves16.tif to PNG"""
+        manager.compare_images("Leaves16.tif/full/full/0/default.png", "Leaves16.png")
 
     def test_tif16_to_jp2(self, manager):
-        """convert Leaves16.tif to a JP2 file containing the expected bytes"""
-        manager.compare("Leaves16.tif/full/full/0/default.jp2", "Leaves16.jp2")
+        """convert Leaves16.tif to JP2"""
+        manager.compare_images("Leaves16.tif/full/full/0/default.jp2", "Leaves16.jp2")
 
     def test_jp2c_to_jpg(self, manager):
-        """convert LeavesC.jp2 to a JPG file containing the expected number of bytes"""
-        manager.compare("LeavesC.jp2/full/full/0/default.jpg", "LeavesC.jpg", just_size=True)
+        """convert LeavesC.jp2 to JPG"""
+        manager.compare_images("LeavesC.jp2/full/full/0/default.jpg", "LeavesC.jpg")
 
     def test_jp2c_to_png(self, manager):
-        """convert LeavesC.jp2 to a PNG file containing the expected bytes"""
-        manager.compare("LeavesC.jp2/full/full/0/default.png", "LeavesC.png")
+        """convert LeavesC.jp2 to PNG"""
+        manager.compare_images("LeavesC.jp2/full/full/0/default.png", "LeavesC.png")
 
     def test_jp2r_to_jpg(self, manager):
-        """convert LeavesR.jp2 to a JPG file containing the expected number of bytes"""
-        manager.compare("LeavesR.jp2/full/full/0/default.jpg", "LeavesR.jpg", just_size=True)
+        """convert LeavesR.jp2 to JPG"""
+        manager.compare_images("LeavesR.jp2/full/full/0/default.jpg", "LeavesR.jpg")
 
     def test_jp2r_to_png(self, manager):
-        """convert LeavesR.jp2 to a PNG file containing the expected bytes"""
-        manager.compare("LeavesR.jp2/full/full/0/default.png", "LeavesR.png")
+        """convert LeavesR.jp2 to PNG"""
+        manager.compare_images("LeavesR.jp2/full/full/0/default.png", "LeavesR.png")

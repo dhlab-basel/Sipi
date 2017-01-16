@@ -34,5 +34,5 @@ class TestBasic:
         assert "Added route" in manager.get_sipi_output()
 
     def test_file_bytes(self, manager):
-        """return an unmodified JPG file containing the same bytes"""
-        manager.compare("Leaves.jpg/full/full/0/default.jpg", "Leaves.jpg")
+        """return an unmodified JPG file"""
+        manager.compare_bytes("Leaves.jpg/full/full/0/default.jpg", "Leaves.jpg")

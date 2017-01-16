@@ -82,6 +82,8 @@ class SipiTestManager:
 
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.sipi_prefix)
 
+        self.compare_command = "compare -metric MAE {} {} null:"
+
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
 
@@ -167,12 +169,17 @@ class SipiTestManager:
         if subprocess.run(nginx_args).returncode != 0:
             raise SipiTestError("nginx failed to stop")
 
-    def download_file(self, url, headers=None, suffix=None):
+    def download_file(self, url_path, suffix=None, headers=None):
         """
             Makes an HTTP request and downloads the response content to a temporary file.
             Returns the absolute path of the temporary file.
+
+            url_path: a path that will be appended to the Sipi base URL to make the request.
+            suffix: the file extension that should be given to the temporary file.
+            headers: an optional dictionary of request headers.
         """
 
+        url = "{}/{}".format(self.sipi_base_url, url_path)
         response = requests.get(url, headers=headers, stream=True)
         response.raise_for_status()
         temp_fd, temp_file_path = tempfile.mkstemp(suffix=suffix)
@@ -184,36 +191,52 @@ class SipiTestManager:
         temp_file.close()
         return temp_file_path
 
-    def compare(self, url_path, filename, headers=None, just_size=False):
+    def compare_bytes(self, url_path, filename, headers=None):
         """
-            Downloads a file and compares it with a temporary file on disk. If the two are equivalent,
+            Downloads a temporary file and compares it with an existing file on disk. If the two are equivalent,
             deletes the temporary file, otherwise raises an exception.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             filename: the name of a file in the test data directory, containing the expected data.
             headers: an optional dictionary of request headers.
-            just_size: if True, just checks that the files have the same number of bytes.
         """
 
         expected_file_path = os.path.join(self.data_dir, filename)
         expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
-        url = "{}/{}".format(self.sipi_base_url, url_path)
-        downloaded_file_path = self.download_file(url, headers=headers, suffix=expected_file_extension)
+        downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
 
-        if just_size:
-            downloaded_file_size = os.stat(downloaded_file_path).st_size
-            expected_file_size = os.stat(expected_file_path).st_size
-
-            if downloaded_file_size == expected_file_size:
-                os.remove(downloaded_file_path)
-            else:
-                raise SipiTestError("The size of the downloaded file {} ({} bytes) does not equal the size of the expected file {} ({} bytes)".format(downloaded_file_path, downloaded_file_size, expected_file_path, expected_file_size))
+        if filecmp.cmp(downloaded_file_path, expected_file_path):
+            os.remove(downloaded_file_path)
         else:
-            if filecmp.cmp(downloaded_file_path, expected_file_path):
-                os.remove(downloaded_file_path)
-            else:
-                raise SipiTestError("Downloaded file {} is different from expected file {}".format(downloaded_file_path, expected_file_path))
+            raise SipiTestError("Downloaded file {} is different from expected file {}".format(downloaded_file_path, expected_file_path))
 
+    def compare_images(self, url_path, filename, headers=None):
+        """
+            Downloads a temporary image file and compares it with an existing image file on disk, using ImageMagick's
+            'compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
+            otherwise raises an exception.
+
+            url_path: a path that will be appended to the Sipi base URL to make the request.
+            filename: the name of a file in the test data directory, containing the expected data.
+            headers: an optional dictionary of request headers.
+        """
+
+        expected_file_path = os.path.join(self.data_dir, filename)
+        expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
+        downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
+        compare_process_args = shlex.split(self.compare_command.format(expected_file_path, downloaded_file_path))
+        compare_process = subprocess.run(compare_process_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines = True)
+
+        if compare_process.returncode != 0:
+            raise SipiTestError("Image comparison failed:\n" + compare_process.stdout)
+
+        if not compare_process.stdout.startswith("0 (0)"):
+            raise SipiTestError("Image {} is different from image {}: image distortion is {}".format(downloaded_file_path, expected_file_path, compare_process.stdout))
+
+        os.remove(downloaded_file_path)
 
     def run_iiif_validator(self):
         """Runs the IIIF validator."""
