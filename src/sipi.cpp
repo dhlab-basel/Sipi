@@ -242,14 +242,20 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
             {
             case FORMAT:
                 if(str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
+					break;
             case ICC:
                 if(str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
+					break;
             case MIRROR:
                 if(str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
+					break;
             case LOGLEVEL:
                 if(str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
+					break;
             case SKIPMETA:
                 if(str=="none" || str=="all") return option::ARG_OK;
+					break;
+			default: return option::ARG_ILLEGAL;
             }
         }
         catch(std::exception& e)
@@ -394,7 +400,7 @@ int main (int argc, char *argv[]) {
             sipiConf = Sipi::SipiConf(luacfg);
 
             //Create object SipiHttpServer
-            Sipi::SipiHttpServer server(sipiConf.getPort(), sipiConf.getNThreads(),
+            Sipi::SipiHttpServer server(sipiConf.getPort(), static_cast<unsigned int> (sipiConf.getNThreads()),
                 sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
             int old_ll = setlogmask(LOG_MASK(LOG_INFO));
@@ -480,10 +486,10 @@ int main (int argc, char *argv[]) {
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
     }else if(options[SERVERPORT] && options[IMGROOT]) {
-        unsigned short nthreads = 0;
+        unsigned int nthreads = 0;
         if(options[NTHREADS])
         {
-            nthreads = std::stoi(options[NTHREADS].arg);
+            nthreads = static_cast<unsigned int> (std::stoi(options[NTHREADS].arg));
             if (nthreads < 1 || nthreads > std::thread::hardware_concurrency())
             {
                 std::cerr << "incorrect number of threads, maximum supported number is: "<<std::thread::hardware_concurrency() << std::endl;
@@ -559,7 +565,6 @@ int main (int argc, char *argv[]) {
             try
             {
                 std::stringstream ss(options[REGION].arg);
-                std::vector<int> regV;
                 int regionC;
                 while(ss>>regionC)
                 {
@@ -606,6 +611,7 @@ int main (int argc, char *argv[]) {
         //
         // read the input image
         //
+
         Sipi::SipiImage img;
         img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
         if (format == "jpg") {
