@@ -595,6 +595,21 @@ info locals gives you information about any local variables on the stack.
 
 ```
 
+## Writing Tests
+
+The test framework uses [pytest](http://doc.pytest.org/en/latest/). To add tests, add a Python
+class in a file whose name begins with `test`, in the `test` directory. The class's methods,
+whose names must also begin with `test`, should use the `manager` fixture defined in
+`test/conftest.py`, which handles starting and stopping a Sipi server, and provides other functionality
+useful in tests. See the existing `test/test_*.py` files for examples.
+
+To facilitate testing client HTTP connections in Lua scripts, the `manager` fixture also starts
+and stops an `nginx` instance, which can be used to simulate an authorization server.
+For example, the provided `nginx` configuration file, `test/nginx/nginx.conf`, allows `nginx` to
+act as a dummy [Knora](http://www.knora.org/) API server for permission checking: its
+`/v1/files` route returns a static JSON file that always grants permission to view the requested
+file.
+
 ## Commit Message Schema
 
 When writing commit messages, we stick to this schema:
