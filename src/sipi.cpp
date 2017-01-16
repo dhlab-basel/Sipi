@@ -25,6 +25,7 @@
  */
 #include <syslog.h>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -226,7 +227,7 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
     lua_setglobal(L, "config");
 }
-enum  optionIndex { UNKNOWN, CONFIGFILE, FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
+enum  optionIndex { UNKNOWN, CONFIGFILE, FILEIN , FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
                     SKIPMETA, MIRROR, ROTATE, SALSAH, COMPARE, SERVERPORT, NTHREADS,
                     IMGROOT, LOGLEVEL, HELP
                   };
@@ -264,15 +265,16 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
 const option::Descriptor usage[] =
 {
     {
-        UNKNOWN, 0, "", "",option::Arg::None, "USAGE: example [options]\n\n"
+        UNKNOWN, 0, "", "",option::Arg::None, "USAGE: sipi [options] -ffileIn fileout \n\n"
         "Options:"
     },
 
     {CONFIGFILE, 0,"c", "config", option::Arg::NonEmpty, "  --config=filename, -cfilename  \tConfiguration file for webserver." },
-    {FORMAT, 0,"f", "format", SipiMultiChoice, "  --format, -f  \tOutput format jpx:jpg:tif:png." },
+    {FILEIN, 0,"f", "file", option::Arg::NonEmpty, "  --file=fileIn, -ffileIn  \tinput file to be converted ." },
+    {FORMAT, 0,"F", "format", SipiMultiChoice, "  --format, -F  \tOutput format jpx:jpg:tif:png." },
     {ICC, 0,"I", "ICC", SipiMultiChoice, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
     {QUALITY, 0, "q", "quality", option::Arg::NumericI, "  --quality, -q  \tQuality (compression) 1:100" },
-    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region, -r  \tSelect region of interest (x,y,w,h)" },
+    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)" },
     {REDUCE, 0, "R", "Reduce", option::Arg::NonEmpty, "  --Reduce, -R  \tReduce image size by factor (Cannot be used together with \"-size\" and \"-scale\"."},
     {SIZE, 0, "s", "size", option::Arg::NonEmpty, "  --size, -s  \tResize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")" },
     {SCALE, 0, "S", "Scale", option::Arg::NonEmpty, "  --Scale, -S  \tResize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")" },
@@ -496,7 +498,7 @@ int main (int argc, char *argv[]) {
         {
             server.imgroot(std::string(options[IMGROOT].arg));
         }
-        catch(std::logic_error& err)
+        catch(std::exception& err)
         {
             std::cerr<<"  --imgroot, -i  \tRoot directory containing the images (webserver)"<<std::endl;
             return EXIT_FAILURE;
@@ -504,21 +506,19 @@ int main (int argc, char *argv[]) {
         serverptr = &server;
         server.run();
 
-    } else{
-        option::printUsage(std::cout, usage);
-        return EXIT_FAILURE;
     }
-	/*
-    else {
+    else if(options[FILEIN]){
         //
         // get the input image name
         //
         std::string infname;
         try {
-            infname = params.getName();
+            infname = std::string(options[FILEIN].arg);
         }
-        catch (Sipi::SipiError &err) {
-            std::cerr << err;
+        catch (std::exception& err) {
+            std::cerr << "incorrect input filename "<<std::endl;
+            std::cerr << "USAGE: sipi [options] -ffileIn fileout "<<std::endl;
+
             return EXIT_FAILURE;
         }
 
@@ -527,10 +527,12 @@ int main (int argc, char *argv[]) {
         //
         std::string outfname;
         try {
-            outfname = params.getName();
+            outfname =  std::string(parse.nonOption(0));
         }
-        catch (Sipi::SipiError &err) {
-            std::cerr << err;
+        catch (std::exception& err) {
+            std::cerr << "incorrect output filename "<<std::endl;
+            std::cerr << "USAGE: sipi [options] -ffileIn fileout "<<std::endl;
+
             return EXIT_FAILURE;
         }
 
@@ -539,10 +541,10 @@ int main (int argc, char *argv[]) {
         //
         std::string format;
         try {
-            format = (params["format"])[0].getValue(SipiStringType);
+            format = std::string(options[FORMAT].arg);
         }
-        catch (Sipi::SipiError &err) {
-            std::cerr << err;
+        catch (std::exception& err) {
+            std::cerr << options[FORMAT].desc->help;
             return EXIT_FAILURE;
         }
 
@@ -551,13 +553,38 @@ int main (int argc, char *argv[]) {
         // getting information about a region of interest
         //
         Sipi::SipiRegion *region = NULL;
-        if (params["region"].isSet()) {
-            region = new Sipi::SipiRegion((params["region"])[0].getValue(SipiIntType),
-            (params["region"])[1].getValue(SipiIntType),
-            (params["region"])[2].getValue(SipiIntType),
-            (params["region"])[3].getValue(SipiIntType));
-        }
+        if (options[REGION])
+        {
+            std::vector<int> regV;
+            try
+            {
+                std::stringstream ss(options[REGION].arg);
+                std::vector<int> regV;
+                int regionC;
+                while(ss>>regionC)
+                {
+                    regV.push_back(regionC);
+                    if(ss.peek()==',')
+                        ss.ignore();
+                }
+                if(regV.size()!=4)
+                {
+                    std::cerr<<"  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)"<<std::endl;
+                    return EXIT_FAILURE;
+                }
 
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<"  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)"<<std::endl;
+                return EXIT_FAILURE;
+            }
+            region = new Sipi::SipiRegion(regV.at(0),
+                                          regV.at(1),
+                                          regV.at(2),
+                                          regV.at(3));
+        }
+/*
         Sipi::SipiSize *size = NULL;
         //
         // get the reduce parameter
@@ -666,8 +693,11 @@ int main (int argc, char *argv[]) {
         if (params["salsah"].isSet()) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;
         }
-
-    }
 */
+    } else{
+        option::printUsage(std::cout, usage);
+        return EXIT_FAILURE;
+    }
+
     return EXIT_SUCCESS;
 }
