@@ -271,33 +271,36 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
 const option::Descriptor usage[] =
 {
     {
-        UNKNOWN, 0, "", "",option::Arg::None, "USAGE: sipi [options] -ffileIn fileout \n\n"
+        UNKNOWN, 0, "", "",option::Arg::None, "SIPI (Simple Image Presentation Interface)\nSIPI is developed by the Digital Humanities Lab at the University of Basel\n"
+        "USAGE : sipi [options]\n"
         "Options:"
     },
 
-    {CONFIGFILE, 0,"c", "config", option::Arg::NonEmpty, "  --config=filename, -cfilename  \tConfiguration file for webserver." },
-    {FILEIN, 0,"f", "file", option::Arg::NonEmpty, "  --file=fileIn, -ffileIn  \tinput file to be converted ." },
-    {FORMAT, 0,"F", "format", SipiMultiChoice, "  --format, -F  \tOutput format jpx:jpg:tif:png." },
-    {ICC, 0,"I", "ICC", SipiMultiChoice, "  --ICC, -I  \tConvert to ICC profile none:sRGB:AdobeRGB:GRAY." },
-    {QUALITY, 0, "q", "quality", option::Arg::NumericI, "  --quality, -q  \tQuality (compression) 1:100" },
-    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)" },
-    {REDUCE, 0, "R", "Reduce", option::Arg::NonEmpty, "  --Reduce, -R  \tReduce image size by factor (Cannot be used together with \"-size\" and \"-scale\"."},
-    {SIZE, 0, "s", "size", option::Arg::NonEmpty, "  --size, -s  \tResize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")" },
-    {SCALE, 0, "S", "Scale", option::Arg::NonEmpty, "  --Scale, -S  \tResize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")" },
-    {SKIPMETA, 0, "k", "skipmeta", SipiMultiChoice, "  --skipmeta, -k  \tSkip the given metadata none:all" },
-    {MIRROR, 0, "m", "mirror", SipiMultiChoice, "  --mirror, -m  \tMirror the image none:horizontal:vertical" },
-    {ROTATE, 0, "o", "rotate", option::Arg::NumericI, "  --rotate, -o  \tRotate the image (0:360)" },
-    {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use" },
-    {COMPARE, 0, "C", "Compare", option::Arg::NonEmpty, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files" },
-    {SERVERPORT, 0, "p", "serverport", option::Arg::NonEmpty, "  --serverport, -p  \tPort of the webserver" },
-    {NTHREADS, 0, "t", "nthreads", option::Arg::NonEmpty, "  --nthreads, -t  \tNumber of threads for webserver" },
-    {IMGROOT, 0, "i", "imgroot", option::Arg::NonEmpty, "  --imgroot, -i  \tRoot directory containing the images (webserver)" },
-    {LOGLEVEL, 0, "l", "loglevel", SipiMultiChoice, "  --loglevel, -l  \tLogging level TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:OFF" },
-    {HELP, 0,"", "help",option::Arg::None, "  --help  \tPrint usage and exit." },
+    {CONFIGFILE, 0,"c", "config", option::Arg::NonEmpty, "  --config=filename, -cfilename  \tConfiguration file for webserver.\n" },
+    {FILEIN, 0,"f", "file", option::Arg::NonEmpty, "  --file=fileIn, -ffileIn  \tinput file to be converted . USAGE: sipi [options] -ffileIn fileout\n" },
+    {FORMAT, 0,"F", "format", SipiMultiChoice, "  --format=Value, -FValue  \tOutput format Value can be: jpx,jpg,tif,png.\n" },
+    {ICC, 0,"I", "ICC", SipiMultiChoice, "  --ICC=Value, -IValue  \tConvert to ICC profile. Value can be: none,sRGB,AdobeRGB,GRAY.\n" },
+    {QUALITY, 0, "q", "quality", option::Arg::NumericI, "  --quality=Value, -qValue  \tQuality (compression) Value can any integer between 1 and 100\n" },
+    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h) are integer values\n" },
+    {REDUCE, 0, "R", "Reduce", option::Arg::NumericI, "  --Reduce=Value, -RValue  \tReduce image size by factor Value (Cannot be used together with \"-size\" and \"-scale\".\n"},
+    {SIZE, 0, "s", "size", option::Arg::NonEmpty, "  --size=w,h -sw,h  \tResize image to given size w,h (Cannot be used together with \"-reduce\" and \"-scale\")\n" },
+    {SCALE, 0, "S", "Scale", option::Arg::NonEmpty, "  --Scale=Value, -SValue  \tResize image by the given percentage Value (Cannot be used together with \"-size\" and \"-reduce\")\n" },
+    {SKIPMETA, 0, "k", "skipmeta", SipiMultiChoice, "  --skipmeta=Value, -kValue  \tSkip the given metadata Value can be none,all\n" },
+    {MIRROR, 0, "m", "mirror", SipiMultiChoice, "  --mirror=Value, -mValue  \tMirror the image Value can be: none,horizontal,vertical\n" },
+    {ROTATE, 0, "o", "rotate", option::Arg::NumericD, "  --rotate=Value, -oValue  \tRotate the image by degree Value, angle between (0:360)\n" },
+    {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use\n" },
+    {COMPARE, 0, "C", "Compare", option::Arg::NonEmpty, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files\n" },
+    {SERVERPORT, 0, "p", "serverport", option::Arg::NonEmpty, "  --serverport=Value, -pValue  \tPort of the webserver\n" },
+    {NTHREADS, 0, "t", "nthreads", option::Arg::NonEmpty, "  --nthreads=Value, -tValue  \tNumber of threads for webserver\n" },
+    {IMGROOT, 0, "i", "imgroot", option::Arg::NonEmpty, "  --imgroot=Value, -iValue  \tRoot directory containing the images (webserver)\n" },
+    {LOGLEVEL, 0, "l", "loglevel", SipiMultiChoice, "  --loglevel=Value, -lValue  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n" },
+    {HELP, 0,"", "help",option::Arg::None, "  --help  \tPrint usage and exit.\n" },
     {
         UNKNOWN, 0, "", "",option::Arg::None, "\nExamples:\n"
-        "  example --unknown -- --this_is_no_option\n"
-        "  example -unk --plus -ppp file1 file2\n"
+        "USAGE (server): sipi --config=filename or sipi --cfilename where filename is a properly formatted .lua configuration file\n"
+        "USAGE (server): sipi [options]\n"
+        "USAGE (image converter): sipi [options] -ffileIn fileout \n"
+        "USAGE (image diff): sipi --Cfile1 -Cfile2, or sipi --Compare=file1 --Compare=file2 \n\n"
     },
     {0,0,nullptr,nullptr,0,nullptr}
 };
@@ -354,9 +357,9 @@ int main (int argc, char *argv[]) {
                 }
                 std::cout <<"comparing files: " << infname1 <<" and "<< infname2 << std::endl;
             }
-            catch(std::logic_error& err)
+            catch(std::exception& err)
             {
-                std::cerr<<"wrong syntax"<<std::endl;
+                std::cerr<<options[COMPARE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -386,7 +389,7 @@ int main (int argc, char *argv[]) {
             }
             catch(std::logic_error& err)
             {
-                std::cerr<<"  --config=filename, -cfilename  \tConfiguration file for webserver."<<std::endl;
+                std::cerr<<options[CONFIGFILE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
 
@@ -506,7 +509,7 @@ int main (int argc, char *argv[]) {
         }
         catch(std::exception& err)
         {
-            std::cerr<<"  --imgroot, -i  \tRoot directory containing the images (webserver)"<<std::endl;
+            std::cerr<<options[IMGROOT].desc->help<<std::endl;
             return EXIT_FAILURE;
         }
         serverptr = &server;
@@ -523,7 +526,7 @@ int main (int argc, char *argv[]) {
         }
         catch (std::exception& err) {
             std::cerr << "incorrect input filename "<<std::endl;
-            std::cerr << "USAGE: sipi [options] -ffileIn fileout "<<std::endl;
+                std::cerr<<options[FILEIN].desc->help<<std::endl;
 
             return EXIT_FAILURE;
         }
@@ -537,7 +540,7 @@ int main (int argc, char *argv[]) {
         }
         catch (std::exception& err) {
             std::cerr << "incorrect output filename "<<std::endl;
-            std::cerr << "USAGE: sipi [options] -ffileIn fileout "<<std::endl;
+                std::cerr<<options[FILEIN].desc->help<<std::endl;
 
             return EXIT_FAILURE;
         }
@@ -574,14 +577,14 @@ int main (int argc, char *argv[]) {
                 }
                 if(regV.size()!=4)
                 {
-                    std::cerr<<"  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)"<<std::endl;
+                    std::cerr<<options[REGION].desc->help<<std::endl;
                     return EXIT_FAILURE;
                 }
 
             }
             catch(std::exception& e)
             {
-                std::cerr<<"  --region=x,y,w,h, -rx,y,w,h  \tSelect region of interest (x,y,w,h)"<<std::endl;
+                    std::cerr<<options[REGION].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
             region = new Sipi::SipiRegion(regV.at(0),
@@ -589,7 +592,7 @@ int main (int argc, char *argv[]) {
                                           regV.at(2),
                                           regV.at(3));
         }
-/*
+
         Sipi::SipiSize *size = NULL;
         //
         // get the reduce parameter
@@ -597,15 +600,52 @@ int main (int argc, char *argv[]) {
         // is written a resolution pyramid). reduce=0 results in full resolution, reduce=1 is half the resolution
         // etc.
         //
-        int reduce = params["reduce"].isSet() ? (params["reduce"])[0].getValue(SipiIntType): 0;
-        if (reduce > 0) {
+        int reduce;
+        try
+        {
+            reduce= options[REDUCE] ? (std::stoi(options[REDUCE].arg)): 0;
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[REDUCE].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if (reduce > 0)
+        {
             size = new Sipi::SipiSize(reduce);
         }
-        else if (params["size"].isSet()) {
-            size = new Sipi::SipiSize((params["size"])[0].getValue(SipiIntType), (params["size"])[1].getValue(SipiIntType));
+        else if (options[SIZE])
+        {
+            try
+            {
+                std::stringstream ss(options[SIZE].arg);
+                std::vector<int> sizV;
+                int sizC;
+                while(ss>>sizC)
+                {
+                    sizV.push_back(sizC);
+                    if(ss.peek()==',')
+                        ss.ignore();
+                }
+                size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[SIZE].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
-        else if (params["scale"].isSet()) {
-            size = new Sipi::SipiSize((params["scale"])[0].getValue(SipiFloatType));
+        else if (options[SCALE])
+        {
+            try
+            {
+                size = new Sipi::SipiSize(std::stoi(options[SCALE].arg));
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[SCALE].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
 
         //
@@ -626,15 +666,37 @@ int main (int argc, char *argv[]) {
         //
         // if we want to remove all metadata from the file...
         //
-        std::string skipmeta = (params["skipmeta"])[0].getValue(SipiStringType);
-        if (skipmeta != "none") {
+        std::string skipmeta;
+
+        try
+        {
+            skipmeta = options[SKIPMETA].arg;
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[SKIPMETA].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if (skipmeta != "none")
+        {
             img.setSkipMetadata(Sipi::SKIP_ALL);
         }
 
         //
         // color profile processing
         //
-        std::string iccprofile = (params["icc"])[0].getValue(SipiStringType);
+
+        std::string iccprofile;
+        try
+        {
+            iccprofile = options[ICC].arg;
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[ICC].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+
 
         if (iccprofile != "none") {
             Sipi::SipiIcc icc;
@@ -656,8 +718,27 @@ int main (int argc, char *argv[]) {
         //
         // mirroring and rotation
         //
-        std::string mirror = (params["mirror"])[0].getValue(SipiStringType);
-        float angle = (params["rotate"])[0].getValue(SipiFloatType);
+        std::string mirror;
+        try
+        {
+            mirror = options[MIRROR].arg;
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[MIRROR].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+        float angle;
+        try
+        {
+            angle = std::stod(options[ROTATE].arg);
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[ROTATE].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+
 
         if (mirror != "none") {
             if (mirror == "horizontal") {
@@ -689,17 +770,27 @@ int main (int argc, char *argv[]) {
         //
         // write the output file
         //
+        int quality;
+        try
+        {
+            quality = std::stoi(options[QUALITY].arg);
+        }
+        catch(std::exception& e)
+        {
+            std::cerr<<options[QUALITY].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+
         try {
-            img.write(format, outfname, (params["quality"])[0].getValue (SipiIntType));
+            img.write(format, outfname, quality);
         }
         catch (Sipi::SipiImageError &err) {
             std::cerr << err << std::endl;
         }
 
-        if (params["salsah"].isSet()) {
+        if (options[SALSAH]) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;
         }
-*/
     } else{
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
