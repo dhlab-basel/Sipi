@@ -33,6 +33,7 @@
 #include <thread>
 #include <utility>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "curl/curl.h"
 #include "shttps/Global.h"
@@ -304,6 +305,12 @@ const option::Descriptor usage[] =
     },
     {0,0,nullptr,nullptr,0,nullptr}
 };
+//small function to check if file exist
+inline bool exists_file(const std::string& name){
+    struct stat buffer;
+    return (stat(name.c_str(),&buffer)==0);
+}
+
 int main (int argc, char *argv[]) {
     /*class _SipiInit {
     public:
@@ -364,6 +371,19 @@ int main (int argc, char *argv[]) {
             }
         }
 
+        if(!exists_file(infname1))
+        {
+            std::cerr << "file "<<infname1<<" does not exists"<<std::endl;
+            std::cerr<<options[FILEIN].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+        if(!exists_file(infname2))
+        {
+            std::cerr << "file "<<infname2<<" does not exists"<<std::endl;
+            std::cerr<<options[FILEIN].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+
         Sipi::SipiImage img1, img2;
         img1.read(infname1);
         img2.read(infname2);
@@ -392,6 +412,13 @@ int main (int argc, char *argv[]) {
                 std::cerr<<options[CONFIGFILE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
+
+        if(!exists_file(configfile))
+        {
+            std::cerr << "file "<<configfile<<" does not exists"<<std::endl;
+            std::cerr<<options[FILEIN].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
 
         try {
             std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
@@ -531,16 +558,22 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
+        if(!exists_file(infname)){
+            std::cerr << "file "<<infname<<" does not exists"<<std::endl;
+            std::cerr<<options[FILEIN].desc->help<<std::endl;
+            return EXIT_FAILURE;
+        }
+
         //
         // get the output image name
         //
-        std::string outfname;
+        std::string outfname="out.jpx";
         try {
             outfname =  std::string(parse.nonOption(0));
         }
         catch (std::exception& err) {
             std::cerr << "incorrect output filename "<<std::endl;
-                std::cerr<<options[FILEIN].desc->help<<std::endl;
+            std::cerr<<options[FILEIN].desc->help<<std::endl;
 
             return EXIT_FAILURE;
         }
@@ -548,7 +581,8 @@ int main (int argc, char *argv[]) {
         //
         // get the output format
         //
-        std::string format;
+        std::string format="jpx";
+        if(options[FORMAT]){
         try {
             format = std::string(options[FORMAT].arg);
         }
@@ -556,7 +590,7 @@ int main (int argc, char *argv[]) {
             std::cerr << options[FORMAT].desc->help;
             return EXIT_FAILURE;
         }
-
+        }
 
         //
         // getting information about a region of interest
@@ -666,16 +700,18 @@ int main (int argc, char *argv[]) {
         //
         // if we want to remove all metadata from the file...
         //
-        std::string skipmeta;
-
-        try
+        std::string skipmeta="none";
+        if(options[SKIPMETA])
         {
-            skipmeta = options[SKIPMETA].arg;
-        }
-        catch(std::exception& e)
-        {
-            std::cerr<<options[SKIPMETA].desc->help<<std::endl;
-            return EXIT_FAILURE;
+            try
+            {
+                skipmeta = options[SKIPMETA].arg;
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[SKIPMETA].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
         if (skipmeta != "none")
         {
@@ -686,17 +722,19 @@ int main (int argc, char *argv[]) {
         // color profile processing
         //
 
-        std::string iccprofile;
-        try
+        std::string iccprofile="none";
+        if(options[ICC])
         {
-            iccprofile = options[ICC].arg;
+            try
+            {
+                iccprofile = options[ICC].arg;
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[ICC].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
-        catch(std::exception& e)
-        {
-            std::cerr<<options[ICC].desc->help<<std::endl;
-            return EXIT_FAILURE;
-        }
-
 
         if (iccprofile != "none") {
             Sipi::SipiIcc icc;
@@ -718,27 +756,32 @@ int main (int argc, char *argv[]) {
         //
         // mirroring and rotation
         //
-        std::string mirror;
-        try
+        std::string mirror="none";
+        if(options[MIRROR])
         {
-            mirror = options[MIRROR].arg;
+            try
+            {
+                mirror = options[MIRROR].arg;
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[MIRROR].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
-        catch(std::exception& e)
+        float angle=0.0F;
+        if(options[ROTATE])
         {
-            std::cerr<<options[MIRROR].desc->help<<std::endl;
-            return EXIT_FAILURE;
+            try
+            {
+                angle = std::stod(options[ROTATE].arg);
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[ROTATE].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
-        float angle;
-        try
-        {
-            angle = std::stod(options[ROTATE].arg);
-        }
-        catch(std::exception& e)
-        {
-            std::cerr<<options[ROTATE].desc->help<<std::endl;
-            return EXIT_FAILURE;
-        }
-
 
         if (mirror != "none") {
             if (mirror == "horizontal") {
@@ -770,15 +813,18 @@ int main (int argc, char *argv[]) {
         //
         // write the output file
         //
-        int quality;
-        try
+        int quality=80;
+        if(options[QUALITY])
         {
-            quality = std::stoi(options[QUALITY].arg);
-        }
-        catch(std::exception& e)
-        {
-            std::cerr<<options[QUALITY].desc->help<<std::endl;
-            return EXIT_FAILURE;
+            try
+            {
+                quality = std::stoi(options[QUALITY].arg);
+            }
+            catch(std::exception& e)
+            {
+                std::cerr<<options[QUALITY].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
 
         try {
