@@ -172,7 +172,7 @@ If you intend to use Sipi with Knora, use `sipi.knora-config.lua` (in that case,
 In the main directory, call:
 
 ```bash
-local/bin/sipi -config config/sipi.config.lua
+local/bin/sipi -cconfig/sipi.config.lua
 ```
 
 All operations are written to the log file `sipi.log`.
@@ -530,7 +530,7 @@ From the Sipi root dir, start sipi like this:
 ```bash
 gdb build/sipi
 
-(gdb) run -config config/sipi.config.lua
+(gdb) run -cconfig/sipi.config.lua
 
 ```
 
