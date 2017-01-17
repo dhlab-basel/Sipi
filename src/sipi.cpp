@@ -40,7 +40,6 @@
 #include "shttps/LuaServer.h"
 #include "shttps/LuaSqlite.h"
 #include "SipiLua.h"
-#include "SipiCmdParams.h"
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
 #include "optionparser.h"
