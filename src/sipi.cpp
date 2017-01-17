@@ -567,21 +567,26 @@ int main (int argc, char *argv[]) {
         //
         // get the output image name
         //
-        std::string outfname="out.jpx";
-        try {
-            outfname =  std::string(parse.nonOption(0));
-        }
-        catch (std::exception& err) {
-            std::cerr << "incorrect output filename "<<std::endl;
-            std::cerr<<options[FILEIN].desc->help<<std::endl;
+        std::string outfname("out.jpx");
+        if(parse.nonOptionsCount()>0) {
+            try {
+                outfname = std::string(parse.nonOption(0));
+            }
+            catch (std::exception &err) {
+                std::cerr << "incorrect output filename " << std::endl;
+                std::cerr << options[FILEIN].desc->help << std::endl;
 
-            return EXIT_FAILURE;
+                return EXIT_FAILURE;
+            }
+        }else{
+            std::cerr << "missing output filename, using default out.jpx " << std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
         }
 
         //
         // get the output format
         //
-        std::string format="jpx";
+        std::string format("jpx");
         if(options[FORMAT]){
         try {
             format = std::string(options[FORMAT].arg);
@@ -700,7 +705,7 @@ int main (int argc, char *argv[]) {
         //
         // if we want to remove all metadata from the file...
         //
-        std::string skipmeta="none";
+        std::string skipmeta("none");
         if(options[SKIPMETA])
         {
             try
@@ -722,7 +727,7 @@ int main (int argc, char *argv[]) {
         // color profile processing
         //
 
-        std::string iccprofile="none";
+        std::string iccprofile("none");
         if(options[ICC])
         {
             try
@@ -756,7 +761,7 @@ int main (int argc, char *argv[]) {
         //
         // mirroring and rotation
         //
-        std::string mirror="none";
+        std::string mirror("none");
         if(options[MIRROR])
         {
             try
@@ -774,7 +779,7 @@ int main (int argc, char *argv[]) {
         {
             try
             {
-                angle = std::stod(options[ROTATE].arg);
+                angle = std::stof(options[ROTATE].arg);
             }
             catch(std::exception& e)
             {
