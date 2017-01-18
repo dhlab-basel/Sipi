@@ -878,7 +878,7 @@ namespace Sipi {
         MEMTIFF *memtif = NULL;
         uint32 rowsperstrip = (uint32) -1;
 
-        if ((filepath == "-") || (filepath == "HTTP")) {
+        if ((filepath == "stdout:") || (filepath == "HTTP")) {
             memtif = memTiffOpen();
             tif = TIFFClientOpen("MEMTIFF", "wb", (thandle_t) memtif,
                 memTiffReadProc,
@@ -1035,7 +1035,7 @@ namespace Sipi {
         TIFFClose(tif);
 
         if (memtif != NULL) {
-            if (filepath == "-") {
+            if (filepath == "stdout:") {
                 size_t n = 0;
                 while (n < memtif->flen) {
                     n += fwrite (&(memtif->data[n]), 1, memtif->flen - n > 10240 ? 10240 : memtif->flen - n, stdout);

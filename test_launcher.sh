@@ -32,7 +32,7 @@ if test -f "$FILENAME_RM"; then
 fi
 }
 
-./local/bin/sipi -config config/sipi.test-config.lua &
+./local/bin/sipi --config=config/sipi.test-config.lua &
 
 sleep 1.5
 
