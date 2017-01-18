@@ -253,7 +253,7 @@ namespace Sipi {
                 err_msg << "Lua function " << pre_flight_func_name << " returned permission 'allow', but it did not return a file path";
                 throw SipiError(__file__, __LINE__, err_msg.str());
             }
-        } 
+        }
 
         // Return the permission code and file path, if any, as a std::pair.
         return std::make_pair(permission, infile);
@@ -290,7 +290,7 @@ namespace Sipi {
         }
         */
 
-        
+
         //
         // here we start the lua script which checks for permissions
         //
@@ -513,10 +513,34 @@ namespace Sipi {
             }
         }
 
+        std::string format;
+        if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
+            switch (quality_format.quality()) {
+                case SipiQualityFormat::COLOR: {
+                    format = "/color.";
+                    break;
+                }
+                case SipiQualityFormat::GRAY: {
+                    format = "/gray.";
+                    break;
+                }
+                case SipiQualityFormat::BITONAL: {
+                    format = "/bitonal.";
+                    break;
+                }
+                default: {
+                    format = "/default.";
+                }
+            }
+        }
+        else {
+            format = "/default.";
+        }
+
         (void) snprintf(canonical_header, canonical_header_len, "<http://%s/%s/%s/%s/%s/%s/default.%s>; rel=\"canonical\"",
                         host.c_str(), prefix.c_str(), identifier.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
         std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
-                           std::string(canonical_size) + "/" + std::string(canonical_rotation) + "/default." + std::string(ext);
+                           std::string(canonical_size) + "/" + std::string(canonical_rotation) + format + std::string(ext);
 
         return make_pair(canonical_header, canonical);
     }
@@ -988,13 +1012,20 @@ namespace Sipi {
         if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
             switch (quality_format.quality()) {
                 case SipiQualityFormat::COLOR: {
-                    img.convertToIcc(icc_sRGB, 8); // for now, force 8 bit/sample
+                    img.convertToIcc(SipiIcc(icc_sRGB), 8); // for now, force 8 bit/sample
+                    break;
                 }
                 case SipiQualityFormat::GRAY: {
-                    img.convertToIcc(icc_GRAY_D50, 8); // for now, force 8 bit/sample
+                    img.convertToIcc(SipiIcc(icc_GRAY_D50), 8); // for now, force 8 bit/sample
+                    break;
+                }
+                case SipiQualityFormat::BITONAL: {
+                    img.toBitonal();
+                    break;
                 }
                 default: {
-                    // TODO: do nothing at the moment, bitonal is not yet supported...
+                    send_error(conn_obj, Connection::BAD_REQUEST, "Invalid quality specificer");
+                    return;
                 }
             }
         }
@@ -1013,7 +1044,6 @@ namespace Sipi {
             }
             syslog(LOG_INFO, "GET %s: adding watermark", uri.c_str());
         }
-
 
         img.connection(&conn_obj);
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");

@@ -112,6 +112,12 @@ namespace shttps {
                 serverptr->stop();
                 return NULL;
             }
+           /* we have to catch and ignore SIGPIPE !!
+            else {
+                signal_result = -1;
+                return NULL;
+            }
+            */
         }
     }
    //=========================================================================

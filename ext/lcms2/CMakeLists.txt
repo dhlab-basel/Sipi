@@ -3,13 +3,13 @@ project(lcms2_builder C CXX)
 include(ExternalProject)
 
 #
-# get lcms2 Version 2.7
+# get lcms2 Version 2.8
 #
 ExternalProject_Add(project_lcms2
     INSTALL_DIR ${COMMON_LOCAL}
-    URL http://sourceforge.net/projects/lcms/files/lcms/2.7/lcms2-2.7.tar.gz/download
-    SOURCE_DIR ${COMMON_SRCS}/lcms2-2.6
-    CONFIGURE_COMMAND ${COMMON_SRCS}/lcms2-2.6/configure --prefix=${COMMON_LOCAL} --with-jpeg=${COMMON_LOCAL} --with-tiff=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+    URL https://sourceforge.net/projects/lcms/files/lcms/2.8/lcms2-2.8.tar.gz/download
+    SOURCE_DIR ${COMMON_SRCS}/lcms2-2.8
+    CONFIGURE_COMMAND ${COMMON_SRCS}/lcms2-2.8/configure --prefix=${COMMON_LOCAL} --with-jpeg=${COMMON_LOCAL} --with-tiff=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )
