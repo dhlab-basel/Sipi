@@ -243,6 +243,7 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
             {
             case FORMAT:
                 if(str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
+
                 break;
             case ICC:
                 if(str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
@@ -265,6 +266,7 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
             return option::ARG_ILLEGAL;
         }
     }
+
 
     if (msg) std::cerr << "Option '" << option << "' requires " << option.desc->help;
     return option::ARG_ILLEGAL;
@@ -312,7 +314,7 @@ inline bool exists_file(const std::string& name){
 }
 
 int main (int argc, char *argv[]) {
-    class _SipiInit {
+    /*class _SipiInit {
     public:
         _SipiInit() {
             // Initialise libcurl.
@@ -334,6 +336,7 @@ int main (int argc, char *argv[]) {
 
     argc -= (argc > 0);
     argv += (argc > 0); // skip program name argv[0] if present
+
     option::Stats  stats(usage, argc, argv);
     std::vector<option::Option> options(stats.options_max);
     std::vector<option::Option> buffer(stats.buffer_max);
@@ -360,10 +363,12 @@ int main (int argc, char *argv[]) {
                 std::cout << "comparing files: " << infname1 <<" and "<< infname2 << std::endl;
             }
             catch(std::exception& err) {
+
                 std::cerr<<options[COMPARE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
         }
+
 
         if(!exists_file(infname1)) {
             std::cerr << "file " << infname1 << " does not exists" << std::endl;
@@ -371,6 +376,7 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
         if(!exists_file(infname2)) {
+
             std::cerr << "file "<<infname2<<" does not exists"<<std::endl;
             std::cerr<<options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -381,7 +387,8 @@ int main (int argc, char *argv[]) {
         img2.read(infname2);
         bool result = img1 == img2;
 
-        if (!result) {
+        if (!result)
+        {
             img1 -= img2;
             img1.write("tif", "diff.tif");
         }
@@ -406,6 +413,7 @@ int main (int argc, char *argv[]) {
         if(!exists_file(configfile)) {
             std::cerr << "file "<< configfile << " does not exists" << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
+
             return EXIT_FAILURE;
         }
 
@@ -515,22 +523,27 @@ int main (int argc, char *argv[]) {
             }
         }
         else{
+
             nthreads =std::thread::hardware_concurrency();
         }
 
         Sipi::SipiHttpServer server(std::stoi(options[SERVERPORT].arg), nthreads);
+
         try {
             server.imgroot(std::string(options[IMGROOT].arg));
         }
         catch(std::exception& err) {
             std::cerr << options[IMGROOT].desc->help << std::endl;
+
             return EXIT_FAILURE;
         }
         serverptr = &server;
         server.run();
 
     }
+
     else if(options[FILEIN]) {
+
         //
         // get the input image name
         //
@@ -545,7 +558,9 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
+
         if(!exists_file(infname)) {
+
             std::cerr << "file "<<infname<<" does not exists"<<std::endl;
             std::cerr<<options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -555,7 +570,9 @@ int main (int argc, char *argv[]) {
         // get the output image name
         //
         std::string outfname("out.jpx");
+
         if(parse.nonOptionsCount() > 0) {
+
             try {
                 outfname = std::string(parse.nonOption(0));
             }
@@ -565,8 +582,10 @@ int main (int argc, char *argv[]) {
 
                 return EXIT_FAILURE;
             }
+
         }
         else {
+
             std::cerr << "missing output filename, using default out.jpx " << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
         }
@@ -575,6 +594,7 @@ int main (int argc, char *argv[]) {
         // get the output format
         //
         std::string format("jpx");
+
         if(options[FORMAT]) {
             try {
                 format = std::string(options[FORMAT].arg);
@@ -584,6 +604,7 @@ int main (int argc, char *argv[]) {
                 return EXIT_FAILURE;
             }
         }
+
 
         //
         // getting information about a region of interest
@@ -602,11 +623,13 @@ int main (int argc, char *argv[]) {
                 }
                 if(regV.size()!=4) {
                     std::cerr << options[REGION].desc->help << std::endl;
+
                     return EXIT_FAILURE;
                 }
 
             }
             catch(std::exception& e) {
+
                     std::cerr<<options[REGION].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -657,6 +680,7 @@ int main (int argc, char *argv[]) {
                 size = new Sipi::SipiSize(std::stoi(options[SCALE].arg));
             }
             catch(std::exception& e) {
+
                 std::cerr<<options[SCALE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -686,6 +710,7 @@ int main (int argc, char *argv[]) {
                 skipmeta = options[SKIPMETA].arg;
             }
             catch (std::exception& e) {
+
                 std::cerr<<options[SKIPMETA].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -786,6 +811,7 @@ int main (int argc, char *argv[]) {
                 quality = std::stoi(options[QUALITY].arg);
             }
             catch (std::exception& e) {
+
                 std::cerr<<options[QUALITY].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
