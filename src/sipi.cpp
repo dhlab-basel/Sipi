@@ -103,6 +103,7 @@ static std::string fileType_string(FileType f_type) {
 
     return type_string;
 };
+//=========================================================================
 
 
 static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
@@ -242,19 +243,19 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
             {
             case FORMAT:
                 if(str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
-					break;
+                break;
             case ICC:
                 if(str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
-					break;
+                break;
             case MIRROR:
                 if(str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
-					break;
+                break;
             case LOGLEVEL:
                 if(str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
-					break;
+                break;
             case SKIPMETA:
                 if(str=="none" || str=="all") return option::ARG_OK;
-					break;
+                break;
 			default: return option::ARG_ILLEGAL;
             }
         }
@@ -265,7 +266,7 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
         }
     }
 
-    if (msg) std::cerr<<"Option '"<< option<< "' requires "<<option.desc->help;
+    if (msg) std::cerr << "Option '" << option << "' requires " << option.desc->help;
     return option::ARG_ILLEGAL;
 }
 const option::Descriptor usage[] =
@@ -332,52 +333,45 @@ int main (int argc, char *argv[]) {
     } sipiInit;
 */
 
-    argc-=(argc>0);
-    argv+=(argc>0); // skip program name argv[0] if present
+    argc -= (argc > 0);
+    argv += (argc > 0); // skip program name argv[0] if present
     option::Stats  stats(usage, argc, argv);
     std::vector<option::Option> options(stats.options_max);
     std::vector<option::Option> buffer(stats.buffer_max);
     option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
-    if (parse.error()){
+    if (parse.error()) {
         return EXIT_FAILURE;
-    }else if (options[HELP] || argc == 0)
-    {
+    }
+    else if (options[HELP] || argc == 0) {
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
-    }else if (options[COMPARE] && options[COMPARE].count()==2)
-    {
+    }
+    else if (options[COMPARE] && options[COMPARE].count() == 2) {
 
         std::string infname1,infname2;
-        for( option::Option* opt = options[COMPARE]; opt; opt = opt->next())
-        {
-            try
-            {
-                if(opt->isFirst())
-                {
+        for( option::Option* opt = options[COMPARE]; opt; opt = opt->next()) {
+            try {
+                if(opt->isFirst()) {
                     infname1 = std::string(opt->arg);
                 }
-                else
-                {
+                else {
                     infname2 = std::string(opt->arg);
                 }
-                std::cout <<"comparing files: " << infname1 <<" and "<< infname2 << std::endl;
+                std::cout << "comparing files: " << infname1 <<" and "<< infname2 << std::endl;
             }
-            catch(std::exception& err)
-            {
+            catch(std::exception& err) {
                 std::cerr<<options[COMPARE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
         }
 
-        if(!exists_file(infname1))
-        {
-            std::cerr << "file "<<infname1<<" does not exists"<<std::endl;
-            std::cerr<<options[FILEIN].desc->help<<std::endl;
+        if(!exists_file(infname1)) {
+            std::cerr << "file " << infname1 << " does not exists" << std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
-        if(!exists_file(infname2))
-        {
+        if(!exists_file(infname2)) {
             std::cerr << "file "<<infname2<<" does not exists"<<std::endl;
             std::cerr<<options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -388,8 +382,7 @@ int main (int argc, char *argv[]) {
         img2.read(infname2);
         bool result = img1 == img2;
 
-        if (!result)
-        {
+        if (!result) {
             img1 -= img2;
             img1.write("tif", "diff.tif");
         }
@@ -398,24 +391,22 @@ int main (int argc, char *argv[]) {
     //
     // if a config file is given, we start sipi as IIIF compatible server
     //
-    }else if (options[CONFIGFILE]) {
+    }
+    else if (options[CONFIGFILE]) {
         std::string configfile;
 
-            try
-            {
+            try {
                 configfile = std::string(options[CONFIGFILE].arg);
-                std::cout <<"config file: " << configfile << std::endl;
+                std::cout << "config file: " << configfile << std::endl;
             }
-            catch(std::logic_error& err)
-            {
-                std::cerr<<options[CONFIGFILE].desc->help<<std::endl;
+            catch(std::logic_error& err) {
+                std::cerr << options[CONFIGFILE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
 
-        if(!exists_file(configfile))
-        {
-            std::cerr << "file "<<configfile<<" does not exists"<<std::endl;
-            std::cerr<<options[FILEIN].desc->help<<std::endl;
+        if(!exists_file(configfile)) {
+            std::cerr << "file "<< configfile << " does not exists" << std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
@@ -514,35 +505,33 @@ int main (int argc, char *argv[]) {
     //
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
-    }else if(options[SERVERPORT] && options[IMGROOT]) {
+    }
+    else if(options[SERVERPORT] && options[IMGROOT]) {
         unsigned int nthreads = 0;
-        if(options[NTHREADS])
-        {
+        if(options[NTHREADS]) {
             nthreads = static_cast<unsigned int> (std::stoi(options[NTHREADS].arg));
-            if (nthreads < 1 || nthreads > std::thread::hardware_concurrency())
-            {
+            if (nthreads < 1 || nthreads > std::thread::hardware_concurrency()) {
                 std::cerr << "incorrect number of threads, maximum supported number is: "<<std::thread::hardware_concurrency() << std::endl;
                 nthreads =std::thread::hardware_concurrency();
             }
-        }else{
+        }
+        else{
             nthreads =std::thread::hardware_concurrency();
         }
 
         Sipi::SipiHttpServer server(std::stoi(options[SERVERPORT].arg), nthreads);
-        try
-        {
+        try {
             server.imgroot(std::string(options[IMGROOT].arg));
         }
-        catch(std::exception& err)
-        {
-            std::cerr<<options[IMGROOT].desc->help<<std::endl;
+        catch(std::exception& err) {
+            std::cerr << options[IMGROOT].desc->help << std::endl;
             return EXIT_FAILURE;
         }
         serverptr = &server;
         server.run();
 
     }
-    else if(options[FILEIN]){
+    else if(options[FILEIN]) {
         //
         // get the input image name
         //
@@ -557,7 +546,7 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
-        if(!exists_file(infname)){
+        if(!exists_file(infname)) {
             std::cerr << "file "<<infname<<" does not exists"<<std::endl;
             std::cerr<<options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -567,7 +556,7 @@ int main (int argc, char *argv[]) {
         // get the output image name
         //
         std::string outfname("out.jpx");
-        if(parse.nonOptionsCount()>0) {
+        if(parse.nonOptionsCount() > 0) {
             try {
                 outfname = std::string(parse.nonOption(0));
             }
@@ -577,7 +566,8 @@ int main (int argc, char *argv[]) {
 
                 return EXIT_FAILURE;
             }
-        }else{
+        }
+        else {
             std::cerr << "missing output filename, using default out.jpx " << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
         }
@@ -586,42 +576,38 @@ int main (int argc, char *argv[]) {
         // get the output format
         //
         std::string format("jpx");
-        if(options[FORMAT]){
-        try {
-            format = std::string(options[FORMAT].arg);
-        }
-        catch (std::exception& err) {
-            std::cerr << options[FORMAT].desc->help;
-            return EXIT_FAILURE;
-        }
+        if(options[FORMAT]) {
+            try {
+                format = std::string(options[FORMAT].arg);
+            }
+            catch (std::exception& err) {
+                std::cerr << options[FORMAT].desc->help;
+                return EXIT_FAILURE;
+            }
         }
 
         //
         // getting information about a region of interest
         //
         Sipi::SipiRegion *region = NULL;
-        if (options[REGION])
-        {
+        if (options[REGION]) {
             std::vector<int> regV;
-            try
-            {
+            try {
                 std::stringstream ss(options[REGION].arg);
                 int regionC;
-                while(ss>>regionC)
-                {
+                while (ss >> regionC) {
                     regV.push_back(regionC);
-                    if(ss.peek()==',')
+                    if (ss.peek()==',') {
                         ss.ignore();
+                    }
                 }
-                if(regV.size()!=4)
-                {
-                    std::cerr<<options[REGION].desc->help<<std::endl;
+                if(regV.size()!=4) {
+                    std::cerr << options[REGION].desc->help << std::endl;
                     return EXIT_FAILURE;
                 }
 
             }
-            catch(std::exception& e)
-            {
+            catch(std::exception& e) {
                     std::cerr<<options[REGION].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -639,48 +625,39 @@ int main (int argc, char *argv[]) {
         // etc.
         //
         int reduce;
-        try
-        {
-            reduce= options[REDUCE] ? (std::stoi(options[REDUCE].arg)): 0;
+        try {
+            reduce = options[REDUCE] ? (std::stoi(options[REDUCE].arg)) : 0;
         }
-        catch(std::exception& e)
-        {
-            std::cerr<<options[REDUCE].desc->help<<std::endl;
+        catch(std::exception& e) {
+            std::cerr << options[REDUCE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
-        if (reduce > 0)
-        {
+        if (reduce > 0) {
             size = new Sipi::SipiSize(reduce);
         }
-        else if (options[SIZE])
-        {
-            try
-            {
+        else if (options[SIZE]) {
+            try {
                 std::stringstream ss(options[SIZE].arg);
                 std::vector<int> sizV;
                 int sizC;
-                while(ss>>sizC)
-                {
+                while(ss >> sizC) {
                     sizV.push_back(sizC);
-                    if(ss.peek()==',')
+                    if(ss.peek()==',') {
                         ss.ignore();
+                    }
                 }
                 size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
             }
-            catch(std::exception& e)
-            {
-                std::cerr<<options[SIZE].desc->help<<std::endl;
+            catch(std::exception& e) {
+                std::cerr << options[SIZE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
-        else if (options[SCALE])
-        {
-            try
-            {
+        else if (options[SCALE]) {
+            try {
                 size = new Sipi::SipiSize(std::stoi(options[SCALE].arg));
             }
-            catch(std::exception& e)
-            {
+            catch(std::exception& e) {
                 std::cerr<<options[SCALE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -705,20 +682,16 @@ int main (int argc, char *argv[]) {
         // if we want to remove all metadata from the file...
         //
         std::string skipmeta("none");
-        if(options[SKIPMETA])
-        {
-            try
-            {
+        if (options[SKIPMETA]) {
+            try {
                 skipmeta = options[SKIPMETA].arg;
             }
-            catch(std::exception& e)
-            {
+            catch (std::exception& e) {
                 std::cerr<<options[SKIPMETA].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
         }
-        if (skipmeta != "none")
-        {
+        if (skipmeta != "none") {
             img.setSkipMetadata(Sipi::SKIP_ALL);
         }
 
@@ -727,14 +700,11 @@ int main (int argc, char *argv[]) {
         //
 
         std::string iccprofile("none");
-        if(options[ICC])
-        {
-            try
-            {
+        if(options[ICC]) {
+            try {
                 iccprofile = options[ICC].arg;
             }
-            catch(std::exception& e)
-            {
+            catch (std::exception& e) {
                 std::cerr<<options[ICC].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -761,27 +731,21 @@ int main (int argc, char *argv[]) {
         // mirroring and rotation
         //
         std::string mirror("none");
-        if(options[MIRROR])
-        {
-            try
-            {
+        if (options[MIRROR]) {
+            try {
                 mirror = options[MIRROR].arg;
             }
-            catch(std::exception& e)
-            {
+            catch(std::exception& e) {
                 std::cerr<<options[MIRROR].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
         }
         float angle=0.0F;
-        if(options[ROTATE])
-        {
-            try
-            {
+        if (options[ROTATE]) {
+            try {
                 angle = std::stof(options[ROTATE].arg);
             }
-            catch(std::exception& e)
-            {
+            catch (std::exception& e) {
                 std::cerr<<options[ROTATE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -817,15 +781,12 @@ int main (int argc, char *argv[]) {
         //
         // write the output file
         //
-        int quality=80;
-        if(options[QUALITY])
-        {
-            try
-            {
+        int quality = 80;
+        if (options[QUALITY]) {
+            try {
                 quality = std::stoi(options[QUALITY].arg);
             }
-            catch(std::exception& e)
-            {
+            catch (std::exception& e) {
                 std::cerr<<options[QUALITY].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
