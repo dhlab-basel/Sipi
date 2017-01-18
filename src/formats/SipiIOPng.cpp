@@ -363,7 +363,7 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
         }
 
-        if (strcmp (filepath.c_str(), "-") == 0) {
+        if (filepath == "stdout:") {
             outfile = stdout;
         }
         else if (filepath == "HTTP") {

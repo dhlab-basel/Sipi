@@ -819,12 +819,12 @@ namespace Sipi {
             //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
-        if (strcmp (filepath.c_str(), "HTTP") == 0) { // we are transmitting the data through the webserver
+        if (filepath == "HTTP") { // we are transmitting the data through the webserver
             shttps::Connection *conobj = img->connection();
             jpeg_html_dest(&cinfo, conobj);
         }
         else {
-            if (strcmp (filepath.c_str(), "-") == 0) {
+            if (filepath == "stdout:") {
                 jpeg_stdio_dest(&cinfo, stdout);
             }
             else {
