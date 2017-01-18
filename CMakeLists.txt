@@ -304,9 +304,6 @@ add_executable(
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
         src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
         src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
-        src/SipiParamValue.cpp include/SipiParamValue.h
-        src/SipiParam.cpp include/SipiParam.h
-        src/SipiCmdParams.cpp include/SipiCmdParams.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
