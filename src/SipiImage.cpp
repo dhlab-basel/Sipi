@@ -365,7 +365,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int bps) {
+    void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int new_bps) {
         cmsUInt32Number in_formatter, out_formatter;
         if (icc == NULL) {
             switch (nc) {
@@ -390,23 +390,19 @@ namespace Sipi {
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
         byte *inbuf = (byte *) pixels;
-        byte *outbuf = new byte[nx*ny*nnc];
+        byte *outbuf = new byte[nx*ny*nnc*new_bps/8];
 
         cmsHTRANSFORM hTransform;
         in_formatter = icc->iccFormatter(this);
-        out_formatter = target_icc_p.iccFormatter(bps);
-        switch (bps) {
-            case 8: {
-                hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
-                break;
-            }
-            case 16: {
-                hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
-                break;
-            }
-            default: {
-                throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + std::to_string(bps) + ")");
-            }
+        out_formatter = target_icc_p.iccFormatter(new_bps);
+
+        if (!((new_bps == 8) || (new_bps == 16))) {
+            throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + std::to_string(bps) + ")");
+        }
+
+        hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
+        if (hTransform == NULL) {
+            throw SipiImageError(__file__, __LINE__, "Couldn't create color transform");
         }
         cmsDoTransform(hTransform, inbuf, outbuf, nx*ny);
 
@@ -418,6 +414,7 @@ namespace Sipi {
         pixels = outbuf;
         delete [] inbuf;
         nc = nnc;
+        bps = new_bps;
 
         PredefinedProfiles targetPT = target_icc_p.getProfileType();
         switch (targetPT) {
@@ -441,7 +438,6 @@ namespace Sipi {
         }
     }
     /*==========================================================================*/
-
 
 
     void SipiImage::removeChan(unsigned int chan) {
@@ -1050,26 +1046,68 @@ namespace Sipi {
     //============================================================================
 
     bool SipiImage::to8bps(void) {
+        // little-endian architecture assumed
         //
         // we just use the shift-right operater (>> 8) to devide the values by 256 (2^8)!
         // This is the most efficient and fastest way
         //
         if (bps == 16) {
+            //icc = NULL;
+
             word *inbuf = (word *) pixels;
+            //byte *outbuf = new(std::nothrow) Sipi::byte[nc*nx*ny];
             byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
             if (outbuf == NULL) return false;
             for (unsigned int j = 0; j < ny; j++) {
                 for (unsigned int i = 0; i < nx; i++) {
                     for (unsigned int k = 0; k < nc; k++) {
                         // divide pixel values by 256 using ">> 8"
-                        outbuf[nc*(j*nx + i) + k] = (byte) ((inbuf[nc*(j*nx + i) + k] >> 8) & 0x00ff);
+                        outbuf[nc*(j*nx + i) + k] = (inbuf[nc*(j*nx + i) + k] >> 8);
                     }
                 }
             }
+
+            delete [] pixels;
             pixels = outbuf;
-            delete [] (word *) inbuf;
             bps = 8;
+
         }
+        return true;
+    }
+    //============================================================================
+
+
+    bool SipiImage::toBitonal(void) {
+        if ((photo != MINISBLACK) && (photo != MINISWHITE)) {
+            convertToIcc(SipiIcc(icc_GRAY_D50), 8);
+        }
+
+
+        bool doit = false; // will be set true if we find a value not equal 0 or 255
+        for (int i = 0; i < nx*ny; i++) {
+            if (!doit && (pixels[i] != 0) && (pixels[i] != 255)) doit = true;
+        }
+        if (!doit) return true; // we have to do nothing, it's already bitonal
+
+        short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
+        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        for (int i = 0; i < nx*ny; i++) {
+            outbuf[i] = pixels[i];  // copy buffer
+        }
+
+        for (int y = 0; y< ny; y++) {
+            for (int x = 0; x < nx; x++){
+                short oldpixel = outbuf[y*nx + x];
+                outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
+                int properr  = (oldpixel - outbuf[y*nx + x]);
+                if (x < (nx - 1)) outbuf[y*nx + (x + 1)] += (7 * properr) >> 4;
+                if ((x > 0) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x - 1)] += (3 * properr) >> 4;
+                if (y < (ny - 1)) outbuf[(y + 1)*nx + x] += (5 * properr) >> 4;
+                if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += properr >> 4;
+            }
+        }
+        for (int i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
+        delete [] outbuf;
         return true;
     }
     //============================================================================

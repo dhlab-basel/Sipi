@@ -461,6 +461,16 @@ namespace Sipi {
         bool to8bps(void);
 
        /*!
+        * Convert an image to a bitonal representation using Steinberg-Floyd dithering.
+        *
+        * The method does nothing if the image is already bitonal. Otherwise, the image is converted
+        * into a gray value image if necessary and then a FLoyd-Steinberg dithering is applied.
+        *
+        * \returns Returns true on success, false on error
+        */
+        bool toBitonal(void);
+        
+       /*!
         * Add a watermark to a file...
         *
         * \param[in] wmfilename Path to watermakfile (which must be a TIFF file at the moment)
