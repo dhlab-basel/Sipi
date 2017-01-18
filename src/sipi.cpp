@@ -332,29 +332,12 @@ int main (int argc, char *argv[]) {
         }
     } sipiInit;
 
-
-    //
-    // commandline processing....
-    //
-    Sipi::SipiCmdParams params (argc, argv, "A generic image format converter preserving the metadata");
-    params.addParam(new Sipi::SipiParam("format", "Output format", "jpx:jpg:tif:png", 1, "jpx"));
-    params.addParam(new Sipi::SipiParam("icc", "Convert to ICC profile", "none:sRGB:AdobeRGB:GRAY", 1, "none"));
-    params.addParam(new Sipi::SipiParam("quality", "Quality (compression)", 1, 100, 1, 80));
-    params.addParam(new Sipi::SipiParam("region", "Select region of interest (x,y,w,h)", -1, 9999, 4, 0, 0, -1, -1));
-    params.addParam(new Sipi::SipiParam("reduce", "Reduce image size by factor (Cannot be used together with \"-size\" and \"-scale\")", 0, 5, 1, 0));
-    params.addParam(new Sipi::SipiParam("size", "Resize image to given size (Cannot be used together with \"-reduce\" and \"-scale\")", 0, 999999, 2, 0, 0));
-    params.addParam(new Sipi::SipiParam("scale", "Resize image by the given percentage (Cannot be used together with \"-size\" and \"-reduce\")", 0.0F, 1000.F, 1, 100.F));
-    params.addParam(new Sipi::SipiParam("skipmeta", "Skip the given metadata", "none:all", 1, "none"));
-    params.addParam(new Sipi::SipiParam("mirror", "Mirror the image", "none:horizontal:vertical", 1, "none"));
-    params.addParam(new Sipi::SipiParam("rotate", "Rotate the image", 0.0F, 359.99999F, 1, 0.0F));
-    params.addParam(new Sipi::SipiParam("salsah", "Special flag for SALSAH internal use", false));
-    params.addParam(new Sipi::SipiParam("compare", "compare to files", false));
-    params.addParam(new Sipi::SipiParam("serverport", "Port of the webserver", 0, 65535, 1, 0));
-    params.addParam(new Sipi::SipiParam("nthreads", "Number of threads for webserver", -1, 64, 1, -1));
-    params.addParam(new Sipi::SipiParam("imgroot", "Root directory containing the images (webserver)", 1, "."));
-    params.addParam(new Sipi::SipiParam("config", "Configuration file for webserver", 1, ""));
-    params.addParam(new Sipi::SipiParam("loglevel", "Logging level", "TRACE:DEBUG:INFO:WARN:ERROR:CRITICAL:::OFF", 1, "INFO"));
-    params.parseArgv ();
+    argc -= (argc > 0);
+    argv += (argc > 0); // skip program name argv[0] if present
+    option::Stats  stats(usage, argc, argv);
+    std::vector<option::Option> options(stats.options_max);
+    std::vector<option::Option> buffer(stats.buffer_max);
+    option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
     if (parse.error()) {
         return EXIT_FAILURE;
@@ -365,11 +348,21 @@ int main (int argc, char *argv[]) {
     }
     else if (options[COMPARE] && options[COMPARE].count() == 2) {
 
-
-    if (params["compare"].isSet()) {
-        std::string infname1;
-        try {
-            infname1 = params.getName();
+        std::string infname1,infname2;
+        for( option::Option* opt = options[COMPARE]; opt; opt = opt->next()) {
+            try {
+                if(opt->isFirst()) {
+                    infname1 = std::string(opt->arg);
+                }
+                else {
+                    infname2 = std::string(opt->arg);
+                }
+                std::cout << "comparing files: " << infname1 <<" and "<< infname2 << std::endl;
+            }
+            catch(std::exception& err) {
+                std::cerr<<options[COMPARE].desc->help<<std::endl;
+                return EXIT_FAILURE;
+            }
         }
 
         if(!exists_file(infname1)) {
