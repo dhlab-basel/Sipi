@@ -344,9 +344,12 @@ int main (int argc, char *argv[]) {
     option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
     if (parse.error()) {
+        std::cout << "##" << __LINE__ << std::endl;
+        option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
     }
     else if (options[HELP] || argc == 0) {
+        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
     }
@@ -364,7 +367,7 @@ int main (int argc, char *argv[]) {
                 std::cout << "comparing files: " << infname1 <<" and "<< infname2 << std::endl;
             }
             catch(std::exception& err) {
-
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr<<options[COMPARE].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -372,12 +375,14 @@ int main (int argc, char *argv[]) {
 
 
         if (!exists_file(infname1)) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname1 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
         if (!exists_file(infname2)) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname2 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
@@ -411,9 +416,9 @@ int main (int argc, char *argv[]) {
             }
 
         if (!exists_file(configfile)) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << configfile << std::endl;
             std::cerr << options[CONFIGFILE].desc->help << std::endl;
-
             return EXIT_FAILURE;
         }
 
@@ -533,8 +538,8 @@ int main (int argc, char *argv[]) {
             server.imgroot(std::string(options[IMGROOT].arg));
         }
         catch(std::exception& err) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[IMGROOT].desc->help << std::endl;
-
             return EXIT_FAILURE;
         }
         serverptr = &server;
@@ -551,13 +556,14 @@ int main (int argc, char *argv[]) {
             infname = std::string(options[FILEIN].arg);
         }
         catch (std::exception& err) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "Invalid input filename." << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
-
         if (!exists_file(infname)) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname << std::endl;
             std::cerr << options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -573,6 +579,7 @@ int main (int argc, char *argv[]) {
                 outfname = std::string(parse.nonOption(0));
             }
             catch (std::exception &err) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "incorrect output filename " << std::endl;
                 std::cerr << options[FILEIN].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -593,6 +600,7 @@ int main (int argc, char *argv[]) {
                 format = std::string(options[FORMAT].arg);
             }
             catch (std::exception& err) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[FORMAT].desc->help;
                 return EXIT_FAILURE;
             }
@@ -614,12 +622,14 @@ int main (int argc, char *argv[]) {
                     }
                 }
                 if (regV.size()!=4) {
+                    std::cout << "##" << __LINE__ << std::endl;
                     std::cerr << options[REGION].desc->help << std::endl;
                     return EXIT_FAILURE;
                 }
 
             }
             catch(std::exception& e) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[REGION].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -641,6 +651,7 @@ int main (int argc, char *argv[]) {
             reduce = options[REDUCE] ? (std::stoi(options[REDUCE].arg)) : 0;
         }
         catch(std::exception& e) {
+            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[REDUCE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
@@ -666,6 +677,7 @@ int main (int argc, char *argv[]) {
                 }
             }
             catch(std::exception& e) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SIZE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -675,7 +687,7 @@ int main (int argc, char *argv[]) {
                 size = new Sipi::SipiSize(std::stoi(options[SCALE].arg));
             }
             catch(std::exception& e) {
-
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SCALE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -704,7 +716,7 @@ int main (int argc, char *argv[]) {
                 skipmeta = options[SKIPMETA].arg;
             }
             catch (std::exception& e) {
-
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SKIPMETA].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -723,6 +735,7 @@ int main (int argc, char *argv[]) {
                 iccprofile = options[ICC].arg;
             }
             catch (std::exception& e) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ICC].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -754,6 +767,7 @@ int main (int argc, char *argv[]) {
                 mirror = options[MIRROR].arg;
             }
             catch(std::exception& e) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[MIRROR].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -764,6 +778,7 @@ int main (int argc, char *argv[]) {
                 angle = std::stof(options[ROTATE].arg);
             }
             catch (std::exception& e) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ROTATE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -791,13 +806,14 @@ int main (int argc, char *argv[]) {
                 infname = std::string(options[WATERMARK].arg);
             }
             catch (std::exception& err) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "Invalid watermark filename." << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
-
                 return EXIT_FAILURE;
             }
 
             if (!exists_file(infname)) {
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "File not found: " << infname << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -814,7 +830,7 @@ int main (int argc, char *argv[]) {
                 quality = std::stoi(options[QUALITY].arg);
             }
             catch (std::exception& e) {
-
+                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr<<options[QUALITY].desc->help<<std::endl;
                 return EXIT_FAILURE;
             }
@@ -830,7 +846,8 @@ int main (int argc, char *argv[]) {
         if (options[SALSAH]) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;
         }
-    } else{
+    } else {
+        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
     }
