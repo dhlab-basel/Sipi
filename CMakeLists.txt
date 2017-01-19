@@ -186,7 +186,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/png)
 add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
-add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 
@@ -287,6 +286,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+    /usr/local/include
 )
 add_executable(
         sipi
