@@ -65,7 +65,7 @@ class SipiTestManager:
 
         sipi_config = self.config["Sipi"]
         self.sipi_config_file = sipi_config["config-file"]
-        self.sipi_command = "build/sipi -config config/{}".format(self.sipi_config_file)
+        self.sipi_command = "build/sipi --config config/{}".format(self.sipi_config_file)
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
         self.sipi_port = sipi_config["port"]
         self.sipi_prefix = sipi_config["prefix"]
@@ -130,7 +130,8 @@ class SipiTestManager:
                 self.sipi_took_too_long = True
 
         if self.sipi_took_too_long:
-            raise SipiTestError("Sipi didn't start after {} seconds".format(self.sipi_start_wait))
+            self.write_sipi_log()
+            raise SipiTestError("Sipi didn't start after {} seconds (wrote {})".format(self.sipi_start_wait, self.sipi_log_file))
 
     def stop_sipi(self):
         """Sends SIGTERM to Sipi and waits for it to stop."""

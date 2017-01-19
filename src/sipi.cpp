@@ -242,20 +242,20 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
             switch(option.index())
             {
             case FORMAT:
-                if(str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
+                if (str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
 
                 break;
             case ICC:
-                if(str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
+                if (str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
                 break;
             case MIRROR:
-                if(str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
+                if (str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
                 break;
             case LOGLEVEL:
-                if(str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
+                if (str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
                 break;
             case SKIPMETA:
-                if(str=="none" || str=="all") return option::ARG_OK;
+                if (str=="none" || str=="all") return option::ARG_OK;
                 break;
 			default: return option::ARG_ILLEGAL;
             }
@@ -353,9 +353,9 @@ int main (int argc, char *argv[]) {
     else if (options[COMPARE] && options[COMPARE].count() == 2) {
 
         std::string infname1,infname2;
-        for( option::Option* opt = options[COMPARE]; opt; opt = opt->next()) {
+        for (option::Option* opt = options[COMPARE]; opt; opt = opt->next()) {
             try {
-                if(opt->isFirst()) {
+                if (opt->isFirst()) {
                     infname1 = std::string(opt->arg);
                 }
                 else {
@@ -371,15 +371,15 @@ int main (int argc, char *argv[]) {
         }
 
 
-        if(!exists_file(infname1)) {
-            std::cerr << "file " << infname1 << " does not exists" << std::endl;
+        if (!exists_file(infname1)) {
+            std::cerr << "File not found: " << infname1 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
-        if(!exists_file(infname2)) {
 
-            std::cerr << "file "<<infname2<<" does not exists"<<std::endl;
-            std::cerr<<options[FILEIN].desc->help<<std::endl;
+        if (!exists_file(infname2)) {
+            std::cerr << "File not found: " << infname2 << std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
@@ -403,16 +403,16 @@ int main (int argc, char *argv[]) {
 
             try {
                 configfile = std::string(options[CONFIGFILE].arg);
-                std::cout << "config file: " << configfile << std::endl;
+                // std::cout << "Config file: " << configfile << std::endl;
             }
             catch(std::logic_error& err) {
                 std::cerr << options[CONFIGFILE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
 
-        if(!exists_file(configfile)) {
-            std::cerr << "file "<< configfile << " does not exists" << std::endl;
-            std::cerr << options[FILEIN].desc->help << std::endl;
+        if (!exists_file(configfile)) {
+            std::cerr << "File not found: " << configfile << std::endl;
+            std::cerr << options[CONFIGFILE].desc->help << std::endl;
 
             return EXIT_FAILURE;
         }
@@ -513,9 +513,9 @@ int main (int argc, char *argv[]) {
     // if a server port is given, we start sipi as IIIF compatible server on the given port
     //
     }
-    else if(options[SERVERPORT] && options[IMGROOT]) {
+    else if (options[SERVERPORT] && options[IMGROOT]) {
         unsigned int nthreads = 0;
-        if(options[NTHREADS]) {
+        if (options[NTHREADS]) {
             nthreads = static_cast<unsigned int> (std::stoi(options[NTHREADS].arg));
             if (nthreads < 1 || nthreads > std::thread::hardware_concurrency()) {
                 std::cerr << "incorrect number of threads, maximum supported number is: "<<std::thread::hardware_concurrency() << std::endl;
@@ -541,8 +541,7 @@ int main (int argc, char *argv[]) {
         server.run();
 
     }
-
-    else if(options[FILEIN]) {
+    else if (options[FILEIN]) {
 
         //
         // get the input image name
@@ -552,15 +551,15 @@ int main (int argc, char *argv[]) {
             infname = std::string(options[FILEIN].arg);
         }
         catch (std::exception& err) {
-            std::cerr << "incorrect input filename " << std::endl;
+            std::cerr << "Invalid input filename." << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
 
-        if(!exists_file(infname)) {
-            std::cerr << "file "<<infname<<" does not exists"<<std::endl;
-            std::cerr<<options[FILEIN].desc->help<<std::endl;
+        if (!exists_file(infname)) {
+            std::cerr << "File not found: " << infname << std::endl;
+            std::cerr << options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
         }
 
@@ -569,7 +568,7 @@ int main (int argc, char *argv[]) {
         //
         std::string outfname("out.jpx");
 
-        if(parse.nonOptionsCount() > 0) {
+        if (parse.nonOptionsCount() > 0) {
             try {
                 outfname = std::string(parse.nonOption(0));
             }
@@ -589,7 +588,7 @@ int main (int argc, char *argv[]) {
         //
         std::string format("jpx");
 
-        if(options[FORMAT]) {
+        if (options[FORMAT]) {
             try {
                 format = std::string(options[FORMAT].arg);
             }
@@ -614,7 +613,7 @@ int main (int argc, char *argv[]) {
                         ss.ignore();
                     }
                 }
-                if(regV.size()!=4) {
+                if (regV.size()!=4) {
                     std::cerr << options[REGION].desc->help << std::endl;
                     return EXIT_FAILURE;
                 }
@@ -655,7 +654,7 @@ int main (int argc, char *argv[]) {
                 int sizC;
                 while(ss >> sizC) {
                     sizV.push_back(sizC);
-                    if(ss.peek()==',') {
+                    if (ss.peek()==',') {
                         ss.ignore();
                     }
                 }
@@ -719,7 +718,7 @@ int main (int argc, char *argv[]) {
         //
 
         std::string iccprofile("none");
-        if(options[ICC]) {
+        if (options[ICC]) {
             try {
                 iccprofile = options[ICC].arg;
             }
@@ -792,14 +791,14 @@ int main (int argc, char *argv[]) {
                 infname = std::string(options[WATERMARK].arg);
             }
             catch (std::exception& err) {
-                std::cerr << "incorrect watermark filename " << std::endl;
+                std::cerr << "Invalid watermark filename." << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
 
                 return EXIT_FAILURE;
             }
 
-            if(!exists_file(infname)) {
-                std::cerr << "file "<< infname <<" does not exists" << std::endl;
+            if (!exists_file(infname)) {
+                std::cerr << "File not found: " << infname << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
