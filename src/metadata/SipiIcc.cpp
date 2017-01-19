@@ -20,7 +20,9 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
- #include "SipiIcc.h"
+#include "SipiIcc.h"
+
+#include <time.h>
 
 static const char __file__[] = __FILE__;
 
@@ -334,6 +336,10 @@ namespace Sipi {
         outstr << "ICC-Copyright   : " << buf << std::endl;
         delete [] buf;
 
+        struct tm datetime;
+        if (cmsGetHeaderCreationDateTime(rhs.icc_profile, &datetime)) {
+            outstr << "ICC-Date    : " << asctime(&datetime) << std::endl;
+        }
         return outstr;
     }
 

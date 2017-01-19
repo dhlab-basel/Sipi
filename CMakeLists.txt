@@ -105,7 +105,7 @@ endif()
 
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXIGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxigen)
+set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
 set(COMMON_SRCS ${PROJECT_SOURCE_DIR}/extsrcs)
@@ -198,10 +198,10 @@ add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${DOXIGEN_FILES_DIR}/Doxyfile.in ${DOXIGEN_FILES_DIR}/Doxyfile @ONLY)
+    configure_file(${DOXYGEN_FILES_DIR}/Doxyfile.in ${DOXYGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${DOXIGEN_FILES_DIR}/Doxyfile
-        WORKING_DIRECTORY ${DOXIGEN_FILES_DIR}
+        ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILES_DIR}/Doxyfile
+        WORKING_DIRECTORY ${DOXYGEN_FILES_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
@@ -338,6 +338,10 @@ if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()
 
+add_custom_target(check
+        DEPENDS sipi
+        COMMAND pytest
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin

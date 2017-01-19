@@ -2,15 +2,15 @@
 
 # Overview #
 
-SIPI (Simple Image Presentation Interface) is a IIIFv2 image server written in C++ that uses several open source libraries for metadata handling. It runs on Unix, Linux (Ubuntu, CentOS) and unix-like systems, including OS X 10.11 El Capitan). Compiling it for windows might be possible, but it is up to you - good luck!
+Sipi (Simple Image Presentation Interface) is a IIIFv2 image server written in C++ that uses several open source libraries for metadata handling. It runs on Unix, Linux (Ubuntu, CentOS) and unix-like systems, including OS X 10.11 El Capitan). Compiling it for windows might be possible, but it is up to you - good luck!
 
-SIPI is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at the [University of Basel](https://www.unibas.ch/en.html).
+Sipi is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at the [University of Basel](https://www.unibas.ch/en.html).
 
-SIPI is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
-SIPI uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
-The current version of SIPI requires version "v7_8-01382N" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_8-01382N.zip".
+Sipi is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
+Sipi uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
+The current version of Sipi requires version "v7_8-01382N" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_8-01382N.zip".
 
-SIPI uses the Adobe ICC Color profiles which are automatically downloaded by the cmake process into a file called "icc.zip". The
+Sipi uses the Adobe ICC Color profiles which are automatically downloaded by the cmake process into a file called "icc.zip". The
 user is responsible for reading and agreeing with the license conditions of Adobe as written in the provided file "Color Profile EULA.pdf"!
 
 The build process relies on cmake.
@@ -19,13 +19,13 @@ The build process relies on cmake.
 
 ### Secure HTTP (https) ###
 
-SIPI supports secure connections (SSL). However, OpenSLL must be installed on the computer. On Linux,
+Sipi supports secure connections (SSL). However, OpenSLL must be installed on the computer. On Linux,
 you just have to install the openssl RPMs (including the development version), on OS X use brew.
 
 **The OpenSSL libraries and includes are _not_ downloaded by cmake!**
 
 Cmake checks if OpenSSL is installed and compiles the support for it automatically.
-In order to use SIPI with secure connections, You need to install a certificate (see the config file
+In order to use Sipi with secure connections, You need to install a certificate (see the config file
 example "config/sipi.config.lua" for instructions.
 
 ### General
@@ -43,7 +43,11 @@ example "config/sipi.config.lua" for instructions.
    - libpng16
    - log4cpp-1.1.2rc1
    - Adobe ICC Color profile <http://www.adobe.com/support/downloads/iccprofiles/iccprofiles_mac.html>
-- nginx for testing
+- For testing:
+  - nginx
+  - Python 3.5 or newer
+  - libmagic
+  - GraphicsMagick
 
 In the root directory, the directory `cache` must be created.
 
@@ -53,7 +57,17 @@ In the root directory, the directory `cache` must be created.
 - install cmake: `brew install cmake`
 - install doxygen: `brew install doxygen`
 - install openssl: `brew install openssl`
-- install nginx: `brew install nginx`
+- install libmagic: `brew inwtall libmagic`
+- install nginx:
+  - `brew install nginx`
+  - `sudo chown -R $USER /usr/local/var/log/nginx/`
+- install GraphicsMagick: `brew install graphicsmagick --with-jasper`
+- install Python 3: `brew install python3`
+- Install Python modules:
+  - `pip3 install pytest`
+  - `pip3 install requests`
+  - `pip3 install psutil`
+  - `pip3 install iiif_validator`
 
 ### CentOS (V7)
 - `sudo yum install gcc-c++`
@@ -67,9 +81,16 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum install patch`
 - `sudo yum install openssl-devel`
 - `sudo yum install nginx`
+- `sudo chown -R $USER /var/log/nginx`
+- `sudo yum install python35 python35-pip`
+- `sudo yum install file-devel`
+- `pip3 install pytest`
+- `pip3 install requests`
+- `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### Debian (>= V8.0 jessie)
-To compile SIPI on Debian (>= 8), the following packages have to be installed with apt-get:
+To compile Sipi on Debian (>= 8), the following packages have to be installed with apt-get:
 - `sudo apt-get install g++`
 - `sudo apt-get install cmake`
 - `sudo apt-get install git`
@@ -78,6 +99,15 @@ To compile SIPI on Debian (>= 8), the following packages have to be installed wi
 - `sudo apt-get install libssl-dev`
 - `sudo apt-get install doxygen`
 - `sudo apt-get install nginx`
+- `sudo chown -R $USER /var/log/nginx`
+- `sudo apt-get install python3`
+- `sudo apt-get install python3-pip`
+- `sudo apt-get install libmagic-dev`
+- `sudo apt-get install graphicsmagick`
+- `pip3 install pytest`
+- `pip3 install requests`
+- `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
 debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch, go to the Sipi dicrectory and run:
@@ -98,6 +128,15 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo apt-get install doxygen`
 - `sudo apt-get install libreadline-dev`
 - `sudo apt-get install nginx`
+- `sudo chown -R $USER /var/log/nginx`
+- `sudo apt-get install python3`
+- `sudo apt-get install python3-pip`
+- `sudo apt-get install libmagic-dev`
+- `sudo apt-get install graphicsmagick`
+- `pip3 install pytest`
+- `pip3 install requests`
+- `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### Fedora Linux
 - `sudo yum install vim-common`
@@ -108,6 +147,14 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo yum install readline-devel`
 - `sudo yum install openssl-devel`
 - `sudo yum install nginx`
+- `sudo chown -R $USER /var/log/nginx`
+- `sudo yum install file-devel`
+- `sudo yum install python35 python35-pip`
+- `sudo yum install GraphicsMagick`
+- `pip3 install pytest`
+- `pip3 install requests`
+- `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### OpenSUSe
 NOTE: not yet ready ready problem with library names...
@@ -120,7 +167,14 @@ NOTE: not yet ready ready problem with library names...
 - `sudo zypper install readline-devel`
 - `sudo zypper install openssl-devel`
 - `sudo zypper install nginx`
-
+- `sudo chown -R $USER /var/log/nginx`
+- `sudo zypper install python3`
+- `sudo zypper install libmagic-dev`
+- `sudo zypper install GraphicsMagick`
+- `pip3 install pytest`
+- `pip3 install requests`
+- `pip3 install psutil`
+- `pip3 install iiif_validator`
 
 ### IDEs
 
@@ -155,10 +209,16 @@ cd build
 rm -rf * ../lib ../local  ../extsrcs
 cmake ..
 make
-
 ```
 
-## Running SIPI-Server
+## Run the automated tests
+
+```bash
+cd build
+make check
+```
+
+## Running the Sipi server
 
 Adapt the config file `sipi.config.lua`:
 - check that the port number is correct and make sure that your operating system's firewall does not block it
@@ -175,17 +235,17 @@ In the main directory, call:
 local/bin/sipi -cconfig/sipi.config.lua
 ```
 
-All operations are written to the log file `sipi.log`.
+Logs are written using syslog.
 
 ## Serving an Image
 
 ### Accessing an Image
 
-After SIPI-Server has been started, images can be requested as follows: `http://host:portnumber/prefix/filename.ext/full/full/0/default.jpg`
+After the Sipi server has been started, images can be requested as follows: `http://host:portnumber/prefix/filename.ext/full/full/0/default.jpg`
 
-The given prefix must exist as a folder in the SIPI `imgroot` (defined in the config file) when `prefix_as_path` is set to `true`.
+The given prefix must exist as a folder in the Sipi `imgroot` (defined in the config file) when `prefix_as_path` is set to `true`.
 
-If SIPI is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `myimage.jpx` exists in `imgroot/images`, the URL looks as follows:
+If Sipi is running under port 1024, `prefix_as_path` is set to `true`,  and the requested image `myimage.jpx` exists in `imgroot/images`, the URL looks as follows:
 
 `http://localhost:1024/images/myimage.jpx/full/full/0/default.jpg`
 
@@ -208,8 +268,6 @@ In the `pre_flight` function, permission checking can be implemented. In the cas
 
 To convert an image to a specified format, an HTTP request can be sent to a convert route as defined in the sipi config file (see `config/sipi.knora-config.lua`).
 
-For use with Knora, you find test scripts and test images in the folder `test-server`.
-
 ## Create Documentation
 
 Documentation is created using `doxygen`. First, adapt `Doxyfile.in`:
@@ -227,7 +285,7 @@ Within Sipi, Lua is used to write custom routes. Sipi provides the Lua-interpret
 own thread and has it's own Lua interpreter). Thus only packages that are positivley known to be thread
 safe may be used!
 
-### SIPI functions within Lua
+### Sipi functions within Lua
 
 Sipi provides the following functions:
 
@@ -401,7 +459,7 @@ Gets Basic HTTP authentification data. Returns true, table on success or false, 
         end
      else
         server.sendStatus(401)
-        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+        server.sendHeader('WWW-Authenticate', 'Basic realm="Sipi"')
         server.print("Wrong credentials!")
         return -1
      end
@@ -414,17 +472,17 @@ Gets Basic HTTP authentification data. Returns true, table on success or false, 
      end
      if (jwt.iss ~= 'sipi.unibas.ch') or (jwt.aud ~= 'knora.org') or (jwt.user ~= config.adminuser) then
         server.sendStatus(401)
-        server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+        server.sendHeader('WWW-Authenticate', 'Basic realm="Sipi"')
         return -1
      end
   elseif auth.status == 'NOAUTH' then
      server.setBuffer()
      server.sendStatus(401);
-     server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+     server.sendHeader('WWW-Authenticate', 'Basic realm="Sipi"')
      return -1
   else
      server.status(401)
-     server.sendHeader('WWW-Authenticate', 'Basic realm="SIPI"')
+     server.sendHeader('WWW-Authenticate', 'Basic realm="Sipi"')
      return -1
   end
 
@@ -448,10 +506,10 @@ Writes a message into the logfile. Loglevels are the ones supported by
 Sipi provides the following predefined variables:
 - `server.has_openssl` : True if openssl is available
 - `server.secure` : True, if we are an a secure https connection
-- `server.host` : The hostname of the SIPI server that was used in the request.
-- `server.client_ip` : IP-Address of the client connecting to SIPI (IP4 or IP6).
+- `server.host` : The hostname of the Sipi server that was used in the request.
+- `server.client_ip` : IP-Address of the client connecting to Sipi (IP4 or IP6).
 - `server.client_port`: Portnumber of client socket.
-- `server.uri` : The URL used to access SIPI (exclusive the hostname/dns).
+- `server.uri` : The URL used to access Sipi (exclusive the hostname/dns).
 - `server.header` : Table with all HTTP header files. Please note that the names are all lowercase!
 - `server.cookies` : Table of cookies.
 - `server.get` : Table of GET parameters.
@@ -546,18 +604,20 @@ info locals gives you information about any local variables on the stack.
 
 ```
 
-## Test Scripts (bash)
+## Writing Tests
 
-to run the test, move to the main directory (where this README file is) and run:
+The test framework uses [pytest](http://doc.pytest.org/en/latest/). To add tests, add a Python
+class in a file whose name begins with `test`, in the `test` directory. The class's methods,
+whose names must also begin with `test`, should use the `manager` fixture defined in
+`test/conftest.py`, which handles starting and stopping a Sipi server, and provides other functionality
+useful in tests. See the existing `test/test_*.py` files for examples.
 
-
-```
-bash test_launcher.sh
-```
-
-the bash scripts return 0 if everything went fine.
-
-
+To facilitate testing client HTTP connections in Lua scripts, the `manager` fixture also starts
+and stops an `nginx` instance, which can be used to simulate an authorization server.
+For example, the provided `nginx` configuration file, `test/nginx/nginx.conf`, allows `nginx` to
+act as a dummy [Knora](http://www.knora.org/) API server for permission checking: its
+`/v1/files` route returns a static JSON file that always grants permission to view the requested
+file.
 
 ## Commit Message Schema
 

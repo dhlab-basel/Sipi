@@ -991,8 +991,10 @@ namespace shttps {
 
     //=========================================================================
 
-    // Indicates an error in a client HTTP connection. Thrown and caught only
-    // by lua_http_client() and CurlConnection.
+    /*!
+     * Indicates an error in a client HTTP connection. Thrown and caught only
+     * by lua_http_client() and CurlConnection.
+     */
     class HttpError {
     private:
         int line;
