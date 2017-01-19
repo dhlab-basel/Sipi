@@ -659,7 +659,12 @@ int main (int argc, char *argv[]) {
                         ss.ignore();
                     }
                 }
-                size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+                if (sizV.size() == 2) {
+                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+                }
+                else {
+                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(0), true);
+                }
             }
             catch(std::exception& e) {
                 std::cerr << options[SIZE].desc->help << std::endl;
