@@ -229,7 +229,7 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_setglobal(L, "config");
 }
 enum  optionIndex { UNKNOWN, CONFIGFILE, FILEIN , FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
-                    SKIPMETA, MIRROR, ROTATE, SALSAH, COMPARE, SERVERPORT, NTHREADS,
+                    SKIPMETA, MIRROR, ROTATE, SALSAH, WATERMARK, COMPARE, SERVERPORT, NTHREADS,
                     IMGROOT, LOGLEVEL, HELP
                   };
 option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
@@ -293,6 +293,7 @@ const option::Descriptor usage[] =
     {ROTATE, 0, "o", "rotate", option::Arg::NumericD, "  --rotate=Value, -oValue  \tRotate the image by degree Value, angle between (0:360)\n" },
     {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use\n" },
     {COMPARE, 0, "C", "Compare", option::Arg::NonEmpty, "  -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  \tCompare two files\n" },
+    {WATERMARK, 0, "w", "watermark", option::Arg::NonEmpty, "  --watermark=file, -wfile  \tAdd a watermark to the image\n"},
     {SERVERPORT, 0, "p", "serverport", option::Arg::NonEmpty, "  --serverport=Value, -pValue  \tPort of the webserver\n" },
     {NTHREADS, 0, "t", "nthreads", option::Arg::NonEmpty, "  --nthreads=Value, -tValue  \tNumber of threads for webserver\n" },
     {IMGROOT, 0, "i", "imgroot", option::Arg::NonEmpty, "  --imgroot=Value, -iValue  \tRoot directory containing the images (webserver)\n" },
@@ -387,8 +388,7 @@ int main (int argc, char *argv[]) {
         img2.read(infname2);
         bool result = img1 == img2;
 
-        if (!result)
-        {
+        if (!result) {
             img1 -= img2;
             img1.write("tif", "diff.tif");
         }
@@ -552,15 +552,13 @@ int main (int argc, char *argv[]) {
             infname = std::string(options[FILEIN].arg);
         }
         catch (std::exception& err) {
-            std::cerr << "incorrect input filename "<<std::endl;
-                std::cerr<<options[FILEIN].desc->help<<std::endl;
-
+            std::cerr << "incorrect input filename " << std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
 
         if(!exists_file(infname)) {
-
             std::cerr << "file "<<infname<<" does not exists"<<std::endl;
             std::cerr<<options[FILEIN].desc->help<<std::endl;
             return EXIT_FAILURE;
@@ -572,20 +570,16 @@ int main (int argc, char *argv[]) {
         std::string outfname("out.jpx");
 
         if(parse.nonOptionsCount() > 0) {
-
             try {
                 outfname = std::string(parse.nonOption(0));
             }
             catch (std::exception &err) {
                 std::cerr << "incorrect output filename " << std::endl;
                 std::cerr << options[FILEIN].desc->help << std::endl;
-
                 return EXIT_FAILURE;
             }
-
         }
         else {
-
             std::cerr << "missing output filename, using default out.jpx " << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
         }
@@ -605,7 +599,6 @@ int main (int argc, char *argv[]) {
             }
         }
 
-
         //
         // getting information about a region of interest
         //
@@ -623,14 +616,12 @@ int main (int argc, char *argv[]) {
                 }
                 if(regV.size()!=4) {
                     std::cerr << options[REGION].desc->help << std::endl;
-
                     return EXIT_FAILURE;
                 }
 
             }
             catch(std::exception& e) {
-
-                    std::cerr<<options[REGION].desc->help<<std::endl;
+                std::cerr << options[REGION].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
             region = new Sipi::SipiRegion(regV.at(0),
@@ -668,7 +659,12 @@ int main (int argc, char *argv[]) {
                         ss.ignore();
                     }
                 }
-                size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+                if (sizV.size() == 2) {
+                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+                }
+                else {
+                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(0), true);
+                }
             }
             catch(std::exception& e) {
                 std::cerr << options[SIZE].desc->help << std::endl;
@@ -681,7 +677,7 @@ int main (int argc, char *argv[]) {
             }
             catch(std::exception& e) {
 
-                std::cerr<<options[SCALE].desc->help<<std::endl;
+                std::cerr << options[SCALE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -689,7 +685,6 @@ int main (int argc, char *argv[]) {
         //
         // read the input image
         //
-
         Sipi::SipiImage img;
         img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
         if (format == "jpg") {
@@ -711,7 +706,7 @@ int main (int argc, char *argv[]) {
             }
             catch (std::exception& e) {
 
-                std::cerr<<options[SKIPMETA].desc->help<<std::endl;
+                std::cerr << options[SKIPMETA].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -729,7 +724,7 @@ int main (int argc, char *argv[]) {
                 iccprofile = options[ICC].arg;
             }
             catch (std::exception& e) {
-                std::cerr<<options[ICC].desc->help<<std::endl;
+                std::cerr << options[ICC].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -760,7 +755,7 @@ int main (int argc, char *argv[]) {
                 mirror = options[MIRROR].arg;
             }
             catch(std::exception& e) {
-                std::cerr<<options[MIRROR].desc->help<<std::endl;
+                std::cerr << options[MIRROR].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -770,7 +765,7 @@ int main (int argc, char *argv[]) {
                 angle = std::stof(options[ROTATE].arg);
             }
             catch (std::exception& e) {
-                std::cerr<<options[ROTATE].desc->help<<std::endl;
+                std::cerr << options[ROTATE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -791,16 +786,25 @@ int main (int argc, char *argv[]) {
             img.rotate(angle, false);
         }
 
-        //std::cout << img << std::endl;
+        if (options[WATERMARK]) {
+            std::string infname;
+            try {
+                infname = std::string(options[WATERMARK].arg);
+            }
+            catch (std::exception& err) {
+                std::cerr << "incorrect watermark filename " << std::endl;
+                std::cerr << options[WATERMARK].desc->help << std::endl;
 
-        //std::cerr << ">>>> Sipi::SipiIcc rgb_icc = Sipi::SipiIcc(Sipi::icc_AdobeRGB):" << std::endl;
-        //Sipi::SipiIcc rgb_icc(Sipi::icc_AdobeRGB);
+                return EXIT_FAILURE;
+            }
 
-        //std::cerr << ">>>> img.convertToIcc(rgb_icc, 8):" << std::endl;
-        //img.convertToIcc(rgb_icc, 8);
-
-        //std::cout << img << std::endl;
-        //std::cerr << ">>>> img.write(" << outfname << "):" << std::endl;
+            if(!exists_file(infname)) {
+                std::cerr << "file "<< infname <<" does not exists" << std::endl;
+                std::cerr << options[WATERMARK].desc->help << std::endl;
+                return EXIT_FAILURE;
+            }
+            img.add_watermark(infname);
+        }
 
         //
         // write the output file
