@@ -96,10 +96,10 @@ namespace shttps {
         sigaddset(&set, SIGINT);
         sigaddset(&set, SIGTERM);
 
-        int s, sig;
+        int sig;
 
-        for (;;) {
-            if ((s = sigwait(&set, &sig)) != 0) {
+        while (true) {
+            if ((sigwait(&set, &sig)) != 0) {
                 signal_result = -1;
                 return NULL;
             }
@@ -107,17 +107,12 @@ namespace shttps {
             signal_result = sig;
 
             // If we get SIGINT or SIGTERM, shut down the server.
-            // Ignore any other signals.
+            // Ignore any other signals. We must in particular ignore
+            // SIGPIPE.
             if (sig == SIGINT || sig == SIGTERM) {
                 serverptr->stop();
                 return NULL;
             }
-           /* we have to catch and ignore SIGPIPE !!
-            else {
-                signal_result = -1;
-                return NULL;
-            }
-            */
         }
     }
    //=========================================================================
@@ -625,16 +620,18 @@ namespace shttps {
 
 
     static void idle_add(pthread_t tid_p) {
-        idlelock.lock();
+        std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
+
         idle_thread_ids.push_back(tid_p);
-        idlelock.unlock();
     }
     //=========================================================================
 
     static void idle_remove(pthread_t tid_p) {
         int index = 0;
         bool in_idle = false;
-        idlelock.lock();
+
+        std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
+
         for (auto tid : idle_thread_ids) {
             if (tid == tid_p) {
                 in_idle = true;
@@ -642,13 +639,13 @@ namespace shttps {
             }
             index++;
         }
+
         if (in_idle) {
             //
             // the vector is in idle state, remove it from the idle vector
             //
             idle_thread_ids.erase(idle_thread_ids.begin() + index);
         }
-        idlelock.unlock();
     }
     //=========================================================================
 
@@ -1017,20 +1014,21 @@ namespace shttps {
                 //
                 // we would be blocked by the semaphore... Get an idle thread...
                 //
-                idlelock.lock();
-                if (idle_thread_ids.size() > 0) {
-                    pthread_t tid = idle_thread_ids.front();
-                    idlelock.unlock();
-                    int pipe_id = get_thread_pipe(tid);
-                    if (pipe_id > 0) {
-                        Server::CommMsg::send(pipe_id);
+                {
+                    std::unique_lock<std::mutex> idle_mutex_guard(idlelock);
+
+                    if (idle_thread_ids.size() > 0) {
+                        pthread_t tid = idle_thread_ids.front();
+                        idle_mutex_guard.unlock();
+
+                        int pipe_id = get_thread_pipe(tid);
+
+                        if (pipe_id > 0) {
+                            Server::CommMsg::send(pipe_id);
+                        } else {
+                            syslog(LOG_DEBUG, "The thread to stop no longer exists");
+                        }
                     }
-                    else {
-                        syslog(LOG_DEBUG, "Thread to stop does no longer exist...!");
-                    }
-                }
-                else {
-                    idlelock.unlock();
                 }
             }
             semaphore_wait();
@@ -1063,38 +1061,31 @@ namespace shttps {
             add_thread(thread_id, commpipe[0], tmp->sock);
 #endif
         }
+
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server shutting down");
         setlogmask(old_ll);
 
+        {
+            std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 
-        //
-        // let's send the close message to all running threads
-        //
-        int i = 0;
-        threadlock.lock();
-        int num_active_threads = thread_ids.size();
-        pthread_t *ptid = new pthread_t[num_active_threads];
-        for(auto const &tid : thread_ids) {
-            ptid[i++] = tid.first;
-            Server::CommMsg::send(tid.second.commpipe_write);
-        }
-        threadlock.unlock();
+            // Send the close message to all running threads.
+            for (auto const &tid : thread_ids) {
+                Server::CommMsg::send(tid.second.commpipe_write);
+            }
 
-        close(stoppipe[0]);
-        close(stoppipe[1]);
+            close(stoppipe[0]);
+            close(stoppipe[1]);
 
-        //
-        // we have closed all sockets, now we can wait for the threads to terminate
-        //
-        for (int i = 0; i < num_active_threads; i++) {
-            int err;
-            if ((err = pthread_join(ptid[i], NULL)) != 0) {
-                syslog(LOG_ERR, "pthread_join failed with error code %d", err);
+            // We have closed all sockets, now wait for the threads to terminate.
+            for (auto const &tid : thread_ids) {
+                int err;
+
+                if ((err = pthread_join(tid.first, NULL)) != 0) {
+                    syslog(LOG_ERR, "pthread_join failed with error code %d", err);
+                }
             }
         }
-
-        delete [] ptid;
 
         // std::cerr << "signal_result is " << signal_result << std::endl;
    }
@@ -1191,71 +1182,60 @@ namespace shttps {
     //=========================================================================
 
     void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id) {
+        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 #ifdef SHTTPS_ENABLE_SSL
         GenericSockId sid = {sock_id, NULL, commpipe_write_p};
 #else
         GenericSockId sid = {sock_id, commpipe_write_p};
 #endif
-        threadlock.lock();
         thread_ids[thread_id_p] = sid;
-        threadlock.unlock();
     }
     //=========================================================================
 
 #ifdef SHTTPS_ENABLE_SSL
     void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL) {
+        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
+
         GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
-        threadlock.lock();
         thread_ids[thread_id_p] = sid;
-        threadlock.unlock();
     }
 #endif
     //=========================================================================
 
     int Server::get_thread_sock(pthread_t thread_id_p) {
-        GenericSockId sid;
-        threadlock.lock();
+        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
+
         try {
-            sid = thread_ids.at(thread_id_p);
-        }
-        catch (const std::out_of_range& oor) {
-            threadlock.unlock();
+            return thread_ids.at(thread_id_p).sid;
+        } catch (const std::out_of_range& oor) {
             return -1;
         }
-        threadlock.unlock();
-        return sid.sid;
     }
     //=========================================================================
 
     int Server::get_thread_pipe(pthread_t thread_id_p) {
-        GenericSockId sid;
-        threadlock.lock();
+        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
+
         try {
-            sid = thread_ids.at(thread_id_p);
+            return thread_ids.at(thread_id_p).commpipe_write;
         }
         catch (const std::out_of_range& oor) {
-            threadlock.unlock();
             return -1;
         }
-        threadlock.unlock();
-        return sid.commpipe_write;
     }
     //=========================================================================
 
 
 #ifdef SHTTPS_ENABLE_SSL
-     SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
-        GenericSockId sid;
-        threadlock.lock();
+    SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
+        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
+
         try {
-            sid = thread_ids.at(thread_id_p);
+            return thread_ids.at(thread_id_p).ssl_sid;
         }
         catch (const std::out_of_range& oor) {
-            threadlock.unlock();
             return NULL;
         }
-        threadlock.unlock();
-        return sid.ssl_sid;
     }
     //=========================================================================
 #endif
@@ -1264,31 +1244,37 @@ namespace shttps {
     void Server::remove_thread(pthread_t thread_id_p) {
         int index = 0;
         bool in_idle = false;
-        idlelock.lock();
-        for (auto tid : idle_thread_ids) {
-            if (tid == thread_id_p) {
-                in_idle = true;
-                break;
+
+        {
+            std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
+
+            for (auto tid : idle_thread_ids) {
+                if (tid == thread_id_p) {
+                    in_idle = true;
+                    break;
+                }
+                index++;
             }
-            index++;
+
+            if (in_idle) {
+                //
+                // the thread is in idle state, remove it from the idle vector
+                //
+                idle_thread_ids.erase(idle_thread_ids.begin() + index);
+            }
         }
-        if (in_idle) {
-            //
-            // the vector is in idle state, remove it from the idle vector
-            //
-            idle_thread_ids.erase(idle_thread_ids.begin() + index);
+
+        {
+            std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
+            thread_ids.erase(thread_id_p);
         }
-        idlelock.unlock();
-        threadlock.lock();
-        thread_ids.erase(thread_id_p);
-        threadlock.unlock();
     }
     //=========================================================================
 
     void Server::debugmsg(const std::string &msg) {
-        debugio.lock();
+        std::lock_guard<std::mutex> debug_mutex_guard(debugio);
+
         std::cerr << msg << std::endl;
-        debugio.unlock();
     }
     //=========================================================================
 
