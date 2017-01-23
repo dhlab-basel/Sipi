@@ -49,7 +49,6 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
     static std::mutex inlock;
-    static std::mutex outlock;
 
     /*!
      * Special exception within the JPEG routines which can be caught separately
@@ -445,7 +444,7 @@ namespace Sipi {
         //
         // Since libjpeg is not thread safe, we have unfortunately use a mutex...
         //
-        inlock.lock();
+        std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
@@ -477,7 +476,6 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
-            inlock.unlock();
             throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
 
@@ -491,13 +489,11 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
-            inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         if (res != JPEG_HEADER_OK) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
-            inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
         }
 
@@ -613,7 +609,6 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
-            inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
 
@@ -663,7 +658,6 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
-            inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         try {
@@ -671,7 +665,6 @@ namespace Sipi {
         }
         catch (JpegError &jpgerr) {
             close(infile);
-            inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
 
@@ -684,7 +677,6 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         close(infile);
-        inlock.unlock();
 
         //
         // do some croping...
@@ -802,7 +794,6 @@ namespace Sipi {
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
 
-        //outlock.lock();
         cinfo.err = jpeg_std_error( &jerr);
         jerr.error_exit = jpegErrorExit;
 
@@ -810,13 +801,11 @@ namespace Sipi {
         JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
         int row_stride;		/* physical row width in image buffer */
 
-        //outlock.lock();
         try {
             jpeg_create_compress(&cinfo);
         }
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
-            //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
         if (filepath == "HTTP") { // we are transmitting the data through the webserver
@@ -829,7 +818,6 @@ namespace Sipi {
             }
             else {
                 if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP)) == -1) {
-                    //outlock.unlock();
                     throw SipiImageError(__file__, __LINE__, "Cannot open file \"" + filepath + "\"!");
                 }
                 jpeg_file_dest(&cinfo, outfile);
@@ -866,7 +854,6 @@ namespace Sipi {
                 break;
             }
             default: {
-                //outlock.unlock();
                 throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace!");
             }
         }
@@ -919,7 +906,6 @@ namespace Sipi {
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
-                //outlock.unlock();
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
             delete [] exifchunk;
@@ -948,7 +934,6 @@ namespace Sipi {
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
-                //outlock.unlock();
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
             delete [] xmpchunk;
@@ -981,7 +966,6 @@ namespace Sipi {
                     jpeg_finish_compress (&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
-                    //outlock.unlock();
                     throw SipiImageError(__file__, __LINE__, jpgerr.what());
                 }
 
@@ -1019,7 +1003,6 @@ namespace Sipi {
                 delete [] iptcchunk;
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
-                //outlock.unlock();
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
 
@@ -1058,7 +1041,6 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != -1) close(outfile);
-            //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
 
@@ -1068,14 +1050,11 @@ namespace Sipi {
         catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != -1) close(outfile);
-            //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
         if (outfile != -1) close(outfile);
 
         jpeg_destroy_compress(&cinfo);
-        //outlock.unlock();
-
 
     }
 

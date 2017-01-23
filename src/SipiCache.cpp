@@ -262,7 +262,8 @@ namespace Sipi {
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
             std::vector<AListEle> alist;
 
-            if (use_lock) locking.lock();
+            std::unique_lock<std::mutex> locking_mutex_guard(locking, std::defer_lock);
+            if (use_lock) locking_mutex_guard.lock();
 
             for (const auto &ele : cachetable) {
                 AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
@@ -283,7 +284,6 @@ namespace Sipi {
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
-            if (use_lock) locking.unlock();
         }
         return n;
     }
@@ -304,22 +304,24 @@ namespace Sipi {
 #endif
 
         std::string res;
-        locking.lock();
-        try {
-            fr = cachetable.at(canonical_p);
-        }
-        catch(const std::out_of_range& oor) {
-            locking.unlock();
-            return res; // return empty string, because we didn't find the file in cache
-        }
 
-        //
-        // get the current time (seconds since Epoch)
-        //
-        time_t at;
-        time(&at);
-        fr.access_time = at; // update the access time!
-        locking.unlock();
+        {
+            std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
+            try {
+                fr = cachetable.at(canonical_p);
+            }
+            catch (const std::out_of_range& oor) {
+                return res; // return empty string, because we didn't find the file in cache
+            }
+
+            //
+            // get the current time (seconds since Epoch)
+            //
+            time_t at;
+            time(&at);
+            fr.access_time = at; // update the access time!
+        }
 
         if (tcompare(mtime, fr.mtime) > 0) { // original file is newer than cache, we have to replace it..
             return res; // return empty string, means "replace the file in the cache!"
@@ -369,9 +371,9 @@ namespace Sipi {
         fr.origpath = origpath_p;
         fr.cachepath = cachepath;
 
-        locking.lock();
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
         if (stat(cachepath_p.c_str(), &fileinfo) != 0) {
-            locking.unlock();
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origpath_p + "\"!", errno);
         }
 #if defined(HAVE_ST_ATIMESPEC)
@@ -419,20 +421,17 @@ namespace Sipi {
         //}
 
         ++nfiles;
-
-        locking.unlock();
     }
     //============================================================================
 
     bool SipiCache::remove(const std::string &canonical_p) {
         SipiCache::CacheRecord fr;
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
 
-        locking.lock();
         try {
             fr = cachetable.at(canonical_p);
         }
         catch(const std::out_of_range& oor) {
-            locking.unlock();
             return false; // return empty string, because we didn't find the file in cache
         }
 
@@ -442,7 +441,6 @@ namespace Sipi {
         cachesize -= cachetable[canonical_p].fsize;
         cachetable.erase(canonical_p);
         --nfiles;
-        locking.unlock();
 
         return true;
     }
@@ -498,9 +496,9 @@ namespace Sipi {
         try {
             SipiCache::SizeRecord sr =  sizetable.at(origname_p);
             if (tcompare(mtime, sr.mtime) > 0) { // original file is newer than cache, we have to replace it..
-                locking.lock();
+                std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
                 sizetable.erase(origname_p);
-                locking.unlock();
                 return false; // return empty string, means "replace the file in the cache!"
             }
 
