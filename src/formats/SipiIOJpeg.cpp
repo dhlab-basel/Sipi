@@ -444,7 +444,7 @@ namespace Sipi {
         //
         // Since libjpeg is not thread safe, we have unfortunately use a mutex...
         //
-        std::lock_guard<std::mutex> inlock_guard(inlock);
+        std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
