@@ -42,33 +42,33 @@ namespace shttps {
 
     Hash::Hash(HashType type) {
         context = EVP_MD_CTX_create();
-        if (context == NULL) {
+        if (context == nullptr) {
             throw Sipi::SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
         }
         int status;
         switch (type) {
             case none: {
-                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_md5(), nullptr);
                 break;
             }
             case md5: {
-                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_md5(), nullptr);
                 break;
             }
             case sha1: {
-                status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha1(), nullptr);
                 break;
             }
             case sha256: {
-                status = EVP_DigestInit_ex(context, EVP_sha256(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha256(), nullptr);
                 break;
             }
             case sha384: {
-                status = EVP_DigestInit_ex(context, EVP_sha384(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha384(), nullptr);
                 break;
             }
             case sha512: {
-                status = EVP_DigestInit_ex(context, EVP_sha512(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha512(), nullptr);
                 break;
             }
         }

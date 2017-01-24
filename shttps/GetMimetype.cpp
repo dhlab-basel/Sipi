@@ -34,11 +34,11 @@ namespace shttps {
     pair<string,string> GetMimetype::getMimetype(const string &fpath)
     {
         magic_t handle;
-        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == NULL) {
+        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
             throw Error(__file__, __LINE__, magic_error(handle));
         }
 
-        if (magic_load(handle, NULL) != 0) {
+        if (magic_load(handle, nullptr) != 0) {
             throw Error(__file__, __LINE__, magic_error(handle));
         }
         const char *result = magic_file(handle, fpath.c_str());

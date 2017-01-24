@@ -1050,7 +1050,7 @@ namespace Sipi {
 
         std::string cachefile;
         if (cache != NULL) {
-            cachefile = cache->getNewCacheName();
+            cachefile = cache->getNewCacheFileName();
             syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
         }
         try {

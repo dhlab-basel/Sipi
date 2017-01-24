@@ -101,7 +101,7 @@ namespace shttps {
         while (true) {
             if ((sigwait(&set, &sig)) != 0) {
                 signal_result = -1;
-                return NULL;
+                return nullptr;
             }
 
             signal_result = sig;
@@ -111,7 +111,7 @@ namespace shttps {
             // SIGPIPE.
             if (sig == SIGINT || sig == SIGTERM) {
                 serverptr->stop();
-                return NULL;
+                return nullptr;
             }
         }
     }
@@ -274,7 +274,7 @@ namespace shttps {
 
         std::string docroot;
         std::string route;
-        if (hd == NULL) {
+        if (hd == nullptr) {
             docroot = ".";
             route = "/";
         }
@@ -451,7 +451,7 @@ namespace shttps {
         //
         semname = "shttps";
         semname += std::to_string(port);
-        _user_data = NULL;
+        _user_data = nullptr;
         running = false;
         _keep_alive_timeout = 20;
 
@@ -497,7 +497,7 @@ namespace shttps {
                 size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
                 char *buffer = new char[buffer_len];
                 getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
-                if (res != NULL) {
+                if (res != nullptr) {
                     if (setuid(pwd.pw_uid) == 0) {
                         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
                         syslog(LOG_INFO, "Server will run as user %s (%d)", userid_str.c_str(), getuid());
@@ -560,7 +560,7 @@ namespace shttps {
 
         size_t max_match_len = 0;
         std::string matching_path;
-        RequestHandler matching_handler = NULL;
+        RequestHandler matching_handler = nullptr;
 
         for (item = handler[conn.method()].rbegin(); item != handler[conn.method()].rend(); ++item) {
             size_t len = conn.uri().length() < item->first.length() ? conn.uri().length() : item->first.length();
@@ -652,14 +652,14 @@ namespace shttps {
     static int close_socket(TData *tdata) {
 
 #ifdef SHTTPS_ENABLE_SSL
-        if (tdata->cSSL != NULL) {
+        if (tdata->cSSL != nullptr) {
             int sstat;
             while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
             if (sstat < 0) {
                 syslog(LOG_WARNING, "SSL socket error: shutdown of socket failed at [%s: %d] with error code %d", __file__, __LINE__, SSL_get_error(tdata->cSSL, sstat));
             }
             SSL_free(tdata->cSSL);
-            tdata->cSSL = NULL;
+            tdata->cSSL = nullptr;
         }
 #endif
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
@@ -684,7 +684,7 @@ namespace shttps {
         //
         SockStream *sockstream;
 #ifdef SHTTPS_ENABLE_SSL
-        if (tdata->cSSL != NULL) {
+        if (tdata->cSSL != nullptr) {
             sockstream = new SockStream(tdata->cSSL);
         }
         else {
@@ -700,7 +700,7 @@ namespace shttps {
         int keep_alive = 1;
         do {
 #ifdef SHTTPS_ENABLE_SSL
-            if (tdata->cSSL != NULL) {
+            if (tdata->cSSL != nullptr) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
             }
             else {
@@ -827,7 +827,7 @@ namespace shttps {
 
         delete tdata;
 
-        return NULL;
+        return nullptr;
     }
     //=========================================================================
 
@@ -843,10 +843,10 @@ namespace shttps {
         sigaddset(&set, SIGPIPE);
 
         int res;
-        if ((res = pthread_sigmask(SIG_BLOCK, &set, NULL)) != 0) {
+        if ((res = pthread_sigmask(SIG_BLOCK, &set, nullptr)) != 0) {
             syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", res);
         }
-        res = pthread_create(&sighandler_thread, NULL, &sig_thread, (void *) this);
+        res = pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this);
 
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Starting shttps server with %d threads", _nthreads);
@@ -953,11 +953,11 @@ namespace shttps {
             tmp->serv = this;
 
 #ifdef SHTTPS_ENABLE_SSL
-            SSL *cSSL = NULL;
+            SSL *cSSL = nullptr;
             if (sock == _ssl_sockfd) {
                 SSL_CTX *sslctx;
                 try {
-                    if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == NULL) {
+                    if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == nullptr) {
                         syslog(LOG_ERR, "OpenSSL error: SSL_CTX_new() failed");
                         throw SSLError(__file__, __LINE__, "OpenSSL error: SSL_CTX_new() failed");
                     }
@@ -977,7 +977,7 @@ namespace shttps {
                         syslog(LOG_ERR, "%s", msg.c_str());
                         throw SSLError(__file__, __LINE__, msg);
                     }
-                    if ((cSSL = SSL_new(sslctx)) == NULL) {
+                    if ((cSSL = SSL_new(sslctx)) == nullptr) {
                         std::string msg = "OpenSSL error: SSL_new() failed";
                         syslog(LOG_ERR, "%s", msg.c_str());
                         throw SSLError(__file__, __LINE__, msg);
@@ -1004,7 +1004,7 @@ namespace shttps {
                         syslog(LOG_WARNING, "SSL socket error: shutdown (2) of socket failed: %d", SSL_get_error(cSSL, sstat));
                     }
                     SSL_free(cSSL);
-                    cSSL = NULL;
+                    cSSL = nullptr;
                 }
             }
             tmp->cSSL = cSSL;
@@ -1051,7 +1051,7 @@ namespace shttps {
                 break;
             }
 #ifdef SHTTPS_ENABLE_SSL
-            if (tmp->cSSL != NULL) {
+            if (tmp->cSSL != nullptr) {
                 add_thread(thread_id, commpipe[0], tmp->sock, tmp->cSSL);
             }
             else {
@@ -1081,7 +1081,7 @@ namespace shttps {
             for (auto const &tid : thread_ids) {
                 int err;
 
-                if ((err = pthread_join(tid.first, NULL)) != 0) {
+                if ((err = pthread_join(tid.first, nullptr)) != 0) {
                     syslog(LOG_ERR, "pthread_join failed with error code %d", err);
                 }
             }
@@ -1140,7 +1140,7 @@ namespace shttps {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
 
-            void *hd = NULL;
+            void *hd = nullptr;
             try {
                 RequestHandler handler = getHandler(conn, &hd);
                 handler(conn, luaserver, _user_data, hd);
@@ -1184,7 +1184,7 @@ namespace shttps {
     void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id) {
         std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 #ifdef SHTTPS_ENABLE_SSL
-        GenericSockId sid = {sock_id, NULL, commpipe_write_p};
+        GenericSockId sid = {sock_id, nullptr, commpipe_write_p};
 #else
         GenericSockId sid = {sock_id, commpipe_write_p};
 #endif
@@ -1234,7 +1234,7 @@ namespace shttps {
             return thread_ids.at(thread_id_p).ssl_sid;
         }
         catch (const std::out_of_range& oor) {
-            return NULL;
+            return nullptr;
         }
     }
     //=========================================================================

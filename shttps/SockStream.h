@@ -101,7 +101,7 @@ namespace shttps {
         virtual int sync(void);
     protected:
     public:
-       inline SockStream() {in_buf = out_buf = NULL; in_bufsize = out_bufsize = 0; sock = -1; putback_size = 0; }
+       inline SockStream() {in_buf = out_buf = nullptr; in_bufsize = out_bufsize = 0; sock = -1; putback_size = 0; }
 
        /*!
         * Constructor of the iostream for sockets which takes the socket id and the size of the buffers

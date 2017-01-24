@@ -145,16 +145,16 @@ namespace shttps {
         protected:
             SSL *cSSL;
         public:
-            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = NULL)
+            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = nullptr)
                 : Error(file, line, msg), cSSL(cSSL_p) {};
-            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = NULL)
+            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = nullptr)
                 : Error(file, line, msg), cSSL(cSSL_p) {};
             inline std::string to_string(void) {
                 std::stringstream ss;
                 ss << "SSL-ERROR at [" << file << ": " << line << "] ";
                 BIO *bio = BIO_new(BIO_s_mem());
                 ERR_print_errors (bio);
-                char *buf = NULL;
+                char *buf = nullptr;
                 long n =  BIO_get_mem_data (bio, &buf);
                 if (n > 0) {
                     ss << buf << " : ";
@@ -457,7 +457,7 @@ public:
          *
          * \param[in] func C++ function which extends the Lua
          */
-        inline void add_lua_globals_func(LuaSetGlobalsFunc func, void *user_data = NULL) {
+        inline void add_lua_globals_func(LuaSetGlobalsFunc func, void *user_data = nullptr) {
             GlobalFunc gf;
             gf.func = func;
             gf.func_dataptr = user_data;
@@ -478,7 +478,7 @@ public:
          *
          */
         void addRoute(Connection::HttpMethod method_p, const std::string &path, RequestHandler handler_p,
-                      void *handler_data_p = NULL);
+                      void *handler_data_p = nullptr);
 
        /*!
         * Process a request... (Eventually should be private method)

@@ -668,7 +668,7 @@ namespace shttps {
         */
         void setBuffer(size_t buf_size = 8912, size_t buf_inc = 8912);
 
-        inline bool isBuffered(void) {return ( outbuf != NULL); }
+        inline bool isBuffered(void) { return ( outbuf != nullptr); }
        /*!
         * Set the transfer mode for the response to chunked
         */
