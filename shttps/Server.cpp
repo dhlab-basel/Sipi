@@ -1066,6 +1066,7 @@ namespace shttps {
         syslog(LOG_INFO, "Server shutting down");
         setlogmask(old_ll);
         std::vector<pthread_t> threads_to_join;
+        threads_to_join.push_back(sighandler_thread);
 
         {
             std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
