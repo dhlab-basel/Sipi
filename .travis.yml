@@ -35,6 +35,7 @@ before_install:
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install openssl; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install libmagic; fi
 
 script:
 # run the build process in docker container (only on linux)
