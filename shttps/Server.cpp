@@ -1087,6 +1087,9 @@ namespace shttps {
             }
         }
 
+        // Close the semaphore.
+        ::sem_close(_semaphore);
+
         // std::cerr << "signal_result is " << signal_result << std::endl;
    }
     //=========================================================================
