@@ -169,7 +169,7 @@ namespace Sipi {
         friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
-        static std::unordered_map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
+        static std::unordered_map<std::string, std::shared_ptr<SipiIO> > io; //!< member variable holding a map of I/O class instances for the different file formats
         byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
         word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
     protected:

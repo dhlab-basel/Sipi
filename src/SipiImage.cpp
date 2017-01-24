@@ -41,12 +41,12 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-  std::unordered_map<std::string,SipiIO*> SipiImage::io = {
-    {"tif", new SipiIOTiff()},
-    {"jpx", new SipiIOJ2k()},
-    //{"jpx", new SipiIOOpenJ2k()},
-    {"jpg", new SipiIOJpeg()},
-    {"png", new SipiIOPng()}
+  std::unordered_map<std::string, std::shared_ptr<SipiIO> > SipiImage::io = {
+    {"tif", std::make_shared<SipiIOTiff>()},
+    {"jpx", std::make_shared<SipiIOJ2k>()},
+    //{"jpx", std::make_shared<SipiIOOpenJ2k>()},
+    {"jpg", std::make_shared<SipiIOJpeg>()},
+    {"png", std::make_shared<SipiIOPng>()}
   };
 
   std::unordered_map<std::string, std::string> SipiImage::mimetypes = {
