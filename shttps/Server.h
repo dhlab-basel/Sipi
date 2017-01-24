@@ -213,7 +213,7 @@ public:
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
         std::atomic<int> _semcnt; //!< current value of semaphore (sem_getvalue() is not available on all systems)
-        std::map<pthread_t,GenericSockId> thread_ids; //!< Map of active worker threads
+        std::map<pthread_t, GenericSockId> thread_ids; //!< Map of active worker threads
         int _keep_alive_timeout;
         bool running; //!< Main runloop should keep on going
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods

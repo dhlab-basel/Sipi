@@ -1065,25 +1065,28 @@ namespace shttps {
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server shutting down");
         setlogmask(old_ll);
+        std::vector<pthread_t> threads_to_join;
 
         {
             std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 
             // Send the close message to all running threads.
             for (auto const &tid : thread_ids) {
+                threads_to_join.push_back(tid.first);
                 Server::CommMsg::send(tid.second.commpipe_write);
             }
+        }
 
-            close(stoppipe[0]);
-            close(stoppipe[1]);
+        close(stoppipe[0]);
+        close(stoppipe[1]);
 
-            // We have closed all sockets, now wait for the threads to terminate.
-            for (auto const &tid : thread_ids) {
-                int err;
+        // We have closed all sockets, now wait for the threads to terminate.
 
-                if ((err = pthread_join(tid.first, nullptr)) != 0) {
-                    syslog(LOG_ERR, "pthread_join failed with error code %d", err);
-                }
+        for (auto const &thread_to_join : threads_to_join) {
+            int err = pthread_join(thread_to_join, nullptr);
+
+            if (err != 0) {
+                syslog(LOG_ERR, "pthread_join failed with error code %d", err);
             }
         }
 
