@@ -19,9 +19,8 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- *//*!
- * \file Connection.cpp
  */
+
 #include <algorithm>
 #include <functional>
 #include <cctype>
@@ -87,10 +86,10 @@ namespace shttps {
 
     /*!
      * Starts a thread just to catch all signals sent to the server process.
-     * If it receives SIGINT, tells the server to stop.
+     * If it receives SIGINT or SIGTERM, tells the server to stop.
      */
-    static void* sig_thread(void *arg) {
-        Server* serverptr = static_cast<Server*>(arg);
+    static void *sig_thread(void *arg) {
+        Server *serverptr = static_cast<Server *>(arg);
         sigset_t set;
         sigemptyset(&set);
         sigaddset(&set, SIGPIPE);
@@ -685,7 +684,7 @@ namespace shttps {
      * @return NULL.
      */
     static void *process_request(void *arg) {
-        TData *tdata = static_cast<TData*>(arg);
+        TData *tdata = static_cast<TData *>(arg);
         pthread_t my_tid = pthread_self();
 
         //
