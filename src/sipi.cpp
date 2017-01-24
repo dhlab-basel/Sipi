@@ -332,6 +332,7 @@ int main (int argc, char *argv[]) {
 
         ~_SipiInit() {
             curl_global_cleanup();
+            Exiv2::XmpParser::terminate();
         }
     } sipiInit;
 
