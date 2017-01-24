@@ -33,8 +33,6 @@
 
 #include "SipiHttpServer.h"
 
-using namespace std;
-
 namespace shttps {
 
 
@@ -56,7 +54,7 @@ namespace shttps {
 
 
     static Sqlite *toSqlite(lua_State *L, int index) {
-        Sqlite *db = (Sqlite *) lua_touserdata(L, index);
+        Sqlite *db = static_cast<Sqlite *>(lua_touserdata(L, index));
         if (db == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
@@ -78,7 +76,7 @@ namespace shttps {
     //=========================================================================
 
     static Sqlite *pushSqlite(lua_State *L) {
-        Sqlite *db = (Sqlite *) lua_newuserdata(L, sizeof(Sqlite));
+        Sqlite *db = static_cast<Sqlite *>(lua_newuserdata(L, sizeof(Sqlite)));
         luaL_getmetatable(L, LUASQLITE);
         lua_setmetatable(L, -2);
         return db;
@@ -397,7 +395,7 @@ namespace shttps {
 
         int flags = SQLITE_OPEN_READWRITE;
         if ((top >= 2) && (lua_isstring(L,2))) {
-            string flagstr = lua_tostring(L, 1);
+            std::string flagstr = lua_tostring(L, 1);
             if (flagstr == "RO") {
                 flags = SQLITE_OPEN_READONLY;
             }
