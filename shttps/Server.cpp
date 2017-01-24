@@ -56,6 +56,7 @@
 #include "Server.h"
 #include "LuaServer.h"
 #include "GetMimetype.h"
+#include "makeunique.h"
 
 static const char __file__[] = __FILE__;
 
@@ -88,8 +89,8 @@ namespace shttps {
      * Starts a thread just to catch all signals sent to the server process.
      * If it receives SIGINT, tells the server to stop.
      */
-    static void *sig_thread(void *arg) {
-        Server *serverptr = (Server *) arg;
+    static void* sig_thread(void *arg) {
+        Server* serverptr = static_cast<Server*>(arg);
         sigset_t set;
         sigemptyset(&set);
         sigaddset(&set, SIGPIPE);
@@ -497,6 +498,8 @@ namespace shttps {
                 size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
                 char *buffer = new char[buffer_len];
                 getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
+                delete [] buffer;
+
                 if (res != nullptr) {
                     if (setuid(pwd.pw_uid) == 0) {
                         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
@@ -518,7 +521,6 @@ namespace shttps {
                 else {
                     syslog(LOG_ERR, "Could not get uid of user %s: you must start Sipi as root", userid_str.c_str());
                 }
-                delete [] buffer;
             }
             else {
                 syslog(LOG_ERR, "Could not get uid of user %s: you must start Sipi as root", userid_str.c_str());
@@ -542,10 +544,11 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
     void Server::jwt_secret(const std::string &jwt_secret_p) {
         _jwt_secret = jwt_secret_p;
-        int l;
-        if ((l = _jwt_secret.size()) < 32) {
-            for (int i = 0; i < (32 - l); i++) {
-            _jwt_secret.push_back('A' + i);
+        auto secret_size = _jwt_secret.size();
+
+        if (secret_size < 32) {
+            for (int i = 0; i < (32 - secret_size); i++) {
+                _jwt_secret.push_back('A' + i);
             }
         }
     }
@@ -554,7 +557,7 @@ namespace shttps {
 
 
 
-    RequestHandler Server::getHandler(Connection &conn, void **handler_data_p)
+    RequestHandler Server::getHandler(Connection &conn, void** handler_data_p)
     {
         std::map<std::string, RequestHandler>::reverse_iterator item;
 
@@ -649,7 +652,7 @@ namespace shttps {
     }
     //=========================================================================
 
-    static int close_socket(TData *tdata) {
+    static int close_socket(TData* tdata) {
 
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != nullptr) {
@@ -665,6 +668,7 @@ namespace shttps {
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
             syslog(LOG_WARNING, "Error shutting down socket at [%s: %d]: %m", __file__, __LINE__);
         }
+
         if (close(tdata->sock) == -1) {
             syslog(LOG_WARNING, "Error closing socket at [%s: %d]: %m", __file__, __LINE__);
         }
@@ -674,27 +678,32 @@ namespace shttps {
     //=========================================================================
 
 
-    static void *process_request(void *arg)
-    {
-        TData *tdata = (TData *) arg;
+    /*!
+     * Runs a request-handling thread.
+     *
+     * @param arg a pointer to a TData, which this function will delete before returning.
+     * @return NULL.
+     */
+    static void *process_request(void *arg) {
+        TData *tdata = static_cast<TData*>(arg);
         pthread_t my_tid = pthread_self();
 
         //
-        // now we create the socket StreamSock
+        // now we create the socket's SockStream
         //
-        SockStream *sockstream;
+        std::unique_ptr<SockStream> sockstream;
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != nullptr) {
-            sockstream = new SockStream(tdata->cSSL);
+            sockstream = make_unique<SockStream>(tdata->cSSL);
         }
         else {
-            sockstream = new SockStream(tdata->sock);
+            sockstream = make_unique<SockStream>(tdata->sock);
         }
 #else
-        sockstream = new SockStream(tdata->sock);
+        sockstream = ipi::make_unique<SockStream>(tdata->sock);
 #endif
-        std::istream ins(sockstream);
-        std::ostream os(sockstream);
+        std::istream ins(sockstream.get());
+        std::ostream os(sockstream.get());
 
         ThreadStatus tstatus;
         int keep_alive = 1;
@@ -716,8 +725,8 @@ namespace shttps {
             // tstatus is CONTINUE. Let's check if we got in the meantime a CLOSE message from the main...
             //
             pollfd readfds[2];
-            readfds[0] = { tdata->commpipe_read, POLLIN, 0};
-            readfds[1] = { tdata->sock, POLLIN, 0};
+            readfds[0] = { tdata->commpipe_read, POLLIN, 0 };
+            readfds[1] = { tdata->sock, POLLIN, 0 };
             if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
                 syslog(LOG_ERR, "Non-blocking poll failed at [%s: %d]", __file__, __LINE__);
                 tstatus = CLOSE;
@@ -805,8 +814,6 @@ namespace shttps {
         //
         close_socket(tdata);
 
-        delete sockstream;
-
         if (close(tdata->commpipe_read) == -1) {
             syslog(LOG_ERR, "Commpipe_write close error at [%s: %d]: %m", __file__, __LINE__);
         }
@@ -822,11 +829,8 @@ namespace shttps {
         }
 
         tdata->serv->remove_thread(pthread_self());
-
         tdata->serv->semaphore_leave();
-
         delete tdata;
-
         return nullptr;
     }
     //=========================================================================
@@ -842,11 +846,13 @@ namespace shttps {
         sigaddset(&set, SIGTERM);
         sigaddset(&set, SIGPIPE);
 
-        int res;
-        if ((res = pthread_sigmask(SIG_BLOCK, &set, nullptr)) != 0) {
-            syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", res);
+        int pthread_sigmask_result = pthread_sigmask(SIG_BLOCK, &set, nullptr);
+
+        if (pthread_sigmask_result != 0) {
+            syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", pthread_sigmask_result);
         }
-        res = pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this);
+
+        pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this);
 
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Starting shttps server with %d threads", _nthreads);
@@ -863,10 +869,12 @@ namespace shttps {
             syslog(LOG_INFO, "Added route %s with script %s", route.route.c_str(), route.script.c_str());
             setlogmask(old_ll);
         }
+
         _sockfd = prepare_socket(port);
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server listening on port %d", port);
         setlogmask(old_ll);
+
         if (_ssl_port > 0) {
             _ssl_sockfd = prepare_socket(_ssl_port);
             old_ll = setlogmask(LOG_MASK(LOG_INFO));
@@ -878,13 +886,15 @@ namespace shttps {
         pthread_t thread_id;
         running = true;
         int count = 0;
-        while(running) {
+
+        while (running) {
             int sock;
 
             pollfd readfds[3];
             int n_readfds = 0;
             readfds[0] = { _sockfd, POLLIN, 0}; n_readfds++;
             readfds[1] = {stoppipe[0], POLLIN, 0}; n_readfds++;
+
             if (_ssl_port > 0) {
                 readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
             }
@@ -894,25 +904,25 @@ namespace shttps {
                 running = false;
                 break;
             }
+
             count++;
+
             if (readfds[0].revents & POLLIN) {
                 sock = _sockfd;
-            }
-            else if (readfds[1].revents & POLLIN) {
+            } else if (readfds[1].revents & POLLIN) {
                 sock = stoppipe[0];
                 char buf[2];
                 read(stoppipe[0], buf, 1);
                 running = false;
                 break;
-            }
-            else if ((_ssl_port > 0) && (readfds[2].revents & POLLIN)) {
+            } else if ((_ssl_port > 0) && (readfds[2].revents & POLLIN)) {
                 sock = _ssl_sockfd;
-            }
-            else {
+            } else {
                 syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: unknown error", __file__, __LINE__);
                 running = false;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
+
             struct sockaddr_storage cli_addr;
             socklen_t cli_size = sizeof(cli_addr);
             int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
@@ -932,13 +942,11 @@ namespace shttps {
                 struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
                 peer_port = ntohs(s->sin_port);
                 inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            }
-            else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
                 struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
                 peer_port = ntohs(s->sin6_port);
                 inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
-            }
-            else {
+            } else {
                 peer_port = -1;
             }
 
@@ -946,14 +954,17 @@ namespace shttps {
             syslog(LOG_INFO, "Accepted connection from %s", client_ip);
             setlogmask(old_ll);
 
-            TData *tmp = new TData;
-            tmp->sock = newsockfs;
-            tmp->peer_ip = client_ip;
-            tmp->peer_port = peer_port;
-            tmp->serv = this;
+            // Construct a TData for the thread that will handle the request. The TData will
+            // be deleted by process_request() when it completes.
+            TData* thread_data = new TData();
+            thread_data->sock = newsockfs;
+            thread_data->peer_ip = client_ip;
+            thread_data->peer_port = peer_port;
+            thread_data->serv = this;
 
 #ifdef SHTTPS_ENABLE_SSL
             SSL *cSSL = nullptr;
+
             if (sock == _ssl_sockfd) {
                 SSL_CTX *sslctx;
                 try {
@@ -995,8 +1006,7 @@ namespace shttps {
                         syslog(LOG_ERR, "%s", msg.c_str());
                         throw SSLError(__file__, __LINE__, msg);
                     }
-                }
-                catch (SSLError &err) {
+                } catch (SSLError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
                     int sstat;
                     while ((sstat = SSL_shutdown(cSSL)) == 0);
@@ -1007,7 +1017,8 @@ namespace shttps {
                     cSSL = nullptr;
                 }
             }
-            tmp->cSSL = cSSL;
+
+            thread_data->cSSL = cSSL;
 #endif
 
             if (semaphore_get() <= 0) {
@@ -1031,6 +1042,7 @@ namespace shttps {
                     }
                 }
             }
+
             semaphore_wait();
             int commpipe[2];
 
@@ -1040,25 +1052,25 @@ namespace shttps {
                 break;
             }
 
-            tmp->commpipe_read = commpipe[1]; // read end;
+            thread_data->commpipe_read = commpipe[1]; // read end;
 
             pthread_attr_t tattr;
             pthread_attr_init(&tattr);
 
-            if (pthread_create(&thread_id, &tattr,  process_request, (void *) tmp) < 0) {
+            if (pthread_create(&thread_id, &tattr, process_request, (void *) thread_data) < 0) {
                 syslog(LOG_ERR, "Could not create thread at [%s: %d]: %m", __file__, __LINE__);
                 running = false;
                 break;
             }
 #ifdef SHTTPS_ENABLE_SSL
-            if (tmp->cSSL != nullptr) {
-                add_thread(thread_id, commpipe[0], tmp->sock, tmp->cSSL);
+            if (thread_data->cSSL != nullptr) {
+                add_thread(thread_id, commpipe[0], thread_data->sock, thread_data->cSSL);
             }
             else {
-                add_thread(thread_id, commpipe[0], tmp->sock);
+                add_thread(thread_id, commpipe[0], thread_data->sock);
             }
 #else
-            add_thread(thread_id, commpipe[0], tmp->sock);
+            add_thread(thread_id, commpipe[0], thread_data->sock);
 #endif
         }
 
@@ -1142,7 +1154,6 @@ namespace shttps {
             //
             LuaServer luaserver(conn, _initscript, true);
             luaserver.setLuaPath(_scriptdir + "/?.lua"); // add the script dir to the standard search path fpr lua packages
-            //luaserver.createGlobals(conn);
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
@@ -1151,18 +1162,18 @@ namespace shttps {
             try {
                 RequestHandler handler = getHandler(conn, &hd);
                 handler(conn, luaserver, _user_data, hd);
-            }
-            catch (int i) {
+            } catch (int i) {
                 syslog(LOG_ERR, "Possibly socket closed by peer");
                 return CLOSE; // or CLOSE ??
             }
+
             if (!conn.cleanupUploads()) {
                 syslog(LOG_ERR, "Cleanup of uploaded files failed");
             }
+
             if (conn.keepAlive()) {
                 return CONTINUE;
-            }
-            else {
+            } else {
                 return CLOSE;
             }
         }
@@ -1179,8 +1190,7 @@ namespace shttps {
                 ss << err;
                 *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
                 *os << ss.str();
-            }
-            catch (int i) {
+            } catch (int i) {
                 syslog(LOG_DEBUG, "Possibly socket closed by peer");
             }
             return CLOSE;

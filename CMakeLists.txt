@@ -323,7 +323,7 @@ add_executable(
         shttps/GetMimetype.cpp shttps/GetMimetype.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-)
+        shttps/makeunique.h)
 add_dependencies(sipi icc_profiles)
 
 
