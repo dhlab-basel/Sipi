@@ -69,9 +69,9 @@
 namespace shttps {
 
 
-    typedef void (*RequestHandler)(Connection &, LuaServer &, void *, void *);
+    typedef void (*RequestHandler)(Connection&, LuaServer&, void *, void *);
 
-    extern void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *handler_data);
+    extern void FileHandler(Connection& conn, LuaServer& lua, void* user_data, void* handler_data);
 
     typedef enum { CONTINUE, CLOSE } ThreadStatus;
 

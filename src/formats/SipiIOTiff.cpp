@@ -423,7 +423,7 @@ namespace Sipi {
         }
     }
 
-    bool SipiIOTiff::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
+    bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8)
     {
     	TIFF *tif;
 
@@ -476,39 +476,39 @@ namespace Sipi {
             //
             char *str;
             if (1 == TIFFGetField(tif, TIFFTAG_IMAGEDESCRIPTION, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.ImageDescription"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_MAKE, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Make"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_MODEL, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Model"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_SOFTWARE, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Software"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_DATETIME, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.DateTime"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_ARTIST, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Artist"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_HOSTCOMPUTER, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.HostComputer"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_COPYRIGHT, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Copyright"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_DOCUMENTNAME, &str)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.DocumentName"), std::string(str));
             }
 
@@ -517,27 +517,27 @@ namespace Sipi {
             //
 /*
             if (1 == TIFFGetField(tif, TIFFTAG_PAGENAME, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                if (img->exif == NULL) img->exif = std::make_shared<SipiExif>();
                 img->exif->addKeyVal(string("Exif.Image.PageName"), string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_PAGENUMBER, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                if (img->exif == NULL) img->exif = std::make_shared<SipiExif>();
                 img->exif->addKeyVal(string("Exif.Image.PageNumber"), string(str));
             }
 */
             float f;
             if (1 == TIFFGetField(tif, TIFFTAG_XRESOLUTION, &f)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.XResolution"), f);
             }
             if (1 == TIFFGetField(tif, TIFFTAG_YRESOLUTION, &f)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.YResolution"), f);
             }
 
             short s;
         	if (1 == TIFFGetField(tif, TIFFTAG_RESOLUTIONUNIT, &s)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.ResolutionUnit"), s);
         	}
 
@@ -550,7 +550,7 @@ namespace Sipi {
 
             if (TIFFGetField(tif, TIFFTAG_RICHTIFFIPTC, &iptc_length, &iptc_content) != 0) {
                 try {
-                    img->iptc = new SipiIptc(iptc_content, iptc_length);
+                    img->iptc = std::make_shared<SipiIptc>(iptc_content, iptc_length);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -563,7 +563,7 @@ namespace Sipi {
             //
             toff_t exif_ifd_offs;
             if (1 == TIFFGetField(tif, TIFFTAG_EXIFIFD, &exif_ifd_offs)) {
-                if (img->exif == nullptr) img->exif = new SipiExif();
+                img->ensure_exif();
                 readExif(img, tif, exif_ifd_offs);
             }
 
@@ -574,7 +574,7 @@ namespace Sipi {
             char *xmp_content = nullptr;
             if (1 == TIFFGetField(tif, TIFFTAG_XMLPACKET, &xmp_length, &xmp_content)) {
                 try {
-                    img->xmp = new SipiXmp(xmp_content, xmp_length);
+                    img->xmp = std::make_shared<SipiXmp>(xmp_content, xmp_length);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -590,7 +590,7 @@ namespace Sipi {
             float *whitepoint = nullptr;
             if (1 == TIFFGetField(tif, TIFFTAG_ICCPROFILE, &icc_len, &icc_buf)) {
                 try {
-                    img->icc = new SipiIcc(icc_buf, icc_len);
+                    img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -639,7 +639,7 @@ namespace Sipi {
                     tfunc = nullptr;
                     tfunc_len = 0;
                 }
-                img->icc = new SipiIcc(whitepoint, primaries, tfunc, tfunc_len);
+                img->icc = std::make_shared<SipiIcc>(whitepoint, primaries, tfunc, tfunc_len);
                 if (tfunc != nullptr) delete [] tfunc;
             }
 
@@ -754,23 +754,23 @@ namespace Sipi {
                         if (img->bps == 1) {
                             cvrt1BitTo8Bit(img, sll, 0, 255);
                         }
-                        img->icc = new SipiIcc(icc_GRAY_D50);
+                        img->icc = std::make_shared<SipiIcc>(icc_GRAY_D50);
                         break;
                     }
                     case MINISWHITE: {
                         if (img->bps == 1) {
                             cvrt1BitTo8Bit(img, sll, 255, 0);
                         }
-                        img->icc = new SipiIcc(icc_GRAY_D50);
+                        img->icc = std::make_shared<SipiIcc>(icc_GRAY_D50);
                         break;
                     }
                     case SEPARATED: {
-                        img->icc = new SipiIcc(icc_CYMK_standard);
+                        img->icc = std::make_shared<SipiIcc>(icc_CYMK_standard);
                         break;
                     }
                     case YCBCR: // fall through!
                     case RGB: {
-                        img->icc = new SipiIcc(icc_sRGB);
+                        img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
                     default: {
@@ -780,7 +780,7 @@ namespace Sipi {
             }
             /*
             if ((img->nc == 3) && (img->photo == PHOTOMETRIC_YCBCR)) {
-                SipiIcc *target_profile = new SipiIcc(img->icc);
+                std::shared_ptr<SipiIcc> target_profile = std::make_shared<SipiIcc>(img->icc);
                 switch (img->bps) {
                     case 8: {
                         img->convertToIcc(target_profile, TYPE_YCbCr_8);
@@ -796,7 +796,7 @@ namespace Sipi {
                 }
             }
             else if ((img->nc == 4) && (img->photo == PHOTOMETRIC_SEPARATED)) { // CMYK image
-                SipiIcc *target_profile = new SipiIcc(icc_sRGB);
+                std::shared_ptr<SipiIcc> target_profile = std::make_shared<SipiIcc>(icc_sRGB);
                 switch (img->bps) {
                     case 8: {
                         img->convertToIcc(target_profile, TYPE_CMYK_8);
@@ -1074,9 +1074,8 @@ namespace Sipi {
                 fflush(stdout);
             }
             else if (filepath == "HTTP") {
-                shttps::Connection *conobj = img->connection();
                 try {
-                    conobj->sendAndFlush(memtif->data, memtif->flen);
+                    img->connection()->sendAndFlush(memtif->data, memtif->flen);
                 }
                 catch (int i) {
                     memTiffFree(memtif);

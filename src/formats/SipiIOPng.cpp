@@ -110,7 +110,7 @@ namespace Sipi {
     //=============================================
 
 
-    bool SipiIOPng::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
+    bool SipiIOPng::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8)
     {
         FILE *infile;
         unsigned char header[8];
@@ -180,7 +180,7 @@ namespace Sipi {
         }
 
         if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sRGB) != 0) {
-            img->icc = new SipiIcc(icc_sRGB);
+            img->icc = std::make_shared<SipiIcc>(icc_sRGB);
         }
         else {
             png_charp name;
@@ -188,7 +188,7 @@ namespace Sipi {
             png_bytep profile;
             png_uint_32 proflen;
             if (png_get_iCCP(png_ptr, info_ptr, &name, &compression_type, &profile, &proflen) != 0) {
-                img->icc = new SipiIcc((unsigned char *) profile, (int) proflen);
+                img->icc = std::make_shared<SipiIcc>((unsigned char *) profile, (int) proflen);
             }
         }
 
@@ -196,13 +196,13 @@ namespace Sipi {
         int num_comments = png_get_text(png_ptr, info_ptr, &png_texts, nullptr);
         for (int i = 0; i < num_comments; i++) {
             if (strcmp(png_texts[i].key, xmp_tag) == 0) {
-                img->xmp = new SipiXmp((char *) png_texts[i].text, (int) png_texts[i].text_length);
+                img->xmp = std::make_shared<SipiXmp>((char *) png_texts[i].text, (int) png_texts[i].text_length);
             }
             else if (strcmp(png_texts[i].key, exif_tag) == 0) {
-                img->exif = new SipiExif((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
+                img->exif = std::make_shared<SipiExif>((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
             }
             else if (strcmp(png_texts[i].key, iptc_tag) == 0) {
-                img->iptc = new SipiIptc((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
+                img->iptc = std::make_shared<SipiIptc>((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
             }
             else if (strcmp(png_texts[i].key, sipi_tag) == 0) {
                 SipiEssentials se(png_texts[i].text);
@@ -213,13 +213,15 @@ namespace Sipi {
             }
         }
 
-        int sll = png_get_rowbytes(png_ptr, info_ptr);
+        png_size_t sll = png_get_rowbytes(png_ptr, info_ptr);
+
         if (colortype == PNG_COLOR_TYPE_PALETTE) {
             png_set_palette_to_rgb(png_ptr);
             img->nc = 3;
             img->photo = RGB;
             sll = 3*sll;
         }
+
         if (colortype == PNG_COLOR_TYPE_GRAY && img->bps < 8) {
             png_set_expand_gray_1_2_4_to_8(png_ptr);
             img->bps = 8;

@@ -47,7 +47,7 @@ namespace Sipi {
         * only reads part of the data returning an image with reduces resolution.
         * If the value is 1, only half the resolution is returned. If it is 2, only one forth etc.
         */
-        bool read(SipiImage *img, std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
 
        /*!
         * Get the dimension of the image

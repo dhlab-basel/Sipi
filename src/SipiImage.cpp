@@ -41,23 +41,23 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-  std::unordered_map<std::string, std::shared_ptr<SipiIO> > SipiImage::io = {
-    {"tif", std::make_shared<SipiIOTiff>()},
-    {"jpx", std::make_shared<SipiIOJ2k>()},
-    //{"jpx", std::make_shared<SipiIOOpenJ2k>()},
-    {"jpg", std::make_shared<SipiIOJpeg>()},
-    {"png", std::make_shared<SipiIOPng>()}
-  };
+    std::unordered_map<std::string, std::shared_ptr<SipiIO> > SipiImage::io = {
+        {"tif", std::make_shared<SipiIOTiff>()},
+        {"jpx", std::make_shared<SipiIOJ2k>()},
+        //{"jpx", std::make_shared<SipiIOOpenJ2k>()},
+        {"jpg", std::make_shared<SipiIOJpeg>()},
+        {"png", std::make_shared<SipiIOPng>()}
+    };
 
-  std::unordered_map<std::string, std::string> SipiImage::mimetypes = {
-    {"jpx", "image/jp2"},
-    {"jp2", "image/jp2"},
-    {"jpg", "image/jpeg"},
-    {"jpeg", "image/jpeg"},
-    {"tiff", "image/tiff"},
-    {"tif", "image/tiff"},
-    {"png", "image/png"}
-  };
+    std::unordered_map<std::string, std::string> SipiImage::mimetypes = {
+        {"jpx", "image/jp2"},
+        {"jp2", "image/jp2"},
+        {"jpg", "image/jpeg"},
+        {"jpeg", "image/jpeg"},
+        {"tiff", "image/tiff"},
+        {"tif", "image/tiff"},
+        {"png", "image/png"}
+    };
 
     SipiImage::SipiImage() {
         nx = 0;
@@ -99,10 +99,10 @@ namespace Sipi {
             pixels = new byte[bufsiz];
             memcpy (pixels, img_p.pixels, bufsiz);
         }
-        xmp = img_p.xmp; // Problem!!!! is the operator= overloaded to make a deep copy?
-        icc = img_p.icc;
-        iptc = img_p.iptc;
-        exif = img_p.exif;
+        xmp = std::make_shared<SipiXmp>(*img_p.xmp);
+        icc = std::make_shared<SipiIcc>(*img_p.icc);
+        iptc = std::make_shared<SipiIptc>(*img_p.iptc);
+        exif = std::make_shared<SipiExif>(*img_p.exif);
         skip_metadata = img_p.skip_metadata;
         conobj = img_p.conobj;
     }
@@ -150,11 +150,7 @@ namespace Sipi {
 
     SipiImage::~SipiImage() {
         delete [] pixels;
-        delete xmp;
-        delete icc;
-        delete iptc;
-        delete exif;
-    };
+    }
     //============================================================================
 
 
@@ -184,15 +180,24 @@ namespace Sipi {
                 pixels = new byte[bufsiz];
                 memcpy (pixels, img_p.pixels, bufsiz);
             }
-            xmp = img_p.xmp;
-            icc = img_p.icc;
-            iptc = img_p.iptc;
-            exif = img_p.exif;
+            xmp = std::make_shared<SipiXmp>(*img_p.xmp);
+            icc = std::make_shared<SipiIcc>(*img_p.icc);
+            iptc = std::make_shared<SipiIptc>(*img_p.iptc);
+            exif = std::make_shared<SipiExif>(*img_p.exif);
             skip_metadata = img_p.skip_metadata;
             conobj = img_p.conobj;
         }
         return *this;
     }
+    //============================================================================
+
+    /*!
+     * If this image has no SipiExif, creates an empty one.
+     */
+    void SipiImage::ensure_exif() {
+        if (exif == nullptr) exif = std::make_shared<SipiExif>();
+    }
+
     //============================================================================
 
     /*!
@@ -238,7 +243,7 @@ namespace Sipi {
         return true;
     }
 
-    void SipiImage::read(std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
+    void SipiImage::read(std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
         std::string _fext;
@@ -270,7 +275,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
+    bool SipiImage::readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, shttps::HashType htype) {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
@@ -294,7 +299,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype) {
+    bool SipiImage::readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, const std::string &origname, shttps::HashType htype) {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
@@ -370,15 +375,15 @@ namespace Sipi {
         if (icc == nullptr) {
             switch (nc) {
                 case 1: {
-                    icc = new SipiIcc(icc_GRAY_D50); // assume gray value image with D50
+                    icc = std::make_shared<SipiIcc>(icc_GRAY_D50); // assume gray value image with D50
                     break;
                 }
                 case 3: {
-                    icc = new SipiIcc(icc_sRGB); // assume sRGB
+                    icc = std::make_shared<SipiIcc>(icc_sRGB); // assume sRGB
                     break;
                 }
                 case 4: {
-                    icc = new SipiIcc(icc_CYMK_standard); // assume CYMK
+                    icc = std::make_shared<SipiIcc>(icc_CYMK_standard); // assume CYMK
                     break;
                 }
                 default: {
@@ -389,7 +394,7 @@ namespace Sipi {
 
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
-        byte *inbuf = (byte *) pixels;
+        byte *inbuf = pixels;
         byte *outbuf = new byte[nx*ny*nnc*new_bps/8];
 
         cmsHTRANSFORM hTransform;
@@ -408,8 +413,7 @@ namespace Sipi {
 
         cmsDeleteTransform(hTransform);
 
-        delete icc;
-        icc = new SipiIcc(target_icc_p);
+        icc = std::make_shared<SipiIcc>(target_icc_p);
 
         pixels = outbuf;
         delete [] inbuf;
@@ -575,7 +579,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::crop(SipiRegion *region) {
+    bool SipiImage::crop(std::shared_ptr<SipiRegion> region) {
         int x, y, width, height;
         if (region->getType() == SipiRegion::FULL) return true; // we do not have to crop;
 

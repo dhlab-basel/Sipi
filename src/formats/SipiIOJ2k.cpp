@@ -62,7 +62,7 @@ namespace Sipi {
 
     //=========================================================================
     // Here we are implementing a subclass of kdu_core::kdu_compressed_target
-    // in order to write directly to the mongoose webserver connection
+    // in order to write directly to the HTTP server connection
     //
     class J2kHttpStream: public kdu_core::kdu_compressed_target {
     private:
@@ -79,7 +79,7 @@ namespace Sipi {
     //-------------------------------------------------------------------------
 
     //-------------------------------------------------------------------------
-    // Constructor which takes the mongoose connection as parameter
+    // Constructor which takes the HTTP server connection as parameter
     //........................................................................
     J2kHttpStream::J2kHttpStream(shttps::Connection *conobj_p)
         : kdu_core::kdu_compressed_target()
@@ -99,7 +99,7 @@ namespace Sipi {
 
 
     //-------------------------------------------------------------------------
-    // Write the data to the HTTP connection of mongoose
+    // Write the data to the HTTP server connection
     //........................................................................
     bool J2kHttpStream::write( const kdu_byte * buf, int num_bytes)
     {
@@ -170,18 +170,18 @@ namespace Sipi {
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
             char sig2[] = {'\x00', '\x00', '\x00', '\x0C', '\x6A', '\x50', '\x20', '\x20', '\x0D', '\x0A', '\x87', '\x0A'};
-            int n = read(inf, testbuf, 48);
+            auto n = read(inf, testbuf, 48);
             if ((n >= 47) && (memcmp(sig0, testbuf + 45, 2) == 0)) retval = 1;
             else if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
             else if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
         }
         close(inf);
-        return (retval == 1) ? true : false;
+        return retval == 1;
     }
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
+    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
@@ -219,40 +219,40 @@ namespace Sipi {
                         kdu_byte buf[16];
                         box.read(buf, 16);
                         if (memcmp(buf, xmp_uuid, 16) == 0) {
-                            unsigned int len = box.get_remaining_bytes();
-                            char *buf = new char[len];
-                            box.read((kdu_byte *) buf, len);
+                            auto xmp_len = box.get_remaining_bytes();
+                            char *xmp_buf = new char[xmp_len];
+                            box.read((kdu_byte *) xmp_buf, xmp_len);
                             try {
-                                img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
+                                img->xmp = std::make_shared<SipiXmp>(xmp_buf, xmp_len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] buf;
+                            delete [] xmp_buf;
                         }
                         else if (memcmp(buf, iptc_uuid, 16) == 0) {
-                            unsigned int len = box.get_remaining_bytes();
-                            unsigned char *buf = new unsigned char[len];
-                            box.read((kdu_byte *) buf, len);
+                            auto iptc_len = box.get_remaining_bytes();
+                            unsigned char *iptc_buf = new unsigned char[iptc_len];
+                            box.read(iptc_buf, iptc_len);
                             try {
-                                img->iptc = new SipiIptc(buf, len);
+                                img->iptc = std::make_shared<SipiIptc>(iptc_buf, iptc_len);
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] buf;
+                            delete [] iptc_buf;
                         }
                         else if (memcmp(buf, exif_uuid, 16) == 0) {
-                            unsigned int len = box.get_remaining_bytes();
-                            unsigned char *buf = new unsigned char[len];
-                            box.read((kdu_byte *) buf, len);
+                            auto exif_len = box.get_remaining_bytes();
+                            unsigned char *exif_buf = new unsigned char[exif_len];
+                            box.read(exif_buf, exif_len);
                             try {
-                                img->exif = new SipiExif(buf, len);
+                                img->exif = std::make_shared<SipiExif>(exif_buf, exif_len);
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] buf;
+                            delete [] exif_buf;
                         }
                     }
                     box.close();
@@ -359,17 +359,17 @@ namespace Sipi {
                 switch (space) {
                     case kdu_supp::JP2_sRGB_SPACE: {
                         img->photo = RGB;
-                        img->icc = new SipiIcc(icc_sRGB);
+                        img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
                     case kdu_supp::JP2_CMYK_SPACE: {
                         img->photo = SEPARATED;
-                        img->icc = new SipiIcc(icc_CYMK_standard);
+                        img->icc = std::make_shared<SipiIcc>(icc_CYMK_standard);
                         break;
                     }
                     case kdu_supp::JP2_YCbCr1_SPACE: {
                         img->photo = YCBCR;
-                        img->icc = new SipiIcc(icc_sRGB);
+                        img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
                     case kdu_supp::JP2_YCbCr2_SPACE:
@@ -377,21 +377,21 @@ namespace Sipi {
                         float whitepoint[] = {0.3127, 0.3290};
                         float primaries[] = {0.630,0.340, 0.310,0.595, 0.155,0.070};
                         img->photo = YCBCR;
-                        img->icc = new SipiIcc(whitepoint, primaries);
+                        img->icc = std::make_shared<SipiIcc>(whitepoint, primaries);
                         break;
                     }
                     case kdu_supp::JP2_iccRGB_SPACE: {
                         img->photo = RGB;
                         int icc_len;
-                        const unsigned char *icc_buf = (const unsigned char *) colinfo.get_icc_profile(&icc_len);
-                        img->icc = new SipiIcc(icc_buf, icc_len);
+                        const unsigned char *icc_buf = colinfo.get_icc_profile(&icc_len);
+                        img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                         break;
                     }
                     case kdu_supp::JP2_iccANY_SPACE: {
                         img->photo = RGB;
                         int icc_len;
-                        const unsigned char *icc_buf = (const unsigned char *) colinfo.get_icc_profile(&icc_len);
-                        img->icc = new SipiIcc(icc_buf, icc_len);
+                        const unsigned char *icc_buf = colinfo.get_icc_profile(&icc_len);
+                        img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                         break;
                     }
                     default: {
@@ -704,8 +704,6 @@ namespace Sipi {
 
             //jpx_out.write_headers();
             jp2_output_box *out_box = jpx_stream.open_stream();
-
-            //out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
 
             codestream.access_siz()->finalize_all();
 

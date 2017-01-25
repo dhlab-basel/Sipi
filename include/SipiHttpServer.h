@@ -72,7 +72,15 @@ namespace Sipi {
         ~SipiHttpServer();
         void run();
 
-        std::pair<std::string,std::string> get_canonical_url(int img_w, int img_h, const std::string &host, const std::string &prefix, const std::string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format);
+        std::pair<std::string,std::string> get_canonical_url(int img_w,
+                                                             int img_h,
+                                                             const std::string &host,
+                                                             const std::string &prefix,
+                                                             const std::string &identifier,
+                                                             std::shared_ptr<SipiRegion> region,
+                                                             std::shared_ptr<SipiSize> size,
+                                                             SipiRotation &rotation,
+                                                             SipiQualityFormat &quality_format);
 
 
         inline pid_t pid(void) { return _pid; }

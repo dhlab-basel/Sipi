@@ -475,9 +475,9 @@ namespace shttps {
                     if (content_type_opts[0] == "application/x-www-form-urlencoded") {
                         char *bodybuf = nullptr;
                         if (_chunked_transfer_in) {
-                            char *tmp;
+                            char *tmp; // TODO: Why don't we use bodybuf here?
                             ChunkReader ckrd(ins);
-                            content_length = ckrd.readAll(&tmp);
+                            content_length = ckrd.readAll(&tmp); // TODO: No memory has been allocated for tmp, is that OK?
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }

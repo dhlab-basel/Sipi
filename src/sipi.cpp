@@ -76,7 +76,7 @@
  *     sipi [options] <infile> <outfile>
  *
  */
-Sipi::SipiHttpServer *serverptr = nullptr;
+
 Sipi::SipiConf sipiConf;
 enum FileType {image, video, audio, text, binary};
 
@@ -508,7 +508,6 @@ int main (int argc, char *argv[]) {
                 server.addRoute(shttps::Connection::POST, docroute, shttps::FileHandler, &filehandler_info);
             }
 
-            serverptr = &server;
             server.run();
 
         }
@@ -543,7 +542,7 @@ int main (int argc, char *argv[]) {
             std::cerr << options[IMGROOT].desc->help << std::endl;
             return EXIT_FAILURE;
         }
-        serverptr = &server;
+
         server.run();
 
     }
@@ -610,7 +609,8 @@ int main (int argc, char *argv[]) {
         //
         // getting information about a region of interest
         //
-        Sipi::SipiRegion *region = nullptr;
+        std::shared_ptr<Sipi::SipiRegion> region;
+
         if (options[REGION]) {
             std::vector<int> regV;
             try {
@@ -634,13 +634,14 @@ int main (int argc, char *argv[]) {
                 std::cerr << options[REGION].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
-            region = new Sipi::SipiRegion(regV.at(0),
-                                          regV.at(1),
-                                          regV.at(2),
-                                          regV.at(3));
+            region = std::make_shared<Sipi::SipiRegion>(regV.at(0),
+                                                        regV.at(1),
+                                                        regV.at(2),
+                                                        regV.at(3));
         }
 
-        Sipi::SipiSize *size = nullptr;
+        std::shared_ptr<Sipi::SipiSize> size;
+
         //
         // get the reduce parameter
         // "reduce" is a special feature of the JPEG2000 format. It is possible (given the JPEG2000 format
@@ -657,7 +658,7 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
         if (reduce > 0) {
-            size = new Sipi::SipiSize(reduce);
+            size = std::make_shared<Sipi::SipiSize>(reduce);
         }
         else if (options[SIZE]) {
             try {
@@ -671,10 +672,10 @@ int main (int argc, char *argv[]) {
                     }
                 }
                 if (sizV.size() == 2) {
-                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(1));
+                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(1));
                 }
                 else {
-                    size = new Sipi::SipiSize(sizV.at(0), sizV.at(0), true);
+                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(0), true);
                 }
             }
             catch(std::exception& e) {
@@ -685,7 +686,7 @@ int main (int argc, char *argv[]) {
         }
         else if (options[SCALE]) {
             try {
-                size = new Sipi::SipiSize(std::stoi(options[SCALE].arg));
+                size = std::make_shared<Sipi::SipiSize>(std::stoi(options[SCALE].arg));
             }
             catch(std::exception& e) {
                 std::cout << "##" << __LINE__ << std::endl;
@@ -705,8 +706,6 @@ int main (int argc, char *argv[]) {
                 img.removeChan(img.getNc() - 1);
             }
         }
-        delete region;
-        delete size;
 
         //
         // if we want to remove all metadata from the file...

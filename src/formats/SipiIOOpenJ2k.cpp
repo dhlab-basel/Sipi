@@ -70,7 +70,7 @@ namespace Sipi {
 
 
 
-    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size)
+    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size)
     {
         auto logger = Logger::getLogger(shttps::loggername);
         FILE *reader;
