@@ -34,7 +34,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "Server.h"
+#include "shttps/Server.h"
+#include "iiifparser/SipiRegion.h"
+#include "iiifparser/SipiSize.h"
 #include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiQualityFormat.h"
 #include "SipiCache.h"
@@ -66,7 +68,7 @@ namespace Sipi {
         * \param port_p Portnumber on which the server should listen
         * \param root_p Path to the root of directory containing the images
         */
-        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string &logfile_p = "sipi.log");
+        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "sipi.log", const std::string &loglevel_p = "DEBUG");
         ~SipiHttpServer();
         void run();
 
@@ -75,11 +77,11 @@ namespace Sipi {
 
         inline pid_t pid(void) { return _pid; }
 
-        inline void imgroot(std::string imgroot_p) { _imgroot = imgroot_p; }
+        inline void imgroot(const std::string &imgroot_p) { _imgroot = imgroot_p; }
         inline std::string imgroot(void) { return _imgroot; }
 
         inline std::string salsah_prefix(void) {return _salsah_prefix; }
-        inline void salsah_prefix(std::string salsah_prefix) { _salsah_prefix = salsah_prefix; }
+        inline void salsah_prefix(const std::string &salsah_prefix) { _salsah_prefix = salsah_prefix; }
 
         inline bool prefix_as_path(void) { return _prefix_as_path; }
         inline void prefix_as_path(bool prefix_as_path_p) { _prefix_as_path = prefix_as_path_p; }

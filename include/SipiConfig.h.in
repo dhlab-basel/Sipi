@@ -5,4 +5,7 @@
 #cmakedefine HAVE_MALLOC_H 1
 #cmakedefine HAVE_ST_ATIMESPEC
 
+#define SIPI_BUILD_DATE "${SIPI_RELEASE}"
+#define SIPI_BUILD_VERSION "Sipi Source Git-Version: ${SIPI_BUILD_VERSION}"
+
 #endif

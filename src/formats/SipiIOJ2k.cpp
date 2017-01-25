@@ -23,18 +23,21 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
 
-#include "Connection.h"
-#include "Global.h"
+#include <string.h>
+
+#include "shttps/Connection.h"
+#include "shttps/Global.h"
 
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
-#include "spdlog/spdlog.h"  // logging...
 
 
 // Kakadu core includes
@@ -52,7 +55,6 @@
 
 using namespace kdu_core;
 using namespace kdu_supp;
-using namespace std;
 
 static const char __file__[] = __FILE__;
 
@@ -117,58 +119,77 @@ namespace Sipi {
     //static kdu_core::kdu_byte geojp2_uuid[] = {0xB1, 0x4B, 0xF8, 0xBD, 0x08, 0x3D, 0x4B, 0x43, 0xA5, 0xAE, 0x8C, 0xD7, 0xD5, 0xA6, 0xCE, 0x03};
     //static kdu_core::kdu_byte world_uuid[] = {0x96, 0xa9, 0xf1, 0xf1, 0xdc, 0x98, 0x40, 0x2d, 0xa7, 0xae, 0xd6, 0x8e, 0x34, 0x45, 0x18, 0x09};
 
-    class kdu_stream_message : public kdu_core::kdu_message {
-        public: // Member classes
-        kdu_stream_message(std::ostream *stream) {
-            this->stream = stream;
-        }
 
-        void put_text(const char *string) {
-            (*stream) << string;
-        }
 
-        void flush(bool end_of_message=false) {
-            stream->flush();
+    /*!
+    * Local class for handling kakadu warnings
+    */
+    class KduSipiWarning : public kdu_core::kdu_message {
+    private:
+        std::string msg;
+    public:
+        KduSipiWarning() : kdu_message() { msg = "KAKADU-WARNING: "; }
+        KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
+        void put_text( const char * str) { msg += str; }
+        void flush(bool end_of_message = false) {
+            if (end_of_message) {
+                syslog(LOG_WARNING, "%s", msg.c_str());
+            }
         }
-        private: // Data
-        std::ostream *stream;
     };
+    //=============================================================================
 
-    static kdu_stream_message cout_message(&std::cout);
-    static kdu_stream_message cerr_message(&std::cerr);
-    static kdu_core::kdu_message_formatter pretty_cout(&cout_message);
-    static kdu_core::kdu_message_formatter pretty_cerr(&cerr_message);
+    /*!
+    * Local class for handling kakadu errors. It overrides the "exit()" call and
+    * throws a kdu_exception...
+    */
+    class KduSipiError : public kdu_core::kdu_message {
+    private:
+        std::string msg;
+    public:
+        KduSipiError() : kdu_message() { msg = "KAKADU-ERROR: "; }
+        KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
+        void put_text( const char * str) { msg += str; }
+        void flush(bool end_of_message = false) {
+            if (end_of_message) {
+                syslog(LOG_ERR, "%s", msg.c_str());
+                throw KDU_ERROR_EXCEPTION;
+            }
+        }
+    };
+    //=============================================================================
+
+    static KduSipiWarning kdu_sipi_warn("Kakadu-library: ");
+    static KduSipiError kdu_sipi_error("Kakadu-library: ");
 
     static bool is_jpx(const char *fname) {
-        FILE *inf;
+        int inf;
         int retval = 0;
-        if ((inf = fopen(fname, "r")) != NULL) {
+        if ((inf = open(fname, O_RDONLY)) !=-1) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
             char sig2[] = {'\x00', '\x00', '\x00', '\x0C', '\x6A', '\x50', '\x20', '\x20', '\x0D', '\x0A', '\x87', '\x0A'};
-            int n = fread(testbuf, 1, 48, inf);
+            int n = read(inf, testbuf, 48);
             if ((n >= 47) && (memcmp(sig0, testbuf + 45, 2) == 0)) retval = 1;
-            if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
-            if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
+            else if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
+            else if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
         }
-        fclose(inf);
+        close(inf);
         return (retval == 1) ? true : false;
     }
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
-        auto logger = spdlog::get(shttps::loggername);
-
+    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
         if ((num_threads = kdu_get_num_processors()) < 2) num_threads = 0;
 
         // Custom messaging services
-        kdu_customize_warnings(&pretty_cout);
-        kdu_customize_errors(&pretty_cerr);
+        kdu_customize_warnings(&kdu_sipi_warn);
+        kdu_customize_errors(&kdu_sipi_error);
 
         kdu_core::kdu_compressed_source *input = NULL;
         kdu_supp::kdu_simple_file_source file_in;
@@ -202,10 +223,10 @@ namespace Sipi {
                             char *buf = new char[len];
                             box.read((kdu_byte *) buf, len);
                             try {
-                                img->xmp = new SipiXmp(buf, len);
+                                img->xmp = new SipiXmp(buf, len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -217,7 +238,7 @@ namespace Sipi {
                                 img->iptc = new SipiIptc(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -229,7 +250,7 @@ namespace Sipi {
                                 img->exif = new SipiExif(buf, len);
                             }
                             catch(SipiError &err) {
-                                logger != NULL ? logger << err : cerr << err;
+                                syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                             delete [] buf;
                         }
@@ -248,6 +269,20 @@ namespace Sipi {
         codestream.create(input);
         //codestream.set_fussy(); // Set the parsing error tolerance.
         codestream.set_fast(); // No errors expected in input
+
+        //
+        // get SipiEssentials (if present) as codestream comment
+        //
+        kdu_codestream_comment comment = codestream.get_comment();
+        while (comment.exists()) {
+            const char *cstr = comment.get_text();
+            if (strncmp(cstr, "SIPI:", 5) == 0) {
+                SipiEssentials se(cstr + 5);
+                img->essential_metadata(se);
+                break;
+            }
+            comment = codestream.get_comment(comment);
+        }
 
         //
         // get the size of the full image (without reduce!)
@@ -314,6 +349,11 @@ namespace Sipi {
         jpx_layer = jpx_in.access_layer(0);
         if (jpx_layer.exists()) {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
+            kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
+            int numcol = chaninfo.get_num_colours(); // I assume these are the color channels (1, 3 or 4 in case of CMYK)
+            for (int i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
+                img->es.push_back(ASSOCALPHA);
+            }
             if (colinfo.exists()) {
                 int space = colinfo.get_space();
                 switch (space) {
@@ -355,7 +395,7 @@ namespace Sipi {
                         break;
                     }
                     default: {
-                        throw SipiError(__file__, __LINE__, "Unsupported ICC profile: " + to_string(space));
+                        throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
             }
@@ -390,7 +430,7 @@ namespace Sipi {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
-                throw SipiError(__file__, __LINE__, "Unsupported number of bits/sample!");
+                throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
         }
         decompressor.finish();
@@ -409,6 +449,9 @@ namespace Sipi {
 
     bool SipiIOJ2k::getDim(std::string filepath, int &width, int &height) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
+
+        kdu_customize_warnings(&kdu_sipi_warn);
+        kdu_customize_errors(&kdu_sipi_error);
 
         kdu_supp::jp2_family_src jp2_ultimate_src;
         kdu_supp::jpx_source jpx_in;
@@ -480,247 +523,253 @@ namespace Sipi {
     //=============================================================================
 
 
-    void SipiIOJ2k::write(SipiImage *img, string filepath, int quality) {
-        kdu_customize_warnings(&pretty_cout);
-        kdu_customize_errors(&pretty_cerr);
+    void SipiIOJ2k::write(SipiImage *img, std::string filepath, int quality) {
+        kdu_customize_warnings(&kdu_sipi_warn);
+        kdu_customize_errors(&kdu_sipi_error);
+
         int num_threads;
 
         if ((num_threads = kdu_get_num_processors()) < 2) num_threads = 0;
 
-        // Construct code-stream object
-        siz_params siz;
-        siz.set(Scomponents, 0, 0, img->nc);
-        siz.set(Sdims, 0, 0, img->ny);  // Height of first image component
-        siz.set(Sdims, 0, 1, img->nx);   // Width of first image component
-        siz.set(Sprecision, 0, 0, img->bps);  // Bits per sample (usually 8 or 16)
-        siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
-        kdu_params *siz_ref = &siz;
-        siz_ref->finalize();
+        try {
+            // Construct code-stream object
+            siz_params siz;
+            siz.set(Scomponents, 0, 0, img->nc);
+            siz.set(Sdims, 0, 0, img->ny);  // Height of first image component
+            siz.set(Sdims, 0, 1, img->nx);   // Width of first image component
+            siz.set(Sprecision, 0, 0, img->bps);  // Bits per sample (usually 8 or 16)
+            siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
+            kdu_params *siz_ref = &siz;
+            siz_ref->finalize();
 
-    	kdu_codestream codestream;
+        	kdu_codestream codestream;
 
-        kdu_compressed_target *output = NULL;
-        jp2_family_tgt jp2_ultimate_tgt;
-        jpx_target jpx_out;
-        jpx_codestream_target jpx_stream;
-        jpx_layer_target jpx_layer;
-        jp2_dimensions jp2_family_dimensions;
-        jp2_palette jp2_family_palette;
-        jp2_resolution jp2_family_resolution;
-        jp2_channels jp2_family_channels;
-        jp2_colour jp2_family_colour;
+            kdu_compressed_target *output = NULL;
+            jp2_family_tgt jp2_ultimate_tgt;
+            jpx_target jpx_out;
+            jpx_codestream_target jpx_stream;
+            jpx_layer_target jpx_layer;
+            jp2_dimensions jp2_family_dimensions;
+            jp2_palette jp2_family_palette;
+            jp2_resolution jp2_family_resolution;
+            jp2_channels jp2_family_channels;
+            jp2_colour jp2_family_colour;
 
-        J2kHttpStream *http = NULL;
-        if (filepath == "HTTP") {
-            shttps::Connection *conobj = img->connection();
-            http = new J2kHttpStream(conobj);
-            jp2_ultimate_tgt.open(http);
-        }
-        else {
-            jp2_ultimate_tgt.open(filepath.c_str());
-        }
-        jpx_out.open(&jp2_ultimate_tgt);
-        jpx_stream = jpx_out.add_codestream();
-        jpx_layer = jpx_out.add_layer();
+            J2kHttpStream *http = NULL;
+            if (filepath == "HTTP") {
+                shttps::Connection *conobj = img->connection();
+                http = new J2kHttpStream(conobj);
+                jp2_ultimate_tgt.open(http);
+            }
+            else {
+                jp2_ultimate_tgt.open(filepath.c_str());
+            }
+            jpx_out.open(&jp2_ultimate_tgt);
+            jpx_stream = jpx_out.add_codestream();
+            jpx_layer = jpx_out.add_layer();
 
-        jp2_family_dimensions = jpx_stream.access_dimensions();
-        jp2_family_palette = jpx_stream.access_palette();
-        jp2_family_resolution = jpx_layer.access_resolution();
-        jp2_family_channels = jpx_layer.access_channels();
-        jp2_family_colour = jpx_layer.add_colour();
+            jp2_family_dimensions = jpx_stream.access_dimensions();
+            jp2_family_palette = jpx_stream.access_palette();
+            jp2_family_resolution = jpx_layer.access_resolution();
+            jp2_family_channels = jpx_layer.access_channels();
+            jp2_family_colour = jpx_layer.add_colour();
 
-        output = jpx_stream.access_stream();
+            output = jpx_stream.access_stream();
 
-        codestream.create(&siz, output);
+            codestream.create(&siz, output);
 
-        kdu_codestream_comment comment = codestream.add_comment();
-        comment.put_text("http://rosenthaler.org/sipi/0.9B/");
+            //
+            // Custom tag for SipiEssential metadata
+            //
+            SipiEssentials es = img->essential_metadata();
+            if (es.is_set()) {
+                std::string esstr = es;
+                std::string emdata = "SIPI:" + esstr;
+                kdu_codestream_comment comment = codestream.add_comment();
+                comment.put_text(emdata.c_str());
+            }
 
-        // Set up any specific coding parameters and finalize them.
 
-        codestream.access_siz()->parse_string("Creversible=yes");
-        codestream.access_siz()->parse_string("Clayers=8");
-        codestream.access_siz()->parse_string("Clevels=8");
-        codestream.access_siz()->parse_string("Corder=RPCL");
-        codestream.access_siz()->parse_string("Cprecincts={256,256}");
-        codestream.access_siz()->parse_string("Cblk={64,64}");
-        codestream.access_siz()->parse_string("Cuse_sop=yes");
-        //codestream.access_siz()->parse_string("Stiles={1024,1024}");
-        //codestream.access_siz()->parse_string("ORGgen_plt=yes");
-        //codestream.access_siz()->parse_string("ORGtparts=R");
-        /*
-        codestream.access_siz()->parse_string("Clayers=8");
-        codestream.access_siz()->parse_string("Creversible=yes");
-*/
-        codestream.access_siz()->finalize_all(); // Set up coding defaults
-        //codestream.access_siz()->finalize(); // Set up coding defaults
+            // Set up any specific coding parameters and finalize them.
 
-        jp2_family_dimensions.init(&siz); // initalize dimension box
+            codestream.access_siz()->parse_string("Creversible=yes");
+            codestream.access_siz()->parse_string("Clayers=8");
+            codestream.access_siz()->parse_string("Clevels=8");
+            codestream.access_siz()->parse_string("Corder=RPCL");
+            codestream.access_siz()->parse_string("Cprecincts={256,256}");
+            codestream.access_siz()->parse_string("Cblk={64,64}");
+            codestream.access_siz()->parse_string("Cuse_sop=yes");
+            //codestream.access_siz()->parse_string("Stiles={1024,1024}");
+            //codestream.access_siz()->parse_string("ORGgen_plt=yes");
+            //codestream.access_siz()->parse_string("ORGtparts=R");
+            codestream.access_siz()->finalize_all(); // Set up coding defaults
 
-        if (img->icc != NULL) {
-            PredefinedProfiles icc_type = img->icc->getProfileType();
-            switch (icc_type) {
-                case icc_undefined: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
-                    break;
+            jp2_family_dimensions.init(&siz); // initalize dimension box
+
+            if (img->icc != NULL) {
+                PredefinedProfiles icc_type = img->icc->getProfileType();
+                switch (icc_type) {
+                    case icc_undefined: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                        break;
+                    }
+                    case icc_unknown: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                        break;
+                    }
+                    case icc_sRGB: {
+                        jp2_family_colour.init(JP2_sRGB_SPACE);
+                        break;
+                    }
+                    case icc_AdobeRGB: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                        break;
+                    }
+                    case icc_RGB: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                        break;
+                    }
+                    case icc_CYMK_standard: {
+                        jp2_family_colour.init(JP2_CMYK_SPACE);
+                        break;
+                    }
+                    case icc_GRAY_D50: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                        break;
+                    }
+                    default: {
+                        unsigned int icc_len;
+                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        jp2_family_colour.init(icc_bytes);
+                    }
                 }
-                case icc_unknown: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
-                    break;
+
+            }
+            else {
+                switch (img->nc - img->es.size()) {
+                    case 1: {
+                        jp2_family_colour.init(JP2_sLUM_SPACE);
+                        break;
+                    }
+                    case 3: {
+                        jp2_family_colour.init(JP2_sRGB_SPACE);
+                        break;
+                    }
+                    case 4: {
+                        jp2_family_colour.init(JP2_CMYK_SPACE);
+                        break;
+                    }
                 }
-                case icc_sRGB: {
-                    jp2_family_colour.init(JP2_sRGB_SPACE);
-                    break;
-                }
-                case icc_AdobeRGB: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
-                    break;
-                }
-                case icc_RGB: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
-                    break;
-                }
-                case icc_CYMK_standard: {
-                    jp2_family_colour.init(JP2_CMYK_SPACE);
-                    break;
-                }
-                case icc_GRAY_D50: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
-                }
-                default: {
-                    unsigned int icc_len;
-                    kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                    jp2_family_colour.init(icc_bytes);
+            }
+            jp2_family_channels.init(img->nc - img->es.size());
+            for (int c = 0; c < img->nc - img->es.size(); c++) jp2_family_channels.set_colour_mapping(c, c);
+            for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
+            jpx_out.write_headers();
+
+            if (img->iptc != NULL) {
+                unsigned int iptc_len = 0;
+                kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
+                write_iptc_box(&jp2_ultimate_tgt, iptc_buf, iptc_len);
+            }
+
+            //
+            // write EXIF here
+            //
+            if (img->exif != NULL) {
+                unsigned int exif_len = 0;
+                kdu_byte *exif_buf = img->exif->exifBytes(exif_len);
+                write_exif_box(&jp2_ultimate_tgt, exif_buf, exif_len);
+            }
+
+            //
+            // write XMP data here
+            //
+            if (img->xmp != NULL) {
+                unsigned int len = 0;
+                const char *xmp_buf = img->xmp->xmpBytes(len);
+                if (len > 0) {
+                    write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
                 }
             }
 
-        }
-        else {
-            switch (img->nc) {
-                case 1: {
-                    jp2_family_colour.init(JP2_sLUM_SPACE);
-                    break;
+            //jpx_out.write_headers();
+            jp2_output_box *out_box = jpx_stream.open_stream();
+
+            //out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
+
+            codestream.access_siz()->finalize_all();
+
+            kdu_thread_env env, *env_ref = NULL;
+            if (num_threads > 0) {
+                env.create();
+                for (int nt=1; nt < num_threads; nt++) {
+                    if (!env.add_thread()) num_threads = nt; // Unable to create all the threads requested
                 }
-                case 3: {
-                    jp2_family_colour.init(JP2_sRGB_SPACE);
-                    break;
-                }
-                case 4: {
-                    jp2_family_colour.init(JP2_CMYK_SPACE);
-                    break;
-
-
-
-                }
+                env_ref = &env;
             }
-        }
-
-        jp2_family_channels.init(img->nc);
-        for (int c = 0; c < img->nc; c++) jp2_family_channels.set_colour_mapping(c,c);
-
-        jpx_out.write_headers();
-
-        if (img->iptc != NULL) {
-            unsigned int iptc_len = 0;
-            kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
-            write_iptc_box(&jp2_ultimate_tgt, iptc_buf, iptc_len);
-        }
-
-        //
-        // write EXIF here
-        //
-        if (img->exif != NULL) {
-            unsigned int exif_len = 0;
-            kdu_byte *exif_buf = img->exif->exifBytes(exif_len);
-            write_exif_box(&jp2_ultimate_tgt, exif_buf, exif_len);
-        }
-
-        //
-        // write XMP data here
-        //
-        if (img->xmp != NULL) {
-            unsigned int len = 0;
-            const char *xmp_buf = img->xmp->xmpBytes(len);
-            if (len > 0) {
-                write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
-            }
-        }
-
-        //jpx_out.write_headers();
-        jp2_output_box *out_box = jpx_stream.open_stream();
-
-        out_box->write_header_last(); // don't know if we have to use this. For the mongoose connection it is not allowed.
-
-        codestream.access_siz()->finalize_all();
-
-        kdu_thread_env env, *env_ref = NULL;
-        if (num_threads > 0) {
-            env.create();
-            for (int nt=1; nt < num_threads; nt++) {
-                if (!env.add_thread()) num_threads = nt; // Unable to create all the threads requested
-            }
-            env_ref = &env;
-        }
 
 
-        // Now compress the image in one hit, using `kdu_stripe_compressor'
-        kdu_stripe_compressor compressor;
-        //compressor.start(codestream);
-        compressor.start(codestream, 0, NULL, NULL, 0, false, false, true, 0.0, 0, false, env_ref);
+            // Now compress the image in one hit, using `kdu_stripe_compressor'
+            kdu_stripe_compressor compressor;
+            //compressor.start(codestream);
+            compressor.start(codestream, 0, NULL, NULL, 0, false, false, true, 0.0, 0, false, env_ref);
 
-        int *stripe_heights = new int[img->nc];
-        for (int i = 0; i < img->nc; i++) {
-            stripe_heights[i] = img->ny;
-        }
-
-        int *precisions;
-        bool *is_signed;
-
-        if (img->bps == 16) {
-            kdu_int16 *buf = (kdu_int16 *) img->pixels;
-            precisions = new int[img->nc];
-            is_signed = new bool[img->nc];
+            int *stripe_heights = new int[img->nc];
             for (int i = 0; i < img->nc; i++) {
-                precisions[i] = img->bps;
-                is_signed[i] = false;
+                stripe_heights[i] = img->ny;
             }
-            compressor.push_stripe(buf, stripe_heights, NULL, NULL, NULL, precisions, is_signed);
-        }
-        else if (img->bps == 8){
-            kdu_byte *buf = (kdu_byte *) img->pixels;
-            compressor.push_stripe(buf, stripe_heights);
-        }
-    	else {
-            throw SipiError(__file__, __LINE__, "Unsupported number of bits/sample!");
-        }
-        compressor.finish();
 
-        // Finally, cleanup
-        codestream.destroy(); // All done: simple as that.
-        output->close(); // Not really necessary here.
-        jpx_out.close();
-        if (jp2_ultimate_tgt.exists()) {
-            jp2_ultimate_tgt.close();
+            int *precisions;
+            bool *is_signed;
+
+            if (img->bps == 16) {
+                kdu_int16 *buf = (kdu_int16 *) img->pixels;
+                precisions = new int[img->nc];
+                is_signed = new bool[img->nc];
+                for (int i = 0; i < img->nc; i++) {
+                    precisions[i] = img->bps;
+                    is_signed[i] = false;
+                }
+                compressor.push_stripe(buf, stripe_heights, NULL, NULL, NULL, precisions, is_signed);
+            }
+            else if (img->bps == 8){
+                kdu_byte *buf = (kdu_byte *) img->pixels;
+                compressor.push_stripe(buf, stripe_heights);
+            }
+        	else {
+                throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
+            }
+            compressor.finish();
+
+            // Finally, cleanup
+            codestream.destroy(); // All done: simple as that.
+            output->close(); // Not really necessary here.
+            jpx_out.close();
+            if (jp2_ultimate_tgt.exists()) {
+                jp2_ultimate_tgt.close();
+            }
+
+            delete [] stripe_heights;
+            if (img->bps == 16) {
+                delete [] precisions;
+                delete [] is_signed;
+            }
+
+            delete http;
         }
-
-        delete [] stripe_heights;
-        if (img->bps == 16) {
-            delete [] precisions;
-            delete [] is_signed;
+        catch (kdu_exception e) {
+            throw SipiImageError(__file__, __LINE__, "Problem writing a JPEG2000 image!");
         }
-
-        delete http;
-
         return;
     }
 } // namespace Sipi

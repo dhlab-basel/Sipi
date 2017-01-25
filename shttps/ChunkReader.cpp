@@ -26,7 +26,6 @@
 #include <locale>
 #include <new>
 #include <regex>
-#include <map>
 #include <iomanip>
 #include <sstream>
 #include <iostream>

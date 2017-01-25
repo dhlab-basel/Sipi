@@ -25,6 +25,12 @@
 --
 sipi = {
     --
+    -- The user under which the Sipi server should run. Use this only if Sipi should setuid to a particular user after
+    -- starting. Otherwise, leave this commented out. If this setting is used, Sipi must be started as root.
+    --
+    -- userid = '_www',
+
+    --
     -- port number the server is listening to
     --
     port = 1024,
@@ -93,6 +99,12 @@ sipi = {
     --
     knora_port = '3333'
 
+}
+
+
+fileserver = {
+    docroot = './server',
+    docroute = '/server'
 }
 
 --

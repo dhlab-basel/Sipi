@@ -21,13 +21,20 @@
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SipiConf.h"
+#include <thread>
 
 namespace Sipi {
     SipiConf::SipiConf() { }
 
     SipiConf::SipiConf(shttps::LuaServer &luacfg) {
+            userid_str = luacfg.configString("sipi", "userid", "");
             img_root = luacfg.configString("sipi", "imgroot", ".");
             port = luacfg.configInteger("sipi", "port", 3333);
+#ifdef SHTTPS_ENABLE_SSL
+            ssl_port = luacfg.configInteger("sipi", "ssl_port", -1);
+            ssl_certificate = luacfg.configString("sipi", "ssl_certificate", "");
+            ssl_key = luacfg.configString("sipi", "ssl_key", "");
+#endif
             init_script = luacfg.configString("sipi", "initscript", ".");
             cache_size = luacfg.configString("sipi", "cachesize", "");
             cache_dir = luacfg.configString("sipi", "cachedir", "");
@@ -36,15 +43,19 @@ namespace Sipi {
             keep_alive = luacfg.configInteger("sipi", "keep_alive", 20);
             thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
             cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);
-            n_threads = luacfg.configInteger("sipi", "nthreads", std::thread::hardware_concurrency());
+            n_threads = luacfg.configInteger("sipi", "nthreads", 2*std::thread::hardware_concurrency());
             tmp_dir = luacfg.configString("sipi", "tmpdir", "/tmp");
             scriptdir = luacfg.configString("sipi", "scriptdir", "./scripts");
-            routes = luacfg.configRoute("routes");
+            jwt_secret = luacfg.configString("sipi", "jwt_secret", "");
             knora_path = luacfg.configString("sipi", "knora_path", "localhost");
             knora_port = luacfg.configString("sipi", "knora_port", "3333");
+            loglevel = luacfg.configString("sipi", "loglevel", "WARN");
+            logfile = luacfg.configString("sipi", "logfile", "sipi.log");
+            adminuser = luacfg.configString("admin", "user", "");
+            password = luacfg.configString("admin", "password", "");
+            routes = luacfg.configRoute("routes");
             docroot = luacfg.configString("fileserver", "docroot", "");
             docroute = luacfg.configString("fileserver", "docroute", "");
-
     }
 
 }

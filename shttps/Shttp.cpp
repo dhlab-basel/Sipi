@@ -38,8 +38,9 @@ static sig_t old_broken_pipe_handler;
 
 static void sighandler(int sig) {
     if (serverptr != NULL) {
-        auto logger = spdlog::get(shttps::loggername);
-        logger->info("Got SIGINT, stopping server");
+        int old_ll = setlogmask(LOG_MASK(LOG_INFO));
+        syslog(LOG_INFO, "Got SIGINT, stopping server");
+        setlogmask(old_ll);
         serverptr->stop();
     }
     else {
@@ -47,11 +48,6 @@ static void sighandler(int sig) {
     }
 }
 
-static void broken_pipe_handler(int sig) {
-    auto logger = spdlog::get(shttps::loggername);
-    logger->info("Got BROKEN PIPE signal!");
-}
-//=========================================================================
 
 /*LUA TEST****************************************************************************/
 static int lua_gaga (lua_State *L)
@@ -127,7 +123,14 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
 
 
 int main(int argc, char *argv[]) {
+    std::string userid;
     int port = 4711;
+    int ssl_port = -1;
+#ifdef SHTTPS_ENABLE_SSL
+    std::string ssl_certificate;
+    std::string ssl_key;
+    std::string jwt_secret;
+#endif
     int nthreads = 4;
     std::string configfile;
     std::string docroot;
@@ -177,7 +180,14 @@ int main(int argc, char *argv[]) {
     if (!configfile.empty()) {
         try {
             shttps::LuaServer luacfg = shttps::LuaServer(configfile);
+            userid = luacfg.configString("shttps", "userid", "");
             port = luacfg.configInteger("shttps", "port", 4711);
+#ifdef SHTTPS_ENABLE_SSL
+            ssl_port = luacfg.configInteger("shttps", "ssl_port", -1);
+            ssl_certificate = luacfg.configString("shttps", "ssl_certificate", "");
+            ssl_key = luacfg.configString("shttps", "ssl_key", "");
+            jwt_secret = luacfg.configString("shttps", "jwt_secret", "0123456789ABCDEF0123456789ABCDEF");
+#endif
             docroot = luacfg.configString("shttps", "docroot", ".");
             tmpdir = luacfg.configString("shttps", "tmpdir", "/tmp");
             scriptdir = luacfg.configString("shttps", "scriptdir", "./scripts");
@@ -192,11 +202,18 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    shttps::Server server(port, nthreads); // instantiate the server
+    shttps::Server server(port, nthreads, userid); // instantiate the server
+#ifdef SHTTPS_ENABLE_SSL
+    server.ssl_port(ssl_port); // set the secure connection port (-1 means no ssl socket)
+    if (!ssl_certificate.empty()) server.ssl_certificate(ssl_certificate);
+    if (!ssl_key.empty()) server.ssl_key(ssl_key);
+    server.jwt_secret(jwt_secret);
+#endif
     server.tmpdir(tmpdir); // set the directory for storing temporaray files during upload
     server.scriptdir(scriptdir); // set the direcxtory where the Lua scripts are found for the "Lua"-routes
     server.luaRoutes(routes);
     server.keep_alive_timeout(keep_alive); // set the keep alive timeout
+    server.add_lua_globals_func(sqliteGlobals, &server);
     server.add_lua_globals_func(new_lua_func); // add new lua function "gaga"
 
     //
@@ -216,7 +233,7 @@ int main(int argc, char *argv[]) {
 
     serverptr = &server;
     old_sighandler = signal(SIGINT, sighandler);
-    old_broken_pipe_handler = signal(SIGPIPE, broken_pipe_handler);
+    old_broken_pipe_handler = signal(SIGPIPE, SIG_IGN);
 
     server.run();
     std::cerr << "SERVER HAS FINISHED ITS SERVICE" << std::endl;

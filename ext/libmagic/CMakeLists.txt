@@ -10,8 +10,8 @@ Externalproject_Add(
         project_magic
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://github.com/threatstack/libmagic/archive/master.zip
-        SOURCE_DIR ${COMMON_LIB}/libmagic-master
-        CONFIGURE_COMMAND ${COMMON_LIB}/libmagic-master/configure --prefix=${COMMON_LOCAL}  --enable-shared --enable-static
+        SOURCE_DIR ${COMMON_SRCS}/libmagic-master
+        CONFIGURE_COMMAND ${COMMON_SRCS}/libmagic-master/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
         INSTALL_COMMAND make install INSTALL_TOP=${COMMON_LOCAL}
         BUILD_IN_SOURCE 1
@@ -19,10 +19,10 @@ Externalproject_Add(
 ExternalProject_Get_Property(project_magic install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(magic SHARED IMPORTED GLOBAL)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
     add_library(magic STATIC IMPORTED GLOBAL)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 add_dependencies(magic project_magic)
 

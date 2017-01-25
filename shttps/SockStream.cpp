@@ -35,8 +35,12 @@ using namespace std;
 using namespace shttps;
 
 SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
-    : sock(sock_p), in_bufsize(in_bufsize_p), out_bufsize(out_bufsize_p), putback_size(putback_size_p)
+    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), sock(sock_p)
 {
+#ifdef SHTTPS_ENABLE_SSL
+    cSSL = NULL;
+#endif
+
     in_buf = new char[in_bufsize + putback_size];
     char *end = in_buf + in_bufsize + putback_size;
     setg (end, end, end);
@@ -44,6 +48,24 @@ SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putb
     out_buf = new char[out_bufsize];
     setp(out_buf, out_buf + out_bufsize);
 }
+
+#ifdef SHTTPS_ENABLE_SSL
+
+SockStream::SockStream(SSL *cSSL_p, int in_bufsize_p, int out_bufsize_p, int putback_size_p)
+    : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), cSSL(cSSL_p)
+{
+    sock = -1;
+    in_buf = new char[in_bufsize + putback_size];
+    char *end = in_buf + in_bufsize + putback_size;
+    setg (end, end, end);
+
+    out_buf = new char[out_bufsize];
+    setp(out_buf, out_buf + out_bufsize);
+
+}
+
+#endif
+
 
 SockStream::~SockStream()
 {
@@ -64,7 +86,22 @@ streambuf::int_type SockStream::underflow(void)
         start += putback_size;
     }
 
-    ssize_t n = read(sock, start, in_bufsize);
+    ssize_t n;
+#ifdef SHTTPS_ENABLE_SSL
+    if (cSSL == NULL) {
+        n = read(sock, start, in_bufsize);
+    }
+    else {
+        if (SSL_get_shutdown(cSSL) == 0) {
+            n = SSL_read(cSSL, start, in_bufsize);
+        }
+        else {
+            n = 0;
+        }
+    }
+#else
+    n = read(sock, start, in_bufsize);
+#endif
     if (n <= 0) {
         return traits_type::eof();
     }
@@ -82,7 +119,22 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
         size_t n = out_bufsize;
         size_t nn = 0;
         while (n > 0) {
-            ssize_t tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+            ssize_t tmp_n;
+#ifdef SHTTPS_ENABLE_SSL
+            if (cSSL == NULL) {
+                tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+            }
+            else {
+                if (SSL_get_shutdown(cSSL) == 0) {
+                    tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+                }
+                else {
+                    tmp_n = 0;
+                }
+            }
+#else
+            tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+#endif
             if (tmp_n <= 0) {
                 return traits_type::eof();
                 // we have a problem.... Possibly a broken pipe
@@ -107,8 +159,22 @@ int SockStream::sync(void)
     std::ptrdiff_t n = pptr() - out_buf;
     size_t nn = 0;
     while (n > 0) {
-        int flag = 1;
-        ssize_t tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+        ssize_t tmp_n;
+#ifdef SHTTPS_ENABLE_SSL
+        if (cSSL == NULL) {
+            tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+        }
+        else {
+            if (SSL_get_shutdown(cSSL) == 0) {
+                tmp_n = SSL_write(cSSL, out_buf + nn, n - nn);
+            }
+            else {
+                tmp_n = 0;
+            }
+        }
+#else
+        tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
+#endif
         if (tmp_n <= 0) {
             return -1;
         }

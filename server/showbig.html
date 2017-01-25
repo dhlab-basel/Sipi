@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Show Big</title>
+    <script src="openseadragon.min.js"></script>
+</head>
+<body>
+
+<div id="openseadragon1" style="width: 1000px; height: 600px;"></div>
+<script type="text/javascript">
+    var viewer = OpenSeadragon({
+        id: "openseadragon1",
+        prefixUrl: "/server/images/",
+        preserveViewport: true,
+        visibilityRatio:    1,
+        minZoomLevel:       1,
+        defaultZoomLevel:   1,
+        sequenceMode:       true,
+        tileSources:   [{
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage1.jp2",
+            "height": 5116,
+            "width": 15306,
+            "profile": ["http://iiif.io/api/image/2/level2.json"],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [1, 2, 4, 8, 16, 32],
+                "width": 1024
+            }]
+        }, {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage2.jp2",
+            "height": 2832,
+            "width": 4256,
+            "profile": ["http://iiif.io/api/image/2/level2.json"],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [1, 2, 4, 8, 16, 32],
+                "width": 1024
+            }]
+        }, {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage3.jp2",
+            "height": 4082,
+            "width": 6123,
+            "profile": ["http://iiif.io/api/image/2/level2.json"],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [1, 2, 4, 8, 16, 32],
+                "width": 1024
+            }]
+        }, {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage4.jp2",
+            "height": 5263,
+            "width": 18596,
+            "profile": ["http://iiif.io/api/image/2/level2.json"],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [1, 2, 4, 8, 16, 32],
+                "width": 1024
+            }]
+        },{
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://localhost:1024/images/bigimage5.jp2",
+            "height": 6329,
+            "width": 17220,
+            "profile": ["http://iiif.io/api/image/2/level2.json"],
+            "protocol": "http://iiif.io/api/image",
+            "tiles": [{
+                "scaleFactors": [1, 2, 4, 8, 16, 32],
+                "width": 1024
+            }]
+        }]
+    });
+</script>
+
+</body>
+</html>

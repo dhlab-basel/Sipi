@@ -23,8 +23,11 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <climits>
 #include "lcms2.h"
 
+#include "shttps/Global.h"
+#include "shttps/Hash.h"
 #include "SipiImage.h"
 #include "formats/SipiIOTiff.h"
 #include "formats/SipiIOJ2k.h"
@@ -33,14 +36,12 @@
 #include "formats/SipiIOPng.h"
 #include "shttps/GetMimetype.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 
 namespace Sipi {
 
-  std::map<std::string,SipiIO*> SipiImage::io = {
+  std::unordered_map<std::string,SipiIO*> SipiImage::io = {
     {"tif", new SipiIOTiff()},
     {"jpx", new SipiIOJ2k()},
     //{"jpx", new SipiIOOpenJ2k()},
@@ -48,7 +49,7 @@ namespace Sipi {
     {"png", new SipiIOPng()}
   };
 
-  std::map<std::string, std::string> SipiImage::mimetypes = {
+  std::unordered_map<std::string, std::string> SipiImage::mimetypes = {
     {"jpx", "image/jp2"},
     {"jp2", "image/jp2"},
     {"jpg", "image/jpeg"},
@@ -62,9 +63,7 @@ namespace Sipi {
         nx = 0;
         ny = 0;
         nc = 0;
-        ne = 0;
         bps = 0;
-        es = NULL;
         pixels = NULL;
         xmp = NULL;
         icc = NULL;
@@ -80,6 +79,7 @@ namespace Sipi {
         ny = img_p.ny;
         nc = img_p.nc;
         bps = img_p.bps;
+        es = img_p.es;
 
         size_t bufsiz;
         switch (bps) {
@@ -108,10 +108,48 @@ namespace Sipi {
     }
     //============================================================================
 
+    SipiImage::SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p)
+    : nx(nx_p), ny(ny_p), nc(nc_p), bps(bps_p), photo(photo_p) {
+        if (((photo == MINISWHITE) || (photo == MINISBLACK)) && !((nc == 1) || (nc == 2))) {
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels");
+        }
+        if ((photo == RGB) && !((nc == 3) || (nc == 4))) {
+            throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels");
+        }
+        if ((bps != 8) && (bps != 16)) {
+            throw SipiImageError(__file__, __LINE__, "Bits per samples not supported by Sipi");
+        }
+        size_t bufsiz;
+        switch (bps) {
+            case 8: {
+                bufsiz = nx*ny*nc*sizeof (unsigned char);
+                break;
+            }
+            case 16: {
+                bufsiz = nx*ny*nc*sizeof (unsigned short);
+                break;
+            }
+            default: {
+                bufsiz = 0;
+            }
+        }
+        if (bufsiz > 0) {
+            pixels = new byte[bufsiz];
+        }
+        else {
+            throw SipiImageError(__file__, __LINE__, "Image with no content");
+        }
+        xmp = NULL;
+        icc = NULL;
+        iptc = NULL;
+        exif = NULL;
+        skip_metadata = SKIP_NONE;
+        conobj = NULL;
+    }
+    //============================================================================
 
     SipiImage::~SipiImage() {
         delete [] pixels;
-        delete [] es;
         delete xmp;
         delete icc;
         delete iptc;
@@ -126,6 +164,7 @@ namespace Sipi {
             ny = img_p.ny;
             nc = img_p.nc;
             bps = img_p.bps;
+            es = img_p.es;
 
             size_t bufsiz;
             switch (bps) {
@@ -164,7 +203,7 @@ namespace Sipi {
     {
         try
         {
-            string actual_mimetype = shttps::GetMimetype::getMimetype(path).first;
+            std::string actual_mimetype = shttps::GetMimetype::getMimetype(path).first;
 
             if (actual_mimetype != given_mimetype) {
                 //std::cerr << actual_mimetype << " does not equal " << given_mimetype << std::endl;
@@ -188,9 +227,12 @@ namespace Sipi {
         }
         catch (std::out_of_range& e)
         {
-            // file extension was not found in map
-            //std::cerr << "unsupported file type " << filename << std::endl;
-            return false;
+            std::stringstream ss;
+            ss << "Unsupported file type: \"" << filename;
+            throw SipiImageError(__file__, __LINE__, ss.str());
+        }
+        catch (shttps::Error &err) {
+            throw SipiImageError(__file__, __LINE__, err.to_string());
         }
 
         return true;
@@ -198,23 +240,23 @@ namespace Sipi {
 
     void SipiImage::read(std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
         size_t pos = filepath.find_last_of('.');
-        string fext = filepath.substr(pos + 1);
-        string _fext;
+        std::string fext = filepath.substr(pos + 1);
+        std::string _fext;
 
         bool got_file = false;
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[string("tif")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("tif")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[string("jpg")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpg")]->read(this, filepath, region, size, force_bps_8);
         }
         else if (_fext == "png") {
-            got_file = io[string("png")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("png")]->read(this, filepath, region, size, force_bps_8);
         }
         else if ((_fext == "jp2") || (_fext == "jpx") || (_fext == "j2k")) {
-            got_file = io[string("jpx")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpx")]->read(this, filepath, region, size, force_bps_8);
         }
 
         if (!got_file) {
@@ -223,30 +265,76 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file " + filepath);
         }
     }
     //============================================================================
 
-    void SipiImage::getDim(string filepath, int &width, int &height) {
+    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype) {
+        read(filepath, region, size, false);
+        if (!emdata.is_set()) {
+            shttps::Hash internal_hash(htype);
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            std::string checksum = internal_hash.hash();
+            std::string origname = shttps::getFileName(filepath);
+            std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
+            essential_metadata(emdata);
+        }
+        else {
+            shttps::Hash internal_hash(emdata.hash_type());
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            std::string checksum = internal_hash.hash();
+            if (checksum != emdata.data_chksum()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    //============================================================================
+
+
+    bool SipiImage::readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype) {
+        read(filepath, region, size, false);
+        if (!emdata.is_set()) {
+            shttps::Hash internal_hash(htype);
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            std::string checksum = internal_hash.hash();
+            std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
+            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
+            essential_metadata(emdata);
+        }
+        else {
+            shttps::Hash internal_hash(emdata.hash_type());
+            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            std::string checksum = internal_hash.hash();
+            if (checksum != emdata.data_chksum()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    //============================================================================
+
+    void SipiImage::getDim(std::string filepath, int &width, int &height) {
         size_t pos = filepath.find_last_of('.');
-        string fext = filepath.substr(pos + 1);
-        string _fext;
+        std::string fext = filepath.substr(pos + 1);
+        std::string _fext;
 
         bool got_file = false;
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[string("tif")]->getDim(filepath, width, height);
+            got_file = io[std::string("tif")]->getDim(filepath, width, height);
         }
         else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[string("jpg")]->getDim(filepath, width, height);
+            got_file = io[std::string("jpg")]->getDim(filepath, width, height);
         }
         else if (_fext == "png") {
-            got_file = io[string("png")]->getDim(filepath, width, height);
+            got_file = io[std::string("png")]->getDim(filepath, width, height);
         }
         else if ((_fext == "jp2") || (_fext == "jpx")) {
-            got_file = io[string("jpx")]->getDim(filepath, width, height);
+            got_file = io[std::string("jpx")]->getDim(filepath, width, height);
         }
 
         if (!got_file) {
@@ -255,8 +343,15 @@ namespace Sipi {
             }
         }
         if (!got_file) {
-            throw SipiError(__file__, __LINE__, "Could not read file \"" + filepath + "\"!");
+            throw SipiImageError(__file__, __LINE__, "Could not read file " + filepath);
         }
+    }
+    //============================================================================
+
+
+    void SipiImage::getDim(int &width, int &height) {
+        width = getNx();
+        height = getNy();
     }
     //============================================================================
 
@@ -270,7 +365,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int bps) {
+    void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int new_bps) {
         cmsUInt32Number in_formatter, out_formatter;
         if (icc == NULL) {
             switch (nc) {
@@ -287,7 +382,7 @@ namespace Sipi {
                     break;
                 }
                 default: {
-                    throw SipiError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + to_string(nc) + "!");
+                    throw SipiImageError(__file__, __LINE__, "Cannot assign ICC profile to image with nc=" + std::to_string(nc));
                 }
             }
         }
@@ -295,23 +390,19 @@ namespace Sipi {
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
         byte *inbuf = (byte *) pixels;
-        byte *outbuf = new byte[nx*ny*nnc];
+        byte *outbuf = new byte[nx*ny*nnc*new_bps/8];
 
         cmsHTRANSFORM hTransform;
         in_formatter = icc->iccFormatter(this);
-        out_formatter = target_icc_p.iccFormatter(bps);
-        switch (bps) {
-            case 8: {
-                hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
-                break;
-            }
-            case 16: {
-                hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
-                break;
-            }
-            default: {
-                throw SipiError(__file__, __LINE__, "Unsuported bits/sample (" + to_string(bps) + ")!");
-            }
+        out_formatter = target_icc_p.iccFormatter(new_bps);
+
+        if (!((new_bps == 8) || (new_bps == 16))) {
+            throw SipiImageError(__file__, __LINE__, "Unsuported bits/sample (" + std::to_string(bps) + ")");
+        }
+
+        hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
+        if (hTransform == NULL) {
+            throw SipiImageError(__file__, __LINE__, "Couldn't create color transform");
         }
         cmsDoTransform(hTransform, inbuf, outbuf, nx*ny);
 
@@ -323,6 +414,7 @@ namespace Sipi {
         pixels = outbuf;
         delete [] inbuf;
         nc = nnc;
+        bps = new_bps;
 
         PredefinedProfiles targetPT = target_icc_p.getProfileType();
         switch (targetPT) {
@@ -348,11 +440,28 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-
     void SipiImage::removeChan(unsigned int chan) {
         if ((nc == 1) || (chan >= nc)) {
-            string msg = "Cannot remove component!  nc=" + to_string(nc) + " chan=" + to_string(chan);
-            throw SipiError(__file__, __LINE__, msg);
+            std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
+            throw SipiImageError(__file__, __LINE__, msg);
+        }
+        if (es.size() > 0) {
+            if (nc < 3) {
+                es.clear(); // no more alpha channel
+            }
+            else if (nc > 3) { // it's probably an alpha channel
+                if ((nc == 4) && (photo == SEPARATED)) {  // oh no – 4 channes, but CMYK
+                    std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
+                    throw SipiImageError(__file__, __LINE__, msg);
+                }
+                else {
+                    es.erase(es.begin() + (chan - ((photo ==  SEPARATED) ? 4 : 3)));
+                }
+            }
+            else {
+                std::string msg = "Cannot remove component: nc=" + std::to_string(nc) + " chan=" + std::to_string(chan);
+                throw SipiImageError(__file__, __LINE__, msg);
+            }
         }
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
@@ -386,10 +495,11 @@ namespace Sipi {
         }
         else {
             if (bps != 8) {
-                string msg = "Bits per sample is not supported for operation: " + to_string(bps);
-                throw SipiError(__file__, __LINE__, msg);
+                std::string msg = "Bits per sample is not supported for operation: " + std::to_string(bps);
+                throw SipiImageError(__file__, __LINE__, msg);
             }
         }
+        nc--;
     }
     //============================================================================
 
@@ -936,36 +1046,78 @@ namespace Sipi {
     //============================================================================
 
     bool SipiImage::to8bps(void) {
+        // little-endian architecture assumed
         //
         // we just use the shift-right operater (>> 8) to devide the values by 256 (2^8)!
         // This is the most efficient and fastest way
         //
         if (bps == 16) {
+            //icc = NULL;
+
             word *inbuf = (word *) pixels;
+            //byte *outbuf = new(std::nothrow) Sipi::byte[nc*nx*ny];
             byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
             if (outbuf == NULL) return false;
             for (unsigned int j = 0; j < ny; j++) {
                 for (unsigned int i = 0; i < nx; i++) {
                     for (unsigned int k = 0; k < nc; k++) {
                         // divide pixel values by 256 using ">> 8"
-                        outbuf[nc*(j*nx + i) + k] = (byte) ((inbuf[nc*(j*nx + i) + k] >> 8) & 0x00ff);
+                        outbuf[nc*(j*nx + i) + k] = (inbuf[nc*(j*nx + i) + k] >> 8);
                     }
                 }
             }
+
+            delete [] pixels;
             pixels = outbuf;
-            delete [] (word *) inbuf;
             bps = 8;
+
         }
         return true;
     }
     //============================================================================
 
 
-    bool SipiImage::add_watermark(string wmfilename) {
+    bool SipiImage::toBitonal(void) {
+        if ((photo != MINISBLACK) && (photo != MINISWHITE)) {
+            convertToIcc(SipiIcc(icc_GRAY_D50), 8);
+        }
+
+
+        bool doit = false; // will be set true if we find a value not equal 0 or 255
+        for (int i = 0; i < nx*ny; i++) {
+            if (!doit && (pixels[i] != 0) && (pixels[i] != 255)) doit = true;
+        }
+        if (!doit) return true; // we have to do nothing, it's already bitonal
+
+        short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
+        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        for (int i = 0; i < nx*ny; i++) {
+            outbuf[i] = pixels[i];  // copy buffer
+        }
+
+        for (int y = 0; y< ny; y++) {
+            for (int x = 0; x < nx; x++){
+                short oldpixel = outbuf[y*nx + x];
+                outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
+                int properr  = (oldpixel - outbuf[y*nx + x]);
+                if (x < (nx - 1)) outbuf[y*nx + (x + 1)] += (7 * properr) >> 4;
+                if ((x > 0) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x - 1)] += (3 * properr) >> 4;
+                if (y < (ny - 1)) outbuf[(y + 1)*nx + x] += (5 * properr) >> 4;
+                if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += properr >> 4;
+            }
+        }
+        for (int i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
+        delete [] outbuf;
+        return true;
+    }
+    //============================================================================
+
+
+    bool SipiImage::add_watermark(std::string wmfilename) {
         int wm_nx, wm_ny, wm_nc;
     	byte *wmbuf = read_watermark(wmfilename, wm_nx, wm_ny, wm_nc);
         if (wmbuf == NULL) {
-            throw SipiError(__file__, __LINE__, "Cannot read watermark file=\"" + wmfilename + "\" !");
+            throw SipiImageError(__file__, __LINE__, "Cannot read watermark file " + wmfilename);
         }
 
         float *xlut = new float[nx];
@@ -1009,27 +1161,268 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    ostream &operator<< (ostream &outstr, const SipiImage &rhs) {
-        outstr << endl << "SipiImage with the following parameters:" << endl;
-        outstr << "nx  = " << to_string(rhs.nx) << endl;
-        outstr << "ny  = " << to_string(rhs.ny) << endl;
-        outstr << "nc  = " << to_string(rhs.nc) << endl;
-        outstr << "bps = " << to_string(rhs.bps) << endl;
+    SipiImage &SipiImage::operator-=(const SipiImage &rhs) {
+        SipiImage *new_rhs = NULL;
+
+        if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
+            std::stringstream ss;
+            ss << "Image op: images not compatible" << std::endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << std::endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << std::endl;
+            throw SipiImageError(__file__, __LINE__, ss.str());
+        }
+
+        if ((nx != rhs.nx) || (ny != rhs.ny)) {
+            new_rhs = new SipiImage(rhs);
+            new_rhs->scale(nx, ny);
+        }
+
+        int *diffbuf = new int[nx*ny*nc];
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
+            }
+        }
+
+        int min = INT_MAX;
+        int max = INT_MIN;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                for (int k = 0; k < nc; k++) {
+                    if (diffbuf[nc*(j*nx + i) + k] > max) max = diffbuf[nc*(j*nx + i) + k];
+                    if (diffbuf[nc*(j*nx + i) + k] < min) min = diffbuf[nc*(j*nx + i) + k];
+                }
+            }
+        }
+        int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (byte) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*UCHAR_MAX/(2*maxmax));
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (word) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*USHRT_MAX/(2*maxmax));
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
+            }
+        }
+
+        if (new_rhs != NULL) delete new_rhs;
+
+        return *this;
+    }
+    /*==========================================================================*/
+
+    SipiImage &SipiImage::operator-(const SipiImage &rhs)
+    {
+        SipiImage *lhs = new SipiImage(*this);
+        *lhs -= rhs;
+        return *lhs;
+    }
+    /*==========================================================================*/
+
+    SipiImage &SipiImage::operator+=(const SipiImage &rhs) {
+        SipiImage *new_rhs = NULL;
+
+        if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
+            std::stringstream ss;
+            ss << "Image op: images not compatible" << std::endl;
+            ss << "Image 1:  nc: " << nc << " bps: " << bps << " photo: " << shttps::as_integer(photo) << std::endl;
+            ss << "Image 2:  nc: " << rhs.nc << " bps: " << rhs.bps << " photo: " << shttps::as_integer(rhs.photo) << std::endl;
+            throw SipiImageError(__file__, __LINE__, ss.str());
+        }
+
+        if ((nx != rhs.nx) || (ny != rhs.ny)) {
+            new_rhs = new SipiImage(rhs);
+            new_rhs->scale(nx, ny);
+        }
+
+        int *diffbuf = new int[nx*ny*nc];
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] + rtmp[nc*(j*nx + i) + k];
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
+                                diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
+            }
+        }
+
+        int max = INT_MIN;
+        for (int j = 0; j < ny; j++) {
+            for (int i = 0; i < nx; i++) {
+                for (int k = 0; k < nc; k++) {
+                    if (diffbuf[nc*(j*nx + i) + k] > max) max = diffbuf[nc*(j*nx + i) + k];
+                }
+            }
+        }
+
+        switch (bps) {
+            case 8: {
+                byte *ltmp = (byte *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (byte) (diffbuf[nc*(j*nx + i) + k]*UCHAR_MAX/max);
+                        }
+                    }
+                }
+                break;
+            }
+            case 16: {
+                word *ltmp = (word *) pixels;
+                for (int j = 0; j < ny; j++) {
+                    for (int i = 0; i < nx; i++) {
+                        for (int k = 0; k < nc; k++) {
+                            ltmp[nc*(j*nx + i) + k] = (word) (diffbuf[nc*(j*nx + i) + k]*USHRT_MAX/max);
+                        }
+                    }
+                }
+                break;
+            }
+            default: {
+                delete [] diffbuf;
+                if (new_rhs != NULL) delete new_rhs;
+                throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
+            }
+        }
+
+        return *this;
+    }
+    /*==========================================================================*/
+
+    SipiImage &SipiImage::operator+(const SipiImage &rhs)
+    {
+        SipiImage *lhs = new SipiImage(*this);
+        *lhs += rhs;
+        return *lhs;
+    }
+    /*==========================================================================*/
+
+    bool SipiImage::operator== (const SipiImage &rhs) {
+        if ((nx != rhs.nx) || (ny != rhs.ny) || (nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
+            return false;
+        }
+
+        long long n_differences = 0;
+        for (unsigned int j = 0; j < ny; j++) {
+            for (unsigned int i = 0; i < nx; i++) {
+                for (unsigned int k = 0; k < nc; k++) {
+                    if (pixels[nc*(j*nx + i) + k] != rhs.pixels[nc*(j*nx + i) + k]) {
+                        n_differences++;
+                    }
+                }
+            }
+        }
+
+        if (n_differences > 0) {
+            return false;
+        }
+        return true;
+    }
+    /*==========================================================================*/
+
+
+    std::ostream &operator<< (std::ostream &outstr, const SipiImage &rhs) {
+        outstr << std::endl << "SipiImage with the following parameters:" << std::endl;
+        outstr << "nx    = " << std::to_string(rhs.nx) << std::endl;
+        outstr << "ny    = " << std::to_string(rhs.ny) << std::endl;
+        outstr << "nc    = " << std::to_string(rhs.nc) << std::endl;
+        outstr << "es    = " << std::to_string(rhs.es.size()) << std::endl;
+        outstr << "bps   = " << std::to_string(rhs.bps) << std::endl;
+        outstr << "photo = " << std::to_string(rhs.photo) << std::endl;
         if (rhs.xmp) {
-            outstr << "XMP-Metadata: " << endl
-                << *(rhs.xmp) << endl;
+            outstr << "XMP-Metadata: " << std::endl
+                << *(rhs.xmp) << std::endl;
         }
         if (rhs.iptc) {
-            outstr << "IPTC-Metadata: " << endl
-                << *(rhs.iptc) << endl;
+            outstr << "IPTC-Metadata: " << std::endl
+                << *(rhs.iptc) << std::endl;
         }
         if (rhs.exif) {
-            outstr << "EXIF-Metadata: " << endl
-                << *(rhs.exif) << endl;
+            outstr << "EXIF-Metadata: " << std::endl
+                << *(rhs.exif) << std::endl;
         }
         if (rhs.icc) {
-            outstr << "ICC-Metadata: " << endl
-                << *(rhs.icc) << endl;
+            outstr << "ICC-Metadata: " << std::endl
+                << *(rhs.icc) << std::endl;
         }
         return outstr;
     }

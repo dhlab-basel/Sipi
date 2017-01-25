@@ -37,8 +37,6 @@
 
 namespace Sipi {
 
-  const int withRoi = 1; /*!< Indicate to include standard parameter "-roi x y nx ny" */
-  const int withThreads = 2; /*!< Indicate to include standard parameter "-nthreads n" */
 
  /*!
   * \class SipiCmdParams

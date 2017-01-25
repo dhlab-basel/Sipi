@@ -14,7 +14,7 @@ include(ExternalProject)
 #ExternalProject_Add(project_oj2k
 #    INSTALL_DIR ${COMMON_LOCAL}
 #    URL https://github.com/uclouvain/openjpeg/archive/version.2.1.tar.gz
-#    SOURCE_DIR ${COMMON_LIB}/openjpeg-2.1.0
+#    SOURCE_DIR ${COMMON_SRCS}/openjpeg-2.1.0
 #    CMAKE_ARGS ${LIBOPT} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
 #)
 #ExternalProject_Get_Property(project_oj2k install_dir)

@@ -19,8 +19,11 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
+#include <syslog.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -34,19 +37,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "spdlog/spdlog.h"
 
-#include "Global.h"
+#include "shttps/Global.h"
 #include "SipiError.h"
 #include "SipiSize.h"
-
-using namespace std;
 
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    SipiSize::SipiSize(string str) {
+    int SipiSize::limitdim = 32000;
+
+    SipiSize::SipiSize(std::string str) {
         nx = ny = 0;
         percent = 0.;
         canonical_ok = false;
@@ -55,9 +57,9 @@ namespace Sipi {
         if (str.empty() || (str == "full")) {
             size_type = SizeType::FULL;
         }
-        else if (str.find("pct") != string::npos) {
+        else if (str.find("pct") != std::string::npos) {
             size_type = SizeType::PERCENTS;
-            string tmpstr = str.substr(4);
+            std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%f", &percent);
             if (n != 1) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"pct:float\" !");
@@ -65,9 +67,9 @@ namespace Sipi {
             if (percent < 0.0) percent = 1.0;
             if (percent > 100.0) percent = 100.0;
         }
-        else if (str.find("red") != string::npos) {
+        else if (str.find("red") != std::string::npos) {
             size_type = SizeType::REDUCE;
-            string tmpstr = str.substr(4);
+            std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%d", &reduce);
             if (n != 1) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"red:int\" !");
@@ -95,6 +97,10 @@ namespace Sipi {
                     size_type = SizeType::PIXELS_Y;
                }
             }
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
         }
     };
     //-------------------------------------------------------------------------
@@ -103,10 +109,14 @@ namespace Sipi {
         canonical_ok = false;
         if (nx_p <= 0) {
             ny = ny_p;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             size_type = SizeType::PIXELS_Y;
         }
         else if (ny_p <= 0) {
             nx = nx_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
             size_type = SizeType::PIXELS_X;
         }
         else if ((nx_p <= 0) && (ny_p <= 0)) {
@@ -115,6 +125,10 @@ namespace Sipi {
         else {
             nx = nx_p;
             ny = ny_p;
+            if (nx < 1) nx = 1;
+            if (nx > limitdim) nx = limitdim;
+            if (ny < 1) ny = 1;
+            if (ny > limitdim) ny = limitdim;
             if (maxdim) {
                 size_type = SizeType::MAXDIM;
             }
@@ -128,7 +142,7 @@ namespace Sipi {
     bool SipiSize::operator >(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w > s.w) || (h > s.h));
@@ -138,7 +152,7 @@ namespace Sipi {
     bool SipiSize::operator >=(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w >= s.w) || (h >= s.h));
@@ -148,7 +162,7 @@ namespace Sipi {
     bool SipiSize::operator <(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w < s.w) && (h < s.h));
@@ -158,7 +172,7 @@ namespace Sipi {
     bool SipiSize::operator <=(const SipiSize &s)
     {
         if (!canonical_ok) {
-            string msg = "Final size not yet determined!";
+            std::string msg = "Final size not yet determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         return ((w <= s.w) && (h <= s.h));
@@ -167,8 +181,6 @@ namespace Sipi {
 
     SipiSize::SizeType SipiSize::get_size(int img_w, int img_h, int &w_p, int &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
-
-        auto logger = spdlog::get(shttps::loggername);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
@@ -201,7 +213,6 @@ namespace Sipi {
                     reduce_h++;
                 }
                 if (h != ny) {
-                    cerr << "no exact match h=" << h << " ny=" << ny << endl;
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
                     sf_h /= 2;
@@ -350,8 +361,10 @@ namespace Sipi {
             }
         }
 
-        logger->debug() << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
+        std::stringstream ss;
+        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
             << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
+        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         w_p = w;
         h_p = h;
@@ -368,8 +381,8 @@ namespace Sipi {
 
     void SipiSize::canonical(char *buf, int buflen) {
         int n;
-        if (!canonical_ok) {
-            string msg = "Canonical size not determined!";
+        if (!canonical_ok && (size_type != SipiSize::FULL)) {
+            std::string msg = "Canonical size not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
         switch (size_type) {
@@ -398,7 +411,7 @@ namespace Sipi {
                 break;
             }
             case SipiSize::FULL: {
-                n = snprintf(buf, buflen, "%d,%d", w, h);
+                n = snprintf(buf, buflen, "full"); // replace with "max" for version 3.0 of iiif
             }
         }
         if ((n < 0) || (n >= buflen)) {
@@ -410,13 +423,13 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (ostream &outstr, const SipiSize &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiSize &rhs) {
         outstr << "IIIF-Server Size parameter:";
         outstr << "  Size type: " << rhs.size_type;
         outstr
-            << " | percent = " << to_string(rhs.percent)
-            << " | nx = " << to_string(rhs.nx)
-            << " | ny = " << to_string(rhs.ny);
+            << " | percent = " << std::to_string(rhs.percent)
+            << " | nx = " << std::to_string(rhs.nx)
+            << " | ny = " << std::to_string(rhs.ny);
         return outstr;
     };
     //-------------------------------------------------------------------------

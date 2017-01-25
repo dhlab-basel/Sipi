@@ -29,10 +29,14 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
+string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
+set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
+
 #
 # Usually SIPI is compiled with all static libraries
 #
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
+option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
@@ -44,8 +48,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
-        message(FATAL_ERROR "Requires at leat gcc++ Version 5.3 or greater!")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8")
+        message(FATAL_ERROR "Requires at leat gcc++ Version 4.8 or greater!")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")
     endif()
@@ -62,41 +66,72 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     message(STATUS "Compiling for Darwin...")
     message(STATUS ${CMAKE_SYSTEM_NAME})
     SET(CMAKE_MACOSX_RPATH 1)
-    SET(KDU_MAKE "Makefile-MAC-x86-all-gcc")
+    SET(KDU_MAKE "Makefile-MAC-x86-${BITS}-gcc")
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
+    SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE FILEPATH "openssl")
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     message(STATUS "Compiling for Linux64...")
     message(STATUS ${CMAKE_SYSTEM_NAME})
     execute_process(COMMAND /usr/bin/lsb_release -si COMMAND tr -d '\n' OUTPUT_VARIABLE CMAKE_DISTRO_NAME)
     MESSAGE(STATUS "Distro: " ${CMAKE_DISTRO_NAME})
-    SET(KDU_MAKE "Makefile-Linux-x86-64-gcc")
+    SET(KDU_MAKE "Makefile-Linux-x86-${BITS}-gcc")
     SET(KDU_ARCH "Linux-x86-${BITS}-gcc")
     SET(LUA_ARCH "linux")
 endif()
 message(STATUS "Compiling for ${KDU_ARCH}")
 
 
+#SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+if(MAKE_SHARED_SIPI)
+    SET(BUILD_SHARED_LIBRARIES ON)
+#    SET(CMAKE_EXE_LINKER_FLAGS "-shared")
+else()
+    SET(BUILD_SHARED_LIBRARIES OFF)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL DARWIN)
+#        SET(CMAKE_EXE_LINKER_FLAGS "-static")
+    endif()
+endif()
+
+
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated")
+if(MAKE_DEBUG)
+    set(CMAKE_CXX_FLAGS "-g -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated -Woverloaded-virtual")
+else()
+    set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated -Woverloaded-virtual")
+endif()
 
 set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
 set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXIGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxigen)
+set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
-set(COMMON_LIB ${PROJECT_SOURCE_DIR}/lib)
+set(COMMON_SRCS ${PROJECT_SOURCE_DIR}/extsrcs)
 set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
 set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
 set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
+set(CONFIGURE_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
+set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
 
 
 
-# needed packages
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIR})
+#
+# OpenSSL ??
+#
+include(FindOpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "Found OpenSSL at ${OPENSSL_INCLUDE_DIR}")
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
+else()
+    message(STATUS "No SSL support found!")
+endif()
+
 
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
@@ -136,19 +171,26 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 
+add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
+add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
+#add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
+#add_subdirectory(${EXT_PROJECTS_DIR}/freetype2)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
+add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
-add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
+
+#add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
 
 
@@ -156,16 +198,34 @@ add_subdirectory(${EXT_PROJECTS_DIR}/shttp)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${DOXIGEN_FILES_DIR}/Doxyfile.in ${DOXIGEN_FILES_DIR}/Doxyfile @ONLY)
+    configure_file(${DOXYGEN_FILES_DIR}/Doxyfile.in ${DOXYGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
-        ${DOXYGEN_EXECUTABLE} ${DOXIGEN_FILES_DIR}/Doxyfile
-        WORKING_DIRECTORY ${DOXIGEN_FILES_DIR}
+        ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILES_DIR}/Doxyfile
+        WORKING_DIRECTORY ${DOXYGEN_FILES_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
 endif(DOXYGEN_FOUND)
 
 
+
+
+IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+    FIND_PACKAGE(Git)
+    IF(GIT_FOUND)
+        EXECUTE_PROCESS(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            OUTPUT_VARIABLE "SIPI_BUILD_VERSION"
+            ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Git version: ${SIPI_BUILD_VERSION}" )
+    ELSE(GIT_FOUND)
+        SET(SIPI_BUILD_VERSION 0)
+    ENDIF(GIT_FOUND)
+ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+
 CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h)
+
 
 #
 # Here we get the ICC profiles from the Adobe website and prepare them for including
@@ -196,10 +256,10 @@ add_custom_command(
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
         DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
         COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
-	COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
@@ -214,7 +274,7 @@ add_custom_target(
 link_directories(
         /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib64
+        ${CONFIGURE_LIBDIR}
 )
 
 
@@ -223,6 +283,7 @@ include_directories(
     ${COMMON_INCLUDE_FILES_DIR}/metadata
     ${COMMON_INCLUDE_FILES_DIR}/formats
     ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+    ${PROJECT_SOURCE_DIR}/shttps
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
@@ -237,17 +298,12 @@ add_executable(
         src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
         src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
         src/metadata/SipiExif.cpp include/metadata/SipiExif.h
+        src/metadata/SipiEssentials.cpp include/metadata/SipiEssentials.h
         src/SipiImage.cpp include/SipiImage.h
         src/formats/SipiIOTiff.cpp include/formats/SipiIOTiff.h
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
         src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
         src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
-        src/SipiParamValue.cpp include/SipiParamValue.h
-        src/SipiParam.cpp include/SipiParam.h
-        src/SipiCmdParams.cpp include/SipiCmdParams.h
-#        src/PhpSession.cpp include/PhpSession.h
-#        src/Salsah.cpp include/Salsah.h
-#        src/Template.cpp include/Template.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
@@ -255,6 +311,18 @@ add_executable(
         src/iiifparser/SipiQualityFormat.cpp include/iiifparser/SipiQualityFormat.h
         src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
         src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
+        src/SipiCommon.cpp include/SipiCommon.h
+        shttps/Global.h
+        shttps/Error.cpp shttps/Error.h
+        shttps/Hash.cpp shttps/Hash.h
+        shttps/SockStream.cpp shttps/SockStream.h
+        shttps/ChunkReader.cpp shttps/ChunkReader.h
+        shttps/Connection.cpp shttps/Connection.h
+        shttps/LuaServer.cpp shttps/LuaServer.h
+        shttps/LuaSqlite.cpp shttps/LuaSqlite.h
+        shttps/GetMimetype.cpp shttps/GetMimetype.h
+        shttps/Server.cpp shttps/Server.h
+        shttps/jwt.c shttps/jwt.h
 )
 add_dependencies(sipi icc_profiles)
 
@@ -262,10 +330,18 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz shttp magic lua dl pthread ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m )
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 endif()
+if(OPENSSL_FOUND)
+    target_link_libraries(sipi ${OPENSSL_LIBRARIES})
+endif()
+
+add_custom_target(check
+        DEPENDS sipi
+        COMMAND pytest
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin
@@ -278,7 +354,3 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
-
-
-
-

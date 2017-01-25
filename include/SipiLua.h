@@ -26,9 +26,9 @@
 
 #include <iostream>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
-#include "LuaServer.h"
+#include "shttps/LuaServer.h"
 
 /*!
  * This module implements a new Lua datatype, "SipiImage"
@@ -42,6 +42,9 @@
  *    SipiImage.send(img, format)
  */
 namespace Sipi {
+
+    extern char sipiserver[];
+
 
     extern void sipiGlobals(lua_State *L, shttps::Connection &conn, void *user_data);
 

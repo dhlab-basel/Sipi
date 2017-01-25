@@ -41,8 +41,6 @@
 
 #include <string>
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
@@ -67,10 +65,10 @@ namespace Sipi {
             quality_type = SipiQualityFormat::COLOR;
         }
         else if (quality == "gray") {
-            quality_type = SipiQualityFormat::COLOR;
+            quality_type = SipiQualityFormat::GRAY;
         }
         else if (quality == "bitonal") {
-            quality_type = SipiQualityFormat::COLOR;
+            quality_type = SipiQualityFormat::BITONAL;
         }
         else {
             throw SipiError(__file__, __LINE__, "IIIF Error reading Quality parameter  \"" + quality + "\" !");
@@ -106,7 +104,7 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (ostream &outstr, const SipiQualityFormat &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiQualityFormat &rhs) {
         outstr << "IIIF-Server QualityFormat parameter: ";
         outstr << "  Quality: " << rhs.quality_type;
         outstr << " | Format: " << rhs.format_type;

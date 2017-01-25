@@ -29,6 +29,8 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <stdexcept>
 
 #include "Error.h"
 #include "Connection.h"
@@ -39,11 +41,12 @@
 namespace shttps {
 
     typedef struct {
-        enum {INT_TYPE, FLOAT_TYPE, STRING_TYPE} type;
+        enum {INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOLEAN_TYPE} type;
         struct {
             int i;
             float f;
             std::string s;
+            bool b;
         } value;
         //inline LuaValstruct() { type = }
     } LuaValstruct;
@@ -69,31 +72,113 @@ namespace shttps {
         LuaServer();
 
        /*!
+        * Instantiates a lua interpreter which has access to the HTTP connection
+        *
+        * \param[in] conn HTTP Connection object
+        */
+        LuaServer(Connection &conn);
+
+
+       /*!
         * Instantiates a lua interpreter an executes the given lua script
         *
         * \param[in] luafile A script containing lua commands
+        * \param[in] iscode If true, the string contains lua-code to be executed directly
         */
-        LuaServer(const std::string &luafile);
+        LuaServer(const std::string &luafile, bool iscode = false);
+
+       /*!
+        * Instantiates a lua interpreter an executes the given lua script
+        *
+        * \param[in] conn HTTP Connection object
+        * \param[in] luafile A script containing lua commands
+        * \param[in] iscode If true, the string contains lua-code to be executed directly
+        */
+        LuaServer(Connection &conn, const std::string &luafile, bool iscode);
+
+       /*!
+        * Copy constructor throws error (not allowed!)
+        */
+        inline LuaServer(const LuaServer &other) {
+            throw Error(__FILE__, __LINE__, "Copy constructor not allowed!");
+        }
+
+       /*!
+        * Assignment operator throws error (not allowed!)
+        */
+        inline LuaServer& operator=(const LuaServer& other) {
+            throw Error(__FILE__, __LINE__, "Assigment operator not allowed!");
+        }
 
        /*!
         * Destroys the lua interpreter and all associated resources
         */
         ~LuaServer();
 
+       /*!
+        * Getter for the Lua state
+        */
         inline lua_State *lua() { return L; }
 
+       /*!
+        * Adds a value to the server tabe.
+        *
+        * The server table contains constants and functions which are related
+        * to the shttps HTTP server. The server table a a globally accessible
+        * table.
+        *
+        * \param[in] name Name of variable
+        * \param[in] value Value (only String allowed)
+        */
         void add_servertableentry(const std::string &name, const std::string &value);
+
+        /*!
+        * Add path to the lua package path for "require"
+        *
+        * \param[in] path The path
+        */
+        void setLuaPath(const std::string &path);
+
+
+       /*!
+        * Create the global values and functions
+        *
+        * \param[in] conn HTTP connection object
+        */
         void createGlobals(Connection &conn);
+
+
         std::string configString(const std::string table, const std::string variable, const std::string defval);
         int configBoolean(const std::string table, const std::string variable, const bool defval);
         int configInteger(const std::string table, const std::string variable, const int defval);
         float configFloat(const std::string table, const std::string variable, const float defval);
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
-        void executeChunk(const std::string &luastr);
-        std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, ...);
-        std::vector<LuaValstruct>  executeLuafunction(const std::string *funcname, int n, LuaValstruct *lv);
-        bool luaFunctionExists(const std::string *funcname);
+       /*!
+        * Execute a chunk of Lua code
+        *
+        * \param[in] luastr String containing the Lua code
+        * \returns Either the value 1 or an integer result that the Lua code provides
+        */
+        int executeChunk(const std::string &luastr);
+
+        /*!
+         * Executes a Lua function that either is defined in C or in Lua
+         *
+         * \param[in] funcname the name of the function to be called
+         * \param[in] lvals vector of parameters to be passed to the function
+         * \returns vector of LuaValstruct containing the result of the execution of the lua function
+         */
+        std::vector<LuaValstruct> executeLuafunction(const std::string& funcname, std::vector<LuaValstruct>& lvals);
+
+        /*!
+         * Executes a Lua function that either is defined in C or in Lua
+         *
+         * \param[in] funcname Name of the function
+         * \param[in] n Number of arguments
+         * \returns true if function with given name exists
+         */
+        bool luaFunctionExists(const std::string& funcname);
     };
 
 }

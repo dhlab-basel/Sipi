@@ -21,8 +21,19 @@
 -- Knora GUI-case: Sipi has already saved the file that is supposed to be converted
 -- the file was saved to: config.imgroot .. '/tmp/' (route make_thumbnail)
 
-server.setBuffer()
+require "send_response"
 
+success, errmsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.LOG_ERR)
+    return
+end
+
+if server.post == nil then
+    send_error(400, PARAMETERS_INCORRECT)
+
+    return
+end
 
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
@@ -31,14 +42,8 @@ filename = server.post['filename']
 
 -- check if all the expected params are set
 if originalFilename == nil or originalMimetype == nil or filename == nil then
-    result = {
-        status = 1,
-        message = "Parameters not set correctly"
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(400, PARAMETERS_INCORRECT)
 
     return
 end
@@ -47,66 +52,109 @@ end
 tmpdir = config.imgroot .. '/tmp/'
 sourcePath = tmpdir .. filename
 
--- check if soure is readable
-if not server.fs.is_readable(sourcePath) then
-    result = {
-        status = 1,
-        message = "File " .. filename .. " is not readable."
-    }
+-- check if source is readable
+success, readable = server.fs.is_readable(sourcePath)
+if not success then
+    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.LOG_ERR)
+    return
+end
+if not readable then
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(500, FILE_NOT_READBLE .. sourcePath)
 
     return
-
 end
 
 -- all params are set
-server.sendHeader("Content-Type", "application/json")
 
 --
 -- check if knora directory is available, if not, create it
 --
 knoraDir = config.imgroot .. '/knora/'
-if  not server.fs.exists(knoraDir) then
+success, exists = server.fs.exists(knoraDir)
+if not success then
+    server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
+    return
+end
+if  not exists then
     server.fs.mkdir(knoraDir, 511)
 end
 
-baseName = server.uuid62()
+success, baseName = server.uuid62()
+if not success then
+    server.log("server.uuid62() failed: " .. baseName, server.loglevel.LOG_ERR)
+    return
+end
 
 -- create full quality image (jp2)
-fullImg = SipiImage.new(sourcePath)
+success, fullImg = SipiImage.new(sourcePath)
+if not success then
+    server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.LOG_ERR)
+    return
+end
 
-check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+if not success then
+    server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.LOG_ERR)
+    return
+end
 
 -- if check returns false, the user's input is invalid
 if not check then
-    result = {
-        status = 1,
-        message = "Mimetypes and/or file extension are inconsistent."
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
+    send_error(400, MIMETYPES_INCONSISTENCY)
 
     return
 end
 
 fullImgName = baseName .. '.jpx'
-fullDims = fullImg:dims()
+success, fullDims = fullImg:dims()
+if not success then
+    server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
+    return
+end
 fullImg:write(knoraDir .. fullImgName)
 
 -- create thumbnail (jpg)
-thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+success, thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+if not success then
+    server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.LOG_ERR)
+    return
+end
+
+success, thumbDims = thumbImg:dims()
+if not success then
+    server.log("thumbImg:dims failed: " .. thumbDims, server.loglevel.LOG_ERR)
+    return
+end
+
+
 thumbImgName = baseName .. '.jpg'
-thumbDims = thumbImg:dims()
-thumbImg:write(knoraDir .. thumbImgName)
+
+success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
+    return
+end
+
+
+success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+if not success then
+    server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
+    return
+end
 
 -- delete tmp and preview files
-server.fs.unlink(sourcePath)
-server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
+success, errmsg = server.fs.unlink(sourcePath)
+if not success then
+    server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
+    return
+end
+success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
+if not success then
+    server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
+    return
+end
 
 result = {
     status = 0,
@@ -122,13 +170,5 @@ result = {
     original_filename = originalFilename,
     file_type = 'image'
 }
---
-jsonstr = server.table_to_json(result)
 
-
---for kk,vv in pairs(result) do
---    print(kk, " = ", vv)
---end
-
-server.print(jsonstr)
---]]
+send_success(result)

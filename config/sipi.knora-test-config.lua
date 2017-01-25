@@ -1,4 +1,3 @@
-
 --
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
@@ -25,6 +24,12 @@
 --
 sipi = {
     --
+    -- The user under which the Sipi server should run. Use this only if Sipi should setuid to a particular user after
+    -- starting. Otherwise, leave this commented out. If this setting is used, Sipi must be started as root.
+    --
+    -- userid = '_www',
+
+    --
     -- port number the server is listening to
     --
     port = 1024,
@@ -41,7 +46,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './knora-test', -- directory for Knora Sipi integration testing
+    imgroot = './test/_test_data/images', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -91,8 +96,44 @@ sipi = {
     --
     -- Port of Knora Application
     --
-    knora_port = '3333'
+    knora_port = '3333',
 
+    --
+    -- If compiled with SSL support, the port the server is listening for secure connections
+    --
+    ssl_port = 1025,
+
+    --
+    -- If compiled with SSL support, the path to the certificate (must be .pem file)
+    -- The follow commands can be used to generate a self-signed certificate
+    -- # openssl genrsa -out key.pem 2048
+    -- # openssl req -new -key key.pem -out csr.pem
+    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+    --
+    ssl_certificate = './certificate/certificate.pem',
+
+    --
+    -- If compiled with SSL support, the path to the key file (see above to create)
+    --
+    ssl_key = './certificate/key.pem',
+
+
+    --
+    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
+    --
+    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
+    --            12345678901234567890123456789012
+
+    --
+    -- Name of the logfile (a ".txt" is added...)
+    --
+    logfile = "sipi.log",
+
+    --
+    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
+    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    --
+    loglevel = "TRACE",
 }
 
 --

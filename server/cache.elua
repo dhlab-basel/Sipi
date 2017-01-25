@@ -1,0 +1,50 @@
+<lua>
+
+success,token = authorize_page('admin.sipi.org', 'administrator', config.adminuser, config.password)
+if not success then
+    return
+end
+
+</lua>
+<html>
+<head>
+    <title>SIPI Admin Console</title>
+    <script type="text/javascript" src="jquery-3.0.0.min.js"></script>
+    <script type="text/javascript">
+    var apiurl = '<lua>server.print(protocol .. server.host .. '/api/')</lua>';
+    var token = '<lua>server.print(token)</lua>';
+    </script>
+    <script type="text/javascript" src="cache.js"></script>
+</head>
+<body>
+<h1>SIPI Admin on <lua>server.print(server.host)</lua></h1>
+<div id="msgbox" style="display:none">GAGA</div>
+<h2>Server</h2>
+<lua>
+if server.has_openssl then
+    server.print("Sipi has been compiled with OpenSSL support<br/>")
+else
+    server.print("Sipi has been compiled <b>without</b> OpenSSL support!!<br/>")
+end
+</lua>
+<input id="stop" type="button" value="Stop server">
+<hr/>
+<h2>Cache</h2>
+<table>
+<lua>
+server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
+server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
+server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
+server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
+
+</lua>
+</table>
+<h3>Filelist</h3>
+<input id="delsel" type="button" value="Delete Selected">
+<input id="purge" type="button" value="Purge">
+<br/>
+<table id="list" border="1">
+
+</table>
+</body>
+</html>

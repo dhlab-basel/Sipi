@@ -20,7 +20,21 @@
 
 -- handles the Knora non GUI-case: Knora uploaded a file to sourcePath
 
-server.setBuffer()
+require "send_response"
+require "get_mediatype"
+
+success, errmsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.LOG_ERR)
+    send_error(500, "buffer could not be set correctly")
+    return
+end
+
+if server.post == nil then
+    send_error(400, PARAMETERS_INCORRECT)
+
+    return
+end
 
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
@@ -28,96 +42,204 @@ sourcePath = server.post['source']
 
 -- check if all the expected params are set
 if originalFilename == nil or originalMimetype == nil or sourcePath == nil then
-    result = {
-        status = 1,
-        message = "Parameters not set correctly"
-    }
-
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
-
+    send_error(400, PARAMETERS_INCORRECT)
     return
 end
 
 -- all params are set
 
-server.sendHeader("Content-Type", "application/json")
-
---
--- check if knora directory is available, if not, create it
---
-knoraDir = config.imgroot .. '/knora/'
-if  not server.fs.exists(knoraDir) then
-    server.fs.mkdir(knoraDir, 511)
-end
-
-baseName = server.uuid62()
-
 -- check if source is readable
-if not server.fs.is_readable(sourcePath) then
-    result = {
-        status = 1,
-        message = "File " .. sourcePath .. " is not readable."
-    }
 
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
-
-    return
-
-end
-
--- create full quality image (jp2)
-fullImg = SipiImage.new(sourcePath)
-
-check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
-
--- if check returns false, the user's input is invalid
-if not check then
-    result = {
-        status = 1,
-        message = "Mimetypes and/or file extension are inconsistent."
-    }
-
-    jsonstr = server.table_to_json(result)
-
-    server.print(jsonstr)
-
+success, readable = server.fs.is_readable(sourcePath)
+if not success then
+    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.LOG_ERR)
+    send_error(500, "server.fs.is_readable() failed")
     return
 end
 
-fullImgName = baseName .. '.jpx'
-fullDims = fullImg:dims()
-fullImg:write(knoraDir .. fullImgName)
+if not readable then
 
--- create thumbnail (jpg)
-thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
-thumbImgName = baseName .. '.jpg'
-thumbDims = thumbImg:dims()
-thumbImg:write(knoraDir .. thumbImgName)
+    send_error(500, FILE_NOT_READBLE .. sourcePath)
+    return
+end
 
-result = {
-    status = 0,
-    mimetype_full = "image/jp2",
-    filename_full = fullImgName,
-    nx_full = fullDims.nx,
-    ny_full = fullDims.ny,
-    mimetype_thumb = "image/jpeg",
-    filename_thumb = thumbImgName,
-    nx_thumb = thumbDims.nx,
-    ny_thumb = thumbDims.ny,
-    original_mimetype = originalMimetype,
-    original_filename = originalFilename,
-    file_type = 'image'
-}
---
-jsonstr = server.table_to_json(result)
+-- check for the mimetype of the file
+success, mimetype = server.mimetype(sourcePath)
+
+if not success then
+    server.log("server.mimetype() failed: " .. exists, server.loglevel.LOG_ERR)
+    send_error(500, "mimetype of file could not be determined")
+end
+
+-- handle the file depending on its media type (image, text file)
+mediatype = get_mediatype(mimetype.mimetype)
+
+-- in case of an unsupported mimetype, the function returns false
+if not mediatype then
+    send_error(400, "Mimetype '" .. mimetype.mimetype .. "' is not supported")
+    return
+end
+
+-- depending on the media type, decide what to do
+if mediatype == IMAGE then
+
+    -- it is an image
+
+    --
+    -- check if knora directory is available, if not, create it
+    --
+    knoraDir = config.imgroot .. '/knora/'
+    success, exists = server.fs.exists(knoraDir)
+    if not success then
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
+    end
+
+    if not exists then
+        success, errmsg = server.fs.mkdir(knoraDir, 511)
+        if not success then
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.LOG_ERR)
+            send_error(500, "Knora directory could not be created on server")
+            return
+        end
+    end
+
+    success, baseName = server.uuid62()
+    if not success then
+        server.log("server.uuid62() failed: " .. baseName, server.loglevel.LOG_ERR)
+        send_error(500, "unique name could not be created")
+        return
+    end
 
 
---for kk,vv in pairs(result) do
---    print(kk, " = ", vv)
---end
+    -- create full quality image (jp2)
+    success, fullImg = SipiImage.new(sourcePath)
+    if not success then
+        server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.LOG_ERR)
+        return
+    end
 
-server.print(jsonstr)
+    success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+    if not success then
+        server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.LOG_ERR)
+        return
+    end
+
+    -- if check returns false, the user's input is invalid
+    if not check then
+
+        send_error(400, MIMETYPES_INCONSISTENCY)
+
+        return
+    end
+
+    fullImgName = baseName .. '.jpx'
+    success, fullDims = fullImg:dims()
+    if not success then
+        server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
+        return
+    end
+
+    success, errmsg = fullImg:write(knoraDir .. fullImgName)
+    if not success then
+        server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
+        return
+    end
+
+    -- create thumbnail (jpg)
+    success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
+    if not success then
+        server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.LOG_ERR)
+        return
+    end
+
+    thumbImgName = baseName .. '.jpg'
+
+    success, thumbDims = thumbImg:dims()
+    if not success then
+        server.log("thumbImg:dims() failed: " .. thumbDims, server.loglevel.LOG_ERR)
+        return
+    end
+
+
+    success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+    if not success then
+        server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
+        return
+    end
+
+    result = {
+        mimetype_full = "image/jp2",
+        filename_full = fullImgName,
+        nx_full = fullDims.nx,
+        ny_full = fullDims.ny,
+        mimetype_thumb = "image/jpeg",
+        filename_thumb = thumbImgName,
+        nx_thumb = thumbDims.nx,
+        ny_thumb = thumbDims.ny,
+        original_mimetype = originalMimetype,
+        original_filename = originalFilename,
+        file_type = IMAGE
+    }
+
+    send_success(result)
+
+elseif mediatype == TEXT then
+
+    -- it is a text file
+
+    --
+    -- check if knora directory is available, if not, create it
+    --
+    fileDir = config.docroot .. '/knora/'
+    success, exists = server.fs.exists(fileDir)
+    if not success then
+        server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
+    end
+
+    if not exists then
+        success, errmsg = server.fs.mkdir(fileDir, 511)
+        if not success then
+            server.log("server.fs.mkdir() failed: " .. errmsg, server.loglevel.LOG_ERR)
+            send_error(500, "Knora directory could not be created on server")
+            return
+        end
+    end
+
+    local success, filename = server.uuid62()
+    if not success then
+        send_error(500, "Couldn't generate uuid62!")
+        return -1
+    end
+
+    -- check file extension
+    if not check_file_extension(mimetype.mimetype, originalFilename) then
+        send_error(400, MIMETYPES_INCONSISTENCY)
+        return
+    end
+
+    -- check mimetype
+    if (mimetype.mimetype ~= originalMimetype) then
+        send_error(400, MIMETYPES_INCONSISTENCY)
+        return
+    end
+
+    local filePath = fileDir .. filename
+
+    local success, result = server.fs.copyFile(sourcePath, filePath)
+    if not success then
+        send_error(400, "Couldn't copy file: " .. result)
+        return -1
+    end
+
+    result = {
+        mimetype = mimetype.mimetype,
+        charset = mimetype.charset,
+        file_type = TEXT,
+        filename = filename,
+        original_mimetype = originalMimetype,
+        original_filename = originalFilename
+    }
+
+    send_success(result)
+
+end

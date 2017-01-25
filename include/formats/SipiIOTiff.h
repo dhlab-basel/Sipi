@@ -59,19 +59,31 @@ namespace Sipi {
         /*!
          * Converts an image from RRRRRR...GGGGGG...BBBBB to RGBRGBRGBRGB....
          * \param img Pointer to SipiImage instance
-         * \param sll Scanline length in bytes
+         * \param[in] sll Scanline length in bytes
          */
         void separateToContig(SipiImage *img, unsigned int sll);
 
        /*!
         * Converts a bitonal 1 bit image to a bitonal 8 bit image
         *
+        * \param img Pointer to SipiImage instance
         * \param[in] Length of scanline in bytes
         * \param[in] Value to be used for black pixels
         * \param[in] Value to be used for white pixels
         */
         void cvrt1BitTo8Bit(SipiImage *img, unsigned int sll, unsigned int black, unsigned int white);
+
+       /*!
+        * Converts a 8 bps bitonal image to 1 bps bitonal image
+        *
+        * \param[in] img Reference to SipiImage instance
+        * \param[out] sll Scan line lengt
+        * \returns Buffer of 1-bit data (padded to bytes). NOTE: This buffer has to be deleted by the caller!
+        */
+        unsigned char *cvrt8BitTo1bit(const SipiImage &img, unsigned int &sll);
+        
     public:
+        static void initLibrary(void);
        /*!
         * Method used to read an image file
         *

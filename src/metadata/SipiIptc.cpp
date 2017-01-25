@@ -19,12 +19,12 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SipiError.h"
+ */
+#include "SipiError.h"
 #include "SipiIptc.h"
 #include <stdlib.h>
-static const char __file__[] = __FILE__;
 
-using namespace std;
+static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
@@ -47,7 +47,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    ostream &operator<< (ostream &outstr, SipiIptc &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, SipiIptc &rhs) {
         Exiv2::IptcData::iterator end = rhs.iptcData.end();
         for (Exiv2::IptcData::iterator md = rhs.iptcData.begin(); md != end; ++md) {
             outstr << std::setw(44) << std::setfill(' ') << std::left

@@ -30,6 +30,8 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <memory>
+
 
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
@@ -43,63 +45,71 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <syslog.h>
 
-#include "spdlog/spdlog.h"
 
 #include "SipiCache.h"
-#include "Global.h"
+#include "shttps/Global.h"
 #include "SipiError.h"
-
-
-using namespace std;
 
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    typedef struct {
-        string canonical;
+    typedef struct _AListEle {
+        std::string canonical;
         time_t access_time;
+        off_t fsize;
+        bool operator < (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) < 0.);
+        }
+        bool operator > (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) < 0.);
+        }
+        bool operator == (const _AListEle& str) const {
+            return (difftime(access_time, str.access_time) == 0.);
+        }
     } AListEle;
 
 
-    SipiCache::SipiCache(const string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
+    SipiCache::SipiCache(const std::string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
         : _cachedir(cachedir_p), max_cachesize(max_cachesize_p), max_nfiles(max_nfiles_p), cache_hysteresis(cache_hysteresis_p)
     {
-        auto logger = spdlog::get(shttps::loggername);
 
         if (access(_cachedir.c_str(), R_OK | W_OK | X_OK) != 0) {
             throw SipiError(__file__, __LINE__, "Cache directory not available", errno);
         }
 
-        string cachefilename = _cachedir + "/.sipicache";
+        std::string cachefilename = _cachedir + "/.sipicache";
         cachesize = 0;
         nfiles = 0;
 
-        logger->info("Cache at '") << _cachedir << "' cachesize=" << max_cachesize << " nfiles=" << max_nfiles << " hysteresis=" << cache_hysteresis;
-        ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
+        syslog(LOG_INFO, "Cache at \"%s\" cachesize=%lld nfiles=%d hysteresis=%f", _cachedir.c_str(), max_cachesize, max_nfiles, cache_hysteresis);
+        std::ifstream cachefile(cachefilename, std::ofstream::in | std::ofstream::binary);
 
         struct dirent **namelist;
         int n;
 
         if (!cachefile.fail()) {
             cachefile.seekg (0, cachefile.end);
-            streampos length = cachefile.tellg();
+            std::streampos length = cachefile.tellg();
             cachefile.seekg (0, cachefile.beg);
             int n = length / sizeof (SipiCache::FileCacheRecord);
-            logger->info("Reading cache file...");
+            syslog(LOG_INFO, "Reading cache file...");
             for (int i = 0; i < n; i++) {
                 SipiCache::FileCacheRecord fr;
                 cachefile.read((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                string accesspath = _cachedir + "/" + fr.cachepath;
+                std::string accesspath = _cachedir + "/" + fr.cachepath;
                 if (access(accesspath.c_str(), R_OK) != 0) {
                     //
                     // we cannot find the file – probably it has been deleted => skip it
                     //
-                    logger->debug("Cache could'nt find file '") << fr.cachepath << "' on disk!";
+                    syslog(LOG_DEBUG, "Cache could'nt find file \"%s\" on disk!", fr.cachepath);
                     continue;
                 }
                 CacheRecord cr;
+                cr.img_w = fr.img_w;
+                cr.img_h = fr.img_h;
                 cr.origpath = fr.origpath;
                 cr.cachepath = fr.cachepath;
                 cr.mtime = fr.mtime;
@@ -108,7 +118,7 @@ namespace Sipi {
                 cachesize += fr.fsize;
                 nfiles++;
                 cachetable[fr.canonical] = cr;
-                logger->info("File '") << cr.cachepath << "' adding to cache file!";
+                syslog(LOG_INFO, "FIle \"%s\" adding to cache", cr.cachepath.c_str());
             }
         }
 
@@ -123,34 +133,44 @@ namespace Sipi {
         else {
             while (n--) {
                 if (namelist[n]->d_name[0] == '.') continue; // files beginning with "." are not removed
-                string file_on_disk = namelist[n]->d_name;
+                std::string file_on_disk = namelist[n]->d_name;
                 bool found = false;
                 for (const auto &ele : cachetable) {
                     if (ele.second.cachepath == file_on_disk) found = true;
                 }
                 if (!found) {
-                    string ff = _cachedir + "/" + file_on_disk;
-                    logger->info("File '") << file_on_disk << "' not in cache file! Deleting...";
+                    std::string ff = _cachedir + "/" + file_on_disk;
+                    syslog(LOG_INFO, "File \"%s\" not in cache file! Deleting...", file_on_disk.c_str());
                     remove(ff.c_str());
                 }
                 free(namelist[n]);
             }
             free(namelist);
         }
+
+        for (const auto &ele : cachetable) {
+            try {
+                (void) sizetable.at(ele.second.origpath);
+            }
+            catch(const std::out_of_range& oor) {
+                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h, ele.second.mtime};
+                sizetable[ele.second.origpath] = tmp_cr;
+            }
+        }
     }
     //============================================================================
 
     SipiCache::~SipiCache()
     {
-        auto logger = spdlog::get(shttps::loggername);
+        syslog(LOG_DEBUG, "Closing cache...");
+        std::string cachefilename = _cachedir + "/.sipicache";
 
-        logger->debug("Closing cache...");
-        string cachefilename = _cachedir + "/.sipicache";
-
-        ofstream cachefile(cachefilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
+        std::ofstream cachefile(cachefilename, std::ofstream::out | std::ofstream::binary | std::ofstream::trunc);
         if (!cachefile.fail()) {
             for (const auto &ele : cachetable) {
                 SipiCache::FileCacheRecord fr;
+                fr.img_w = ele.second.img_w;
+                fr.img_h = ele.second.img_h;
                 (void) snprintf(fr.canonical, 256, "%s", ele.first.c_str());
                 (void) snprintf(fr.origpath, 256, "%s", ele.second.origpath.c_str());
                 (void) snprintf(fr.cachepath, 256, "%s", ele.second.cachepath.c_str());
@@ -158,7 +178,7 @@ namespace Sipi {
                 fr.fsize = ele.second.fsize;
                 fr.access_time = ele.second.access_time;
                 cachefile.write((char *) &fr, sizeof (SipiCache::FileCacheRecord));
-                logger->debug("Writing '") << ele.second.cachepath << "' to cache file";
+                syslog(LOG_DEBUG, "Writing \"%s\" to cache file...", ele.second.cachepath.c_str());
             }
         }
         cachefile.close();
@@ -207,41 +227,60 @@ namespace Sipi {
     }
     //============================================================================
 
-    static bool _compare(const AListEle &e1, const AListEle &e2)
+    static bool _compare_access_time_asc(const AListEle &e1, const AListEle &e2)
     {
-        if (e1.access_time <= e2.access_time) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        double d = difftime(e1.access_time, e2.access_time);
+
+        return (d < 0.0);
     }
     //============================================================================
 
-    int SipiCache::purge() {
-        auto logger = spdlog::get(shttps::loggername);
+    static bool _compare_access_time_desc(const AListEle &e1, const AListEle &e2)
+    {
+        double d = difftime(e1.access_time, e2.access_time);
 
+        return (d > 0.0);
+    }
+    //============================================================================
+
+    static bool _compare_fsize_asc(const AListEle &e1, const AListEle &e2)
+    {
+        return (e1.fsize < e2.fsize);
+    }
+    //============================================================================
+
+    static bool _compare_fsize_desc(const AListEle &e1, const AListEle &e2)
+    {
+        return (e1.fsize > e2.fsize);
+    }
+    //============================================================================
+
+    int SipiCache::purge(bool use_lock) {
         if ((max_cachesize == 0) && (max_nfiles == 0)) return 0; // allow cache to grow indefinitely! dangerous!!
         int n = 0;
         if (((max_cachesize > 0) && (cachesize >= max_cachesize))
             || ((max_nfiles > 0) && (nfiles >= max_nfiles))) {
-            vector<AListEle> alist(cachetable.size());
+            std::vector<AListEle> alist;
+
+            std::unique_lock<std::mutex> locking_mutex_guard(locking, std::defer_lock);
+            if (use_lock) locking_mutex_guard.lock();
 
             for (const auto &ele : cachetable) {
-                AListEle al = { ele.first, ele.second.access_time };
+                AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
                 alist.push_back(al);
             }
-            sort(alist.begin(), alist.end(), _compare);
+            sort(alist.begin(), alist.end(), _compare_access_time_asc);
 
             long long cachesize_goal = max_cachesize*cache_hysteresis;
             int nfiles_goal = max_nfiles*cache_hysteresis;
             for (const auto& ele : alist) {
-                logger->debug("Purging '") << cachetable[ele.canonical].cachepath << "'...";
-                string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
-                remove(delpath.c_str());
-                cachetable.erase(ele.canonical);
+                syslog(LOG_DEBUG, "Purging from cache \"%s\"...", cachetable[ele.canonical].cachepath.c_str());
+                std::string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
+                ::remove(delpath.c_str());
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
+                ++n;
+                (void) cachetable.erase(ele.canonical);
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
@@ -250,7 +289,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    std::string SipiCache::check(const string &origpath_p, const string &canonical_p)
+    std::string SipiCache::check(const std::string &origpath_p, const std::string &canonical_p)
     {
         struct stat fileinfo;
         SipiCache::CacheRecord fr;
@@ -264,23 +303,25 @@ namespace Sipi {
         time_t mtime = fileinfo.st_mtime;
 #endif
 
-        string res;
-        locking.lock();
-        try {
-            fr = cachetable.at(canonical_p);
-        }
-        catch(const std::out_of_range& oor) {
-            locking.unlock();
-            return res; // return empty string, because we didn't find the file in cache
-        }
+        std::string res;
 
-        //
-        // get the current time (seconds since Epoch)
-        //
-        time_t at;
-        time(&at);
-        fr.access_time = at; // update the access time!
-        locking.unlock();
+        {
+            std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
+            try {
+                fr = cachetable.at(canonical_p);
+            }
+            catch (const std::out_of_range& oor) {
+                return res; // return empty string, because we didn't find the file in cache
+            }
+
+            //
+            // get the current time (seconds since Epoch)
+            //
+            time_t at;
+            time(&at);
+            fr.access_time = at; // update the access time!
+        }
 
         if (tcompare(mtime, fr.mtime) > 0) { // original file is newer than cache, we have to replace it..
             return res; // return empty string, means "replace the file in the cache!"
@@ -291,31 +332,31 @@ namespace Sipi {
     }
     //============================================================================
 
-    string SipiCache::getNewCacheName(void)
+    std::string SipiCache::getNewCacheName(void)
     {
         //
         // create a unique temporary filename
         //
-        string tmpname = _cachedir + "/cache_XXXXXXXXXX";
+        std::string tmpname = _cachedir + "/cache_XXXXXXXXXX";
         char *writable = new char[tmpname.size() + 1];
         std::copy(tmpname.begin(), tmpname.end(), writable);
         writable[tmpname.size()] = '\0'; // don't forget the terminating 0
 
         if (mktemp(writable) == NULL) {
-            throw SipiError(__file__, __LINE__, string("Couldn't create temporary file \"") + string(writable) + string("\"!"), errno);
+            throw SipiError(__file__, __LINE__, std::string("Couldn't create temporary file ") + std::string(writable), errno);
         }
-        tmpname = string(writable);
+        tmpname = std::string(writable);
         delete[] writable;
 
         return tmpname;
     }
     //============================================================================
 
-    void SipiCache::add(const string &origpath_p, const string &canonical_p, const string &cachepath_p)
+    void SipiCache::add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, int img_w_p, int img_h_p)
     {
         size_t pos = cachepath_p.rfind('/');
-        string cachepath;
-        if (pos != string::npos) {
+        std::string cachepath;
+        if (pos != std::string::npos) {
             cachepath = cachepath_p.substr(pos + 1);
         }
         else {
@@ -323,13 +364,16 @@ namespace Sipi {
         }
         struct stat fileinfo;
         SipiCache::CacheRecord fr;
+        SipiCache::SizeRecord sr;
 
+        fr.img_w = sr.img_w = img_w_p;
+        fr.img_h = sr.img_h = img_h_p;
         fr.origpath = origpath_p;
         fr.cachepath = cachepath;
 
-        locking.lock();
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
         if (stat(cachepath_p.c_str(), &fileinfo) != 0) {
-            locking.unlock();
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origpath_p + "\"!", errno);
         }
 #if defined(HAVE_ST_ATIMESPEC)
@@ -352,8 +396,8 @@ namespace Sipi {
         //
         try {
             SipiCache::CacheRecord tmp_fr = cachetable.at(canonical_p);
-            string toremove = _cachedir + "/" + tmp_fr.cachepath;
-            remove(toremove.c_str());
+            std::string toremove = _cachedir + "/" + tmp_fr.cachepath;
+            ::remove(toremove.c_str());
             cachesize -= tmp_fr.fsize;
             --nfiles;
         }
@@ -361,14 +405,110 @@ namespace Sipi {
             // do nothing...
         }
 
-        purge();
+        purge(false);
 
         cachetable[canonical_p] = fr;
         cachesize += fr.fsize;
-        ++nfiles;
 
-        locking.unlock();
+        /*
+        try {
+            (void) sizetable.at(origpath_p);
+        }
+        catch(const std::out_of_range& oor) {
+         */
+            SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p};
+            sizetable[origpath_p] = tmp_cr;
+        //}
+
+        ++nfiles;
     }
     //============================================================================
 
+    bool SipiCache::remove(const std::string &canonical_p) {
+        SipiCache::CacheRecord fr;
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
+        try {
+            fr = cachetable.at(canonical_p);
+        }
+        catch(const std::out_of_range& oor) {
+            return false; // return empty string, because we didn't find the file in cache
+        }
+
+        syslog(LOG_DEBUG, "Delete from cache \"%s\"...", cachetable[canonical_p].cachepath.c_str());
+        std::string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
+        ::remove(delpath.c_str());
+        cachesize -= cachetable[canonical_p].fsize;
+        cachetable.erase(canonical_p);
+        --nfiles;
+
+        return true;
+    }
+    //============================================================================
+
+    void SipiCache::loop(ProcessOneCacheFile worker, void *userdata, SortMethod sm) {
+        std::vector<AListEle> alist;
+
+        for (const auto &ele : cachetable) {
+            AListEle al = { ele.first, ele.second.access_time, ele.second.fsize };
+            alist.push_back(al);
+        }
+
+        switch (sm) {
+            case SORT_ATIME_ASC: {
+                sort(alist.begin(), alist.end(), _compare_access_time_asc);
+                break;
+            }
+            case SORT_ATIME_DESC: {
+                sort(alist.begin(), alist.end(), _compare_access_time_desc);
+                break;
+            }
+            case SORT_FSIZE_ASC: {
+                sort(alist.begin(), alist.end(), _compare_fsize_asc);
+                break;
+            }
+            case SORT_FSIZE_DESC: {
+                sort(alist.begin(), alist.end(), _compare_fsize_desc);
+                break;
+            }
+        }
+
+        int i = 1;
+        for (const auto& ele : alist) {
+            worker(i, ele.canonical, cachetable[ele.canonical], userdata);
+            i++;
+        }
+    }
+    //============================================================================
+
+    bool SipiCache::getSize(const std::string &origname_p, int &img_w, int &img_h) {
+        struct stat fileinfo;
+        if (stat(origname_p.c_str(), &fileinfo) != 0) {
+            throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origname_p + "\"!", errno);
+        }
+#if defined(HAVE_ST_ATIMESPEC)
+        struct timespec mtime = fileinfo.st_mtimespec;
+#else
+        time_t mtime = fileinfo.st_mtime;
+#endif
+
+
+        try {
+            SipiCache::SizeRecord sr =  sizetable.at(origname_p);
+            if (tcompare(mtime, sr.mtime) > 0) { // original file is newer than cache, we have to replace it..
+                std::lock_guard<std::mutex> locking_mutex_guard(locking);
+
+                sizetable.erase(origname_p);
+                return false; // return empty string, means "replace the file in the cache!"
+            }
+
+            img_w = sr.img_w;
+            img_h = sr.img_h;
+        }
+        catch(const std::out_of_range& oor) {
+            return false;
+        }
+        return true;
+    }
+    //============================================================================
 }

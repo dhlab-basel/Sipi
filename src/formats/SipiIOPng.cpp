@@ -28,15 +28,13 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <string.h>
 
-#include "SipiError.h"
 #include "SipiIOPng.h"
 
 
 #include <png.h>
 #include <zlib.h>
-
-static const char __file__[] = __FILE__;
 
 
 // bad hack in order to include definitions in png.h on debian systems
@@ -47,7 +45,7 @@ static const char __file__[] = __FILE__;
 #  define PNG_iTXt_SUPPORTED 1
 #endif
 
-using namespace std;
+static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
@@ -55,6 +53,7 @@ namespace Sipi {
     static char exif_tag[] = "Raw profile type exif";
     static char iptc_tag[] = "Raw profile type iptc";
     static char xmp_tag[] = "XML:com.adobe.xmp";
+    static char sipi_tag[] = "SIPI:io.sipi.essentials";
 
     //============== HELPER CLASS ==================
     class PngTextPtr {
@@ -68,7 +67,7 @@ namespace Sipi {
         inline unsigned int num() {return num_text; };
         inline png_text* ptr() {return text_ptr; };
         png_text *next();
-        void add_zTXt(char *key, unsigned char *data, unsigned int len);
+        void add_zTXt(char *key, char *data, unsigned int len);
         void add_iTXt(char *key, char *data, unsigned int len);
     };
 
@@ -86,12 +85,15 @@ namespace Sipi {
     }
     //=============================================
 
-    void PngTextPtr::add_zTXt(char *key, unsigned char *data, unsigned int len) {
+    void PngTextPtr::add_zTXt(char *key, char *data, unsigned int len) {
         png_text *tmp = this->next();
         tmp->compression = PNG_TEXT_COMPRESSION_zTXt;
         tmp->key = key;
         tmp->text = (char *) data;
         tmp->text_length = len;
+        tmp->itxt_length = 0;
+        tmp->lang = (char *) "";
+        tmp->lang_key = (char *) "";
     }
     //=============================================
 
@@ -100,7 +102,10 @@ namespace Sipi {
         tmp->compression = PNG_ITXT_COMPRESSION_zTXt;
         tmp->key = key;
         tmp->text = data;
+        tmp->text_length = 0;
         tmp->itxt_length = len;
+        tmp->lang = (char *) "";
+        tmp->lang_key = (char *) "";
     }
     //=============================================
 
@@ -127,15 +132,15 @@ namespace Sipi {
 
         if ((png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, (png_voidp) NULL, (png_error_ptr) NULL, (png_error_ptr) NULL)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
         }
         if ((info_ptr = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
         if ((end_info = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
 
         png_init_io(png_ptr, infile);
@@ -156,6 +161,7 @@ namespace Sipi {
             }
             case PNG_COLOR_TYPE_GRAY_ALPHA: { // implies nc = 2, (bit depths 8, 16)
                 img->photo = MINISBLACK;
+                img->es.push_back(ASSOCALPHA);
                 break;
             }
             case PNG_COLOR_TYPE_PALETTE: { // we will not support it for now, (bit depths 1, 2, 4, 8)
@@ -168,13 +174,13 @@ namespace Sipi {
             }
             case PNG_COLOR_TYPE_RGB_ALPHA: { // implies nc = 4, (bit_depths 8, 16)
                 img->photo = RGB;
+                img->es.push_back(ASSOCALPHA);
                 break;
             }
         }
 
         if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sRGB) != 0) {
             img->icc = new SipiIcc(icc_sRGB);
-            cerr << "PNG with sRGB profile: " << filepath << endl;
         }
         else {
             png_charp name;
@@ -183,7 +189,6 @@ namespace Sipi {
             png_uint_32 proflen;
             if (png_get_iCCP(png_ptr, info_ptr, &name, &compression_type, &profile, &proflen) != 0) {
                 img->icc = new SipiIcc((unsigned char *) profile, (int) proflen);
-                cerr << "PNG with ICC profile: " << filepath << endl;
             }
         }
 
@@ -198,6 +203,10 @@ namespace Sipi {
             }
             else if (strcmp(png_texts[i].key, iptc_tag) == 0) {
                 img->iptc = new SipiIptc((unsigned char *) png_texts[i].text, (unsigned int) png_texts[i].text_length);
+            }
+            else if (strcmp(png_texts[i].key, sipi_tag) == 0) {
+                SipiEssentials se(png_texts[i].text);
+                img->essential_metadata(se);
             }
             else {
                 fprintf(stderr, "PNG-COMMENT: key=\"%s\" text=\"%s\"\n", png_texts[i].key, png_texts[i].text);
@@ -255,7 +264,7 @@ namespace Sipi {
 
         if (force_bps_8) {
             if (!img->to8bps()) {
-                throw SipiError(__file__, __LINE__, "Cannont convert to 8 Bits(sample");
+                throw SipiImageError(__file__, __LINE__, "Cannot convert to 8 Bits(sample");
             }
         }
 
@@ -286,15 +295,15 @@ namespace Sipi {
 
         if ((png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING, (png_voidp) NULL, (png_error_ptr) NULL, (png_error_ptr) NULL)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_structp !");
         }
         if ((info_ptr = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
         if ((end_info = png_create_info_struct(png_ptr)) == NULL) {
             fclose (infile);
-            throw SipiError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
+            throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath + "\": Could not allocate mempry fpr png_infop !");
         }
 
         png_init_io(png_ptr, infile);
@@ -347,19 +356,14 @@ namespace Sipi {
     /*==========================================================================*/
 
     void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
-        //
-        // TODO! Support incoming 16 bit images may be (!!) by converting the buffer to 8 bit!
-        //
-
         FILE *outfile = NULL;
         png_structp png_ptr;
-        shttps::Connection *conobj = img->connection();
 
         if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL))) {
-            throw SipiError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
         }
 
-        if (strcmp (filepath.c_str(), "-") == 0) {
+        if (filepath == "stdout:") {
             outfile = stdout;
         }
         else if (filepath == "HTTP") {
@@ -380,13 +384,13 @@ namespace Sipi {
         }
         else {
             if (!(outfile = fopen(filepath.c_str(), "wb"))) {
-                throw SipiError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": Could notopen output file !");
+                throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": Could notopen output file !");
             }
         }
 
         png_infop info_ptr;
         if (!(info_ptr = png_create_info_struct(png_ptr))) {
-            throw SipiError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_info_struct !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": png_create_info_struct !");
         }
 
     	if (outfile != NULL) png_init_io(png_ptr, outfile);
@@ -400,17 +404,17 @@ namespace Sipi {
         if (img->nc == 1) { // grey value
             color_type = PNG_COLOR_TYPE_GRAY;
         }
-        else if (img->nc == 2) { // grey value with alpha
+        else if ((img->nc == 2) && (img->es.size() == 1)) { // grey value with alpha
             color_type = PNG_COLOR_TYPE_GRAY_ALPHA;
         }
         else if (img->nc == 3) { // RGB
             color_type = PNG_COLOR_TYPE_RGB;
         }
-        else if (img->nc == 4) { // RGB + ALPHA
+        else if ((img->nc == 4) && (img->es.size() == 1)) { // RGB + ALPHA
             color_type = PNG_COLOR_TYPE_RGB_ALPHA;
         }
         else {
-            throw SipiError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": cannot handle number of channels () !");
+            throw SipiImageError(__file__, __LINE__, "Error writing PNG file \"" + filepath + "\": cannot handle number of channels () !");
         }
 
         png_set_IHDR(png_ptr, info_ptr, img->nx, img->ny, img->bps, color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
@@ -425,41 +429,50 @@ namespace Sipi {
             png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf, len);
         }
 
+        PngTextPtr chunk_ptr(4);
         //
         // other metadata comes here
         //
         unsigned char *exif_buf = NULL;
-        PngTextPtr *chunk_ptr = new PngTextPtr(4);
         if (img->exif) {
             unsigned int len;
             exif_buf = img->exif->exifBytes(len);
-            chunk_ptr->add_zTXt(exif_tag, exif_buf, len);
+            chunk_ptr.add_zTXt(exif_tag, (char *) exif_buf, len);
         }
 
         unsigned char *iptc_buf = NULL;
         if (img->iptc) {
             unsigned int len;
             iptc_buf = img->iptc->iptcBytes(len);
-            chunk_ptr->add_zTXt(iptc_tag, iptc_buf, len);
+            chunk_ptr.add_zTXt(iptc_tag, (char *) iptc_buf, len);
         }
 
         char *xmp_buf = NULL;
         if (img->xmp != NULL) {
             unsigned int len;
             xmp_buf = img->xmp->xmpBytes(len);
-            chunk_ptr->add_iTXt(xmp_tag, xmp_buf, len);
+            chunk_ptr.add_iTXt(xmp_tag, xmp_buf, len);
         }
-        if (chunk_ptr->num() > 0) {
-            png_set_text(png_ptr, info_ptr, chunk_ptr->ptr(), chunk_ptr->num());
+
+        SipiEssentials es = img->essential_metadata();
+        if (es.is_set()) {
+            std::string esstr = es;
+            unsigned int len = esstr.length();
+            char sipi_buf[512 + 1];
+            strncpy(sipi_buf, esstr.c_str(), 512);
+            sipi_buf[512] = '\0';
+            chunk_ptr.add_iTXt(sipi_tag, sipi_buf, len);
+        }
+
+
+        if (chunk_ptr.num() > 0) {
+            png_set_text(png_ptr, info_ptr, chunk_ptr.ptr(), chunk_ptr.num());
         }
 
         png_bytep *row_pointers = (png_bytep *) png_malloc (png_ptr, img->ny * sizeof (png_byte *));
         if (img->bps == 8) {
             for (int i = 0; i < img->ny; i++) {
-                //png_byte *row = (png_byte *) png_malloc(png_ptr, sizeof(unsigned char) * img->nx * img->nc);
-                //memcpy (row, img->pixels + i*img->nx*img->nc, img->nx*img->nc);
                 row_pointers[i] = (img->pixels + i*img->nx*img->nc);
-                //row_pointers[i] = row;
             }
         }
         else if (img->bps == 16) {
@@ -471,7 +484,7 @@ namespace Sipi {
         png_set_rows(png_ptr, info_ptr, row_pointers);
 
         png_write_info(png_ptr, info_ptr);
-        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+        png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_SWAP_ENDIAN, NULL); // we expect the data to be little endian...
         png_write_end(png_ptr, info_ptr);
 
         png_free (png_ptr, row_pointers);

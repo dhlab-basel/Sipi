@@ -19,7 +19,8 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -37,13 +38,11 @@
 #include "SipiError.h"
 #include "SipiRegion.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    SipiRegion::SipiRegion(string str) {
+    SipiRegion::SipiRegion(std::string str) {
         int n;
         if (str.empty() || (str == "full")) {
             coord_type = FULL;
@@ -53,12 +52,12 @@ namespace Sipi {
             rh = 0.;
             canonical_ok = true; // "full" is a canonical value
         }
-        else if (str.find("pct:") != string::npos) {
+        else if (str.find("pct:") != std::string::npos) {
             coord_type = SipiRegion::PERCENTS;
-            string tmpstr = str.substr(4);
+            std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%f,%f,%f,%f", &rx, &ry, &rw, &rh);
             if (n != 4) {
-                throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\" !");
+                throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\"");
             }
             canonical_ok = false;
         }
@@ -66,7 +65,7 @@ namespace Sipi {
             coord_type = SipiRegion::COORDS;
             n = sscanf(str.c_str(), "%f,%f,%f,%f", &rx, &ry, &rw, &rh);
             if (n != 4) {
-                throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\" !");
+                throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\"");
             }
             canonical_ok = false;
         }
@@ -103,16 +102,18 @@ namespace Sipi {
             x = 0;
         }
         else if (x >= nx) {
-            string msg = "Invalid croping region outside of image!";
-            throw SipiError(__file__, __LINE__, msg);
+            std::stringstream msg;
+            msg << "Invalid croping region outside of image (x=" << x << " nx=" << nx << ")";
+            throw SipiError(__file__, __LINE__, msg.str());
         }
         if (y < 0) {
             h += y;
             y = 0;
         }
         else if (y >= ny) {
-            string msg = "Invalid croping region outside of image!";
-            throw SipiError(__file__, __LINE__, msg);
+            std::stringstream msg;
+            msg << "Invalid croping region outside of image (y=" << y << " ny=" << ny << ")";
+            throw SipiError(__file__, __LINE__, msg.str());
         }
 
         if (w == 0) {
@@ -128,7 +129,7 @@ namespace Sipi {
             h = ny - y;
         }
         if ((w < 0) || (h < 0)) {
-            string msg = "Invalid croping region with zero or negative dimension (w x h):" + to_string(w) + " " + to_string(h);
+            std::string msg = "Invalid croping region with zero or negative dimension (w x h):" + std::to_string(w) + " " + std::to_string(h);
             throw SipiError(__file__, __LINE__, msg);
         }
 
@@ -145,8 +146,8 @@ namespace Sipi {
 
 
     void SipiRegion::canonical(char *buf, int buflen) {
-        if (!canonical_ok) {
-            string msg = "Canonical coordinates not determined!";
+        if (!canonical_ok && (coord_type != FULL)) {
+            std::string msg = "Canonical coordinates not determined";
             throw SipiError(__file__, __LINE__, msg);
         }
         switch (coord_type) {
@@ -166,14 +167,14 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    ostream &operator<< (ostream &outstr, const SipiRegion &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, const SipiRegion &rhs) {
         outstr << "IIIF-Server Region:";
         outstr << "  Coordinate type: " << rhs.coord_type;
         outstr
-            << " | rx = " << to_string(rhs.rx)
-            << " | ry = " << to_string(rhs.ry)
-            << " | rw = " << to_string(rhs.rw)
-            << " | rh = " << to_string(rhs.rh);
+            << " | rx = " << std::to_string(rhs.rx)
+            << " | ry = " << std::to_string(rhs.ry)
+            << " | rw = " << std::to_string(rhs.rw)
+            << " | rh = " << std::to_string(rhs.rh);
         return outstr;
     }
     //-------------------------------------------------------------------------

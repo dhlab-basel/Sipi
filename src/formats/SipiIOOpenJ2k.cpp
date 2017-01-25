@@ -29,14 +29,14 @@
 
 #include <stdio.h>
 
-#include "Connection.h"
-#include "Global.h"
+#include "shttps/Connection.h"
+#include "shttps/Global.h"
 
 #include "SipiError.h"
 #include "SipiIOJ2k.h"
 
 #include "SipiIOOpenJ2k.h"
-#include "spdlog/spdlog.h"  // logging...
+#include "shttps/Logger.h"  // logging...
 
 #include "openjpeg.h"
 
@@ -48,9 +48,6 @@
 #define JP2_MAGIC "\x0d\x0a\x87\x0a"
 /* position 45: "\xff\x52" */
 #define J2K_CODESTREAM_MAGIC "\xff\x4f\xff\x51"
-
-
-using namespace std;
 
 static const char __file__[] = __FILE__;
 
@@ -75,7 +72,7 @@ namespace Sipi {
 
     bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
         FILE *reader;
 
 
@@ -215,14 +212,14 @@ namespace Sipi {
 
     bool SipiIOOpenJ2k::getDim(std::string filepath, int &width, int &height)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
     }
     //=============================================================================
 
     void SipiIOOpenJ2k::write(SipiImage *img, string filepath, int quality)
     {
-        auto logger = spdlog::get(shttps::loggername);
+        auto logger = Logger::getLogger(shttps::loggername);
 
     }
     //=============================================================================

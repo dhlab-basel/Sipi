@@ -9,13 +9,14 @@ include(ExternalProject)
 ExternalProject_Add(project_lua
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://www.lua.org/ftp/lua-5.3.1.tar.gz
-    SOURCE_DIR ${COMMON_LIB}/lua-5.3.1
+    SOURCE_DIR ${COMMON_SRCS}/lua-5.3.1
     CONFIGURE_COMMAND ls
-    BUILD_COMMAND make ${LUA_ARCH}
-    INSTALL_COMMAND make install INSTALL_TOP=${COMMON_LOCAL}
+#    BUILD_COMMAND make CPPFLAGS=-DLUA_USE_APICHECK CFLAGS=-DLUA_USE_APICHECK INSTALL_LIB=${CONFIGURE_LIBDIR} ${LUA_ARCH}
+    BUILD_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} ${LUA_ARCH}
+    INSTALL_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} install INSTALL_TOP=${COMMON_LOCAL}
     BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_lua install_dir)
 add_library(lua STATIC IMPORTED GLOBAL)
-set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${install_dir}/lib/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
+set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
 add_dependencies(lua project_lua)

@@ -40,12 +40,86 @@ function pre_flight(prefix,identifier,cookie)
     --
     -- For Knora Sipi integration testing
     -- Always the same test file is served
+    -- Make sure that this image file exists in config.imgroot
     --
-    filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
 
-    print("serving test image " .. filepath)
+    if config.prefix_as_path then
+        filepath = config.imgroot .. '/' .. prefix .. '/' .. 'Leaves.jpg'
+    else
+        filepath = config.imgroot .. '/' .. 'Leaves.jpg'
+    end
 
-    return 'allow', filepath
+    if prefix == "thumbs" then
+        -- always allow thumbnails
+        return 'allow', filepath
+    end
+
+    if prefix == "tmp" then
+        -- always deny access to tmp folder
+        return 'deny'
+    end
+
+
+    -- comment this in if you do not want to do a preflight request
+    -- print("ignoring permissions")
+    -- do return 'allow', filepath end
+
+    knora_cookie_header = nil
+
+    if cookie ~='' then
+
+        -- tries to extract the Knora session id from the cookie:
+        -- gets the digits between "sid=" and the closing ";" (only given in case of several key value pairs)
+        -- returns nil if it cannot find it
+        session_id = string.match(cookie, "sid=(%d+);?")
+
+        if session_id == nil then
+            -- no session_id could be extracted
+            print("cookie key is invalid")
+        else
+            knora_cookie_header = { Cookie = "KnoraAuthentication=" .. session_id }
+        end
+    end
+
+    knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
+
+    success, result = server.http("GET", knora_url, knora_cookie_header, 5000)
+    if not success then
+        server.log("server.http() failed: " .. result, server.loglevel.LOG_ERR)
+        return 'deny'
+    end
+
+    if result.status_code ~= 200 then
+        server.log("Knora returned HTTP status code " .. result.status_code)
+        server.log(result.body)
+        return 'deny'
+    end
+
+    success, response_json = server.json_to_table(result.body)
+    if not success then
+        server.log("server.json_to_table() failed: " .. response_json, server.loglevel.LOG_ERR)
+        return 'deny'
+    end
+
+    if response_json.status ~= 0 then
+        -- something went wrong with the request, Knora returned a non zero status
+        return 'deny'
+    end
+
+    if response_json.permissionCode == 0 then
+        -- no view permission on file
+        return 'deny'
+    elseif response_json.permissionCode == 1 then
+        -- restricted view permission on file
+        -- either watermark or size (depends on project, should be returned with permission code by Sipi responder)
+        return 'restrict:size=' .. config.thumb_size, filepath
+    elseif response_json.permissionCode >= 2 then
+        -- full view permissions on file
+        return 'allow', filepath
+    else
+        -- invalid permission code
+        return 'deny'
+    end
 
 end
 -------------------------------------------------------------------------------

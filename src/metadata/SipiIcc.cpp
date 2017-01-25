@@ -19,9 +19,10 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include "SipiIcc.h"
+ */
+#include "SipiIcc.h"
 
-using namespace std;
+#include <time.h>
 
 static const char __file__[] = __FILE__;
 
@@ -36,10 +37,21 @@ namespace Sipi {
 
     SipiIcc::SipiIcc(const unsigned char *icc_buf, int icc_len) {
         if ((icc_profile = cmsOpenProfileFromMem(icc_buf, icc_len)) == NULL) {
-            cerr << "THROWING ERROR IN ICC!" << endl;
-            throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
+            std::cerr << "THROWING ERROR IN ICC" << std::endl;
+            throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
         }
-        profile_type = icc_unknown;
+        unsigned int len = cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        char *buf = new char[len];
+        cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf, len);
+        if (strcmp(buf, "sRGB IEC61966-2.1") == 0) {
+            profile_type = icc_sRGB;
+        }
+        else if (strncmp(buf, "AdobeRGB", 8) == 0) {
+            profile_type = icc_AdobeRGB;
+        }
+        else {
+            profile_type = icc_unknown;
+        }
     }
 
     SipiIcc::SipiIcc(const SipiIcc &icc_p) {
@@ -51,7 +63,7 @@ namespace Sipi {
             cmsSaveProfileToMem(icc_p.icc_profile, buf, &len);
             if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
 	    delete [] buf; // fixing memory leak?
-                throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
+                throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
             }
 	    delete [] buf; // fixing memory leak?
             profile_type = icc_p.profile_type;
@@ -70,10 +82,10 @@ namespace Sipi {
             buf = new char[len];
             cmsSaveProfileToMem(icc_profile_p, buf, &len);
             if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
-	      delete [] buf;
-                throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
+                delete [] buf;
+                throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
             }
-	    delete [] buf;
+            delete [] buf;
         }
         profile_type = icc_unknown;
     }
@@ -85,7 +97,7 @@ namespace Sipi {
                 profile_type = icc_undefined;
             }
             case icc_unknown: {
-                throw SipiError(__file__, __LINE__, "Profile type \"icc_inknown\" not allowed!");
+                throw SipiError(__file__, __LINE__, "Profile type \"icc_inknown\" not allowed");
             }
             case icc_sRGB: {
                 icc_profile = cmsCreate_sRGBProfile();
@@ -98,7 +110,7 @@ namespace Sipi {
                 break;
             }
             case icc_RGB: {
-                throw SipiError(__file__, __LINE__, "Profile type \"icc_RGB\" uses other constructor!");
+                throw SipiError(__file__, __LINE__, "Profile type \"icc_RGB\" uses other constructor");
             }
             case icc_CYMK_standard: {
                 icc_profile = cmsOpenProfileFromMem(USWebCoatedSWOP_icc, USWebCoatedSWOP_icc_len);
@@ -164,7 +176,7 @@ namespace Sipi {
                 buf = new char[len];
                 cmsSaveProfileToMem(rhs.icc_profile, buf, &len);
                 if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
-                    throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed!");
+                    throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
                 }
             }
             profile_type = rhs.profile_type;
@@ -176,9 +188,9 @@ namespace Sipi {
         unsigned char *buf = NULL;
         len = 0;
         if (icc_profile != NULL) {
-            if (!cmsSaveProfileToMem(icc_profile, NULL, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed!");
+            if (!cmsSaveProfileToMem(icc_profile, NULL, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed");
             buf = new unsigned char[len];
-            if (!cmsSaveProfileToMem(icc_profile, buf, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed!");
+            if (!cmsSaveProfileToMem(icc_profile, buf, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed");
         }
         return buf;
     }
@@ -213,7 +225,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiError(__file__, __LINE__, "Unsupported iccFormatter for given profile!");
+                throw SipiError(__file__, __LINE__, "Unsupported iccFormatter for given profile");
             }
         }
         return format;
@@ -232,7 +244,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiError(__file__, __LINE__, "Unsupported bits/sample (" + to_string(img->bps) + ")");
+                throw SipiError(__file__, __LINE__, "Unsupported bits/sample (" + std::to_string(img->bps) + ")");
             }
         }
         switch (img->photo) {
@@ -249,11 +261,11 @@ namespace Sipi {
                 break;
             }
             case PALETTE: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"PALETTE\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"PALETTE\" not supported");
                 break;
             }
             case MASK: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"MASK\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"MASK\" not supported");
                 break;
             }
             case SEPARATED: { // --> CMYK
@@ -277,53 +289,57 @@ namespace Sipi {
                 break;
             }
             case CFA: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"Color Field Array (CFS)\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"Color Field Array (CFS)\" not supported");
                 break;
             }
             case LOGL: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LOGL\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LOGL\" not supported");
                 break;
             }
             case LOGLUV: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LOGLUV\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LOGLUV\" not supported");
                 break;
             }
             case LINEARRAW: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LINEARRAW\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"LINEARRAW\" not supported");
                 break;
             }
             default: {
-                throw SipiError(__file__, __LINE__, "Photometric interpretation \"unknown\" not supported!");
+                throw SipiError(__file__, __LINE__, "Photometric interpretation \"unknown\" not supported");
             }
         }
         return format;
     }
 
-    ostream &operator<< (ostream &outstr, SipiIcc &rhs) {
+    std::ostream &operator<< (std::ostream &outstr, SipiIcc &rhs) {
         unsigned int len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, NULL, 0);
         char *buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf, len);
-        outstr << "ICC-Description : " << buf << endl;
+        outstr << "ICC-Description : " << buf << std::endl;
         delete [] buf;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, NULL, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, buf, len);
-        outstr << "ICC-Manufacturer: " << buf << endl;
+        outstr << "ICC-Manufacturer: " << buf << std::endl;
         delete [] buf;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, NULL, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, buf, len);
-        outstr << "ICC-Model       : " << buf << endl;
+        outstr << "ICC-Model       : " << buf << std::endl;
         delete [] buf;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, NULL, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, buf, len);
-        outstr << "ICC-Copyright   : " << buf << endl;
+        outstr << "ICC-Copyright   : " << buf << std::endl;
         delete [] buf;
 
+        struct tm datetime;
+        if (cmsGetHeaderCreationDateTime(rhs.icc_profile, &datetime)) {
+            outstr << "ICC-Date    : " << asctime(&datetime) << std::endl;
+        }
         return outstr;
     }
 
