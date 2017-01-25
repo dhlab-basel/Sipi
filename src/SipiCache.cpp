@@ -126,7 +126,7 @@ namespace Sipi {
         // now we looking for files that are not in the list of cached files
         // and we delete them
         //
-        n = scandir(_cachedir.c_str(), &namelist, NULL, alphasort);
+        n = scandir(_cachedir.c_str(), &namelist, nullptr, alphasort);
         if (n < 0) {
             perror("scandir");
         }

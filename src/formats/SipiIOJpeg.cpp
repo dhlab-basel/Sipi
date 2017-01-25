@@ -126,10 +126,10 @@ namespace Sipi {
 
         delete [] file_buffer->buffer;
         delete file_buffer;
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
 
         free(cinfo->dest);
-        cinfo->dest = NULL;
+        cinfo->dest = nullptr;
     }
     //=============================================================================
 
@@ -209,9 +209,9 @@ namespace Sipi {
 
         delete[] file_buffer->buffer;
         delete file_buffer;
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
         free(cinfo->src);
-        cinfo->src = NULL;
+        cinfo->src = nullptr;
     }
     //=============================================================================
 
@@ -289,10 +289,10 @@ namespace Sipi {
 
         free(html_buffer->buffer);
         free(html_buffer);
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
 
         free(cinfo->dest);
-        cinfo->dest = NULL;
+        cinfo->dest = nullptr;
     }
     //=============================================================================
 
@@ -363,18 +363,18 @@ namespace Sipi {
             switch(id) {
                 case 0x0404: { // IPTC data
                     //cerr << ">>> Photoshop: IPTC" << endl;
-                    if (img->iptc == NULL) img->iptc = new SipiIptc((unsigned char *) ptr, datalen);
+                    if (img->iptc == nullptr) img->iptc = new SipiIptc((unsigned char *) ptr, datalen);
                     // IPTC – handled separately!
                     break;
                 }
                 case 0x040f: { // ICC data
                     //cerr << ">>> Photoshop: ICC" << endl;
                     // ICC profile
-                    if (img->icc == NULL) img->icc = new SipiIcc((unsigned char *) ptr, datalen);
+                    if (img->icc == nullptr) img->icc = new SipiIcc((unsigned char *) ptr, datalen);
                     break;
                 }
                 case 0x0422: { // EXIF data
-                    if (img->exif == NULL) img->exif = new SipiExif((unsigned char *) ptr, datalen);
+                    if (img->exif == nullptr) img->exif = new SipiExif((unsigned char *) ptr, datalen);
                     //cerr << ">>> Photoshop: EXIF" << endl;
                     // exif
                     break;
@@ -382,7 +382,7 @@ namespace Sipi {
                 case 0x0424: { // XMP data
                     //cerr << ">>> Photoshop: XMP" << endl;
                     // XMP data
-                    if (img->xmp == NULL)img->xmp = new SipiXmp(ptr, datalen);
+                    if (img->xmp == nullptr)img->xmp = new SipiXmp(ptr, datalen);
                 }
                 default: {
                     // URL
@@ -450,7 +450,7 @@ namespace Sipi {
         struct jpeg_error_mgr jerr;
 
 
-        JSAMPARRAY linbuf = NULL;
+        JSAMPARRAY linbuf = nullptr;
         jpeg_saved_marker_ptr marker;
 
         //
@@ -501,7 +501,7 @@ namespace Sipi {
         // getting Metadata
         //
         marker = cinfo.marker_list;
-        unsigned char *icc_buffer = NULL;
+        unsigned char *icc_buffer = nullptr;
         int icc_buffer_len = 0;
         while (marker) {
             //fprintf(stderr, "#######################################################################\n");
@@ -515,7 +515,7 @@ namespace Sipi {
                 // first we try to find the exif part
                 //
                 unsigned char *pos = (unsigned char *) memmem(marker->data, marker->data_length, "Exif\000\000", 6);
-                if (pos != NULL) {
+                if (pos != nullptr) {
                     img->exif = new SipiExif(pos + 6, marker->data_length - (pos - marker->data) - 6);
                 }
 
@@ -523,7 +523,7 @@ namespace Sipi {
                 // first we try to find the xmp part: TODO: reading XMP which spans multiple segments. See ExtendedXMP !!!
                 //
                 pos = (unsigned char *) memmem(marker->data, marker->data_length, "http://ns.adobe.com/xap/1.0/\000", 29);
-                if (pos != NULL) {
+                if (pos != nullptr) {
                     char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n', '\0'};
                     char end[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'e', 'n', 'd', '\0'};
 
@@ -582,7 +582,7 @@ namespace Sipi {
                 // first we try to find the exif part
                 //
                 unsigned char *pos = (unsigned char *) memmem(marker->data, marker->data_length, "ICC_PROFILE\0", 12);
-                if (pos != NULL) {
+                if (pos != nullptr) {
                     int len = marker->data_length - (pos - (unsigned char *) marker->data) - 14;
                     icc_buffer = (unsigned char *) realloc(icc_buffer, icc_buffer_len + len);
                     Sipi::memcpy (icc_buffer + icc_buffer_len, pos + 14, (size_t) len);
@@ -599,7 +599,7 @@ namespace Sipi {
             }
             marker = marker->next;
         }
-        if (icc_buffer != NULL) {
+        if (icc_buffer != nullptr) {
             img->icc = new SipiIcc(icc_buffer, icc_buffer_len);
         }
 
@@ -681,14 +681,14 @@ namespace Sipi {
         //
         // do some croping...
         //
-        if ((region != NULL) && (region->getType()) != SipiRegion::FULL) {
+        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
             (void) img->crop(region);
         }
 
         //
         // resize/Scale the image if necessary
         //
-        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
+        if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
             int nnx, nny, reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
@@ -716,7 +716,7 @@ namespace Sipi {
         //
         // open the input file
         //
-        if ((infile = fopen (filepath.c_str(), "rb")) == NULL) {
+        if ((infile = fopen (filepath.c_str(), "rb")) == nullptr) {
             // inlock.unlock();
             return false;
         }
@@ -888,7 +888,7 @@ namespace Sipi {
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //
 
-        if (img->exif != NULL) {
+        if (img->exif != nullptr) {
             unsigned int len;
             unsigned char *buf = img->exif->exifBytes(len);
             char start[] = "Exif\000\000";
@@ -911,7 +911,7 @@ namespace Sipi {
             delete [] exifchunk;
         }
 
-        if (img->xmp != NULL) {
+        if (img->xmp != nullptr) {
             unsigned int len;
             const char *buf;
             try {
@@ -939,7 +939,7 @@ namespace Sipi {
             delete [] xmpchunk;
         }
 
-        if (img->icc != NULL) {
+        if (img->icc != nullptr) {
             unsigned int len;
             const unsigned char *buf = img->icc->iccBytes(len);
             unsigned char start[14] = {0x49, 0x43, 0x43, 0x5F, 0x50, 0x52, 0x4F, 0x46, 0x49, 0x4C, 0x45, 0x0}; //"ICC_PROFILE\000";
@@ -979,7 +979,7 @@ namespace Sipi {
             }
         }
 
-        if (img->iptc != NULL) {
+        if (img->iptc != nullptr) {
             unsigned int len;
             const unsigned char *buf = img->iptc->iptcBytes(len);
             char start[] = "Photoshop 3.0\0008BIM\004\004\000\000";

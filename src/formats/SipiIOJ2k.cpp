@@ -191,7 +191,7 @@ namespace Sipi {
         kdu_customize_warnings(&kdu_sipi_warn);
         kdu_customize_errors(&kdu_sipi_error);
 
-        kdu_core::kdu_compressed_source *input = NULL;
+        kdu_core::kdu_compressed_source *input = nullptr;
         kdu_supp::kdu_simple_file_source file_in;
 
         kdu_supp::jp2_family_src jp2_ultimate_src;
@@ -297,7 +297,7 @@ namespace Sipi {
         //
         kdu_core::kdu_dims roi;
         bool do_roi = false;
-        if ((region != NULL) && (region->getType()) != SipiRegion::FULL) {
+        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
             try {
                 region->crop_coords(__nx, __ny, roi.pos.x, roi.pos.y, roi.size.x, roi.size.y);
                 do_roi = true;
@@ -317,7 +317,7 @@ namespace Sipi {
         int reduce = 0;
         int nnx, nny;
         bool redonly = true; // we assume that only a reduce is necessary
-        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
+        if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
             if (do_roi) {
                 size->get_size(roi.size.x, roi.size.y, nnx, nny, reduce, redonly);
             }
@@ -328,7 +328,7 @@ namespace Sipi {
         }
 
         if (reduce < 0) reduce = 0;
-        codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : NULL);
+        codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : nullptr);
 
 
         // Determine number of components to decompress
@@ -421,7 +421,7 @@ namespace Sipi {
                 bool *get_signed = new bool[img->nc];
                 for (int i = 0; i < img->nc; i++) get_signed[i] = FALSE;
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area()*img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, NULL, NULL, NULL, NULL, get_signed);
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
                 img->pixels = (byte *) buffer16;
                 break;
             }
@@ -438,7 +438,7 @@ namespace Sipi {
         input->close();
         jpx_in.close(); // Not really necessary here.
 
-        if ((size != NULL) && (!redonly)) {
+        if ((size != nullptr) && (!redonly)) {
             img->scale(nnx, nny);
         }
 
@@ -456,7 +456,7 @@ namespace Sipi {
         kdu_supp::jp2_family_src jp2_ultimate_src;
         kdu_supp::jpx_source jpx_in;
         kdu_supp::jpx_codestream_source jpx_stream;
-        kdu_core::kdu_compressed_source *input = NULL;
+        kdu_core::kdu_compressed_source *input = nullptr;
         kdu_supp::kdu_simple_file_source file_in;
 
         jp2_ultimate_src.open(filepath.c_str());
@@ -544,7 +544,7 @@ namespace Sipi {
 
         	kdu_codestream codestream;
 
-            kdu_compressed_target *output = NULL;
+            kdu_compressed_target *output = nullptr;
             jp2_family_tgt jp2_ultimate_tgt;
             jpx_target jpx_out;
             jpx_codestream_target jpx_stream;
@@ -555,7 +555,7 @@ namespace Sipi {
             jp2_channels jp2_family_channels;
             jp2_colour jp2_family_colour;
 
-            J2kHttpStream *http = NULL;
+            J2kHttpStream *http = nullptr;
             if (filepath == "HTTP") {
                 shttps::Connection *conobj = img->connection();
                 http = new J2kHttpStream(conobj);
@@ -606,7 +606,7 @@ namespace Sipi {
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
 
-            if (img->icc != NULL) {
+            if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
                     case icc_undefined: {
@@ -676,7 +676,7 @@ namespace Sipi {
             for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
             jpx_out.write_headers();
 
-            if (img->iptc != NULL) {
+            if (img->iptc != nullptr) {
                 unsigned int iptc_len = 0;
                 kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
                 write_iptc_box(&jp2_ultimate_tgt, iptc_buf, iptc_len);
@@ -685,7 +685,7 @@ namespace Sipi {
             //
             // write EXIF here
             //
-            if (img->exif != NULL) {
+            if (img->exif != nullptr) {
                 unsigned int exif_len = 0;
                 kdu_byte *exif_buf = img->exif->exifBytes(exif_len);
                 write_exif_box(&jp2_ultimate_tgt, exif_buf, exif_len);
@@ -694,7 +694,7 @@ namespace Sipi {
             //
             // write XMP data here
             //
-            if (img->xmp != NULL) {
+            if (img->xmp != nullptr) {
                 unsigned int len = 0;
                 const char *xmp_buf = img->xmp->xmpBytes(len);
                 if (len > 0) {
@@ -709,7 +709,7 @@ namespace Sipi {
 
             codestream.access_siz()->finalize_all();
 
-            kdu_thread_env env, *env_ref = NULL;
+            kdu_thread_env env, *env_ref = nullptr;
             if (num_threads > 0) {
                 env.create();
                 for (int nt=1; nt < num_threads; nt++) {
@@ -722,7 +722,7 @@ namespace Sipi {
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
             //compressor.start(codestream);
-            compressor.start(codestream, 0, NULL, NULL, 0, false, false, true, 0.0, 0, false, env_ref);
+            compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, 0, false, env_ref);
 
             int *stripe_heights = new int[img->nc];
             for (int i = 0; i < img->nc; i++) {
@@ -740,7 +740,7 @@ namespace Sipi {
                     precisions[i] = img->bps;
                     is_signed[i] = false;
                 }
-                compressor.push_stripe(buf, stripe_heights, NULL, NULL, NULL, precisions, is_signed);
+                compressor.push_stripe(buf, stripe_heights, nullptr, nullptr, nullptr, precisions, is_signed);
             }
             else if (img->bps == 8){
                 kdu_byte *buf = (kdu_byte *) img->pixels;

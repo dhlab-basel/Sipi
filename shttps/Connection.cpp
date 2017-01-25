@@ -69,7 +69,7 @@ namespace shttps {
     //=========================================================================
 
     // trim from both ends
-    static inline std::string &trim(std::string &s) {
+    static inline std::string trim(std::string &s) {
         return ltrim(rtrim(s));
     }
     //=========================================================================
@@ -286,12 +286,7 @@ namespace shttps {
                     if (opts.count("keep-alive") == 1) {
                         _keep_alive = true;
                     }
-                    if (opts.count("close") == 1) {
-                        _keep_alive = false;
-                    }
-                    else {
-                        _keep_alive = true; // keep_alive is the default with HTTP/1.1
-                    }
+                    _keep_alive = opts.count("close") != 1;
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
@@ -307,7 +302,7 @@ namespace shttps {
                     }
                 }
                 else if (name == "content-length") {
-                    content_length = stoi(value);
+                    content_length = static_cast<size_t>(stoi(value));
                 }
                 else if (name == "transfer-encoding") {
                     if (value == "chunked") {

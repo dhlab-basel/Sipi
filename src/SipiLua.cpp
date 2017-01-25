@@ -58,7 +58,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -80,7 +80,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -102,7 +102,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -124,7 +124,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -147,7 +147,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -208,7 +208,7 @@ namespace Sipi {
         lua_pop(L, top);
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -243,7 +243,7 @@ namespace Sipi {
 
         int top = lua_gettop(L);
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pop(L, top);
             lua_pushnil(L);
             return 1;
@@ -275,7 +275,7 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
         SipiCache *cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -303,7 +303,7 @@ namespace Sipi {
 
     static SImage *toSImage(lua_State *L, int index) {
         SImage *img = (SImage *) lua_touserdata(L, index);
-        if (img == NULL) {
+        if (img == nullptr) {
             lua_pushstring(L, "Type error! Not userdata object");
             lua_error(L);
         }
@@ -315,7 +315,7 @@ namespace Sipi {
         SImage *img;
         luaL_checktype(L, index, LUA_TUSERDATA);
         img = (SImage *) luaL_checkudata(L, index, SIMAGE);
-        if (img == NULL) {
+        if (img == nullptr) {
             lua_pushstring(L, "Type error! Expected an SipiImage!");
             lua_error(L);
         }
@@ -352,8 +352,8 @@ namespace Sipi {
         }
         const char *imgpath = lua_tostring(L, 1);
 
-        SipiRegion *region = NULL;
-        SipiSize *size = NULL;
+        SipiRegion *region = nullptr;
+        SipiSize *size = nullptr;
         std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
         if (top == 2) {
@@ -518,7 +518,7 @@ namespace Sipi {
         }
         else {
             SImage *img = checkSImage(L, 1);
-            if (img == NULL) {
+            if (img == nullptr) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 lua_pushstring(L, "'SipiImage.dims()': not a valid image!");

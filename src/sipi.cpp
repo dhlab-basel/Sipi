@@ -76,7 +76,7 @@
  *     sipi [options] <infile> <outfile>
  *
  */
-Sipi::SipiHttpServer *serverptr = NULL;
+Sipi::SipiHttpServer *serverptr = nullptr;
 Sipi::SipiConf sipiConf;
 enum FileType {image, video, audio, text, binary};
 
@@ -610,7 +610,7 @@ int main (int argc, char *argv[]) {
         //
         // getting information about a region of interest
         //
-        Sipi::SipiRegion *region = NULL;
+        Sipi::SipiRegion *region = nullptr;
         if (options[REGION]) {
             std::vector<int> regV;
             try {
@@ -640,7 +640,7 @@ int main (int argc, char *argv[]) {
                                           regV.at(3));
         }
 
-        Sipi::SipiSize *size = NULL;
+        Sipi::SipiSize *size = nullptr;
         //
         // get the reduce parameter
         // "reduce" is a special feature of the JPEG2000 format. It is possible (given the JPEG2000 format

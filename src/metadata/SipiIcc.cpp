@@ -36,11 +36,11 @@ static const char __file__[] = __FILE__;
 namespace Sipi {
 
     SipiIcc::SipiIcc(const unsigned char *icc_buf, int icc_len) {
-        if ((icc_profile = cmsOpenProfileFromMem(icc_buf, icc_len)) == NULL) {
+        if ((icc_profile = cmsOpenProfileFromMem(icc_buf, icc_len)) == nullptr) {
             std::cerr << "THROWING ERROR IN ICC" << std::endl;
             throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
         }
-        unsigned int len = cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        unsigned int len = cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         char *buf = new char[len];
         cmsGetProfileInfoASCII(icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf, len);
         if (strcmp(buf, "sRGB IEC61966-2.1") == 0) {
@@ -55,33 +55,35 @@ namespace Sipi {
     }
 
     SipiIcc::SipiIcc(const SipiIcc &icc_p) {
-        if (icc_p.icc_profile != NULL) {
-            char *buf = NULL;
+        if (icc_p.icc_profile != nullptr) {
+            char *buf = nullptr;
             cmsUInt32Number len = 0;
-            cmsSaveProfileToMem(icc_p.icc_profile, NULL, &len);
+            cmsSaveProfileToMem(icc_p.icc_profile, nullptr, &len);
             buf = new char[len];
             cmsSaveProfileToMem(icc_p.icc_profile, buf, &len);
-            if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
-	    delete [] buf; // fixing memory leak?
+            icc_profile = cmsOpenProfileFromMem(buf, len);
+            delete [] buf;
+
+            if (icc_profile == nullptr) {
                 throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
             }
-	    delete [] buf; // fixing memory leak?
+
             profile_type = icc_p.profile_type;
         }
         else {
-            icc_profile = NULL;
+            icc_profile = nullptr;
             profile_type = icc_undefined;
         }
     }
 
     SipiIcc::SipiIcc(cmsHPROFILE &icc_profile_p) {
-        if (icc_profile_p != NULL) {
-            char *buf = NULL;
+        if (icc_profile_p != nullptr) {
+            char *buf = nullptr;
             cmsUInt32Number len = 0;
-            cmsSaveProfileToMem(icc_profile_p, NULL, &len);
+            cmsSaveProfileToMem(icc_profile_p, nullptr, &len);
             buf = new char[len];
             cmsSaveProfileToMem(icc_profile_p, buf, &len);
-            if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
+            if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == nullptr) {
                 delete [] buf;
                 throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
             }
@@ -93,7 +95,7 @@ namespace Sipi {
     SipiIcc::SipiIcc(PredefinedProfiles predef) {
         switch (predef) {
             case icc_undefined: {
-                icc_profile = NULL;
+                icc_profile = nullptr;
                 profile_type = icc_undefined;
             }
             case icc_unknown: {
@@ -145,7 +147,7 @@ namespace Sipi {
 
         cmsContext context = cmsCreateContext(0, 0);
         cmsToneCurve *tonecurve[3];
-        if (tfunc == NULL) {
+        if (tfunc == nullptr) {
             tonecurve[0] = cmsBuildGamma(context, 2.2);
             tonecurve[1] = cmsBuildGamma(context, 2.2);
             tonecurve[2] = cmsBuildGamma(context, 2.2);
@@ -162,20 +164,20 @@ namespace Sipi {
     }
 
     SipiIcc::~SipiIcc() {
-        if (icc_profile != NULL) {
+        if (icc_profile != nullptr) {
             cmsCloseProfile(icc_profile);
         }
     }
 
     SipiIcc& SipiIcc::operator=(const SipiIcc &rhs) {
         if (this != &rhs) {
-            if (rhs.icc_profile != NULL) {
-                char *buf = NULL;
+            if (rhs.icc_profile != nullptr) {
+                char *buf = nullptr;
                 unsigned int len = 0;
-                cmsSaveProfileToMem(rhs.icc_profile, NULL, &len);
+                cmsSaveProfileToMem(rhs.icc_profile, nullptr, &len);
                 buf = new char[len];
                 cmsSaveProfileToMem(rhs.icc_profile, buf, &len);
-                if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == NULL) {
+                if ((icc_profile = cmsOpenProfileFromMem(buf, len)) == nullptr) {
                     throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
                 }
             }
@@ -185,10 +187,10 @@ namespace Sipi {
     }
 
     unsigned char *SipiIcc::iccBytes(unsigned int &len) {
-        unsigned char *buf = NULL;
+        unsigned char *buf = nullptr;
         len = 0;
-        if (icc_profile != NULL) {
-            if (!cmsSaveProfileToMem(icc_profile, NULL, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed");
+        if (icc_profile != nullptr) {
+            if (!cmsSaveProfileToMem(icc_profile, nullptr, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed");
             buf = new unsigned char[len];
             if (!cmsSaveProfileToMem(icc_profile, buf, &len)) throw SipiError(__file__, __LINE__, "cmsSaveProfileToMem failed");
         }
@@ -312,25 +314,25 @@ namespace Sipi {
     }
 
     std::ostream &operator<< (std::ostream &outstr, SipiIcc &rhs) {
-        unsigned int len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        unsigned int len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         char *buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf, len);
         outstr << "ICC-Description : " << buf << std::endl;
         delete [] buf;
 
-        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, buf, len);
         outstr << "ICC-Manufacturer: " << buf << std::endl;
         delete [] buf;
 
-        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, buf, len);
         outstr << "ICC-Model       : " << buf << std::endl;
         delete [] buf;
 
-        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, NULL, 0);
+        len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = new char[len];
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, buf, len);
         outstr << "ICC-Copyright   : " << buf << std::endl;

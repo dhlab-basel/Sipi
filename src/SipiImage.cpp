@@ -64,13 +64,13 @@ namespace Sipi {
         ny = 0;
         nc = 0;
         bps = 0;
-        pixels = NULL;
-        xmp = NULL;
-        icc = NULL;
-        iptc = NULL;
-        exif = NULL;
+        pixels = nullptr;
+        xmp = nullptr;
+        icc = nullptr;
+        iptc = nullptr;
+        exif = nullptr;
         skip_metadata = SKIP_NONE;
-        conobj = NULL;
+        conobj = nullptr;
     };
     //============================================================================
 
@@ -139,12 +139,12 @@ namespace Sipi {
         else {
             throw SipiImageError(__file__, __LINE__, "Image with no content");
         }
-        xmp = NULL;
-        icc = NULL;
-        iptc = NULL;
-        exif = NULL;
+        xmp = nullptr;
+        icc = nullptr;
+        iptc = nullptr;
+        exif = nullptr;
         skip_metadata = SKIP_NONE;
-        conobj = NULL;
+        conobj = nullptr;
     }
     //============================================================================
 
@@ -367,7 +367,7 @@ namespace Sipi {
 
     void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int new_bps) {
         cmsUInt32Number in_formatter, out_formatter;
-        if (icc == NULL) {
+        if (icc == nullptr) {
             switch (nc) {
                 case 1: {
                     icc = new SipiIcc(icc_GRAY_D50); // assume gray value image with D50
@@ -401,7 +401,7 @@ namespace Sipi {
         }
 
         hTransform = cmsCreateTransform(icc->getIccProfile(), in_formatter, target_icc_p.getIccProfile(), out_formatter, INTENT_PERCEPTUAL, 0);
-        if (hTransform == NULL) {
+        if (hTransform == nullptr) {
             throw SipiImageError(__file__, __LINE__, "Couldn't create color transform");
         }
         cmsDoTransform(hTransform, inbuf, outbuf, nx*ny);
@@ -1057,7 +1057,7 @@ namespace Sipi {
             word *inbuf = (word *) pixels;
             //byte *outbuf = new(std::nothrow) Sipi::byte[nc*nx*ny];
             byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
-            if (outbuf == NULL) return false;
+            if (outbuf == nullptr) return false;
             for (unsigned int j = 0; j < ny; j++) {
                 for (unsigned int i = 0; i < nx; i++) {
                     for (unsigned int k = 0; k < nc; k++) {
@@ -1090,7 +1090,7 @@ namespace Sipi {
         if (!doit) return true; // we have to do nothing, it's already bitonal
 
         short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
-        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        if (outbuf == nullptr) return false; // TODO: throw an error with a reasonable error message
         for (int i = 0; i < nx*ny; i++) {
             outbuf[i] = pixels[i];  // copy buffer
         }
@@ -1116,7 +1116,7 @@ namespace Sipi {
     bool SipiImage::add_watermark(std::string wmfilename) {
         int wm_nx, wm_ny, wm_nc;
     	byte *wmbuf = read_watermark(wmfilename, wm_nx, wm_ny, wm_nc);
-        if (wmbuf == NULL) {
+        if (wmbuf == nullptr) {
             throw SipiImageError(__file__, __LINE__, "Cannot read watermark file " + wmfilename);
         }
 
@@ -1162,7 +1162,7 @@ namespace Sipi {
 
 
     SipiImage &SipiImage::operator-=(const SipiImage &rhs) {
-        SipiImage *new_rhs = NULL;
+        SipiImage *new_rhs = nullptr;
 
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
             std::stringstream ss;
@@ -1182,7 +1182,7 @@ namespace Sipi {
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
+                byte *rtmp = (new_rhs == nullptr) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
@@ -1196,7 +1196,7 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
+                word *rtmp = (new_rhs == nullptr) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
@@ -1210,7 +1210,7 @@ namespace Sipi {
             }
             default: {
                 delete [] diffbuf;
-                if (new_rhs != NULL) delete new_rhs;
+                if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
@@ -1252,12 +1252,12 @@ namespace Sipi {
             }
             default: {
                 delete [] diffbuf;
-                if (new_rhs != NULL) delete new_rhs;
+                if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
 
-        if (new_rhs != NULL) delete new_rhs;
+        if (new_rhs != nullptr) delete new_rhs;
 
         return *this;
     }
@@ -1272,7 +1272,7 @@ namespace Sipi {
     /*==========================================================================*/
 
     SipiImage &SipiImage::operator+=(const SipiImage &rhs) {
-        SipiImage *new_rhs = NULL;
+        SipiImage *new_rhs = nullptr;
 
         if ((nc != rhs.nc) || (bps != rhs.bps) || (photo != rhs.photo)) {
             std::stringstream ss;
@@ -1292,7 +1292,7 @@ namespace Sipi {
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                byte *rtmp = (new_rhs == NULL) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
+                byte *rtmp = (new_rhs == nullptr) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
@@ -1306,7 +1306,7 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                word *rtmp = (new_rhs == NULL) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
+                word *rtmp = (new_rhs == nullptr) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
                 for (int j = 0; j < ny; j++) {
                     for (int i = 0; i < nx; i++) {
                         for (int k = 0; k < nc; k++) {
@@ -1320,7 +1320,7 @@ namespace Sipi {
             }
             default: {
                 delete [] diffbuf;
-                if (new_rhs != NULL) delete new_rhs;
+                if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
@@ -1359,7 +1359,7 @@ namespace Sipi {
             }
             default: {
                 delete [] diffbuf;
-                if (new_rhs != NULL) delete new_rhs;
+                if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }

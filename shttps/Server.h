@@ -381,7 +381,7 @@ public:
         /*!
          * Run the server handling requests in an infinite loop
          */
-        void run();
+        virtual void run();
 
         /*!
          * Stop the server gracefully (all destructors are called etc.) and the

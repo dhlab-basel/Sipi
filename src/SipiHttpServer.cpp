@@ -355,7 +355,7 @@ namespace Sipi {
         // get cache info
         //
         SipiCache *cache = serv->cache();
-        if ((cache == NULL) || !cache->getSize(infile, width, height)) {
+        if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
             Sipi::SipiImage tmpimg;
             try {
                 tmpimg.getDim(infile, width, height);
@@ -845,7 +845,7 @@ namespace Sipi {
             //
             // get image dimensions, needed for get_canonical...
             //
-            if ((cache == NULL) || !cache->getSize(infile, img_w, img_h)) {
+            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h)) {
                 Sipi::SipiImage tmpimg;
                 try {
                     tmpimg.getDim(infile, img_w, img_h);
@@ -942,7 +942,7 @@ namespace Sipi {
         }
         syslog(LOG_DEBUG, "Checking for cache...");
 
-        if (cache != NULL) {
+        if (cache != nullptr) {
             syslog(LOG_DEBUG, "Cache found, testing for canonical %s", canonical.c_str());
             std::string cachefile = cache->check(infile, canonical);
             if (!cachefile.empty()) {
@@ -1049,7 +1049,7 @@ namespace Sipi {
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
 
         std::string cachefile;
-        if (cache != NULL) {
+        if (cache != nullptr) {
             cachefile = cache->getNewCacheFileName();
             syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
         }
@@ -1065,7 +1065,7 @@ namespace Sipi {
                     Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conn_obj.setChunkedTransfer();
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     syslog(LOG_DEBUG, "Before writing JPG...");
@@ -1074,14 +1074,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing JPG...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_INFO, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1094,7 +1094,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
                     syslog(LOG_DEBUG, "Before writing J2K...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     try {
@@ -1102,7 +1102,7 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
@@ -1116,7 +1116,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
                     syslog(LOG_DEBUG, "Before writing TIF...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     try {
@@ -1124,14 +1124,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing TIF...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1143,10 +1143,10 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     syslog(LOG_DEBUG, "Before writing PNG...");
@@ -1155,14 +1155,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing PNG...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1227,13 +1227,13 @@ namespace Sipi {
         : Server::Server(port_p, nthreads_p, userid_str, logfile_p, loglevel_p)
     {
         _salsah_prefix = "imgrep";
-        _cache = NULL;
+        _cache = nullptr;
     }
     //=========================================================================
 
     SipiHttpServer::~SipiHttpServer()
     {
-        if (_cache != NULL) delete _cache;
+        if (_cache != nullptr) delete _cache;
     }
     //=========================================================================
 
@@ -1243,7 +1243,7 @@ namespace Sipi {
             _cache = new SipiCache(cachedir_p, max_cachesize_p, max_nfiles_p, cache_hysteresis_p);
         }
         catch (const SipiError &err) {
-            _cache = NULL;
+            _cache = nullptr;
             syslog(LOG_WARNING, "Couldn't open cache directory %s: %s", cachedir_p.c_str(), err.to_string().c_str());
         }
     }

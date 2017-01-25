@@ -149,8 +149,8 @@ namespace Sipi {
 
         char *tmpstr = (char *) alloca (strlen (list_p) + 1);
         strcpy (tmpstr, list_p);
-        char *tok = NULL;
-        while ((tok = strsep (&tmpstr, ":")) != NULL) {
+        char *tok = nullptr;
+        while ((tok = strsep (&tmpstr, ":")) != nullptr) {
             if (*tok != '\0') {
                 std::string stmp = tok;
                 options.push_back (stmp);
