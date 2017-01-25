@@ -1442,7 +1442,7 @@ namespace shttps {
             lua_pushstring(L, key); // index
             switch(json_typeof(value)) {
                 case JSON_NULL: {
-                    lua_pushnil(L); // ToDo: we should create a custom Lua object named nullptr!
+                    lua_pushnil(L); // ToDo: we should create a custom Lua object named NULL!
                     break;
                 }
                 case JSON_FALSE: {
@@ -1493,7 +1493,7 @@ namespace shttps {
             lua_pushinteger(L, index);
             switch(json_typeof(value)) {
                 case JSON_NULL: {
-                    lua_pushnil(L); // ToDo: we should create a custom Lua object named nullptr!
+                    lua_pushnil(L); // ToDo: we should create a custom Lua object named NULL!
                     break;
                 }
                 case JSON_FALSE: {
