@@ -624,10 +624,10 @@ namespace Sipi {
     /****************************************************************************/
 #define POSITION(x,y,c,n) ((n)*((y)*nx + (x)) + c)
 
-    byte SipiImage::bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n)
+    byte SipiImage::bilinn (byte buf[], int nx, float x, float y, int c, int n)
     {
-        register int ix, iy;
-        register float rx, ry;
+        int ix, iy;
+        float rx, ry;
         ix = (int) x;
         iy = (int) y;
         rx = x - (float) ix;
@@ -653,10 +653,10 @@ namespace Sipi {
     }
     /*==========================================================================*/
 
-    word SipiImage::bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n)
+    word SipiImage::bilinn (word buf[], int nx, float x, float y, int c, int n)
     {
-        register int ix, iy;
-        register float rx, ry;
+        int ix, iy;
+        float rx, ry;
         ix = (int) x;
         iy = (int) y;
         rx = x - (float) ix;
@@ -723,7 +723,7 @@ namespace Sipi {
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
             byte *outbuf = new byte[nnnx*nnny*nc];
-            register float rx, ry;
+            float rx, ry;
             for (unsigned int j = 0; j < nnny; j++) {
                 ry = ylut[j];
                 for (unsigned int i = 0; i < nnnx; i++) {
@@ -739,7 +739,7 @@ namespace Sipi {
         else if (bps == 16) {
             word *inbuf = (word *) pixels;
             word *outbuf = new word[nnnx*nnny*nc];
-            register float rx, ry;
+            float rx, ry;
             for (unsigned int j = 0; j < nnny; j++) {
                 ry = ylut[j];
                 for (unsigned int i = 0; i < nnnx; i++) {
