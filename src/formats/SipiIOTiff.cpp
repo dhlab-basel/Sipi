@@ -601,8 +601,7 @@ namespace Sipi {
                 // Wow, we have TIFF colormetry..... Who is still using this???
                 //
                 float *primaries_ti = NULL;
-                float *primaries;
-                bool primaries_del = false;
+                float primaries[6];
                 if (1 == TIFFGetField(tif, TIFFTAG_PRIMARYCHROMATICITIES, &primaries_ti)) {
                     primaries[0] = primaries_ti[0];
                     primaries[1] = primaries_ti[1];
@@ -615,18 +614,16 @@ namespace Sipi {
                     //
                     // not defined, let's take the sRGB primaries
                     //
-                    primaries = new float[6];
                     primaries[0] = 0.6400;
                     primaries[1] = 0.3300;
                     primaries[2] = 0.3000;
                     primaries[3] = 0.6000;
                     primaries[4] = 0.1500;
                     primaries[5] = 0.0600;
-                    primaries_del = true;
                 }
                 unsigned short *tfunc, *tfunc_ti = new unsigned short[3*(1 << img->bps)];
                 unsigned int tfunc_len, tfunc_len_ti;
-                if (1 == TIFFGetField(tif, TIFFTAG_PRIMARYCHROMATICITIES, &tfunc_len_ti, &tfunc_ti)) {
+                if (1 == TIFFGetField(tif, TIFFTAG_TRANSFERFUNCTION, &tfunc_len_ti, &tfunc_ti)) {
                     if ((tfunc_len_ti / (1 << img->bps)) == 1) {
                         memcpy(tfunc, tfunc_ti, tfunc_len_ti);
                         memcpy(tfunc + tfunc_len_ti, tfunc_ti, tfunc_len_ti);
@@ -644,7 +641,6 @@ namespace Sipi {
                 }
                 img->icc = new SipiIcc(whitepoint, primaries, tfunc, tfunc_len);
                 if (tfunc != NULL) delete [] tfunc;
-                if (primaries_del) delete [] primaries;
             }
 
             //
