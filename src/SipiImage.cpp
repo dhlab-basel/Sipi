@@ -279,7 +279,7 @@ namespace Sipi {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
-            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            internal_hash.add_data(pixels, (size_t) nx * (size_t) ny * (size_t) nc * (size_t) bps / (size_t) 8);
             std::string checksum = internal_hash.hash();
             std::string origname = shttps::getFileName(filepath);
             std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
@@ -288,7 +288,7 @@ namespace Sipi {
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
-            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny * (size_t) nc *(size_t) bps /(size_t) 8);
             std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
@@ -303,7 +303,7 @@ namespace Sipi {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
-            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny *(size_t) nc *(size_t) bps /(size_t) 8);
             std::string checksum = internal_hash.hash();
             std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
@@ -311,7 +311,7 @@ namespace Sipi {
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
-            internal_hash.add_data(pixels, nx*ny*nc*bps/8);
+            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny *(size_t) nc *(size_t) bps /(size_t) 8);
             std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
@@ -394,8 +394,8 @@ namespace Sipi {
 
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
-        byte *inbuf = pixels;
-        byte *outbuf = new byte[nx*ny*nnc*new_bps/8];
+        byte *inbuf = (byte *) pixels;
+        byte *outbuf = new byte[(size_t) nx * (size_t) ny *(size_t)  nnc * (size_t) new_bps(size_t) /(size_t) 8];
 
         cmsHTRANSFORM hTransform;
         in_formatter = icc->iccFormatter(this);
@@ -633,14 +633,14 @@ namespace Sipi {
         rx = x - (float) ix;
         ry = y - (float) iy;
 
-        if ((rx < 1.0e-5) && (ry < 1.0e-5)) {
+        if ((rx < 1.0e-2) && (ry < 1.0e-2)) {
             return (buf[POSITION(ix,iy,c,n)]);
         }
-        else if (rx < 1.0e-5) {
+        else if (rx < 1.0e-2) {
             return ((byte) (((float) buf[POSITION(ix,iy,c,n)] * (1 - rx - ry + rx*ry) +
                 (float) buf[POSITION(ix, (iy + 1),c,n)] * (ry - rx*ry)) + 0.5));
         }
-        else if (ry < 1.0e-5) {
+        else if (ry < 1.0e-2) {
             return ((byte) (((float) buf[POSITION(ix,iy,c,n)] * (1 - rx - ry + rx*ry) +
                 (float) buf[POSITION((ix + 1),iy,c,n)] * (rx - rx*ry)) + 0.5));
         }
@@ -662,14 +662,14 @@ namespace Sipi {
         rx = x - (float) ix;
         ry = y - (float) iy;
 
-        if ((rx < 1.0e-5) && (ry < 1.0e-5)) {
+        if ((rx < 1.0e-2) && (ry < 1.0e-2)) {
             return (buf[POSITION(ix,iy,c,n)]);
         }
-        else if (rx < 1.0e-5) {
+        else if (rx < 1.0e-2) {
             return ((word) (((float) buf[POSITION(ix,iy,c,n)] * (1 - rx - ry + rx*ry) +
                 (float) buf[POSITION(ix, (iy + 1),c,n)] * (ry - rx*ry)) + 0.5));
         }
-        else if (ry < 1.0e-5) {
+        else if (ry < 1.0e-2) {
             return ((word) (((float) buf[POSITION(ix,iy,c,n)] * (1 - rx - ry + rx*ry) +
                 (float) buf[POSITION((ix + 1),iy,c,n)] * (rx - rx*ry)) + 0.5));
         }
