@@ -627,13 +627,13 @@ namespace shttps {
                                     char *writable = new char[tmpname.size() + 1];
                                     std::copy(tmpname.begin(), tmpname.end(), writable);
                                     writable[tmpname.size()] = '\0'; // don't forget the terminating 0
+                                    int fd = mkstemp(writable);
+                                    delete[] writable;
 
-                                    int fd;
-                                    if ((fd = mkstemp(writable)) == -1) {
+                                    if (fd == -1) {
                                         throw Error(__file__, __LINE__, "Could not create temporary filename!");
                                     }
                                     tmpname = string(writable);
-                                    delete[] writable;
                                     close(fd); // here we close the file created by mkstemp
 
                                     ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);
