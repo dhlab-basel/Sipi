@@ -354,7 +354,7 @@ namespace Sipi {
         //
         // get cache info
         //
-        SipiCache *cache = serv->cache();
+        std::shared_ptr<SipiCache> cache = serv->cache();
         if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
             Sipi::SipiImage tmpimg;
             try {
@@ -829,7 +829,7 @@ namespace Sipi {
         //
         // get cache info
         //
-        SipiCache *cache = serv->cache();
+        std::shared_ptr<SipiCache> cache = serv->cache();
 
         int img_w = 0, img_h = 0;
         if (in_format == SipiQualityFormat::PDF) {
@@ -1248,16 +1248,10 @@ namespace Sipi {
     }
     //=========================================================================
 
-    SipiHttpServer::~SipiHttpServer()
-    {
-        if (_cache != nullptr) delete _cache;
-    }
-    //=========================================================================
-
     void SipiHttpServer::cache(const std::string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
     {
         try {
-            _cache = new SipiCache(cachedir_p, max_cachesize_p, max_nfiles_p, cache_hysteresis_p);
+            _cache = std::make_shared<SipiCache>(cachedir_p, max_cachesize_p, max_nfiles_p, cache_hysteresis_p);
         }
         catch (const SipiError &err) {
             _cache = nullptr;

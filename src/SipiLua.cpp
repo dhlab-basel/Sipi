@@ -56,7 +56,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -78,7 +78,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -100,7 +100,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -122,7 +122,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -145,7 +145,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -206,7 +206,7 @@ namespace Sipi {
             sortmethod = std::string(lua_tostring(L, 1));
         }
         lua_pop(L, top);
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
@@ -239,7 +239,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         int top = lua_gettop(L);
 
@@ -253,12 +253,7 @@ namespace Sipi {
         if (top == 1) {
             canonical = std::string(lua_tostring(L, 1));
             lua_pop(L, 1);
-            if (cache->remove(canonical)) {
-                lua_pushboolean(L, true);
-            }
-            else {
-                lua_pushboolean(L, false);
-            }
+            lua_pushboolean(L, cache->remove(canonical));
         }
         else {
             lua_pop(L, top);
@@ -273,7 +268,7 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         if (cache == nullptr) {
             lua_pushnil(L);
