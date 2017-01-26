@@ -170,10 +170,10 @@ namespace Sipi {
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
         static std::unordered_map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
-        byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
-        word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
+        byte bilinn (byte buf[], int nx, float x, float y, int c, int n);
+        word bilinn (word buf[], int nx, float x, float y, int c,  int n);
     protected:
-        size_t  nx;         //!< Number of horizontal pixels (width)
+        size_t nx;         //!< Number of horizontal pixels (width)
         size_t ny;         //!< Number of vertical pixels (height)
         size_t nc;         //!< Total number of samples per pixel
         size_t bps;        //!< bits per sample. Currently only 8 and 16 are supported
@@ -253,20 +253,20 @@ namespace Sipi {
         * \param[in] c Color channels
         * \param[in] val Pixel value
         */
-        inline void setPixel(int x, int y, int c, int val) {
-            if ((x < 0) || (x >= nx)) throw ((int) 1);
-            if ((y < 0) || (x >= ny)) throw ((int) 2);
-            if ((c < 0) || (x >= nc)) throw ((int) 3);
+        inline void setPixel(unsigned int x, unsigned int y, unsigned int c, int val) {
+            if (x >= nx) throw ((int) 1);
+            if (x >= ny) throw ((int) 2);
+            if (x >= nc) throw ((int) 3);
             switch (bps) {
                 case 8: {
                     if (val > 0xff) throw ((int) 4);
-                    register unsigned char *tmp = (unsigned char *) pixels;
+                    unsigned char *tmp = (unsigned char *) pixels;
                     tmp[nc*(x*nx + y) + c] = (unsigned char) val;
                     break;
                 }
                 case 16: {
                     if (val > 0xffff) throw ((int) 5);
-                    register unsigned short *tmp = (unsigned short *) pixels;
+                    unsigned short *tmp = (unsigned short *) pixels;
                     tmp[nc*(x*nx + y) + c] = (unsigned short) val;
                     break;
                 }
@@ -416,8 +416,8 @@ namespace Sipi {
        /*!
         * Crops an image to a region
         *
-        * \param[in] nx Horizontal start position of region. If negative, it's set to 0, and the width is adjusted
-        * \param[in] ny Vertical start position of region. If negative, it's set to 0, and the height is adjusted
+        * \param[in] x Horizontal start position of region. If negative, it's set to 0, and the width is adjusted
+        * \param[in] y Vertical start position of region. If negative, it's set to 0, and the height is adjusted
         * \param[in] width Width of the region. If the region goes beyond the image dimensions, it's adjusted.
         * \param[in] height Height of the region. If the region goes beyond the image dimensions, it's adjusted
         */
