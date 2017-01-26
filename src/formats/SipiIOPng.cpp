@@ -78,7 +78,7 @@ namespace Sipi {
         }
         else {
             png_text *tmpptr = new png_text[num_text_len + 16];
-            for (int i = 0; i < num_text_len; i++) tmpptr[i] = text_ptr[i];
+            for (unsigned int i = 0; i < num_text_len; i++) tmpptr[i] = text_ptr[i];
             delete[] text_ptr;
             text_ptr = tmpptr;
             return &(text_ptr[num_text++]);
@@ -475,7 +475,7 @@ namespace Sipi {
 
         png_bytep *row_pointers = (png_bytep *) png_malloc (png_ptr, img->ny * sizeof (png_byte *));
         if (img->bps == 8) {
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 row_pointers[i] = (img->pixels + i*img->nx*img->nc);
             }
         }
