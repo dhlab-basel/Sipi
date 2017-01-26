@@ -899,8 +899,8 @@ namespace Sipi {
             }
         }
 
-        TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
-        TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
+        TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      (int) img->nx);
+        TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     (int) img->ny);
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
         TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    TIFFDefaultStripSize(tif, rowsperstrip));
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
@@ -910,7 +910,7 @@ namespace Sipi {
             its_1_bit = true;
             if (img->bps == 8) {
                 byte *scan = img->pixels;
-                for (int i = 0; i < img->nx*img->ny; i++) {
+                for (size_t i = 0; i < img->nx*img->ny; i++) {
                     if ((scan[i] != 0) && (scan[i] != 255)) {
                         its_1_bit = false;
                     }
@@ -918,7 +918,7 @@ namespace Sipi {
             }
             else if (img->bps == 16) {
                 word *scan = (word *) img->pixels;
-                for (int i = 0; i < img->nx*img->ny; i++) {
+                for (size_t i = 0; i < img->nx*img->ny; i++) {
                     if ((scan[i] != 0) && (scan[i] != 65535)) {
                         its_1_bit = false;
                     }
@@ -1049,14 +1049,14 @@ namespace Sipi {
         if (its_1_bit) {
             unsigned int sll;
             unsigned char *buf = cvrt8BitTo1bit(*img, sll);
-            for (int i = 0; i < img->ny; i++) {
-                TIFFWriteScanline (tif, buf + i*sll, i, 0);
+            for (size_t i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, buf + i*sll, (int) i, 0);
             }
             delete [] buf;
         }
         else {
-            for (int i = 0; i < img->ny; i++) {
-                TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
+            for (size_t i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), (int) i, 0);
             }
         }
 
