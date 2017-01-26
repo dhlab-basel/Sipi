@@ -513,14 +513,14 @@ namespace Sipi {
             width += x;
             x = 0;
         }
-        else if (x >= nx) {
+        else if (x >= (long) nx) {
             return false;
         }
         if (y < 0) {
             height += y;
             y = 0;
         }
-        else if (y >= ny) {
+        else if (y >= (long) ny) {
             return false;
         }
 
@@ -684,7 +684,7 @@ namespace Sipi {
 
 
     bool SipiImage::scale(size_t nnx, size_t nny) {
-        int iix = 1, iiy = 1;
+        size_t iix = 1, iiy = 1;
         size_t nnnx, nnny;
 
         //
@@ -709,12 +709,12 @@ namespace Sipi {
         }
 
         float *xlut = new float[nnnx];
-        for (int i = 0; i < nnnx; i++) {
+        for (size_t i = 0; i < nnnx; i++) {
             xlut[i] = (float) (i*(nx - 1)) / (float) (nnnx - 1);
         }
 
         float *ylut = new float[nnny];
-        for (int j = 0; j < nnny; j++) {
+        for (size_t j = 0; j < nnny; j++) {
             ylut[j] = (float) (j*(ny - 1)) / (float) (nnny - 1);
         }
 
@@ -856,8 +856,8 @@ namespace Sipi {
             //            qke
             //            rlf
             //
-            int nnx = ny;
-            int nny = nx;
+            size_t nnx = ny;
+            size_t nny = nx;
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
@@ -893,8 +893,8 @@ namespace Sipi {
             // ghijkl ==> lkjihg
             // mnopqr     fedcba
             //
-            int nnx = nx;
-            int nny = ny;
+            size_t nnx = nx;
+            size_t nny = ny;
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
@@ -933,8 +933,8 @@ namespace Sipi {
             //            bhn
             //            agm
             //
-            int nnx = ny;
-            int nny = nx;
+            size_t nnx = ny;
+            size_t nny = nx;
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
@@ -972,8 +972,8 @@ namespace Sipi {
 
             float si = sinf (phi);
             float co = cosf (phi);
-            int nnx;
-            int nny;
+            size_t nnx;
+            size_t nny;
             if ((angle > 0.) && (angle < 90.)) {
                 nnx = floor(nx*cosf(-phi) + ny*sinf(-phi) + .5);
                 nny = floor(nx*sinf(-phi) + ny*cosf(-phi) + .5);
@@ -1086,14 +1086,14 @@ namespace Sipi {
 
 
         bool doit = false; // will be set true if we find a value not equal 0 or 255
-        for (int i = 0; i < nx*ny; i++) {
+        for (size_t i = 0; i < nx*ny; i++) {
             if (!doit && (pixels[i] != 0) && (pixels[i] != 255)) doit = true;
         }
         if (!doit) return true; // we have to do nothing, it's already bitonal
 
         short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
-        if (outbuf == nullptr) return false; // TODO: throw an error with a reasonable error message
-        for (int i = 0; i < nx*ny; i++) {
+        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        for (size_t i = 0; i < nx*ny; i++) {
             outbuf[i] = pixels[i];  // copy buffer
         }
 

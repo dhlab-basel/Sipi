@@ -652,7 +652,7 @@ namespace Sipi {
 
         try {
             linbuf = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 jpeg_read_scanlines(&cinfo, linbuf, 1);
                 memcpy(&(img->pixels[i * sll]), linbuf[0], (size_t) sll);
             }

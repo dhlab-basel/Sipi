@@ -390,14 +390,14 @@ namespace Sipi {
 
         const char * formats_str[] = {"tif", "jpg", "png", "jp2"};
         json_t *formats = json_array();
-        for (int i = 0; i < sizeof(formats_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(formats_str)/sizeof(char*); i++) {
             json_array_append_new(formats, json_string(formats_str[i]));
         }
         json_object_set_new(profile, "formats", formats);
 
         const char *qualities_str[] = {"color", "gray"};
         json_t *qualities = json_array();
-        for (int i = 0; i < sizeof(qualities_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(qualities_str)/sizeof(char*); i++) {
             json_array_append_new(qualities, json_string(qualities_str[i]));
         }
         json_object_set_new(profile, "qualities", qualities);
@@ -420,7 +420,7 @@ namespace Sipi {
             "sizeByWh"
         };
         json_t *supports = json_array();
-        for (int i = 0; i < sizeof(supports_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(supports_str)/sizeof(char*); i++) {
             json_array_append_new(supports, json_string(supports_str[i]));
         }
         json_object_set_new(profile, "supports", supports);
@@ -1080,7 +1080,7 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
                     if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
-                        for (int i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                        for (size_t i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
                     }
                     Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);

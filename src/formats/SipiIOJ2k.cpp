@@ -314,7 +314,6 @@ namespace Sipi {
         //
         // here we prepare tha scaling/reduce stuff...
         //
-        bool do_size = false;
         int reduce = 0;
         size_t nnx, nny;
         bool redonly = true; // we assume that only a reduce is necessary
@@ -325,7 +324,6 @@ namespace Sipi {
             else {
                 size->get_size(__nx, __ny, nnx, nny, reduce, redonly);
             }
-            do_size = true;
         }
 
         if (reduce < 0) reduce = 0;
@@ -353,7 +351,7 @@ namespace Sipi {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
             kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
             int numcol = chaninfo.get_num_colours(); // I assume these are the color channels (1, 3 or 4 in case of CMYK)
-            for (int i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
+            for (size_t i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
                 img->es.push_back(ASSOCALPHA);
             }
             if (colinfo.exists()) {
@@ -439,7 +437,7 @@ namespace Sipi {
             }
             case 16: {
                 bool *get_signed = new bool[img->nc];
-                for (int i = 0; i < img->nc; i++) get_signed[i] = FALSE;
+                for (size_t i = 0; i < img->nc; i++) get_signed[i] = FALSE;
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area()*img->nc];
                 decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
                 img->pixels = (byte *) buffer16;
@@ -746,7 +744,7 @@ namespace Sipi {
             compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, 0, false, env_ref);
 
             int *stripe_heights = new int[img->nc];
-            for (int i = 0; i < img->nc; i++) {
+            for (size_t i = 0; i < img->nc; i++) {
                 stripe_heights[i] = img->ny;
             }
 
@@ -757,7 +755,7 @@ namespace Sipi {
                 kdu_int16 *buf = (kdu_int16 *) img->pixels;
                 precisions = new int[img->nc];
                 is_signed = new bool[img->nc];
-                for (int i = 0; i < img->nc; i++) {
+                for (size_t i = 0; i < img->nc; i++) {
                     precisions[i] = img->bps;
                     is_signed[i] = false;
                 }

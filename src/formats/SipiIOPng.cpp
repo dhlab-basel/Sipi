@@ -230,7 +230,7 @@ namespace Sipi {
 
         uint8 *buffer = new uint8[img->ny*sll];
         png_bytep *row_pointers = new png_bytep[img->ny];
-        for (int i = 0; i < img->ny; i++) {
+        for (size_t i = 0; i < img->ny; i++) {
             row_pointers[i] = (buffer + i*sll);
         }
 
@@ -480,7 +480,7 @@ namespace Sipi {
             }
         }
         else if (img->bps == 16) {
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 row_pointers[i] = (img->pixels + 2*i*img->nx*img->nc);
             }
         }
