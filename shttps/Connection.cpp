@@ -482,7 +482,7 @@ namespace shttps {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
                             memcpy(_content, chunk_buf, content_length);
-                            free (chunk_buf);
+                            free(chunk_buf);
                         }
                         else {
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
