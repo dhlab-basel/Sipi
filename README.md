@@ -102,12 +102,13 @@ To compile Sipi on Debian (>= 8), the following packages have to be installed wi
 - `sudo chown -R $USER /var/log/nginx`
 - `sudo apt-get install python3`
 - `sudo apt-get install python3-pip`
+- `sudo -H pip3 install --upgrade pip`
 - `sudo apt-get install libmagic-dev`
 - `sudo apt-get install graphicsmagick`
-- `pip3 install pytest`
-- `pip3 install requests`
-- `pip3 install psutil`
-- `pip3 install iiif_validator`
+- `sudo -H pip3 install pytest`
+- `sudo -H pip3 install requests`
+- `sudo -H pip3 install psutil`
+- `sudo -H pip3 install iiif_validator`
 
 Then, cmake has to be patched. Unfortunaltely the cmake-version provided by the
 debian packages contains a bug and cannot find the OpenSSL libraries and includes. To apply the patch, go to the Sipi dicrectory and run:
@@ -131,12 +132,13 @@ $ sudo bash debian-cmake-patch.sh
 - `sudo chown -R $USER /var/log/nginx`
 - `sudo apt-get install python3`
 - `sudo apt-get install python3-pip`
+- `sudo -H pip3 install --upgrade pip`
 - `sudo apt-get install libmagic-dev`
 - `sudo apt-get install graphicsmagick`
-- `pip3 install pytest`
-- `pip3 install requests`
-- `pip3 install psutil`
-- `pip3 install iiif_validator`
+- `sudo -H pip3 install pytest`
+- `sudo -H pip3 install requests`
+- `sudo -H pip3 install psutil`
+- `sudo -H pip3 install iiif_validator`
 
 ### Fedora Linux
 - `sudo yum install vim-common`
