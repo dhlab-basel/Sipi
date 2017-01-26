@@ -33,6 +33,7 @@
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <memory>
 
 #include "shttps/Server.h"
 #include "iiifparser/SipiRegion.h"
