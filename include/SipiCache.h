@@ -58,7 +58,7 @@ namespace Sipi {
          * server start or server shutdown.
          */
         typedef struct {
-            int img_w, img_h;
+            size_t img_w, img_h;
             char canonical[256];
             char origpath[256];
             char cachepath[256];
@@ -77,7 +77,7 @@ namespace Sipi {
          * server shutdown, the in-memory representation is again ritten to a file.
          */
         typedef struct _CacheRecord {
-            int img_w, img_h;
+            size_t img_w, img_h;
             std::string origpath;
             std::string cachepath;
 #if defined(HAVE_ST_ATIMESPEC)
@@ -94,8 +94,8 @@ namespace Sipi {
          * directory and the sizes of the full images.
          */
         typedef struct {
-            int img_w;
-            int img_h;
+            size_t img_w;
+            size_t img_h;
 #if defined(HAVE_ST_ATIMESPEC)
             struct timespec mtime; //!< entry time into cache
 #else
@@ -191,7 +191,7 @@ namespace Sipi {
          * \param[in] canonical_p Canonical IIIF URL
          * \param[in] cachepath_p Path of the cache file
          */
-        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, int img_w_p, int img_h_p);
+        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, size_t img_w_p, size_t img_h_p);
 
         /*!
          * Remove one file from the cache
@@ -247,7 +247,7 @@ namespace Sipi {
          * \param[out] img_w Width of original image in pixels
          * \param[out] img_h Height of original image in pixels
          */
-        bool getSize(const std::string &origname_p, int &img_w, int &img_h);
+        bool getSize(const std::string &origname_p, size_t &img_w, size_t &img_h);
     };
 }
 

@@ -254,7 +254,8 @@ namespace Sipi {
         // resize/Scale the image if necessary
         //
         if (size != NULL) {
-            int nnx, nny, reduce;
+            size_t nnx, nny;
+            int reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
@@ -273,7 +274,7 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    bool SipiIOPng::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOPng::getDim(std::string filepath, size_t &width, size_t &height) {
         FILE *infile;
         unsigned char header[8];
 

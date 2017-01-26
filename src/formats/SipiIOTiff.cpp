@@ -687,7 +687,8 @@ namespace Sipi {
                 }
             }
             else {
-                int roi_x, roi_y, roi_w, roi_h;
+                int roi_x, roi_y;
+                size_t roi_w, roi_h;
                 region->crop_coords(img->nx, img->ny, roi_x, roi_y, roi_w, roi_h);
 
                 int ps; // pixel size in bytes
@@ -817,7 +818,8 @@ namespace Sipi {
             // resize/Scale the image if necessary
             //
             if (size != NULL) {
-                int nnx, nny, reduce;
+                size_t nnx, nny;
+                int reduce;
                 bool redonly;
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
                 if (rtype != SipiSize::FULL) {
@@ -838,7 +840,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiIOTiff::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOTiff::getDim(std::string filepath, size_t &width, size_t &height) {
     	TIFF *tif;
 
         if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
@@ -848,17 +850,21 @@ namespace Sipi {
             //
             (void) TIFFSetWarningHandler(NULL);
 
-            if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &width) == 0) {
+            unsigned int tmp_width;
+            if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &tmp_width) == 0) {
                 std::cerr << "TIFF image file " << filepath << ": Error getting TIFFTAG_IMAGEWIDTH" << std::endl;
                 TIFFClose(tif);
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
-            if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &height) == 0) {
+            width = tmp_width;
+            unsigned int tmp_height;
+            if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &tmp_height) == 0) {
                 TIFFClose(tif);
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
+            height = tmp_height;
             TIFFClose(tif);
             return true;
         }

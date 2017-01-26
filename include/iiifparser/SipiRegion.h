@@ -44,7 +44,8 @@ namespace Sipi {
     private:
         CoordType coord_type;
         float rx, ry, rw, rh;
-        int x, y, w, h;
+        int x, y;
+        size_t w, h;
         bool canonical_ok;
     public:
        /*!
@@ -60,7 +61,7 @@ namespace Sipi {
         * \param[in] w Width of region
         * \param[in] h Height of region
         */
-        inline SipiRegion(int x, int y, int w, int h) { coord_type = COORDS; rx = (float) x; ry = (float) y; rw = (float) w; rh = (float) h; canonical_ok = false; };
+        inline SipiRegion(int x, int y, size_t w, size_t h) { coord_type = COORDS; rx = (float) x; ry = (float) y; rw = (float) w; rh = (float) h; canonical_ok = false; };
 
        /*!
         * Constructor using IIIF region parameter string
@@ -89,7 +90,7 @@ namespace Sipi {
         *
         * \returns CoordType
         */
-        CoordType crop_coords(int nx, int ny, int &p_x, int &p_y, int &p_w, int &p_h);
+        CoordType crop_coords(size_t nx, size_t ny, int &p_x, int &p_y, size_t &p_w, size_t &p_h);
 
        /*!
         * Returns the canoncial IIIF string for the given region

@@ -492,7 +492,7 @@ namespace Sipi {
     //=========================================================================
 
     static int SImage_dims(lua_State *L) {
-        int nx, ny;
+        size_t nx, ny;
         int top = lua_gettop(L);
         if (top != 1) {
             lua_pop(L, top);
@@ -645,7 +645,7 @@ namespace Sipi {
         lua_pop(L, top);
 
         SipiSize *size;
-        int nx, ny;
+        size_t nx, ny;
         try {
             size = new SipiSize(sizestr);
             int r;

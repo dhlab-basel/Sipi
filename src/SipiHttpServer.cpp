@@ -350,7 +350,7 @@ namespace Sipi {
 
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
-        int width, height;
+        size_t width, height;
         //
         // get cache info
         //
@@ -372,7 +372,8 @@ namespace Sipi {
         json_t *sizes = json_array();
         for (int i = 1; i < 5; i++) {
             SipiSize size(i);
-            int w, h, r;
+            size_t w, h;
+            int r;
             bool ro;
             size.get_size(width, height, w, h, r, ro);
             if ((w < 128) && (h < 128)) break;
@@ -442,14 +443,15 @@ namespace Sipi {
     //=========================================================================
 
 
-    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(int tmp_w, int tmp_h, const std::string &host, const std::string &prefix, const std::string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format)
+    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(size_t tmp_w, size_t tmp_h, const std::string &host, const std::string &prefix, const std::string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format)
     {
         static const int canonical_len = 127;
 
         char canonical_region[canonical_len + 1];
         char canonical_size[canonical_len + 1];
 
-        int tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h, tmp_red;
+        int tmp_r_x, tmp_r_y, tmp_red;
+        size_t tmp_r_w, tmp_r_h;
         bool tmp_ro;
 
         if (region.getType() != SipiRegion::FULL) {
@@ -821,7 +823,7 @@ namespace Sipi {
         //
         SipiCache *cache = serv->cache();
 
-        int img_w = 0, img_h = 0;
+        size_t img_w = 0, img_h = 0;
         if (in_format == SipiQualityFormat::PDF) {
             if (size.getType() != SipiSize::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
@@ -856,7 +858,8 @@ namespace Sipi {
                 }
             }
 
-            int tmp_r_w, tmp_r_h, tmp_red;
+            size_t tmp_r_w, tmp_r_h;
+            int tmp_red;
             bool tmp_ro;
             size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
             restriction_size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);

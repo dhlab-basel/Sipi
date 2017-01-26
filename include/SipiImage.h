@@ -173,10 +173,10 @@ namespace Sipi {
         byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
         word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
     protected:
-        int nx;         //!< Number of horizontal pixels (width)
-        int ny;         //!< Number of vertical pixels (height)
-        int nc;         //!< Total number of samples per pixel
-        int bps;        //!< bits per sample. Currently only 8 and 16 are supported
+        size_t  nx;         //!< Number of horizontal pixels (width)
+        size_t ny;         //!< Number of vertical pixels (height)
+        size_t nc;         //!< Total number of samples per pixel
+        size_t bps;        //!< bits per sample. Currently only 8 and 16 are supported
         std::vector<ExtraSamples> es; //!< meaning of extra samples
         PhotometricInterpretation photo;    //!< Image type, that is the meaning of the channels
         byte *pixels;   //!< Pointer to block of memory holding the pixels
@@ -210,7 +210,7 @@ namespace Sipi {
         * \param[in] bps_p Bits per sample, either 8 or 16 are allowed
         * \param[in] photo_p The photometric interpretation
         */
-        SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p);
+        SipiImage(size_t nx_p, size_t ny_p, size_t nc_p, size_t bps_p, PhotometricInterpretation photo_p);
 
         /*!
          * Checks if the actual mimetype of an image file corresponds to the indicated mimetype and the extension of the filename.
@@ -221,23 +221,23 @@ namespace Sipi {
        /*!
         * Getter for nx
         */
-        inline int getNx() { return nx; };
+        inline size_t getNx() { return nx; };
 
 
        /*!
         * Getter for ny
         */
-        inline int getNy() { return ny; };
+        inline size_t getNy() { return ny; };
 
        /*!
         * Getter for nc (includes alpha channels!)
         */
-        inline int getNc() { return nc; };
+        inline size_t getNc() { return nc; };
 
        /*!
         * Getter for number of alpha channels
         */
-        inline int getNalpha() { return es.size(); }
+        inline size_t getNalpha() { return es.size(); }
 
         /*! Destructor
          *
@@ -377,9 +377,9 @@ namespace Sipi {
         * \param[out] width Width of the image in pixels
         * \param[out] height Height of the image in pixels
         */
-        static void getDim(std::string filepath, int &width, int &height);
+        static void getDim(std::string filepath, size_t &width, size_t &height);
 
-        void getDim(int &width, int &height);
+        void getDim(size_t &width, size_t &height);
 
        /*!
         * Write an image to somewhere
@@ -421,7 +421,7 @@ namespace Sipi {
         * \param[in] width Width of the region. If the region goes beyond the image dimensions, it's adjusted.
         * \param[in] height Height of the region. If the region goes beyond the image dimensions, it's adjusted
         */
-        bool crop(int x, int y, int width = 0, int height = 0);
+        bool crop(int x, int y, size_t width = 0, size_t height = 0);
 
        /*!
         * Crops an image to a region
@@ -439,7 +439,7 @@ namespace Sipi {
         * \param[in] nnx New horizonal dimension (width)
         * \param[in] nny New vertical dimension (height)
         */
-        bool scale(int nnx = 0, int nny = 0);
+        bool scale(size_t nnx = 0, size_t nny = 0);
 
 
        /*!
@@ -469,7 +469,7 @@ namespace Sipi {
         * \returns Returns true on success, false on error
         */
         bool toBitonal(void);
-        
+
        /*!
         * Add a watermark to a file...
         *
