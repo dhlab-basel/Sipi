@@ -297,7 +297,10 @@ namespace Sipi {
         bool do_roi = false;
         if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
             try {
-                region->crop_coords(__nx, __ny, roi.pos.x, roi.pos.y, roi.size.x, roi.size.y);
+                size_t sx, sy;
+                region->crop_coords(__nx, __ny, roi.pos.x, roi.pos.y, sx, sy);
+                roi.size.x = sx;
+                roi.size.y = sy;
                 do_roi = true;
             }
             catch (Sipi::SipiError &err) {
@@ -313,7 +316,7 @@ namespace Sipi {
         //
         bool do_size = false;
         int reduce = 0;
-        int nnx, nny;
+        size_t nnx, nny;
         bool redonly = true; // we assume that only a reduce is necessary
         if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
             if (do_roi) {
@@ -463,7 +466,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOJ2k::getDim(std::string filepath, size_t &width, size_t &height) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         kdu_customize_warnings(&kdu_sipi_warn);
@@ -496,8 +499,12 @@ namespace Sipi {
         // get the size of the full image (without reduce!)
         //
         siz_params *siz = codestream.access_siz();
-        siz->get(Ssize, 0, 0, height);
-        siz->get(Ssize, 0, 1, width);
+        int tmp_height;
+        siz->get(Ssize, 0, 0, tmp_height);
+        height = tmp_height;
+        int tmp_width;
+        siz->get(Ssize, 0, 1, tmp_width);
+        width = tmp_width;
 
         codestream.destroy();
         input->close();
@@ -550,10 +557,10 @@ namespace Sipi {
         try {
             // Construct code-stream object
             siz_params siz;
-            siz.set(Scomponents, 0, 0, img->nc);
-            siz.set(Sdims, 0, 0, img->ny);  // Height of first image component
-            siz.set(Sdims, 0, 1, img->nx);   // Width of first image component
-            siz.set(Sprecision, 0, 0, img->bps);  // Bits per sample (usually 8 or 16)
+            siz.set(Scomponents, 0, 0, (int) img->nc);
+            siz.set(Sdims, 0, 0, (int) img->ny);  // Height of first image component
+            siz.set(Sdims, 0, 1, (int) img->nx);   // Width of first image component
+            siz.set(Sprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
             siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();

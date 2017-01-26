@@ -690,8 +690,9 @@ namespace Sipi {
         //
         // resize/Scale the image if necessary
         //
-        if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
-            int nnx, nny, reduce;
+        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
+            size_t nnx, nny;
+            int reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
@@ -711,7 +712,7 @@ namespace Sipi {
                               (a) = (cc_<<8) + (dd_); \
                           } while(0)
 
-    bool SipiIOJpeg::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOJpeg::getDim(std::string filepath, size_t &width, size_t &height) {
         // portions derived from IJG code */
 
         FILE *infile;
@@ -759,8 +760,12 @@ namespace Sipi {
                 case 0xCF: {
                     readword(dummy, infile);	/* usual parameter length count */
                     readbyte(dummy, infile);
-                    readword(height, infile);
-                    readword(width, infile);
+                    unsigned int tmp_height;
+                    readword(tmp_height, infile);
+                    height = tmp_height;
+                    unsigned int tmp_width;
+                    readword(tmp_width, infile);
+                    width = tmp_width;
                     readbyte(dummy, infile);
                     fclose (infile);
                     return true;

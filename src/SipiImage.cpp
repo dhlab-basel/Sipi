@@ -84,11 +84,11 @@ namespace Sipi {
         size_t bufsiz;
         switch (bps) {
             case 8: {
-                bufsiz = nx*ny*nc*sizeof (unsigned char);
+                bufsiz = nx * ny * nc * sizeof (unsigned char);
                 break;
             }
             case 16: {
-                bufsiz = nx*ny*nc*sizeof (unsigned short);
+                bufsiz = nx * ny * nc * sizeof (unsigned short);
                 break;
             }
             default: {
@@ -108,7 +108,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    SipiImage::SipiImage(int nx_p, int ny_p, int nc_p, int bps_p, PhotometricInterpretation photo_p)
+    SipiImage::SipiImage(size_t nx_p, size_t ny_p, size_t nc_p, size_t bps_p, PhotometricInterpretation photo_p)
     : nx(nx_p), ny(ny_p), nc(nc_p), bps(bps_p), photo(photo_p) {
         if (((photo == MINISWHITE) || (photo == MINISBLACK)) && !((nc == 1) || (nc == 2))) {
             throw SipiImageError(__file__, __LINE__, "Mismatch in Photometric interpretation and number of channels");
@@ -122,11 +122,11 @@ namespace Sipi {
         size_t bufsiz;
         switch (bps) {
             case 8: {
-                bufsiz = nx*ny*nc*sizeof (unsigned char);
+                bufsiz = nx * ny * nc * sizeof (unsigned char);
                 break;
             }
             case 16: {
-                bufsiz = nx*ny*nc*sizeof (unsigned short);
+                bufsiz = nx * ny * nc * sizeof (unsigned short);
                 break;
             }
             default: {
@@ -165,11 +165,11 @@ namespace Sipi {
             size_t bufsiz;
             switch (bps) {
                 case 8: {
-                    bufsiz = nx*ny*nc*sizeof (unsigned char);
+                    bufsiz = nx * ny * nc * sizeof (unsigned char);
                     break;
                 }
                 case 16: {
-                    bufsiz = nx*ny*nc*sizeof (unsigned short);
+                    bufsiz = nx * ny * nc * sizeof (unsigned short);
                     break;
                 }
                 default: {
@@ -279,7 +279,7 @@ namespace Sipi {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
-            internal_hash.add_data(pixels, (size_t) nx * (size_t) ny * (size_t) nc * (size_t) bps / (size_t) 8);
+            internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
             std::string origname = shttps::getFileName(filepath);
             std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
@@ -288,7 +288,7 @@ namespace Sipi {
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
-            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny * (size_t) nc *(size_t) bps /(size_t) 8);
+            internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
@@ -303,7 +303,7 @@ namespace Sipi {
         read(filepath, region, size, false);
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
-            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny *(size_t) nc *(size_t) bps /(size_t) 8);
+            internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
             std::string mimetype = shttps::GetMimetype::getMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
@@ -311,7 +311,7 @@ namespace Sipi {
         }
         else {
             shttps::Hash internal_hash(emdata.hash_type());
-            internal_hash.add_data(pixels, (size_t) nx *(size_t) ny *(size_t) nc *(size_t) bps /(size_t) 8);
+            internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
             if (checksum != emdata.data_chksum()) {
                 return false;
@@ -321,7 +321,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::getDim(std::string filepath, int &width, int &height) {
+    void SipiImage::getDim(std::string filepath, size_t &width, size_t &height) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
         std::string _fext;
@@ -354,7 +354,7 @@ namespace Sipi {
     //============================================================================
 
 
-    void SipiImage::getDim(int &width, int &height) {
+    void SipiImage::getDim(size_t &width, size_t &height) {
         width = getNx();
         height = getNy();
     }
@@ -395,7 +395,7 @@ namespace Sipi {
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
         byte *inbuf = (byte *) pixels;
-        byte *outbuf = new byte[(size_t) nx * (size_t) ny *(size_t)  nnc * (size_t) new_bps(size_t) /(size_t) 8];
+        byte *outbuf = new byte[nx * ny * nnc * new_bps / 8];
 
         cmsHTRANSFORM hTransform;
         in_formatter = icc->iccFormatter(this);
@@ -469,11 +469,11 @@ namespace Sipi {
         }
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
-            unsigned int nnc = nc - 1;
-            byte *outbuf = new byte[nnc*nx*ny];
-            for (unsigned int j = 0; j < ny; j++) {
-                for (unsigned int i = 0; i < nx; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            size_t nnc = nc - 1;
+            byte *outbuf = new byte[(size_t) nnc * (size_t) nx * (size_t) ny];
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         if (k == chan) continue;
                         outbuf[nnc*(j*nx + i) + k] = inbuf[nc*(j*nx + i) + k];
                     }
@@ -484,11 +484,11 @@ namespace Sipi {
         }
         else if (bps == 16) {
             word *inbuf = (word *) pixels;
-            unsigned int nnc = nc - 1;
+            size_t nnc = nc - 1;
             unsigned short *outbuf = new unsigned short[nnc*nx*ny];
-            for (unsigned int j = 0; j < ny; j++) {
-                for (unsigned int i = 0; i < nx; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         if (k == chan) continue;
                         outbuf[nnc*(j*nx + i) + k] = inbuf[nc*(j*nx + i) + k];
                     }
@@ -508,7 +508,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::crop(int x, int y, int width, int height) {
+    bool SipiImage::crop(int x, int y, size_t width, size_t height) {
         if (x < 0) {
             width += x;
             x = 0;
@@ -537,17 +537,14 @@ namespace Sipi {
             height = ny - y;
         }
 
-        if (width < 0) return false;
-        if (height < 0) return false;
-
         if ((x == 0) && (y == 0) && (width == nx) && (height == ny)) return true; //we do not have to crop!!
 
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
             byte *outbuf = new byte[width*height*nc];
-            for (unsigned int j = 0; j < height; j++) {
-                for (unsigned int i = 0; i < width; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t i = 0; i < width; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*width + i) + k] = inbuf[nc*((j + y)*nx + (i + x)) + k];
                     }
                 }
@@ -558,9 +555,9 @@ namespace Sipi {
         else if (bps == 16) {
             word *inbuf = (word *) pixels;
             word *outbuf = new word[width*height*nc];
-            for (unsigned int j = 0; j < height; j++) {
-                for (unsigned int i = 0; i < width; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t i = 0; i < width; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*width + i) + k] = inbuf[nc*((j + y)*nx + (i + x)) + k];
                     }
                 }
@@ -580,7 +577,8 @@ namespace Sipi {
 
 
     bool SipiImage::crop(std::shared_ptr<SipiRegion> region) {
-        int x, y, width, height;
+        int x, y;
+        size_t width, height;
         if (region->getType() == SipiRegion::FULL) return true; // we do not have to crop;
 
         region->crop_coords(nx, ny, x, y, width, height);
@@ -588,9 +586,9 @@ namespace Sipi {
         if (bps == 8) {
             byte *inbuf = (byte *) pixels;
             byte *outbuf = new byte[width*height*nc];
-            for (unsigned int j = 0; j < height; j++) {
-                for (unsigned int i = 0; i < width; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t i = 0; i < width; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*width + i) + k] = inbuf[nc*((j + y)*nx + (i + x)) + k];
                     }
                 }
@@ -601,9 +599,9 @@ namespace Sipi {
         else if (bps == 16) {
             word *inbuf = (word *) pixels;
             word *outbuf = new word[width*height*nc];
-            for (unsigned int j = 0; j < height; j++) {
-                for (unsigned int i = 0; i < width; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < height; j++) {
+                for (size_t i = 0; i < width; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*width + i) + k] = inbuf[nc*((j + y)*nx + (i + x)) + k];
                     }
                 }
@@ -685,9 +683,9 @@ namespace Sipi {
 #undef POSITION
 
 
-    bool SipiImage::scale(int nnx, int nny) {
+    bool SipiImage::scale(size_t nnx, size_t nny) {
         int iix = 1, iiy = 1;
-        int nnnx, nnny;
+        size_t nnnx, nnny;
 
         //
         // if the scaling is less than 1 (that is, the image gets smaller), we first
@@ -724,11 +722,11 @@ namespace Sipi {
             byte *inbuf = (byte *) pixels;
             byte *outbuf = new byte[nnnx*nnny*nc];
             float rx, ry;
-            for (unsigned int j = 0; j < nnny; j++) {
+            for (size_t j = 0; j < nnny; j++) {
                 ry = ylut[j];
-                for (unsigned int i = 0; i < nnnx; i++) {
+                for (size_t i = 0; i < nnnx; i++) {
                     rx = xlut[i];
-                    for (unsigned int k = 0; k < nc; k++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*nnnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
                     }
                 }
@@ -740,11 +738,11 @@ namespace Sipi {
             word *inbuf = (word *) pixels;
             word *outbuf = new word[nnnx*nnny*nc];
             float rx, ry;
-            for (unsigned int j = 0; j < nnny; j++) {
+            for (size_t j = 0; j < nnny; j++) {
                 ry = ylut[j];
-                for (unsigned int i = 0; i < nnnx; i++) {
+                for (size_t i = 0; i < nnnx; i++) {
                     rx = xlut[i];
-                    for (unsigned int k = 0; k < nc; k++) {
+                    for (size_t k = 0; k < nc; k++) {
                         outbuf[nc*(j*nnnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
                     }
                 }
@@ -769,12 +767,12 @@ namespace Sipi {
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nnx*nny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
-                            register unsigned int accu = 0;
-                            for (unsigned int jj = 0; jj < iiy; jj++) {
-                                for (unsigned int ii = 0; ii < iix; ii++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
+                            unsigned int accu = 0;
+                            for (size_t jj = 0; jj < iiy; jj++) {
+                                for (size_t ii = 0; ii < iix; ii++) {
                                     accu += inbuf[nc*((iiy*j + jj)*nnnx + (iix*i + ii)) + k];
                                 }
                             }
@@ -788,12 +786,12 @@ namespace Sipi {
             else if (bps == 16) {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nnx*nny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
-                            register unsigned int accu = 0;
-                            for (unsigned int jj = 0; jj < iiy; jj++) {
-                                for (unsigned int ii = 0; ii < iix; ii++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
+                            unsigned int accu = 0;
+                            for (size_t jj = 0; jj < iiy; jj++) {
+                                for (size_t ii = 0; ii < iix; ii++) {
                                     accu += inbuf[nc*((iiy*j + jj)*nnnx + (iix*i + ii)) + k];
                                 }
                             }
@@ -817,9 +815,9 @@ namespace Sipi {
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
-                for (unsigned int j = 0; j < ny; j++) {
-                    for (unsigned int i = 0; i < nx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nx + i) + k] = inbuf[nc*(j*nx + (nx - i - 1)) + k];
                         }
                     }
@@ -830,9 +828,9 @@ namespace Sipi {
             else if (bps == 16) {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nx*ny*nc];
-                for (unsigned int j = 0; j < ny; j++) {
-                    for (unsigned int i = 0; i < nx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nx + i) + k] = inbuf[nc*(j*nx + (nx - i - 1)) + k];
                         }
                     }
@@ -863,9 +861,9 @@ namespace Sipi {
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*((ny - i - 1)*nx + j) + k];
                         }
                     }
@@ -876,9 +874,9 @@ namespace Sipi {
             else if (bps == 16) {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*((ny - i - 1)*nx + j) + k];
                         }
                     }
@@ -900,9 +898,9 @@ namespace Sipi {
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*((ny - j - 1)*nx + (nx - i - 1)) + k];
                         }
                     }
@@ -913,9 +911,9 @@ namespace Sipi {
             else if (bps == 16) {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*((ny - j - 1)*nx + (nx - i - 1)) + k];
                         }
                     }
@@ -940,9 +938,9 @@ namespace Sipi {
             if (bps == 8) {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*(i*nx + (nx - j - 1)) + k];
                         }
                     }
@@ -953,9 +951,9 @@ namespace Sipi {
             else if (bps == 16) {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nx*ny*nc];
-                for (unsigned int j = 0; j < nny; j++) {
-                    for (unsigned int i = 0; i < nnx; i++) {
-                        for (unsigned int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             outbuf[nc*(j*nnx + i) + k] = inbuf[nc*(i*nx + (nx - j - 1)) + k];
                         }
                     }
@@ -999,17 +997,17 @@ namespace Sipi {
                 byte *inbuf = (byte *) pixels;
                 byte *outbuf = new byte[nnx*nny*nc];
                 byte bg = 0;
-                for (int j = 0; j < nny; j++) {
-                    for (int i = 0; i < nnx; i++) {
-                        register float rx = ((float) i - pptx)*co - ((float) j - ppty)*si + ptx;
-                        register float ry = ((float) i - pptx)*si + ((float) j - ppty)*co + pty;
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        float rx = ((float) i - pptx)*co - ((float) j - ppty)*si + ptx;
+                        float ry = ((float) i - pptx)*si + ((float) j - ppty)*co + pty;
                         if ((rx < 0.0) || (rx >= (float) (nx - 1)) || (ry < 0.0) || (ry >= (float) (ny - 1))) {
-                            for (int k = 0; k < nc; k++) {
+                            for (size_t k = 0; k < nc; k++) {
                                 outbuf[nc*(j*nnx + i) + k] = bg;
                             }
                         }
                         else {
-                            for (int k = 0; k < nc; k++) {
+                            for (size_t k = 0; k < nc; k++) {
                                 outbuf[nc*(j*nnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
                             }
                         }
@@ -1023,17 +1021,17 @@ namespace Sipi {
                 word *inbuf = (word *) pixels;
                 word *outbuf = new word[nnx*nny*nc];
                 word bg = 0;
-                for (int j = 0; j < nny; j++) {
-                    for (int i = 0; i < nnx; i++) {
-                        register float rx = ((float) i - pptx)*co - ((float) j - ppty)*si + ptx;
-                        register float ry = ((float) i - pptx)*si + ((float) j - ppty)*co + pty;
+                for (size_t j = 0; j < nny; j++) {
+                    for (size_t i = 0; i < nnx; i++) {
+                        float rx = ((float) i - pptx)*co - ((float) j - ppty)*si + ptx;
+                        float ry = ((float) i - pptx)*si + ((float) j - ppty)*co + pty;
                         if ((rx < 0.0) || (rx >= (float) (nx - 1)) || (ry < 0.0) || (ry >= (float) (ny - 1))) {
-                            for (int k = 0; k < nc; k++) {
+                            for (size_t k = 0; k < nc; k++) {
                                 outbuf[nc*(j*nnx + i) + k] = bg;
                             }
                         }
                         else {
-                            for (int k = 0; k < nc; k++) {
+                            for (size_t k = 0; k < nc; k++) {
                                 outbuf[nc*(j*nnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
                             }
                         }
@@ -1062,9 +1060,9 @@ namespace Sipi {
             //byte *outbuf = new(std::nothrow) Sipi::byte[nc*nx*ny];
             byte *outbuf = new(std::nothrow) byte[nc*nx*ny];
             if (outbuf == nullptr) return false;
-            for (unsigned int j = 0; j < ny; j++) {
-                for (unsigned int i = 0; i < nx; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         // divide pixel values by 256 using ">> 8"
                         outbuf[nc*(j*nx + i) + k] = (inbuf[nc*(j*nx + i) + k] >> 8);
                     }
@@ -1099,8 +1097,8 @@ namespace Sipi {
             outbuf[i] = pixels[i];  // copy buffer
         }
 
-        for (int y = 0; y< ny; y++) {
-            for (int x = 0; x < nx; x++){
+        for (size_t y = 0; y< ny; y++) {
+            for (size_t x = 0; x < nx; x++){
                 short oldpixel = outbuf[y*nx + x];
                 outbuf[y*nx + x] = (oldpixel > 127) ? 255 : 0;
                 int properr  = (oldpixel - outbuf[y*nx + x]);
@@ -1110,7 +1108,7 @@ namespace Sipi {
                 if ((x < (nx - 1)) && (y < (ny - 1))) outbuf[(y + 1)*nx + (x + 1)] += properr >> 4;
             }
         }
-        for (int i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
+        for (size_t i = 0; i < nx*ny; i++) pixels[i] = outbuf[i];
         delete [] outbuf;
         return true;
     }
@@ -1126,20 +1124,20 @@ namespace Sipi {
 
         float *xlut = new float[nx];
         float *ylut = new float[ny];
-    	for (int i = 0; i < nx; i++) {
+    	for (size_t i = 0; i < nx; i++) {
     		xlut[i] = (float) (wm_nx*i) / (float) nx;
     	}
-    	for (int j = 0; j < ny; j++) {
+    	for (size_t j = 0; j < ny; j++) {
     		ylut[j] = (float) (wm_ny*j) / (float) ny;
     	}
 
         if (bps == 8) {
             byte *buf = (byte *) pixels;
-            for (unsigned int j = 0; j < ny; j++) {
-                for (unsigned int i = 0; i < nx; i++) {
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
                     byte val = bilinn(wmbuf, wm_nx, xlut[i], ylut[j], 0, wm_nc);
-                    for (unsigned int k = 0; k < nc; k++) {
-                        register float nval = (buf[nc*(j*nx + i) + k] / 255.)*(1.0F + val / 2550.0F) + val / 2550.0F;
+                    for (size_t k = 0; k < nc; k++) {
+                        float nval = (buf[nc*(j*nx + i) + k] / 255.)*(1.0F + val / 2550.0F) + val / 2550.0F;
                         buf[nc*(j*nx + i) + k] = (nval > 1.0) ? 255 : floor(nval*255. + .5);
                     }
                 }
@@ -1147,11 +1145,11 @@ namespace Sipi {
         }
         else if (bps == 16)  {
             word *buf = (word *) pixels;
-            for (unsigned int j = 0; j < ny; j++) {
-                for (unsigned int i = 0; i < nx; i++) {
-                    for (unsigned int k = 0; k < nc; k++) {
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    for (size_t k = 0; k < nc; k++) {
                         byte val = bilinn(wmbuf, wm_nx, xlut[i], ylut[j], 0, wm_nc);
-                        register float nval = (buf[nc*(j*nx + i) + k] / 65535.0F)*(1.0F + val / 655350.0F) + val / 352500.F;
+                        float nval = (buf[nc*(j*nx + i) + k] / 65535.0F)*(1.0F + val / 655350.0F) + val / 352500.F;
                         buf[nc*(j*nx + i) + k] = (nval > 1.0) ? (word) 65535 : (word) floor(nval*65535. + .5);
                     }
                 }
@@ -1187,9 +1185,9 @@ namespace Sipi {
             case 8: {
                 byte *ltmp = (byte *) pixels;
                 byte *rtmp = (new_rhs == nullptr) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
                                 diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
@@ -1201,9 +1199,9 @@ namespace Sipi {
             case 16: {
                 word *ltmp = (word *) pixels;
                 word *rtmp = (new_rhs == nullptr) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
                                 diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
@@ -1221,22 +1219,22 @@ namespace Sipi {
 
         int min = INT_MAX;
         int max = INT_MIN;
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                for (int k = 0; k < nc; k++) {
+        for (size_t j = 0; j < ny; j++) {
+            for (size_t i = 0; i < nx; i++) {
+                for (size_t k = 0; k < nc; k++) {
                     if (diffbuf[nc*(j*nx + i) + k] > max) max = diffbuf[nc*(j*nx + i) + k];
                     if (diffbuf[nc*(j*nx + i) + k] < min) min = diffbuf[nc*(j*nx + i) + k];
                 }
             }
         }
-        int maxmax = abs(min) > abs(max) ? abs(min) : abs(min);
+        int maxmax = abs(min) > abs(max) ? abs(min) : abs(max);
 
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             ltmp[nc*(j*nx + i) + k] = (byte) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*UCHAR_MAX/(2*maxmax));
                         }
                     }
@@ -1245,9 +1243,9 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             ltmp[nc*(j*nx + i) + k] = (word) ((diffbuf[nc*(j*nx + i) + k] + maxmax)*USHRT_MAX/(2*maxmax));
                         }
                     }
@@ -1297,9 +1295,9 @@ namespace Sipi {
             case 8: {
                 byte *ltmp = (byte *) pixels;
                 byte *rtmp = (new_rhs == nullptr) ? (byte *) rhs.pixels : (byte *) new_rhs->pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
                                 diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] + rtmp[nc*(j*nx + i) + k];
                             }
@@ -1311,9 +1309,9 @@ namespace Sipi {
             case 16: {
                 word *ltmp = (word *) pixels;
                 word *rtmp = (new_rhs == nullptr) ? (word *) rhs.pixels : (word *) new_rhs->pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             if (ltmp[nc*(j*nx + i) + k] != rtmp[nc*(j*nx + i) + k]) {
                                 diffbuf[nc*(j*nx + i) + k] = ltmp[nc*(j*nx + i) + k] - rtmp[nc*(j*nx + i) + k];
                             }
@@ -1330,9 +1328,9 @@ namespace Sipi {
         }
 
         int max = INT_MIN;
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                for (int k = 0; k < nc; k++) {
+        for (size_t j = 0; j < ny; j++) {
+            for (size_t i = 0; i < nx; i++) {
+                for (size_t k = 0; k < nc; k++) {
                     if (diffbuf[nc*(j*nx + i) + k] > max) max = diffbuf[nc*(j*nx + i) + k];
                 }
             }
@@ -1341,9 +1339,9 @@ namespace Sipi {
         switch (bps) {
             case 8: {
                 byte *ltmp = (byte *) pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             ltmp[nc*(j*nx + i) + k] = (byte) (diffbuf[nc*(j*nx + i) + k]*UCHAR_MAX/max);
                         }
                     }
@@ -1352,9 +1350,9 @@ namespace Sipi {
             }
             case 16: {
                 word *ltmp = (word *) pixels;
-                for (int j = 0; j < ny; j++) {
-                    for (int i = 0; i < nx; i++) {
-                        for (int k = 0; k < nc; k++) {
+                for (size_t j = 0; j < ny; j++) {
+                    for (size_t i = 0; i < nx; i++) {
+                        for (size_t k = 0; k < nc; k++) {
                             ltmp[nc*(j*nx + i) + k] = (word) (diffbuf[nc*(j*nx + i) + k]*USHRT_MAX/max);
                         }
                     }
@@ -1386,9 +1384,9 @@ namespace Sipi {
         }
 
         long long n_differences = 0;
-        for (unsigned int j = 0; j < ny; j++) {
-            for (unsigned int i = 0; i < nx; i++) {
-                for (unsigned int k = 0; k < nc; k++) {
+        for (size_t j = 0; j < ny; j++) {
+            for (size_t i = 0; i < nx; i++) {
+                for (size_t k = 0; k < nc; k++) {
                     if (pixels[nc*(j*nx + i) + k] != rhs.pixels[nc*(j*nx + i) + k]) {
                         n_differences++;
                     }
