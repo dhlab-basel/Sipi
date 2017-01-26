@@ -475,14 +475,14 @@ namespace shttps {
                     if (content_type_opts[0] == "application/x-www-form-urlencoded") {
                         char *bodybuf = nullptr;
                         if (_chunked_transfer_in) {
-                            char *tmp; // TODO: Why don't we use bodybuf here?
+                            char *chunk_buf;
                             ChunkReader ckrd(ins);
-                            content_length = ckrd.readAll(&tmp); // TODO: No memory has been allocated for tmp, is that OK?
+                            content_length = ckrd.readAll(&chunk_buf);
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
-                            memcpy(_content, tmp, content_length);
-                            free (tmp);
+                            memcpy(_content, chunk_buf, content_length);
+                            free (chunk_buf);
                         }
                         else {
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
