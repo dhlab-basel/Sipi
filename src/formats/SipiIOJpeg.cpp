@@ -114,7 +114,7 @@ namespace Sipi {
         size_t n = cinfo->dest->next_output_byte - file_buffer->buffer;
         size_t nn = 0;
         do {
-            int tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
+            auto tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
             if (tmp_n < 0) {
                 throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
             }
@@ -126,10 +126,10 @@ namespace Sipi {
 
         delete [] file_buffer->buffer;
         delete file_buffer;
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
 
         free(cinfo->dest);
-        cinfo->dest = NULL;
+        cinfo->dest = nullptr;
     }
     //=============================================================================
 
@@ -167,9 +167,9 @@ namespace Sipi {
 
     static int file_source_fill_input_buffer(struct jpeg_decompress_struct *cinfo) {
         FileBuffer *file_buffer = (FileBuffer *) cinfo->client_data;
-        int nbytes = 0;
+        size_t nbytes = 0;
         do {
-            int n = read(file_buffer->file_id, file_buffer->buffer + nbytes, file_buffer->buflen - nbytes);
+            auto n = read(file_buffer->file_id, file_buffer->buffer + nbytes, file_buffer->buflen - nbytes);
             if (n < 0) {
                 break; // error
             }
@@ -209,9 +209,9 @@ namespace Sipi {
 
         delete[] file_buffer->buffer;
         delete file_buffer;
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
         free(cinfo->src);
-        cinfo->src = NULL;
+        cinfo->src = nullptr;
     }
     //=============================================================================
 
@@ -243,7 +243,7 @@ namespace Sipi {
     typedef struct _HtmlBuffer {
         JOCTET *buffer; //!< Buffer for holding data to be written out
         size_t buflen;  //!< length of the buffer
-        shttps::Connection *conobj; //!< Pointer to the connection objects
+        shttps::Connection* conobj; //!< Pointer to the connection objects
     } HtmlBuffer;
 
     /*!
@@ -289,34 +289,33 @@ namespace Sipi {
 
         free(html_buffer->buffer);
         free(html_buffer);
-        cinfo->client_data = NULL;
+        cinfo->client_data = nullptr;
 
         free(cinfo->dest);
-        cinfo->dest = NULL;
+        cinfo->dest = nullptr;
     }
     //=============================================================================
 
     /*!
      * This function is used to setup the I/O destination to the HTTP socket
      */
-    static void jpeg_html_dest(struct jpeg_compress_struct *cinfo, shttps::Connection *conobj, size_t buflen = 64*1024)
-    {
-      struct jpeg_destination_mgr *destmgr;
-      HtmlBuffer *html_buffer;
-      cinfo->client_data = malloc(sizeof(HtmlBuffer));
-      html_buffer = (HtmlBuffer *) cinfo->client_data;
+    static void jpeg_html_dest(struct jpeg_compress_struct *cinfo, shttps::Connection* conobj, size_t buflen = 64*1024) {
+        struct jpeg_destination_mgr *destmgr;
+        HtmlBuffer *html_buffer;
+        cinfo->client_data = malloc(sizeof(HtmlBuffer));
+        html_buffer = (HtmlBuffer *) cinfo->client_data;
 
-      html_buffer->buffer = (JOCTET *) malloc(buflen*sizeof(JOCTET));
-      html_buffer->buflen = buflen;
-      html_buffer->conobj = conobj;
+        html_buffer->buffer = (JOCTET *) malloc(buflen*sizeof(JOCTET));
+        html_buffer->buflen = buflen;
+        html_buffer->conobj = conobj;
 
-      destmgr = (struct jpeg_destination_mgr *) malloc(sizeof(struct jpeg_destination_mgr));
+        destmgr = (struct jpeg_destination_mgr *) malloc(sizeof(struct jpeg_destination_mgr));
 
-      destmgr->init_destination = init_html_destination;
-      destmgr->empty_output_buffer = empty_html_buffer;
-      destmgr->term_destination = term_html_destination;
+        destmgr->init_destination = init_html_destination;
+        destmgr->empty_output_buffer = empty_html_buffer;
+        destmgr->term_destination = term_html_destination;
 
-      cinfo->dest = destmgr;
+        cinfo->dest = destmgr;
     }
     //=============================================================================
 
@@ -363,18 +362,18 @@ namespace Sipi {
             switch(id) {
                 case 0x0404: { // IPTC data
                     //cerr << ">>> Photoshop: IPTC" << endl;
-                    if (img->iptc == NULL) img->iptc = new SipiIptc((unsigned char *) ptr, datalen);
+                    if (img->iptc == nullptr) img->iptc = std::make_shared<SipiIptc>((unsigned char *) ptr, datalen);
                     // IPTC – handled separately!
                     break;
                 }
                 case 0x040f: { // ICC data
                     //cerr << ">>> Photoshop: ICC" << endl;
                     // ICC profile
-                    if (img->icc == NULL) img->icc = new SipiIcc((unsigned char *) ptr, datalen);
+                    if (img->icc == nullptr) img->icc = std::make_shared<SipiIcc>((unsigned char *) ptr, datalen);
                     break;
                 }
                 case 0x0422: { // EXIF data
-                    if (img->exif == NULL) img->exif = new SipiExif((unsigned char *) ptr, datalen);
+                    if (img->exif == nullptr) img->exif = std::make_shared<SipiExif>((unsigned char *) ptr, datalen);
                     //cerr << ">>> Photoshop: EXIF" << endl;
                     // exif
                     break;
@@ -382,7 +381,7 @@ namespace Sipi {
                 case 0x0424: { // XMP data
                     //cerr << ">>> Photoshop: XMP" << endl;
                     // XMP data
-                    if (img->xmp == NULL)img->xmp = new SipiXmp(ptr, datalen);
+                    if (img->xmp == nullptr) img->xmp = std::make_shared<SipiXmp>(ptr, datalen);
                 }
                 default: {
                     // URL
@@ -416,7 +415,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8) {
+    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
         int infile;
 
         //
@@ -450,7 +449,7 @@ namespace Sipi {
         struct jpeg_error_mgr jerr;
 
 
-        JSAMPARRAY linbuf = NULL;
+        JSAMPARRAY linbuf = nullptr;
         jpeg_saved_marker_ptr marker;
 
         //
@@ -501,7 +500,7 @@ namespace Sipi {
         // getting Metadata
         //
         marker = cinfo.marker_list;
-        unsigned char *icc_buffer = NULL;
+        unsigned char *icc_buffer = nullptr;
         int icc_buffer_len = 0;
         while (marker) {
             //fprintf(stderr, "#######################################################################\n");
@@ -515,15 +514,15 @@ namespace Sipi {
                 // first we try to find the exif part
                 //
                 unsigned char *pos = (unsigned char *) memmem(marker->data, marker->data_length, "Exif\000\000", 6);
-                if (pos != NULL) {
-                    img->exif = new SipiExif(pos + 6, marker->data_length - (pos - marker->data) - 6);
+                if (pos != nullptr) {
+                    img->exif = std::make_shared<SipiExif>(pos + 6, marker->data_length - (pos - marker->data) - 6);
                 }
 
                 //
                 // first we try to find the xmp part: TODO: reading XMP which spans multiple segments. See ExtendedXMP !!!
                 //
                 pos = (unsigned char *) memmem(marker->data, marker->data_length, "http://ns.adobe.com/xap/1.0/\000", 29);
-                if (pos != NULL) {
+                if (pos != nullptr) {
                     char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n', '\0'};
                     char end[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'e', 'n', 'd', '\0'};
 
@@ -561,7 +560,6 @@ namespace Sipi {
                     while (*pos != '>') pos++;
                     pos++;
 
-
                     size_t xmp_len = end_xmp - start_xmp;
 
                     std::string xmpstr((char *) start_xmp, xmp_len);
@@ -569,7 +567,7 @@ namespace Sipi {
                     xmpstr = xmpstr.substr(0, npos + 12);
 
                     try {
-                        img->xmp = new SipiXmp(xmpstr);
+                        img->xmp = std::make_shared<SipiXmp>(xmpstr);
                     }
                     catch (SipiError &err) {
                         std::cerr << "Failed to parse XMP... xmp_len = " << xmp_len << std::endl;
@@ -582,8 +580,8 @@ namespace Sipi {
                 // first we try to find the exif part
                 //
                 unsigned char *pos = (unsigned char *) memmem(marker->data, marker->data_length, "ICC_PROFILE\0", 12);
-                if (pos != NULL) {
-                    int len = marker->data_length - (pos - (unsigned char *) marker->data) - 14;
+                if (pos != nullptr) {
+                    auto len = marker->data_length - (pos - (unsigned char *) marker->data) - 14;
                     icc_buffer = (unsigned char *) realloc(icc_buffer, icc_buffer_len + len);
                     Sipi::memcpy (icc_buffer + icc_buffer_len, pos + 14, (size_t) len);
                     icc_buffer_len += len;
@@ -599,8 +597,8 @@ namespace Sipi {
             }
             marker = marker->next;
         }
-        if (icc_buffer != NULL) {
-            img->icc = new SipiIcc(icc_buffer, icc_buffer_len);
+        if (icc_buffer != nullptr) {
+            img->icc = std::make_shared<SipiIcc>(icc_buffer, icc_buffer_len);
         }
 
         try {
@@ -681,14 +679,14 @@ namespace Sipi {
         //
         // do some croping...
         //
-        if ((region != NULL) && (region->getType()) != SipiRegion::FULL) {
+        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
             (void) img->crop(region);
         }
 
         //
         // resize/Scale the image if necessary
         //
-        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
+        if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
             int nnx, nny, reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
@@ -716,7 +714,7 @@ namespace Sipi {
         //
         // open the input file
         //
-        if ((infile = fopen (filepath.c_str(), "rb")) == NULL) {
+        if ((infile = fopen (filepath.c_str(), "rb")) == nullptr) {
             // inlock.unlock();
             return false;
         }
@@ -888,7 +886,7 @@ namespace Sipi {
         //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //
 
-        if (img->exif != NULL) {
+        if (img->exif != nullptr) {
             unsigned int len;
             unsigned char *buf = img->exif->exifBytes(len);
             char start[] = "Exif\000\000";
@@ -911,7 +909,7 @@ namespace Sipi {
             delete [] exifchunk;
         }
 
-        if (img->xmp != NULL) {
+        if (img->xmp != nullptr) {
             unsigned int len;
             const char *buf;
             try {
@@ -939,7 +937,7 @@ namespace Sipi {
             delete [] xmpchunk;
         }
 
-        if (img->icc != NULL) {
+        if (img->icc != nullptr) {
             unsigned int len;
             const unsigned char *buf = img->icc->iccBytes(len);
             unsigned char start[14] = {0x49, 0x43, 0x43, 0x5F, 0x50, 0x52, 0x4F, 0x46, 0x49, 0x4C, 0x45, 0x0}; //"ICC_PROFILE\000";
@@ -958,7 +956,7 @@ namespace Sipi {
                 Sipi::memcpy(iccchunk, start, (size_t) start_l);
                 Sipi::memcpy(iccchunk + start_l, buf + n_written, (size_t) n_nextwrite);
                 try {
-                    jpeg_write_marker(&cinfo, ICC_MARKER, (JOCTET *) iccchunk, n_nextwrite + start_l);
+                    jpeg_write_marker(&cinfo, ICC_MARKER, iccchunk, n_nextwrite + start_l);
                 }
                 catch (JpegError &jpgerr) {
                     delete [] buf;
@@ -979,7 +977,7 @@ namespace Sipi {
             }
         }
 
-        if (img->iptc != NULL) {
+        if (img->iptc != nullptr) {
             unsigned int len;
             const unsigned char *buf = img->iptc->iptcBytes(len);
             char start[] = "Photoshop 3.0\0008BIM\004\004\000\000";

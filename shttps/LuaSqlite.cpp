@@ -33,8 +33,6 @@
 
 #include "SipiHttpServer.h"
 
-using namespace std;
-
 namespace shttps {
 
 
@@ -56,8 +54,8 @@ namespace shttps {
 
 
     static Sqlite *toSqlite(lua_State *L, int index) {
-        Sqlite *db = (Sqlite *) lua_touserdata(L, index);
-        if (db == NULL) {
+        Sqlite *db = static_cast<Sqlite *>(lua_touserdata(L, index));
+        if (db == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
@@ -69,7 +67,7 @@ namespace shttps {
         Sqlite *db;
         luaL_checktype(L, index, LUA_TUSERDATA);
         db = (Sqlite *) luaL_checkudata(L, index, LUASQLITE);
-        if (db == NULL) {
+        if (db == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
@@ -78,7 +76,7 @@ namespace shttps {
     //=========================================================================
 
     static Sqlite *pushSqlite(lua_State *L) {
-        Sqlite *db = (Sqlite *) lua_newuserdata(L, sizeof(Sqlite));
+        Sqlite *db = static_cast<Sqlite *>(lua_newuserdata(L, sizeof(Sqlite)));
         luaL_getmetatable(L, LUASQLITE);
         lua_setmetatable(L, -2);
         return db;
@@ -90,9 +88,9 @@ namespace shttps {
     //
     static int Sqlite_gc(lua_State *L) {
         Sqlite *db = toSqlite(L, 1);
-        if (db->sqlite_handle != NULL) {
+        if (db->sqlite_handle != nullptr) {
             sqlite3_close_v2(db->sqlite_handle);
-            db->sqlite_handle = NULL;
+            db->sqlite_handle = nullptr;
         }
         delete db->dbname;
         return 0;
@@ -110,7 +108,7 @@ namespace shttps {
 
     static Stmt *toStmt(lua_State *L, int index) {
         Stmt *stmt = (Stmt *) lua_touserdata(L, index);
-        if (stmt == NULL) {
+        if (stmt == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
@@ -122,7 +120,7 @@ namespace shttps {
         luaL_checktype(L, index, LUA_TUSERDATA);
 
         Stmt *stmt = (Stmt *) luaL_checkudata(L, index, LUASQLSTMT);
-        if (stmt == NULL) {
+        if (stmt == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
@@ -143,7 +141,7 @@ namespace shttps {
     //
     static int Stmt_gc(lua_State *L) {
         Stmt *stmt = toStmt(L, 1);
-        if (stmt->stmt_handle != NULL) sqlite3_finalize(stmt->stmt_handle);
+        if (stmt->stmt_handle != nullptr) sqlite3_finalize(stmt->stmt_handle);
         return 0;
     }
     //=========================================================================
@@ -173,11 +171,11 @@ namespace shttps {
             return lua_error(L);
         }
         Sqlite *db = checkSqlite(L, 1);
-        if (db == NULL) {
+        if (db == nullptr) {
             lua_pushstring(L, "Couldn't connect to database!");
             return lua_error(L);
         }
-        const char *sql = NULL;
+        const char *sql = nullptr;
         if (lua_isstring(L, 2)) {
             sql = lua_tostring(L, 2);
         }
@@ -187,7 +185,7 @@ namespace shttps {
             return 0;
         }
         sqlite3_stmt *stmt_handle;
-        int status = sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt_handle, NULL);
+        int status = sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt_handle, nullptr);
         if (status !=  SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(db->sqlite_handle));
             return lua_error(L);
@@ -203,9 +201,9 @@ namespace shttps {
 
     static int Sqlite_destroy(lua_State *L) {
         Sqlite *db = toSqlite(L, 1);
-        if (db->sqlite_handle != NULL) {
+        if (db->sqlite_handle != nullptr) {
             sqlite3_close_v2(db->sqlite_handle);
-            db->sqlite_handle = NULL;
+            db->sqlite_handle = nullptr;
         }
         return 0;
     }
@@ -246,7 +244,7 @@ namespace shttps {
         }
 
         Stmt *stmt = checkStmt(L, 1);
-        if (stmt == NULL) {
+        if (stmt == nullptr) {
             lua_pushstring(L, "Stmt_next: Invalid prepared statment!");
             return lua_error(L);
         }
@@ -357,10 +355,10 @@ namespace shttps {
 
     static int Stmt_destroy(lua_State *L) {
         Stmt *stmt = toStmt(L, 1);
-        if (stmt->stmt_handle != NULL) {
+        if (stmt->stmt_handle != nullptr) {
             sqlite3_finalize(stmt->stmt_handle);
-            stmt->stmt_handle = NULL;
-            stmt->sqlite_handle = NULL;
+            stmt->stmt_handle = nullptr;
+            stmt->sqlite_handle = nullptr;
         }
         return 0;
     }
@@ -397,7 +395,7 @@ namespace shttps {
 
         int flags = SQLITE_OPEN_READWRITE;
         if ((top >= 2) && (lua_isstring(L,2))) {
-            string flagstr = lua_tostring(L, 1);
+            std::string flagstr = lua_tostring(L, 1);
             if (flagstr == "RO") {
                 flags = SQLITE_OPEN_READONLY;
             }
@@ -411,7 +409,7 @@ namespace shttps {
         flags |=  SQLITE_OPEN_NOMUTEX;
 
         sqlite3 *handle;
-        int status = sqlite3_open_v2(dbpath, &handle, flags, NULL);
+        int status = sqlite3_open_v2(dbpath, &handle, flags, nullptr);
         if (status !=  SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(handle));
             return lua_error(L);

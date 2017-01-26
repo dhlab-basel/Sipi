@@ -223,7 +223,7 @@ namespace Sipi {
                 return obj;
             }
         } // switch
-        return NULL;
+        return nullptr;
     }
 
     PhpSession::PhpSession(ifstream *inf_p) {
@@ -251,20 +251,20 @@ namespace Sipi {
 
         cJSON *obj;
 
-        if ((obj = cJSON_GetObjectItem(session, "lang")) != NULL) {
+        if ((obj = cJSON_GetObjectItem(session, "lang")) != nullptr) {
             lang = std::string(obj->valuestring);
         }
 
-        if ((obj = cJSON_GetObjectItem(session, "language_id")) != NULL) {
+        if ((obj = cJSON_GetObjectItem(session, "language_id")) != nullptr) {
             lang_id = obj->valueint;
         }
 
 
-        if ((obj = cJSON_GetObjectItem(session, "user_id")) != NULL) {
+        if ((obj = cJSON_GetObjectItem(session, "user_id")) != nullptr) {
             user_id = obj->valueint;
         }
 
-        if ((obj = cJSON_GetObjectItem(session, "active_project")) != NULL) {
+        if ((obj = cJSON_GetObjectItem(session, "active_project")) != nullptr) {
             active_project = obj->valueint;
         }
 

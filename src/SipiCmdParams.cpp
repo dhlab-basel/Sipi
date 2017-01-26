@@ -33,7 +33,7 @@
 namespace Sipi {
 
     SipiCmdParams::SipiCmdParams (int argc, char *argv[], const char *infostr) {
-        if (infostr != NULL) {
+        if (infostr != nullptr) {
             info = infostr;
         }
         SipiCmdParams::argv.resize (argc);

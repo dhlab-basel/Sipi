@@ -38,7 +38,7 @@ SockStream::SockStream(int sock_p, int in_bufsize_p, int out_bufsize_p, int putb
     : in_bufsize(in_bufsize_p), putback_size(putback_size_p), out_bufsize(out_bufsize_p), sock(sock_p)
 {
 #ifdef SHTTPS_ENABLE_SSL
-    cSSL = NULL;
+    cSSL = nullptr;
 #endif
 
     in_buf = new char[in_bufsize + putback_size];
@@ -88,7 +88,7 @@ streambuf::int_type SockStream::underflow(void)
 
     ssize_t n;
 #ifdef SHTTPS_ENABLE_SSL
-    if (cSSL == NULL) {
+    if (cSSL == nullptr) {
         n = read(sock, start, in_bufsize);
     }
     else {
@@ -121,7 +121,7 @@ streambuf::int_type SockStream::overflow(streambuf::int_type ch)
         while (n > 0) {
             ssize_t tmp_n;
 #ifdef SHTTPS_ENABLE_SSL
-            if (cSSL == NULL) {
+            if (cSSL == nullptr) {
                 tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
             }
             else {
@@ -161,7 +161,7 @@ int SockStream::sync(void)
     while (n > 0) {
         ssize_t tmp_n;
 #ifdef SHTTPS_ENABLE_SSL
-        if (cSSL == NULL) {
+        if (cSSL == nullptr) {
             tmp_n = send(sock, out_buf + nn, n - nn, MSG_NOSIGNAL);
         }
         else {

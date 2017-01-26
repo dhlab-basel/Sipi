@@ -62,12 +62,12 @@ extern "C" {
     static MEMTIFF *memTiffOpen(tsize_t incsiz = 10240, tsize_t initsiz = 10240)
     {
         MEMTIFF *memtif;
-        if ((memtif = (MEMTIFF *) malloc(sizeof(MEMTIFF))) == NULL) {
+        if ((memtif = (MEMTIFF *) malloc(sizeof(MEMTIFF))) == nullptr) {
             throw Sipi::SipiImageError(__file__, __LINE__, "malloc failed", errno);
         }
         memtif->incsiz = incsiz;
         if (initsiz == 0) initsiz = incsiz;
-        if ((memtif->data = (unsigned char *) malloc(initsiz*sizeof(unsigned char))) == NULL) {
+        if ((memtif->data = (unsigned char *) malloc(initsiz*sizeof(unsigned char))) == nullptr) {
             free (memtif);
             throw Sipi::SipiImageError(__file__, __LINE__, "malloc failed", errno);
         }
@@ -99,7 +99,7 @@ extern "C" {
     {
         MEMTIFF *memtif = (MEMTIFF *) handle;
         if (((tsize_t) memtif->fptr + size) > memtif->size) {
-            if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + size)) == NULL) {
+            if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + size)) == nullptr) {
                 throw Sipi::SipiImageError(__file__, __LINE__, "realloc failed", errno);
             }
             memtif->size = memtif->fptr + memtif->incsiz + size;
@@ -118,7 +118,7 @@ extern "C" {
         switch (whence) {
             case SEEK_SET: {
                 if ((tsize_t) off > memtif->size) {
-                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == NULL) {
+                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == nullptr) {
                         throw Sipi::SipiImageError(__file__, __LINE__, "realloc failed", errno);
                     }
                     memtif->size = memtif->size + memtif->incsiz + off;
@@ -128,7 +128,7 @@ extern "C" {
             }
             case SEEK_CUR: {
                 if ((tsize_t)(memtif->fptr + off) > memtif->size) {
-                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + off)) == NULL) {
+                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->fptr + memtif->incsiz + off)) == nullptr) {
                         throw Sipi::SipiImageError(__file__, __LINE__, "realloc failed", errno);
                     }
                     memtif->size = memtif->fptr + memtif->incsiz + off;
@@ -138,7 +138,7 @@ extern "C" {
             }
             case SEEK_END: {
                 if ((tsize_t) (memtif->size + off) > memtif->size) {
-                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == NULL) {
+                    if ((memtif->data = (unsigned char *) realloc(memtif->data, memtif->size + memtif->incsiz + off)) == nullptr) {
                         throw Sipi::SipiImageError(__file__, __LINE__, "realloc failed", errno);
                     }
                     memtif->size = memtif->size + memtif->incsiz + off;
@@ -186,10 +186,10 @@ extern "C" {
 
     static void memTiffFree(MEMTIFF *memtif)
     {
-        if (memtif->data != NULL) free(memtif->data);
-        memtif->data = NULL;
-        if (memtif != NULL) free(memtif);
-        memtif = NULL;
+        if (memtif->data != nullptr) free(memtif->data);
+        memtif->data = nullptr;
+        if (memtif != nullptr) free(memtif);
+        memtif = nullptr;
         return;
     }
     /*===========================================================================*/
@@ -310,8 +310,8 @@ namespace Sipi {
 
         nx = 0;
         ny = 0;
-        if (NULL == (tif = TIFFOpen(wmfile.c_str(), "r"))) {
-            return NULL;
+        if (nullptr == (tif = TIFFOpen(wmfile.c_str(), "r"))) {
+            return nullptr;
         }
 
         // add EXIF tags to the set of tags that libtiff knows about
@@ -403,12 +403,12 @@ namespace Sipi {
     };
     //============================================================================
 
-    static TIFFExtendProc parent_extender = NULL;
+    static TIFFExtendProc parent_extender = nullptr;
 
     static void registerCustomTIFFTags(TIFF *tif) {
         /* Install the extended Tag field info */
         TIFFMergeFieldInfo(tif, xtiffFieldInfo, N(xtiffFieldInfo));
-        if (parent_extender != NULL) (*parent_extender)(tif);
+        if (parent_extender != nullptr) (*parent_extender)(tif);
     }
     //============================================================================
 
@@ -423,11 +423,11 @@ namespace Sipi {
         }
     }
 
-    bool SipiIOTiff::read(SipiImage *img, std::string filepath, SipiRegion *region, SipiSize *size, bool force_bps_8)
+    bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8)
     {
     	TIFF *tif;
 
-        if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
+        if (nullptr != (tif = TIFFOpen (filepath.c_str(), "r"))) {
             TIFFSetErrorHandler(tiffError);
             TIFFSetWarningHandler(tiffWarning);
 
@@ -436,7 +436,7 @@ namespace Sipi {
             //
             uint16 safo, ori, planar, stmp;
 
-            (void) TIFFSetWarningHandler(NULL);
+            (void) TIFFSetWarningHandler(nullptr);
 
             if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &(img->nx)) == 0) {
                 TIFFClose(tif);
@@ -476,39 +476,39 @@ namespace Sipi {
             //
             char *str;
             if (1 == TIFFGetField(tif, TIFFTAG_IMAGEDESCRIPTION, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.ImageDescription"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_MAKE, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Make"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_MODEL, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Model"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_SOFTWARE, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Software"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_DATETIME, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.DateTime"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_ARTIST, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Artist"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_HOSTCOMPUTER, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.HostComputer"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_COPYRIGHT, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.Copyright"), std::string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_DOCUMENTNAME, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.DocumentName"), std::string(str));
             }
 
@@ -517,27 +517,27 @@ namespace Sipi {
             //
 /*
             if (1 == TIFFGetField(tif, TIFFTAG_PAGENAME, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                if (img->exif == NULL) img->exif = std::make_shared<SipiExif>();
                 img->exif->addKeyVal(string("Exif.Image.PageName"), string(str));
             }
             if (1 == TIFFGetField(tif, TIFFTAG_PAGENUMBER, &str)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                if (img->exif == NULL) img->exif = std::make_shared<SipiExif>();
                 img->exif->addKeyVal(string("Exif.Image.PageNumber"), string(str));
             }
 */
             float f;
             if (1 == TIFFGetField(tif, TIFFTAG_XRESOLUTION, &f)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.XResolution"), f);
             }
             if (1 == TIFFGetField(tif, TIFFTAG_YRESOLUTION, &f)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.YResolution"), f);
             }
 
             short s;
         	if (1 == TIFFGetField(tif, TIFFTAG_RESOLUTIONUNIT, &s)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 img->exif->addKeyVal(std::string("Exif.Image.ResolutionUnit"), s);
         	}
 
@@ -546,11 +546,11 @@ namespace Sipi {
             // read iptc header
             //
             unsigned int iptc_length = 0;
-            unsigned char *iptc_content = NULL;
+            unsigned char *iptc_content = nullptr;
 
             if (TIFFGetField(tif, TIFFTAG_RICHTIFFIPTC, &iptc_length, &iptc_content) != 0) {
                 try {
-                    img->iptc = new SipiIptc(iptc_content, iptc_length);
+                    img->iptc = std::make_shared<SipiIptc>(iptc_content, iptc_length);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -563,7 +563,7 @@ namespace Sipi {
             //
             toff_t exif_ifd_offs;
             if (1 == TIFFGetField(tif, TIFFTAG_EXIFIFD, &exif_ifd_offs)) {
-                if (img->exif == NULL) img->exif = new SipiExif();
+                img->ensure_exif();
                 readExif(img, tif, exif_ifd_offs);
             }
 
@@ -571,10 +571,10 @@ namespace Sipi {
             // read xmp header
             //
             int xmp_length;
-            char *xmp_content = NULL;
+            char *xmp_content = nullptr;
             if (1 == TIFFGetField(tif, TIFFTAG_XMLPACKET, &xmp_length, &xmp_content)) {
                 try {
-                    img->xmp = new SipiXmp(xmp_content, xmp_length);
+                    img->xmp = std::make_shared<SipiXmp>(xmp_content, xmp_length);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -587,10 +587,10 @@ namespace Sipi {
             //
             unsigned int icc_len;
             unsigned char *icc_buf;
-            float *whitepoint = NULL;
+            float *whitepoint = nullptr;
             if (1 == TIFFGetField(tif, TIFFTAG_ICCPROFILE, &icc_len, &icc_buf)) {
                 try {
-                    img->icc = new SipiIcc(icc_buf, icc_len);
+                    img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                 }
                 catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -600,7 +600,7 @@ namespace Sipi {
                 //
                 // Wow, we have TIFF colormetry..... Who is still using this???
                 //
-                float *primaries_ti = NULL;
+                float *primaries_ti = nullptr;
                 float primaries[6];
                 if (1 == TIFFGetField(tif, TIFFTAG_PRIMARYCHROMATICITIES, &primaries_ti)) {
                     primaries[0] = primaries_ti[0];
@@ -636,11 +636,11 @@ namespace Sipi {
                     }
                 }
                 else {
-                    tfunc = NULL;
+                    tfunc = nullptr;
                     tfunc_len = 0;
                 }
-                img->icc = new SipiIcc(whitepoint, primaries, tfunc, tfunc_len);
-                if (tfunc != NULL) delete [] tfunc;
+                img->icc = std::make_shared<SipiIcc>(whitepoint, primaries, tfunc, tfunc_len);
+                if (tfunc != nullptr) delete [] tfunc;
             }
 
             //
@@ -653,7 +653,7 @@ namespace Sipi {
             }
 
 
-            if ((region == NULL) || (region->getType() == SipiRegion::FULL)) {
+            if ((region == nullptr) || (region->getType() == SipiRegion::FULL)) {
                 if (planar == PLANARCONFIG_CONTIG) {
                     uint32 i;
                     uint8 *dataptr = new uint8[img->ny*sll];
@@ -748,29 +748,29 @@ namespace Sipi {
 
             TIFFClose(tif);
 
-            if (img->icc == NULL) {
+            if (img->icc == nullptr) {
                 switch(img->photo) {
                     case MINISBLACK: {
                         if (img->bps == 1) {
                             cvrt1BitTo8Bit(img, sll, 0, 255);
                         }
-                        img->icc = new SipiIcc(icc_GRAY_D50);
+                        img->icc = std::make_shared<SipiIcc>(icc_GRAY_D50);
                         break;
                     }
                     case MINISWHITE: {
                         if (img->bps == 1) {
                             cvrt1BitTo8Bit(img, sll, 255, 0);
                         }
-                        img->icc = new SipiIcc(icc_GRAY_D50);
+                        img->icc = std::make_shared<SipiIcc>(icc_GRAY_D50);
                         break;
                     }
                     case SEPARATED: {
-                        img->icc = new SipiIcc(icc_CYMK_standard);
+                        img->icc = std::make_shared<SipiIcc>(icc_CYMK_standard);
                         break;
                     }
                     case YCBCR: // fall through!
                     case RGB: {
-                        img->icc = new SipiIcc(icc_sRGB);
+                        img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
                     default: {
@@ -780,7 +780,7 @@ namespace Sipi {
             }
             /*
             if ((img->nc == 3) && (img->photo == PHOTOMETRIC_YCBCR)) {
-                SipiIcc *target_profile = new SipiIcc(img->icc);
+                std::shared_ptr<SipiIcc> target_profile = std::make_shared<SipiIcc>(img->icc);
                 switch (img->bps) {
                     case 8: {
                         img->convertToIcc(target_profile, TYPE_YCbCr_8);
@@ -796,7 +796,7 @@ namespace Sipi {
                 }
             }
             else if ((img->nc == 4) && (img->photo == PHOTOMETRIC_SEPARATED)) { // CMYK image
-                SipiIcc *target_profile = new SipiIcc(icc_sRGB);
+                std::shared_ptr<SipiIcc> target_profile = std::make_shared<SipiIcc>(icc_sRGB);
                 switch (img->bps) {
                     case 8: {
                         img->convertToIcc(target_profile, TYPE_CMYK_8);
@@ -816,7 +816,7 @@ namespace Sipi {
             //
             // resize/Scale the image if necessary
             //
-            if (size != NULL) {
+            if (size != nullptr) {
                 int nnx, nny, reduce;
                 bool redonly;
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
@@ -841,12 +841,12 @@ namespace Sipi {
     bool SipiIOTiff::getDim(std::string filepath, int &width, int &height) {
     	TIFF *tif;
 
-        if (NULL != (tif = TIFFOpen (filepath.c_str(), "r"))) {
+        if (nullptr != (tif = TIFFOpen (filepath.c_str(), "r"))) {
 
             //
             // OK, it's a TIFF file
             //
-            (void) TIFFSetWarningHandler(NULL);
+            (void) TIFFSetWarningHandler(nullptr);
 
             if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &width) == 0) {
                 std::cerr << "TIFF image file " << filepath << ": Error getting TIFFTAG_IMAGEWIDTH" << std::endl;
@@ -870,7 +870,7 @@ namespace Sipi {
     void SipiIOTiff::write(SipiImage *img, std::string filepath, int quality)
     {
         TIFF *tif;
-        MEMTIFF *memtif = NULL;
+        MEMTIFF *memtif = nullptr;
         uint32 rowsperstrip = (uint32) -1;
 
         if ((filepath == "stdout:") || (filepath == "HTTP")) {
@@ -886,8 +886,8 @@ namespace Sipi {
             );
         }
         else {
-            if ((tif = TIFFOpen (filepath.c_str(), "w")) == NULL) {
-                if (memtif != NULL) memTiffFree(memtif);
+            if ((tif = TIFFOpen (filepath.c_str(), "w")) == nullptr) {
+                if (memtif != nullptr) memTiffFree(memtif);
                 std::string msg = "TIFFopen of \"" + filepath + "\" failed!";
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
@@ -938,7 +938,7 @@ namespace Sipi {
         //
         // let's get the TIFF metadata if there is some. We stored the TIFF metadata in the exifData meber variable!
         //
-        if ((img->exif != NULL) & (!(img->skip_metadata & SKIP_EXIF))) {
+        if ((img->exif != nullptr) & (!(img->skip_metadata & SKIP_EXIF))) {
             std::string value;
             if (img->exif->getValByKey("Exif.Image.ImageDescription", value)) {
                 TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, value.c_str());
@@ -980,7 +980,7 @@ namespace Sipi {
             }
         }
 
-        if ((img->icc != NULL) & (!(img->skip_metadata & SKIP_ICC))) {
+        if ((img->icc != nullptr) & (!(img->skip_metadata & SKIP_ICC))) {
             unsigned int len;
             const unsigned char *buf;
             try {
@@ -997,7 +997,7 @@ namespace Sipi {
         //
         // write IPTC data, if available
         //
-        if ((img->iptc != NULL) & (!(img->skip_metadata & SKIP_IPTC))) {
+        if ((img->iptc != nullptr) & (!(img->skip_metadata & SKIP_IPTC))) {
             unsigned int len;
             unsigned char *buf;
             try {
@@ -1016,7 +1016,7 @@ namespace Sipi {
         //
         // write XMP data
         //
-        if ((img->xmp != NULL) & (!(img->skip_metadata & SKIP_XMP))) {
+        if ((img->xmp != nullptr) & (!(img->skip_metadata & SKIP_XMP))) {
             unsigned int len;
             const char *buf;
             try {
@@ -1057,7 +1057,7 @@ namespace Sipi {
         //
         // write exif data
         //
-        if (img->exif != NULL) {
+        if (img->exif != nullptr) {
             TIFFWriteDirectory(tif);
             writeExif(img, tif);
         }
@@ -1065,7 +1065,7 @@ namespace Sipi {
 
         TIFFClose(tif);
 
-        if (memtif != NULL) {
+        if (memtif != nullptr) {
             if (filepath == "stdout:") {
                 size_t n = 0;
                 while (n < memtif->flen) {
@@ -1074,9 +1074,8 @@ namespace Sipi {
                 fflush(stdout);
             }
             else if (filepath == "HTTP") {
-                shttps::Connection *conobj = img->connection();
                 try {
-                    conobj->sendAndFlush(memtif->data, memtif->flen);
+                    img->connection()->sendAndFlush(memtif->data, memtif->flen);
                 }
                 catch (int i) {
                     memTiffFree(memtif);
@@ -1128,7 +1127,7 @@ namespace Sipi {
                         break;
                     }
                     case EXIF_DT_STRING: {
-                        char *tmpstr = NULL;
+                        char *tmpstr = nullptr;
                         if (TIFFGetField (tif, exiftag_list[i].tag_id, &tmpstr)) {
                             img->exif->addKeyVal(exiftag_list[i].tag_id, "Photo", tmpstr);
                         }

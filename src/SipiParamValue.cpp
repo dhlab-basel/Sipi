@@ -42,7 +42,7 @@ namespace Sipi {
   //
   SipiParamValue::SipiParamValue (void) {
     dataType = SipiUndefined;
-    val = NULL;
+    val = nullptr;
   }
   //============================================================================
 
@@ -98,7 +98,7 @@ namespace Sipi {
     if (dataType == SipiString) {
       delete sval;
     }
-    val = NULL;
+    val = nullptr;
   }
   //============================================================================
 
@@ -231,7 +231,7 @@ namespace Sipi {
 	return (round (fval));
       }
       case SipiString: {
-	int itmp = (int) strtol((*sval).c_str(), (char **) NULL, 10);
+	int itmp = (int) strtol((*sval).c_str(), (char **) nullptr, 10);
 	if (errno == EINVAL) {
 	  SipiError sipi_error (__FILE__, __LINE__,
 				"invalid datatype: conversion \"SipiString\" to  \"SipiInteger\" impossible!");

@@ -56,9 +56,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -78,9 +78,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -100,9 +100,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -122,9 +122,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -145,9 +145,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -206,9 +206,9 @@ namespace Sipi {
             sortmethod = std::string(lua_tostring(L, 1));
         }
         lua_pop(L, top);
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -239,11 +239,11 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
         int top = lua_gettop(L);
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pop(L, top);
             lua_pushnil(L);
             return 1;
@@ -253,12 +253,7 @@ namespace Sipi {
         if (top == 1) {
             canonical = std::string(lua_tostring(L, 1));
             lua_pop(L, 1);
-            if (cache->remove(canonical)) {
-                lua_pushboolean(L, true);
-            }
-            else {
-                lua_pushboolean(L, false);
-            }
+            lua_pushboolean(L, cache->remove(canonical));
         }
         else {
             lua_pop(L, top);
@@ -273,9 +268,9 @@ namespace Sipi {
         lua_getglobal(L, sipiserver);
         SipiHttpServer *server = (SipiHttpServer *) lua_touserdata(L, -1);
         lua_remove(L, -1); // remove from stack
-        SipiCache *cache = server->cache();
+        std::shared_ptr<SipiCache> cache = server->cache();
 
-        if (cache == NULL) {
+        if (cache == nullptr) {
             lua_pushnil(L);
             return 1;
         }
@@ -303,7 +298,7 @@ namespace Sipi {
 
     static SImage *toSImage(lua_State *L, int index) {
         SImage *img = (SImage *) lua_touserdata(L, index);
-        if (img == NULL) {
+        if (img == nullptr) {
             lua_pushstring(L, "Type error! Not userdata object");
             lua_error(L);
         }
@@ -315,7 +310,7 @@ namespace Sipi {
         SImage *img;
         luaL_checktype(L, index, LUA_TUSERDATA);
         img = (SImage *) luaL_checkudata(L, index, SIMAGE);
-        if (img == NULL) {
+        if (img == nullptr) {
             lua_pushstring(L, "Type error! Expected an SipiImage!");
             lua_error(L);
         }
@@ -352,8 +347,8 @@ namespace Sipi {
         }
         const char *imgpath = lua_tostring(L, 1);
 
-        SipiRegion *region = NULL;
-        SipiSize *size = NULL;
+        std::shared_ptr<SipiRegion> region;
+        std::shared_ptr<SipiSize> size;
         std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
         if (top == 2) {
@@ -370,9 +365,9 @@ namespace Sipi {
             while (lua_next(L, 2) != 0) {
                 if (lua_isstring(L, -2)) {
                     const char *param = lua_tostring(L, -2);
-                   if (strcmp(param, "region") == 0) {
+                    if (strcmp(param, "region") == 0) {
                         if (lua_isstring(L, -1)) {
-                            region = new SipiRegion(lua_tostring(L, -1));
+                            region = std::make_shared<SipiRegion>(lua_tostring(L, -1));
                         }
                         else {
                             lua_pop(L, lua_gettop(L));
@@ -383,7 +378,7 @@ namespace Sipi {
                     }
                     else if (strcmp(param, "size") == 0) {
                         if (lua_isstring(L, -1)) {
-                            size = new SipiSize(lua_tostring(L, -1));
+                            size = std::make_shared<SipiSize>(lua_tostring(L, -1));
                         }
                         else {
                             lua_pop(L, lua_gettop(L));
@@ -394,7 +389,7 @@ namespace Sipi {
                     }
                     else if (strcmp(param, "reduce") == 0) {
                         if (lua_isnumber(L, -1)) {
-                            size = new SipiSize((int) lua_tointeger(L, -1));
+                            size = std::make_shared<SipiSize>(static_cast<int>(lua_tointeger(L, -1)));
                         }
                         else {
                             lua_pop(L, lua_gettop(L));
@@ -473,8 +468,6 @@ namespace Sipi {
             }
         }
         catch(SipiImageError &err) {
-            delete region;
-            delete size;
             lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
             std::stringstream ss;
@@ -483,9 +476,6 @@ namespace Sipi {
             lua_pushstring(L, ss.str().c_str());
             return 2;
         }
-
-        delete region;
-        delete size;
 
         return 2;
     }
@@ -518,7 +508,7 @@ namespace Sipi {
         }
         else {
             SImage *img = checkSImage(L, 1);
-            if (img == NULL) {
+            if (img == nullptr) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 lua_pushstring(L, "'SipiImage.dims()': not a valid image!");
@@ -607,9 +597,9 @@ namespace Sipi {
         const char *regionstr = lua_tostring(L, 2);
         lua_pop(L, top);
 
-        SipiRegion *reg;
+        std::shared_ptr<SipiRegion> reg;
         try {
-            reg = new SipiRegion(regionstr);
+            reg = std::make_shared<SipiRegion>(regionstr);
         }
         catch (SipiError &err) {
             lua_pushboolean(L, false);
@@ -618,8 +608,8 @@ namespace Sipi {
             lua_pushstring(L, ss.str().c_str());
             return 2;
         }
+
         img->image->crop(reg); // can not throw exception!
-        delete reg;
 
         lua_pushboolean(L, true);
         lua_pushnil(L);

@@ -313,7 +313,7 @@ namespace shttps {
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
         char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
-        unsigned content_length;    //!< length of body in octets (used if not chunked transfer)
+        size_t content_length;    //!< length of body in octets (used if not chunked transfer)
         std::string _content_type;   //!< Content-type (mime type of content)
         std::ofstream *cachefile;   //!< pointer to cache file
         char *outbuf;               //!< If not NULL, pointer to the output buffer (buffered output used)
@@ -668,7 +668,7 @@ namespace shttps {
         */
         void setBuffer(size_t buf_size = 8912, size_t buf_inc = 8912);
 
-        inline bool isBuffered(void) {return ( outbuf != NULL); }
+        inline bool isBuffered(void) { return ( outbuf != nullptr); }
        /*!
         * Set the transfer mode for the response to chunked
         */

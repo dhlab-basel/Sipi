@@ -208,7 +208,7 @@ namespace shttps {
      * Instantiates a Lua server
      */
     LuaServer::LuaServer() {
-        if ((L = luaL_newstate()) == NULL) {
+        if ((L = luaL_newstate()) == nullptr) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
@@ -220,7 +220,7 @@ namespace shttps {
      * Instantiates a Lua server
      */
     LuaServer::LuaServer(Connection &conn) {
-        if ((L = luaL_newstate()) == NULL) {
+        if ((L = luaL_newstate()) == nullptr) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
@@ -235,7 +235,7 @@ namespace shttps {
      * \param
      */
     LuaServer::LuaServer(const std::string &luafile, bool iscode) {
-        if ((L = luaL_newstate()) == NULL) {
+        if ((L = luaL_newstate()) == nullptr) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
@@ -266,7 +266,7 @@ namespace shttps {
      * \param[in] luafile A file containing a Lua script or a Lua code chunk
      */
     LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode) {
-        if ((L = luaL_newstate()) == NULL) {
+        if ((L = luaL_newstate()) == nullptr) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
@@ -660,8 +660,8 @@ namespace shttps {
      * LUA: curdir = server.fs.getcwd()
      */
     static int lua_fs_getcwd(lua_State *L) {
-        char *dirname = getcwd(NULL, 0);
-        if (dirname != NULL) {
+        char *dirname = getcwd(nullptr, 0);
+        if (dirname != nullptr) {
             lua_pushboolean(L, true);
             lua_pushstring(L, dirname);
         }
@@ -696,8 +696,8 @@ namespace shttps {
         const char *dirname = lua_tostring(L, 1);
         lua_settop(L, 0); // clear stack
 
-        char *olddirname = getcwd(NULL, 0);
-        if (olddirname == NULL) {
+        char *olddirname = getcwd(nullptr, 0);
+        if (olddirname == nullptr) {
             lua_pushboolean(L, false);
             lua_pushstring(L, strerror(errno));
             return 2;
@@ -886,7 +886,7 @@ namespace shttps {
 
         for (int i = 1; i <= top; i++) {
             const char *str = lua_tostring(L, i);
-            if (str != NULL) {
+            if (str != nullptr) {
                 try {
                     conn->send(str, strlen(str));
                 }
@@ -1050,7 +1050,7 @@ namespace shttps {
 
             _conn = curl_easy_init();
 
-            if (_conn == NULL) {
+            if (_conn == nullptr) {
                 throw HttpError(__LINE__, "Failed to create libcurl connection");
             }
 
@@ -1083,7 +1083,7 @@ namespace shttps {
 
                 // Set the HTTP request headers.
 
-                struct curl_slist *chunk = NULL;
+                struct curl_slist *chunk = nullptr;
 
                 for (const auto& header : requestHeaders) {
                     std::string headerStr = header.first + ": " + header.second;
@@ -1280,9 +1280,9 @@ namespace shttps {
 
     static json_t *subtable(lua_State *L, int index) {
         std::string table_error("server.table_to_json(table): datatype inconsistency");
-        json_t *tableobj = NULL;
-        json_t *arrayobj = NULL;
-        json_t *tmp_luanumber = NULL;
+        json_t *tableobj = nullptr;
+        json_t *arrayobj = nullptr;
+        json_t *tmp_luanumber = nullptr;
         const char *skey;
         lua_pushnil(L);  /* first key */
         while (lua_next(L, index) != 0) {
@@ -1291,19 +1291,19 @@ namespace shttps {
             if (lua_type(L, index + 1) == LUA_TSTRING) {
                 // we have a string as key
                 skey = lua_tostring(L, index + 1);
-                if (arrayobj != NULL) {
+                if (arrayobj != nullptr) {
                     throw std::string("'server.table_to_json(table)': Cannot mix int and strings as key");
                 }
-                if (tableobj == NULL) {
+                if (tableobj == nullptr) {
                     tableobj = json_object();
                 }
             }
             else if (lua_type(L, index + 1) == LUA_TNUMBER) {
                 (void) lua_tointeger(L, index + 1);
-                if (tableobj != NULL) {
+                if (tableobj != nullptr) {
                     throw std::string("'server.table_to_json(table)': Cannot mix int and strings as key");
                 }
-                if (arrayobj == NULL) {
+                if (arrayobj == nullptr) {
                     arrayobj = json_array();
                 }
             }
@@ -1330,10 +1330,10 @@ namespace shttps {
                     tmp_luanumber = json_real(val);
                 }
 
-                if (tableobj != NULL) {
+                if (tableobj != nullptr) {
                     json_object_set_new(tableobj, skey, tmp_luanumber);
                 }
-                else if (arrayobj != NULL) {
+                else if (arrayobj != nullptr) {
                     json_array_append_new(arrayobj, tmp_luanumber);
                 }
                 else {
@@ -1343,10 +1343,10 @@ namespace shttps {
             else if (lua_type(L, index + 2) == LUA_TSTRING) {
                 // a string value
                 const char *val = lua_tostring(L, index + 2);
-                if (tableobj != NULL) {
+                if (tableobj != nullptr) {
                     json_object_set_new(tableobj, skey, json_string(val));
                 }
-                else if (arrayobj != NULL) {
+                else if (arrayobj != nullptr) {
                     json_array_append_new(arrayobj, json_string(val));
                 }
                 else {
@@ -1356,10 +1356,10 @@ namespace shttps {
             else if (lua_type(L, index + 2) == LUA_TBOOLEAN) {
                 // a boolean value
                 bool val = lua_toboolean(L, index + 2);
-                if (tableobj != NULL) {
+                if (tableobj != nullptr) {
                     json_object_set_new(tableobj, skey, json_boolean(val));
                 }
-                else if (arrayobj != NULL) {
+                else if (arrayobj != nullptr) {
                     json_array_append_new(arrayobj, json_boolean(val));
                 }
                 else {
@@ -1367,10 +1367,10 @@ namespace shttps {
                 }
             }
             else if (lua_type(L, index + 2) == LUA_TTABLE) {
-                if (tableobj != NULL) {
+                if (tableobj != nullptr) {
                     json_object_set_new(tableobj, skey, subtable(L, index + 2));
                 }
-                else if (arrayobj != NULL) {
+                else if (arrayobj != nullptr) {
                     json_array_append_new(arrayobj, subtable(L, index + 2));
                 }
                 else {
@@ -1382,7 +1382,7 @@ namespace shttps {
             }
             lua_pop(L, 1);
         }
-        return tableobj != NULL ? tableobj : (arrayobj != NULL ? arrayobj : NULL);
+        return tableobj != nullptr ? tableobj : (arrayobj != nullptr ? arrayobj : nullptr);
     }
     //=========================================================================
 
@@ -1405,7 +1405,7 @@ namespace shttps {
             return 2;
         }
 
-        json_t *root = NULL;
+        json_t *root = nullptr;
         try {
             root = subtable(L, 1);
         }
@@ -1557,7 +1557,7 @@ namespace shttps {
 
         json_t *jsonobj = json_loads(jsonstr, JSON_REJECT_DUPLICATES, &jsonerror);
 
-        if (jsonobj == NULL) {
+        if (jsonobj == nullptr) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "'server.json_to_table(jsonstr)': Error parsing JSON: " << jsonerror.text << std::endl;
@@ -1949,7 +1949,7 @@ namespace shttps {
             return 2;
         }
         char *tokendata;
-        if ((tokendata = jwt_dump_str(jwt, false)) == NULL) {
+        if ((tokendata = jwt_dump_str(jwt, false)) == nullptr) {
             lua_pushboolean(L, false);
             lua_pushstring(L, "'server.decode_jwt(token)': Error in decoding token! (2)");
             return 2;
@@ -2513,7 +2513,7 @@ namespace shttps {
                 {"method", LUA_TSTRING},
                 {"route",  LUA_TSTRING},
                 {"script", LUA_TSTRING},
-                {NULL,     0}
+                {nullptr,  0}
         };
 
         std::vector<LuaRoute> routes;
@@ -2531,8 +2531,8 @@ namespace shttps {
             luaL_checktype(L, -1, LUA_TTABLE);
             int field_index;
             LuaRoute route;
-            for (field_index = 0; (fields[field_index].name != NULL
-                                   && fields[field_index].name != NULL); field_index++) {
+            for (field_index = 0; (fields[field_index].name != nullptr
+                                   && fields[field_index].name != nullptr); field_index++) {
                 lua_getfield(L, -1, fields[field_index].name);
                 luaL_checktype(L, -1, fields[field_index].type);
 
@@ -2590,7 +2590,7 @@ namespace shttps {
 
     int LuaServer::executeChunk(const std::string &luastr) {
         if (luaL_dostring(L, luastr.c_str()) != LUA_OK) {
-            const char *errorMsg = NULL;
+            const char *errorMsg = nullptr;
             if (lua_gettop(L) > 0) {
                 errorMsg = lua_tostring(L, 1);
                 lua_pop(L, 1);
