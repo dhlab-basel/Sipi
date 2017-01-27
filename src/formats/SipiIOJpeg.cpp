@@ -830,9 +830,10 @@ namespace Sipi {
                 jpeg_file_dest(&cinfo, outfile);
             }
         }
-        cinfo.image_width = img->nx; 	/* image width and height, in pixels */
-        cinfo.image_height = img->ny;
-        cinfo.input_components = img->nc;		/* # of color components per pixel */
+
+        cinfo.image_width = (int) img->nx; 	/* image width and height, in pixels */
+        cinfo.image_height = (int) img->ny;
+        cinfo.input_components = (int) img->nc;		/* # of color components per pixel */
         switch (img->photo) {
             case MINISWHITE:
             case MINISBLACK: {
@@ -881,7 +882,6 @@ namespace Sipi {
             //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
-
 
 
 
@@ -1022,7 +1022,6 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
         }
-
 
         row_stride = img->nx * img->nc;	/* JSAMPLEs per row in image_buffer */
 
