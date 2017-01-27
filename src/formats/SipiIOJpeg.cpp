@@ -829,9 +829,9 @@ namespace Sipi {
             }
         }
 
-        cinfo.image_width = img->nx; 	/* image width and height, in pixels */
-        cinfo.image_height = img->ny;
-        cinfo.input_components = img->nc;		/* # of color components per pixel */
+        cinfo.image_width = (int) img->nx; 	/* image width and height, in pixels */
+        cinfo.image_height = (int) img->ny;
+        cinfo.input_components = (int) img->nc;		/* # of color components per pixel */
         switch (img->photo) {
             case MINISWHITE:
             case MINISBLACK: {
@@ -883,7 +883,6 @@ namespace Sipi {
 
 
 
-
         //
         // Here we write the marker
         //
@@ -925,23 +924,25 @@ namespace Sipi {
             catch (SipiError &err) {
                 std::cerr << err << std::endl;
             }
-            char start[] = "http://ns.adobe.com/xap/1.0/\000";
-            size_t start_l = sizeof(start) - 1; // remove trailing '\0';
-            char *xmpchunk = new char[len + start_l];
-            Sipi::memcpy(xmpchunk, start, (size_t) start_l);
-            Sipi::memcpy(xmpchunk + start_l, buf, (size_t) len);
-            delete [] buf;
-            try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk, start_l + len);
-            }
-            catch (JpegError &jpgerr) {
+            if (len < 65502) { // else XMP too large for JPEG marker (TODO: would have to split)
+                char start[] = "http://ns.adobe.com/xap/1.0/\000";
+                size_t start_l = sizeof(start); // remove trailing '\0';
+                char *xmpchunk = new char[len + start_l];
+                Sipi::memcpy(xmpchunk, start, (size_t) start_l);
+                Sipi::memcpy(xmpchunk + start_l, buf, (size_t) len);
+                delete [] buf;
+                try {
+                    jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk, start_l + len);
+                }
+                catch (JpegError &jpgerr) {
+                    delete [] xmpchunk;
+                    jpeg_finish_compress (&cinfo);
+                    jpeg_destroy_compress(&cinfo);
+                    if (outfile != -1) close(outfile);
+                    throw SipiImageError(__file__, __LINE__, jpgerr.what());
+                }
                 delete [] xmpchunk;
-                jpeg_finish_compress (&cinfo);
-                jpeg_destroy_compress(&cinfo);
-                if (outfile != -1) close(outfile);
-                throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
-            delete [] xmpchunk;
         }
 
         if (img->icc != NULL) {
@@ -1030,7 +1031,6 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
         }
-
 
         row_stride = img->nx * img->nc;	/* JSAMPLEs per row in image_buffer */
 
