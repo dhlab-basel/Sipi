@@ -699,7 +699,7 @@ namespace shttps {
             sockstream = make_unique<SockStream>(tdata->sock);
         }
 #else
-        sockstream = ipi::make_unique<SockStream>(tdata->sock);
+        sockstream = make_unique<SockStream>(tdata->sock);
 #endif
         std::istream ins(sockstream.get());
         std::ostream os(sockstream.get());
