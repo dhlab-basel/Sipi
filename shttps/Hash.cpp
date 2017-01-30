@@ -33,6 +33,7 @@
 
 #include "SipiError.h"
 #include "Hash.h"
+#include "makeunique.h"
 
 using namespace std;
 
@@ -90,19 +91,19 @@ namespace shttps {
     //==========================================================================
 
     bool Hash::hash_of_file(const string &path, size_t buflen) {
-        char *buf = new char[buflen];
+        auto buf = make_unique<char[]>(buflen);
 
         int fptr = ::open(path.c_str(), O_RDONLY);
         if (fptr == -1) {
             return false;
         }
         size_t n;
-        while ((n = ::read(fptr, buf, buflen)) > 0) {
+        while ((n = ::read(fptr, buf.get(), buflen)) > 0) {
             if (n == -1) {
                 ::close (fptr);
                 return false;
             }
-            if (!EVP_DigestUpdate(context, buf, n)) {
+            if (!EVP_DigestUpdate(context, buf.get(), n)) {
                 ::close(fptr);
                 return false;
             }
