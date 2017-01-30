@@ -7,7 +7,7 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_xz
     INSTALL_DIR ${COMMON_LOCAL}
-    URL http://tukaani.org/xz/xz-5.2.1.tar.gz
+    URL http://sourceforge.net/projects/lzmautils/files/xz-5.2.1.tar.gz/download
     SOURCE_DIR ${COMMON_SRCS}/xz-5.2.1
     CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.1/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
