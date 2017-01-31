@@ -8,7 +8,7 @@ Sipi is developed by the [Digital Humanities Lab](http://www.dhlab.unibas.ch) at
 
 Sipi is [free software](http://www.gnu.org/philosophy/free-sw.en.html), released under the [GNU Affero General Public License](http://www.gnu.org/licenses/agpl-3.0.en.html).
 Sipi uses the kakadu-library for JPEG2000 support. Kakadu ( http://kakadusoftware.com/ ) is a commercial high-performance library which implements the full JPEG2000 stack. Kakadu must be licensed and downloaded separately by the user. We do not provide the Kakadu library.
-The current version of Sipi requires version "v7_8-01382N" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_8-01382N.zip".
+The current version of Sipi requires version "v7_9-01727L" of kakadu. The zip-File must be copied into the "vendor" subdirectory with the name "v7_9-01727L.zip".
 
 Sipi uses the Adobe ICC Color profiles which are automatically downloaded by the cmake process into a file called "icc.zip". The
 user is responsible for reading and agreeing with the license conditions of Adobe as written in the provided file "Color Profile EULA.pdf"!
@@ -70,6 +70,7 @@ In the root directory, the directory `cache` must be created.
   - `pip3 install iiif_validator`
 
 ### CentOS (V7)
+- if not already installed, EPEL eases the process: `sudo yum install epel-release`
 - `sudo yum install gcc-c++`
 - `sudo yum install cmake`
 - `sudo yum install readline-devel`
@@ -82,7 +83,7 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum install openssl-devel`
 - `sudo yum install nginx`
 - `sudo chown -R $USER /var/log/nginx`
-- `sudo yum install python35 python35-pip`
+- `sudo yum install python34 python34-pip python34-devel`
 - `sudo yum install file-devel`
 - `pip3 install pytest`
 - `pip3 install requests`
