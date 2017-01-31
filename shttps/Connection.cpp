@@ -47,6 +47,7 @@
 #include "Error.h"
 #include "Connection.h"
 #include "ChunkReader.h"
+#include "makeunique.h"
 #include "Server.h" // TEMPORARY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 static const char __file__[] = __FILE__;
 
@@ -619,16 +620,16 @@ namespace shttps {
                                     }
 
                                     tmpname = _tmpdir + "/sipi_XXXXXXXX";
-                                    char *writable = new char[tmpname.size() + 1];
-                                    std::copy(tmpname.begin(), tmpname.end(), writable);
-                                    writable[tmpname.size()] = '\0'; // don't forget the terminating 0
-                                    int fd = mkstemp(writable);
-                                    delete[] writable;
+                                    auto writable = make_unique<char[]>(tmpname.size() + 1);
+                                    std::copy(tmpname.begin(), tmpname.end(), writable.get());
+                                    (writable.get())[tmpname.size()] = '\0'; // don't forget the terminating 0
+                                    int fd = mkstemp(writable.get());
 
                                     if (fd == -1) {
                                         throw Error(__file__, __LINE__, "Could not create temporary filename!");
                                     }
-                                    tmpname = string(writable);
+
+                                    tmpname = string(writable.get());
                                     close(fd); // here we close the file created by mkstemp
 
                                     ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);

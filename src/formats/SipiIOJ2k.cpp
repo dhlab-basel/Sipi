@@ -52,6 +52,7 @@
 #include "kdu_stripe_compressor.h"
 #include "jp2.h"
 #include "jpx.h"
+#include "shttps/makeunique.h"
 
 using namespace kdu_core;
 using namespace kdu_supp;
@@ -220,39 +221,36 @@ namespace Sipi {
                         box.read(buf, 16);
                         if (memcmp(buf, xmp_uuid, 16) == 0) {
                             auto xmp_len = box.get_remaining_bytes();
-                            char *xmp_buf = new char[xmp_len];
-                            box.read((kdu_byte *) xmp_buf, xmp_len);
+                            auto xmp_buf = shttps::make_unique<char[]>(xmp_len);
+                            box.read((kdu_byte *) xmp_buf.get(), xmp_len);
                             try {
-                                img->xmp = std::make_shared<SipiXmp>(xmp_buf, xmp_len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
+                                img->xmp = std::make_shared<SipiXmp>(xmp_buf.get(), xmp_len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] xmp_buf;
                         }
                         else if (memcmp(buf, iptc_uuid, 16) == 0) {
                             auto iptc_len = box.get_remaining_bytes();
-                            unsigned char *iptc_buf = new unsigned char[iptc_len];
-                            box.read(iptc_buf, iptc_len);
+                            auto iptc_buf = shttps::make_unique<unsigned char[]>(iptc_len);
+                            box.read(iptc_buf.get(), iptc_len);
                             try {
-                                img->iptc = std::make_shared<SipiIptc>(iptc_buf, iptc_len);
+                                img->iptc = std::make_shared<SipiIptc>(iptc_buf.get(), iptc_len);
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] iptc_buf;
                         }
                         else if (memcmp(buf, exif_uuid, 16) == 0) {
                             auto exif_len = box.get_remaining_bytes();
-                            unsigned char *exif_buf = new unsigned char[exif_len];
-                            box.read(exif_buf, exif_len);
+                            auto exif_buf = shttps::make_unique<unsigned char[]>(exif_len);
+                            box.read(exif_buf.get(), exif_len);
                             try {
-                                img->exif = std::make_shared<SipiExif>(exif_buf, exif_len);
+                                img->exif = std::make_shared<SipiExif>(exif_buf.get(), exif_len);
                             }
                             catch(SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                            delete [] exif_buf;
                         }
                     }
                     box.close();

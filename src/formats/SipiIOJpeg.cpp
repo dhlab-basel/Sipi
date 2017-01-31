@@ -35,6 +35,7 @@
 #include "SipiIOJpeg.h"
 #include "SipiCommon.h"
 #include "shttps/Connection.h"
+#include "shttps/makeunique.h"
 
 #include "jpeglib.h"
 #include "jerror.h"
@@ -891,22 +892,20 @@ namespace Sipi {
             unsigned char *buf = img->exif->exifBytes(len);
             char start[] = "Exif\000\000";
             size_t start_l = sizeof(start) - 1;  // remove trailing '\0';
-            unsigned char *exifchunk = new unsigned char[len + start_l];
-            Sipi::memcpy(exifchunk, start, (size_t) start_l);
-            Sipi::memcpy(exifchunk + start_l, buf, (size_t) len);
+            auto exifchunk = shttps::make_unique<unsigned char[]>(len + start_l);
+            Sipi::memcpy(exifchunk.get(), start, (size_t) start_l);
+            Sipi::memcpy(exifchunk.get() + start_l, buf, (size_t) len);
             delete [] buf;
 
             try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) exifchunk, start_l + len);
+                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) exifchunk.get(), start_l + len);
             }
             catch (JpegError &jpgerr) {
-                delete [] exifchunk;
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
-            delete [] exifchunk;
         }
 
         if (img->xmp != nullptr) {
@@ -920,21 +919,19 @@ namespace Sipi {
             }
             char start[] = "http://ns.adobe.com/xap/1.0/\000";
             size_t start_l = sizeof(start) - 1; // remove trailing '\0';
-            char *xmpchunk = new char[len + start_l];
-            Sipi::memcpy(xmpchunk, start, (size_t) start_l);
-            Sipi::memcpy(xmpchunk + start_l, buf, (size_t) len);
+            auto xmpchunk = shttps::make_unique<char[]>(len + start_l);
+            Sipi::memcpy(xmpchunk.get(), start, (size_t) start_l);
+            Sipi::memcpy(xmpchunk.get() + start_l, buf, (size_t) len);
             delete [] buf;
             try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk, start_l + len);
+                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk.get(), start_l + len);
             }
             catch (JpegError &jpgerr) {
-                delete [] xmpchunk;
                 jpeg_finish_compress (&cinfo);
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
-            delete [] xmpchunk;
         }
 
         if (img->icc != nullptr) {
@@ -944,7 +941,7 @@ namespace Sipi {
             size_t start_l = 14;
             unsigned int n = len / (65533 - start_l + 1) + 1;
 
-            unsigned char *iccchunk = new unsigned char[65533];
+            auto iccchunk = shttps::make_unique<unsigned char[]>(65533);
 
             unsigned int n_towrite = len;
             unsigned int n_nextwrite = 65533 - start_l;
@@ -953,14 +950,13 @@ namespace Sipi {
                 start[12] = (unsigned char) (i + 1);
                 start[13] = (unsigned char) n;
                 if (n_nextwrite > n_towrite) n_nextwrite = n_towrite;
-                Sipi::memcpy(iccchunk, start, (size_t) start_l);
-                Sipi::memcpy(iccchunk + start_l, buf + n_written, (size_t) n_nextwrite);
+                Sipi::memcpy(iccchunk.get(), start, (size_t) start_l);
+                Sipi::memcpy(iccchunk.get() + start_l, buf + n_written, (size_t) n_nextwrite);
                 try {
-                    jpeg_write_marker(&cinfo, ICC_MARKER, iccchunk, n_nextwrite + start_l);
+                    jpeg_write_marker(&cinfo, ICC_MARKER, iccchunk.get(), n_nextwrite + start_l);
                 }
                 catch (JpegError &jpgerr) {
                     delete [] buf;
-                    delete [] iccchunk;
                     jpeg_finish_compress (&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
@@ -971,7 +967,6 @@ namespace Sipi {
                 n_written += n_nextwrite;
             }
             delete [] buf;
-            delete [] iccchunk;
             if (n_towrite != 0) {
                 std::cerr << "Hoppla!" << std::endl;
             }
@@ -988,23 +983,20 @@ namespace Sipi {
             siz[2] = (unsigned char) ((len >> 8) & 0x000000ff);
             siz[3] = (unsigned char) (len & 0x000000ff);
 
-            char *iptcchunk = new char[start_l + 4 + len];
-            Sipi::memcpy(iptcchunk, start, (size_t) start_l);
-            Sipi::memcpy(iptcchunk + start_l, siz, (size_t) 4);
-            Sipi::memcpy(iptcchunk + start_l + 4, buf, (size_t) len);
+            auto iptcchunk = shttps::make_unique<char[]>(start_l + 4 + len);
+            Sipi::memcpy(iptcchunk.get(), start, (size_t) start_l);
+            Sipi::memcpy(iptcchunk.get() + start_l, siz, (size_t) 4);
+            Sipi::memcpy(iptcchunk.get() + start_l + 4, buf, (size_t) len);
 
             delete [] buf;
             try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk, start_l + len);
+                jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk.get(), start_l + len);
             }
             catch (JpegError &jpgerr) {
-                delete [] iptcchunk;
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
-
-            delete [] iptcchunk;
         }
 
         SipiEssentials es = img->essential_metadata();

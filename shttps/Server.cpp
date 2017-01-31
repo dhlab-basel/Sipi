@@ -495,9 +495,8 @@ namespace shttps {
                 struct passwd pwd, *res;
 
                 size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
-                char *buffer = new char[buffer_len];
-                getpwnam_r(userid_str.c_str(), &pwd, buffer, buffer_len, &res);
-                delete [] buffer;
+                auto buffer = make_unique<char[]>(buffer_len);
+                getpwnam_r(userid_str.c_str(), &pwd, buffer.get(), buffer_len, &res);
 
                 if (res != nullptr) {
                     if (setuid(pwd.pw_uid) == 0) {
@@ -699,7 +698,7 @@ namespace shttps {
             sockstream = make_unique<SockStream>(tdata->sock);
         }
 #else
-        sockstream = ipi::make_unique<SockStream>(tdata->sock);
+        sockstream = make_unique<SockStream>(tdata->sock);
 #endif
         std::istream ins(sockstream.get());
         std::ostream os(sockstream.get());
