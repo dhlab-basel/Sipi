@@ -46,10 +46,13 @@ namespace shttps {
         std::string mimetype;
         std::string charset;
 
-        size_t pos = mimestr.find(';');
+        // if also the encoding of the file is given,
+        // the charset is separated by a semicolon followed by a space,
+        // e.g. "application/xml; charset=UTF-8"
+        size_t pos = mimestr.find("; ");
         if (pos != std::string::npos) {
             mimetype = mimestr.substr(0, pos);
-            charset = mimestr.substr(pos + 1);
+            charset = mimestr.substr(pos + 2); // semicolon followed by a space
         }
         else {
             mimetype = mimestr;
