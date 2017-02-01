@@ -22,6 +22,7 @@ sipi.log*
 target
 __pycache__/
 doc/
+_build/
 
 #
 # Cmake things to be ignored

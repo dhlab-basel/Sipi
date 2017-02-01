@@ -45,7 +45,7 @@ sipi = {
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
     -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
     -- or <imgroot>/<imageid> (prefix_as_path = FALSE). Please note that "prefix" and "imageid" are
-    -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
+    -- expected to be urlencoded. Both will be decoded. That is, "/" will be recognized and expanded
     -- in the final path the image file!
     --
     -- imgroot = './test_server/images',
