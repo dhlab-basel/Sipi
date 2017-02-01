@@ -90,6 +90,7 @@ In the root directory, the directory `cache` must be created.
 - `sudo yum -y install python35u-devel`
 - `sudo yum -y install python35u-pip`
 - `sudo pip3.5 install pytest`
+- `sudo pip3.5 install requests`
 - `sudo pip3.5 install psutil`
 - `sudo pip3.5 install iiif_validator`
 
