@@ -70,24 +70,28 @@ In the root directory, the directory `cache` must be created.
   - `pip3 install iiif_validator`
 
 ### CentOS (V7)
-- `sudo yum install gcc-c++`
-- `sudo yum install cmake`
-- `sudo yum install readline-devel`
-- `sudo yum install gettext`
-- `sudo yum install vim-common`
-- `sudo yum install zlib-devel`
-- `sudo yum install doxygen`
-- `sudo yum install unzip`
-- `sudo yum install patch`
-- `sudo yum install openssl-devel`
-- `sudo yum install nginx`
+- `sudo yum -y install gcc-c++`
+- `sudo yum -y install cmake`
+- `sudo yum -y install readline-devel`
+- `sudo yum -y install gettext`
+- `sudo yum -y install vim-common`
+- `sudo yum -y install zlib-devel`
+- `sudo yum -y install doxygen`
+- `sudo yum -y install unzip`
+- `sudo yum -y install patch`
+- `sudo yum -y install openssl-devel`
+- `sudo yum -y install nginx`
 - `sudo chown -R $USER /var/log/nginx`
-- `sudo yum install python35 python35-pip`
-- `sudo yum install file-devel`
-- `pip3 install pytest`
-- `pip3 install requests`
-- `pip3 install psutil`
-- `pip3 install iiif_validator`
+- `sudo chown -R $USER /var/lib/nginx`
+- `sudo yum -y install file-devel`
+- `sudo yum -y install GraphicsMagick`
+- `sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm`
+- `sudo yum -y install python35u`
+- `sudo yum -y install python35u-devel`
+- `sudo yum -y install python35u-pip`
+- `sudo pip3.5 install pytest`
+- `sudo pip3.5 install psutil`
+- `sudo pip3.5 install iiif_validator`
 
 ### Debian (>= V8.0 jessie)
 To compile Sipi on Debian (>= 8), the following packages have to be installed with apt-get:
