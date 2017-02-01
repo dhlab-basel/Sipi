@@ -71,7 +71,41 @@ end
 function check_file_extension(mimetype, filename)
 
     if (mimetype == XML) then
-        return string.sub(filename, -4) == ".xml"
+        local ext = string.sub(filename, -4)
+
+        -- valid extensions are: xml, xsl (XSLT), and .xsd (XML Schema)
+        return ext == ".xml" or ext == ".xsl" or ext == ".xsd"
+    end
+
+end
+
+
+-------------------------------------------------------------------------------
+-- This function splits a string containing a mimetype and a charset into a pair.
+-- The information was sent by the client.
+-- Parameters:
+--      'mimetype_and_charset' (string): the mimetype and charset of a file, e.g. "application/xml; charset=UTF-8"
+--
+-- Returns:
+--    a pair containing (first) the mimetype, and (second) the charset or false if no charset is given
+function split_mimetype_and_charset(mimetype_and_charset)
+
+    -- check if mimetype_and_charset contains a semicolon followed by a whitespace character
+    -- mimetype_and_charset might look like this: "application/xml; charset=UTF-8"
+    start_pos, end_pos = string.find(mimetype_and_charset, "; ")
+    if  start_pos ~= nil and (start_pos + 1) == end_pos then
+
+      -- original mimetype also contains the encoding, e.g. "application/xml; charset=UTF-8"
+      -- split the string using ";" as a separator, assign the backreferences to variables
+      local mimetype, charset = string.match(mimetype_and_charset, "(.+);%s(.+)")
+
+      return mimetype, charset
+
+    else
+
+      -- assuming that only the mimetype is given, but no charset
+      return mimetype_and_charset, false
+
     end
 
 end

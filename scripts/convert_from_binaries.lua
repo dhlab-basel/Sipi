@@ -218,7 +218,10 @@ elseif mediatype == TEXT then
     end
 
     -- check mimetype
-    if (mimetype.mimetype ~= originalMimetype) then
+    -- original mimetype may also contain the encoding, e.g. "application/xml; charset=UTF-8"
+    local orig_mime, orig_charset = split_mimetype_and_charset(originalMimetype)
+
+    if (mimetype.mimetype ~= orig_mime) then
         send_error(400, MIMETYPES_INCONSISTENCY)
         return
     end
