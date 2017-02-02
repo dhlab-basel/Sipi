@@ -35,13 +35,70 @@ Customizing Sipi with Lua Scripts
 .. contents:: :local:
 
 
-Within Sipi, Lua is used to write custom routes. Sipi provides the Lua
-interpreter the LuaRocks_ package manager. Sipi does not use your system's Lua
-interpreter or package manager.
+Within Sipi, Lua is used to perform authentication and authorization
+for IIIF image requests, and to write custom routes.
+
+Sipi provides the Lua interpreter the LuaRocks_ package manager. Sipi does not
+use the system's Lua interpreter or package manager.
 
 The Lua interepreter in Sipi runs in a multithreaded environment: each
 connection runs in its own thread and has its own Lua interpreter. Therefore,
 only Lua packages that are known to be thread-safe may be used.
+
+
+*************
+Custom Routes
+*************
+
+Custom routes can be defined in Sipi's configuration file using the
+``routes`` configuration variable. For example:
+
+::
+
+    routes = {
+        {
+            method = 'GET',
+            route = '/status',
+            script = 'get_repository_status.lua'
+        },
+        {
+            method = 'POST',
+            route = '/make_thumbnail',
+            script = 'make_image_thumbnail.lua'
+        }
+    }
+
+Sipi looks for these scripts in the directory specified by ``scriptdir`` in
+its configuration file. The first route that matches the beginning of the
+requested URL path will be used.
+
+
+********************************
+Authentication and Authorization
+********************************
+
+In Sipi's config file, ``initscript`` contains the path of a Lua script that
+defines a function called ``pre_flight``. The function takes the
+parameters ``prefix``, ``identifier`` and, ``cookie``, and is called
+whenever an image is requested.
+
+The possible return values of the ``pre_flight`` function are as follows.
+Note that Lua function's return value may consist of more than one element
+(see `Multiple Results`_):
+
+- Grant full permissions to access the file identified by ``filepath``: ``return 'allow', filepath``
+- Grant restricted access to the file identified by ``filepath``, in one of the following ways:
+    - Reduce the image dimensions, e.g. to the default thumbnail dimensions: ``return 'restrict:size=' .. "config.thumb_size", filepath``
+    - Render the image with a watermark: ``return restrict:watermark=<path-to-watermark>, filepath``
+- Deny access to the requested file: ``return 'deny'``
+
+In the ``pre_flight`` function, permission checking can be implemented.
+When Sipi is used with Knora_, the ``pre_flight`` function asks
+Knora about the user's permissions on the image
+(see ``sipi.init-knora.lua``). The scripts ``Knora_login.lua`` and
+``Knora_logout.lua`` handle the setting and unsetting of a cookie
+containing the Knora session ID.
+
 
 ***************************************
 Sipi Functions Available to Lua Scripts
@@ -583,3 +640,5 @@ The second way is used for prepared queries that contain parameters.
 .. _Running scripts with packages: http://leafo.net/guides/customizing-the-luarocks-tree.html#the-install-locations/using-a-custom-directory/quick-guide/running-scripts-with-packages
 .. _SQLite: https://www.sqlite.org/
 .. _pcall: https://www.lua.org/pil/8.4.html
+.. _Multiple Results: http://www.lua.org/pil/5.1.html
+.. _Knora: http://www.knora.org/

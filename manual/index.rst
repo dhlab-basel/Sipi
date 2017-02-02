@@ -36,7 +36,6 @@ The Sipi Manual
    overview.rst
    building.rst
    running.rst
-   auth.rst
    lua.rst
    developing.rst
 
