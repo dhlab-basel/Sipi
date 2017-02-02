@@ -68,16 +68,50 @@ namespace shttps {
     char luaconnection[] = "__shttpsconnection";
 
     /*!
-     * Error handler for Lua errors!
+     * Dumps the Lua stack to a string.
+     * @param L the Lua interpreter.
+     * @return a string containing the stack dump.
+     */
+    static std::string stackDump(lua_State *L) {
+        std::ostringstream errorMsg;
+        errorMsg << "Lua error. Stack dump: ";
+        int top = lua_gettop(L);
+
+        for (int i = 1; i <= top; i++) {
+            if (i > 1) {
+                errorMsg << " | ";
+            }
+
+            int t = lua_type(L, i);
+            switch (t) {
+
+                case LUA_TSTRING:
+                    errorMsg << lua_tostring(L, i);
+                    break;
+
+                case LUA_TBOOLEAN:
+                    errorMsg << (lua_toboolean(L, i) ? "true" : "false");
+                    break;
+
+                case LUA_TNUMBER:
+                    errorMsg << lua_tonumber(L, i);
+                    break;
+
+                default:
+                    errorMsg << lua_typename(L, t);
+                    break;
+
+            }
+        }
+        return errorMsg.str();
+    }
+
+    /*!
+     * Error handler for Lua errors.
      */
     static int dont_panic(lua_State *L) {
-        std::string errorMsg = "";
-        int n = lua_gettop(L);
-        for (int i = 1; i <= n; i++) {
-            const char *tmpstr = lua_tostring(L, i);
-            errorMsg += tmpstr + std::string("\n");
-        }
-        throw Error(__file__, __LINE__, std::string("Lua panic: ") + errorMsg);
+        std::string errorMsg = stackDump(L);
+        throw Error(__file__, __LINE__, errorMsg);
     }
 
     /*
