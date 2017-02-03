@@ -341,13 +341,13 @@ namespace shttps {
      * LUA: server.setBuffer([bufsize][,incsize])
      */
     static int lua_setbuffer(lua_State *L) {
-        int bufsize = 0;
-        int incsize = 0;
+        size_t bufsize = 0;
+        size_t incsize = 0;
 
         int top = lua_gettop(L);
         if (top > 0) {
             if (lua_isinteger(L, 1)) {
-                bufsize = lua_tointeger(L, 1);
+                bufsize = static_cast<size_t>(lua_tointeger(L, 1));
             }
             else {
                 lua_settop(L, 0); // clear stack
@@ -358,7 +358,7 @@ namespace shttps {
         }
         if (top > 1) {
             if (lua_isinteger(L, 2)) {
-                incsize = lua_tointeger(L, 2);
+                incsize = static_cast<size_t>(lua_tointeger(L, 2));
             }
             else {
                 lua_settop(L, 0); // clear stack
@@ -472,12 +472,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, R_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, R_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -504,12 +499,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, W_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, W_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -536,12 +526,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, X_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, X_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -568,12 +553,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, F_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, F_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -639,7 +619,7 @@ namespace shttps {
             return 2;
         }
         const char *dirname = lua_tostring(L, 1);
-        int mode = lua_tointeger(L, 2);
+        mode_t mode = static_cast<mode_t>(lua_tointeger(L, 2));
         lua_settop(L, 0); // clear stack
 
         if (mkdir(dirname, mode) != 0) {
@@ -1243,7 +1223,7 @@ namespace shttps {
             }
         }
         else if (lua_isinteger(L, 3)) { // process timeout
-            timeout = lua_tointeger(L, 1);
+            timeout = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
         }
 
@@ -1806,7 +1786,7 @@ namespace shttps {
         int top = lua_gettop(L);
         int istatus = 200;
         if (top == 1) {
-            istatus = lua_tointeger(L, 1);
+            istatus = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
         }
         Connection::StatusCodes status = static_cast<Connection::StatusCodes>(istatus);
@@ -1851,7 +1831,7 @@ namespace shttps {
 
         std::vector<Connection::UploadedFile> uploads = conn->uploads();
 
-        int tmpfile_id = lua_tointeger(L, 1);
+        int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
 
         std::string infile;
 
@@ -2045,7 +2025,7 @@ namespace shttps {
                 lua_pushstring(L, "'server.log()': level is not integer");
                 return 2;
             }
-            level = lua_tointeger(L, 2);
+            level = static_cast<int>(lua_tointeger(L, 2));
         }
 
         if (!message.empty()) {
@@ -2480,7 +2460,7 @@ namespace shttps {
     //=========================================================================
 
 
-    int LuaServer::configBoolean(const std::string table, const std::string variable, const bool defval) {
+    bool LuaServer::configBoolean(const std::string table, const std::string variable, const bool defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
             return defval;
@@ -2493,7 +2473,7 @@ namespace shttps {
         if (!lua_isboolean(L, -1)) {
             throw Error(__file__, __LINE__, "Integer expected for " + table + "." + variable);
         }
-        bool retval = lua_toboolean(L, -1);
+        bool retval = lua_toboolean(L, -1) == 1;
 
         lua_pop(L, 2);
         return retval;
@@ -2513,7 +2493,7 @@ namespace shttps {
         if (!lua_isinteger(L, -1)) {
             throw Error(__file__, __LINE__, "Integer expected for " + table + "." + variable);
         }
-        int retval = lua_tointeger(L, -1);
+        int retval = static_cast<int>(lua_tointeger(L, -1));
         lua_pop(L, 2);
         return retval;
     }
@@ -2553,7 +2533,11 @@ namespace shttps {
         std::vector<LuaRoute> routes;
 
         lua_getglobal(L, routetable.c_str());
-        luaL_checktype(L, -1, LUA_TTABLE);
+
+        if (!lua_istable(L, -1)) {
+            throw Error(__file__, __LINE__, "Value '" + routetable + "' in config file must be a table");
+        }
+
         int i;
         for (i = 1; ; i++) {
             lua_rawgeti(L, -1, i);
@@ -2565,8 +2549,7 @@ namespace shttps {
             luaL_checktype(L, -1, LUA_TTABLE);
             int field_index;
             LuaRoute route;
-            for (field_index = 0; (fields[field_index].name != nullptr
-                                   && fields[field_index].name != nullptr); field_index++) {
+            for (field_index = 0; fields[field_index].name != nullptr; field_index++) {
                 lua_getfield(L, -1, fields[field_index].name);
                 luaL_checktype(L, -1, fields[field_index].type);
 
@@ -2636,7 +2619,7 @@ namespace shttps {
         }
         int top = lua_gettop(L);
         if (top == 1) {
-            int status = lua_tointeger(L, 1);
+            int status = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
             return status;
         }
