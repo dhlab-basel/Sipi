@@ -69,6 +69,7 @@ You will need Homebrew_. Then:
     brew install doxygen
     brew install openssl
     brew inwtall libmagic
+    brew install gettext
     brew install nginx
     sudo chown -R $USER /usr/local/var/log/nginx/
     brew install graphicsmagick --with-jasper
@@ -91,6 +92,7 @@ Ubuntu 16.04
     sudo apt-get install libssl-dev
     sudo apt-get install doxygen
     sudo apt-get install libreadline-dev
+    sudo apt-get install gettext
     sudo apt-get install nginx
     sudo chown -R $USER /var/log/nginx
     sudo apt-get install python3
@@ -130,6 +132,7 @@ CentOS 7
     sudo yum -y install doxygen
     sudo yum -y install patch
     sudo yum -y install openssl-devel
+    sudo yum -y install gettext
     sudo yum -y install nginx
     sudo chown -R $USER /var/log/nginx
     sudo chown -R $USER /var/lib/nginx
