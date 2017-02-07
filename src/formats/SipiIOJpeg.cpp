@@ -819,13 +819,12 @@ namespace Sipi {
                 jpeg_stdio_dest(&cinfo, stdout);
             }
             else {
-                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP)) == -1) {
+                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
                     throw SipiImageError(__file__, __LINE__, "Cannot open file \"" + filepath + "\"!");
                 }
                 jpeg_file_dest(&cinfo, outfile);
             }
         }
-
         cinfo.image_width = img->nx; 	/* image width and height, in pixels */
         cinfo.image_height = img->ny;
         cinfo.input_components = img->nc;		/* # of color components per pixel */
@@ -856,7 +855,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace!");
+                throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace: " + std::to_string(img->photo));
             }
         }
         cinfo.progressive_mode = TRUE;

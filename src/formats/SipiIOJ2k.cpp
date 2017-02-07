@@ -345,6 +345,7 @@ namespace Sipi {
         // get ICC-Profile if available
         //
         jpx_layer = jpx_in.access_layer(0);
+        img->photo = INVALID; // we initialize to an invalid value in order to test later if img->photo has been set
         if (jpx_layer.exists()) {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
             kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
@@ -398,7 +399,25 @@ namespace Sipi {
                 }
             }
         }
-
+        if (img->photo == INVALID) {
+            switch (img->nc) {
+                case 1: {
+                    img->photo = MINISBLACK;
+                    break;
+                }
+                case 3: {
+                    img->photo = RGB;
+                    break;
+                }
+                case 4: {
+                    img->photo = SEPARATED;
+                    break;
+                }
+                default: {
+                    throw SipiImageError(__file__, __LINE__, "No meaningful photometric interpretation possible");
+                }
+            } // switch(numcol)
+        }
         //
         // the following code directly converts a 16-Bit jpx into an 8-bit image.
         // In order to retrieve a 16-Bit image, use kdu_uin16 *buffer an the apropriate signature of the pull_stripe method
@@ -439,7 +458,6 @@ namespace Sipi {
         if ((size != nullptr) && (!redonly)) {
             img->scale(nnx, nny);
         }
-
         return true;
     }
     //=============================================================================

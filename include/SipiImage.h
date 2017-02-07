@@ -72,7 +72,8 @@ namespace Sipi {
         CFA = 32803,        //!< Color field array, used for DNG and RAW image. Not supported!
         LOGL = 32844,       //!< LOGL format (not supported)
         LOGLUV = 32845,     //!< LOGLuv format (not supported)
-        LINEARRAW = 34892   //!< Linear raw array for DNG and RAW formats. Not supported!
+        LINEARRAW = 34892,  //!< Linear raw array for DNG and RAW formats. Not supported!
+        INVALID = 65535     //!< an invalid value
     } PhotometricInterpretation;
 
     /*! The meaning of extra channels as used in the TIF format */
@@ -470,7 +471,7 @@ namespace Sipi {
         * \returns Returns true on success, false on error
         */
         bool toBitonal(void);
-        
+
        /*!
         * Add a watermark to a file...
         *
