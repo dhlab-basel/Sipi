@@ -198,7 +198,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${DOXYGEN_FILES_DIR}/Doxyfile.in ${DOXYGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
         ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILES_DIR}/Doxyfile
         WORKING_DIRECTORY ${DOXYGEN_FILES_DIR}
