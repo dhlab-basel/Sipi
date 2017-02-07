@@ -40,12 +40,12 @@ if not exists then
     local success, result = server.fs.mkdir(tmpdir, 511)
     if not success then
         send_error(500, "Couldn't create tmpdir: " .. result)
-        return
+        return -1
     end
 end
 
 if server.uploads == nil then
-    send_error(500, "no image uploaded")
+    send_error(400, "no image uploaded")
     return -1
 end
 
