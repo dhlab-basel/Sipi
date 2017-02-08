@@ -34,10 +34,19 @@ static const char __file__[] = __FILE__;
 namespace shttps {
 
     namespace GetMimetype {
-        // A regex for parsing the value of an HTTP Content-Type header.
-        std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
         std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
+            static std::regex mime_regex;
+
+            try {
+                // A regex for parsing the value of an HTTP Content-Type header.
+                mime_regex = std::regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+            } catch (std::regex_error& e) {
+                std::ostringstream error_msg;
+                error_msg << "Regex parsing error: " << e.what();
+                throw Error(__file__, __LINE__, error_msg.str());
+            }
+
             std::smatch mime_match;
             std::string mimetype;
             std::string charset;
