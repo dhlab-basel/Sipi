@@ -34,6 +34,7 @@ static const char __file__[] = __FILE__;
 namespace shttps {
 
     namespace GetMimetype {
+        // A regex for parsing the value of an HTTP Content-Type header.
         std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
         std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
@@ -41,12 +42,7 @@ namespace shttps {
             std::string mimetype;
             std::string charset;
 
-            std::cerr << "Got mimestr '" << mimestr << "'" << std::endl;
-
             if (std::regex_match(mimestr, mime_match, mime_regex)) {
-
-                std::cerr << "Got a regex match with size " << mime_match.size() << std::endl;
-
                 if (mime_match.size() > 1) {
                     mimetype = mime_match[1].str();
 
@@ -56,15 +52,12 @@ namespace shttps {
                 }
             } else {
                 std::ostringstream error_msg;
-                error_msg << "Could not parse MIME type: " << mimestr;
                 throw Error(__file__, __LINE__, error_msg.str());
             }
 
             // Convert MIME type and charset to lower case
             std::transform(mimetype.begin(), mimetype.end(), mimetype.begin(), ::tolower);
             std::transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
-
-            std::cerr << "With input '" << mimestr << "', got mimetype '" << mimetype << "' and charset '" << charset << "'" << std::endl;
 
             return std::make_pair(mimetype, charset);
         }

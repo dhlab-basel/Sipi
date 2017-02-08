@@ -27,4 +27,4 @@ class TestConversions:
 
     def test_tif8_to_jpg(self, manager):
         """convert Leaves8.tif to JPG"""
-        manager.compare_images("Leaves8.tif/full/full/0/default.jpg", "Leaves8.jpg")
+        manager.compare_images("/knora/Leaves8.tif/full/full/0/default.jpg", "Leaves8.jpg")

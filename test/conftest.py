@@ -68,8 +68,8 @@ class SipiTestManager:
         self.sipi_command = "build/sipi --config config/{}".format(self.sipi_config_file)
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
         self.sipi_port = sipi_config["port"]
-        self.sipi_prefix = sipi_config["prefix"]
-        self.sipi_base_url = "http://localhost:{}/{}".format(self.sipi_port, self.sipi_prefix)
+        self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
+        self.sipi_base_url = "http://localhost:{}".format(self.sipi_port)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -83,7 +83,7 @@ class SipiTestManager:
         self.start_nginx_command = "nginx -p {} -c nginx.conf".format(self.nginx_working_dir)
         self.stop_nginx_command = "nginx -p {} -c nginx.conf -s stop".format(self.nginx_working_dir)
 
-        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.sipi_prefix)
+        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
         self.compare_command = "gm compare -metric MAE {} {}"
         self.info_command = "gm identify -verbose {}"
@@ -187,7 +187,7 @@ class SipiTestManager:
         url_path: a path that will be appended to the Sipi base URL to make the request.
         """
 
-        return "{}/{}".format(self.sipi_base_url, url_path)
+        return "{}{}".format(self.sipi_base_url, url_path)
 
     def download_file(self, url_path, suffix=None, headers=None):
         """
@@ -244,7 +244,7 @@ class SipiTestManager:
         response = requests.get(sipi_url, headers=headers)
 
         if response.status_code != status_code:
-            raise SipiTestError("Received status code {} for URL {}, expected {} (wrote {})".format(response.status_code, sipi_url, status_code, self.sipi_log_file))
+            raise SipiTestError("Received status code {} for URL {}, expected {} (wrote {}). Response:\n{}".format(response.status_code, sipi_url, status_code, self.sipi_log_file, response.text))
 
     def get_image_info(self, url_path, headers=None):
         """

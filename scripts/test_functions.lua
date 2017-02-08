@@ -20,6 +20,8 @@
 
 require "send_response"
 
+-- Sample values for Content-Type that should parse correctly.
+
 local html_utf8 = {
     mimetype = "text/html",
     charset = "utf-8"
@@ -52,6 +54,8 @@ local mimetype_test_data = {
         expected = html_no_charset
     }
 }
+
+local bad_mimetype = ";;"
 
 success, errmsg = server.setBuffer()
 
@@ -86,7 +90,18 @@ for i, test_data_item in ipairs(mimetype_test_data) do
         return -1
     end
 
-    table.insert(result, { test_data_item, "OK" } )
+    table.insert(result, { test_data_item, "OK" })
+end
+
+-- Try parsing something that should return an error.
+
+local success, parsed_bad_mimetype = server.parse_mimetype(bad_mimetype)
+
+if success then
+    send_error(400, "MIME type '" .. bad_mimetype .. "' parsed, but should have caused an error")
+    return -1
+else
+    table.insert(result, { { received = bad_mimetype, expected = "error" }, "OK" })
 end
 
 send_success(result)
