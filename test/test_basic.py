@@ -36,3 +36,13 @@ class TestBasic:
     def test_file_bytes(self, manager):
         """return an unmodified JPG file"""
         manager.compare_bytes("Leaves.jpg/full/full/0/default.jpg", "Leaves.jpg")
+
+    def test_restrict(self, manager):
+        """return a restricted image in a smaller size"""
+        image_info = manager.get_image_info("RestrictLeaves.jpg/full/full/0/default.jpg")
+        page_geometry = [line.strip().split()[-1] for line in image_info.splitlines() if line.strip().startswith("Page geometry:")][0]
+        assert page_geometry == "128x128+0+0"
+
+    def test_deny(self, manager):
+        """return 401 Unauthorized if the user does not have permission to see the image"""
+        manager.expect_status_code("DenyLeaves.jpg/full/full/0/default.jpg", 401)
