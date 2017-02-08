@@ -69,9 +69,9 @@
 namespace shttps {
 
 
-    typedef void (*RequestHandler)(Connection &, LuaServer &, void *, void *);
+    typedef void (*RequestHandler)(Connection&, LuaServer&, void *, void *);
 
-    extern void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *handler_data);
+    extern void FileHandler(Connection& conn, LuaServer& lua, void* user_data, void* handler_data);
 
     typedef enum { CONTINUE, CLOSE } ThreadStatus;
 
@@ -145,16 +145,16 @@ namespace shttps {
         protected:
             SSL *cSSL;
         public:
-            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = NULL)
+            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = nullptr)
                 : Error(file, line, msg), cSSL(cSSL_p) {};
-            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = NULL)
+            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = nullptr)
                 : Error(file, line, msg), cSSL(cSSL_p) {};
             inline std::string to_string(void) {
                 std::stringstream ss;
                 ss << "SSL-ERROR at [" << file << ": " << line << "] ";
                 BIO *bio = BIO_new(BIO_s_mem());
                 ERR_print_errors (bio);
-                char *buf = NULL;
+                char *buf = nullptr;
                 long n =  BIO_get_mem_data (bio, &buf);
                 if (n > 0) {
                     ss << buf << " : ";
@@ -213,7 +213,7 @@ public:
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore
         std::atomic<int> _semcnt; //!< current value of semaphore (sem_getvalue() is not available on all systems)
-        std::map<pthread_t,GenericSockId> thread_ids; //!< Map of active worker threads
+        std::map<pthread_t, GenericSockId> thread_ids; //!< Map of active worker threads
         int _keep_alive_timeout;
         bool running; //!< Main runloop should keep on going
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
@@ -381,7 +381,7 @@ public:
         /*!
          * Run the server handling requests in an infinite loop
          */
-        void run();
+        virtual void run();
 
         /*!
          * Stop the server gracefully (all destructors are called etc.) and the
@@ -457,7 +457,7 @@ public:
          *
          * \param[in] func C++ function which extends the Lua
          */
-        inline void add_lua_globals_func(LuaSetGlobalsFunc func, void *user_data = NULL) {
+        inline void add_lua_globals_func(LuaSetGlobalsFunc func, void *user_data = nullptr) {
             GlobalFunc gf;
             gf.func = func;
             gf.func_dataptr = user_data;
@@ -478,7 +478,7 @@ public:
          *
          */
         void addRoute(Connection::HttpMethod method_p, const std::string &path, RequestHandler handler_p,
-                      void *handler_data_p = NULL);
+                      void *handler_data_p = nullptr);
 
        /*!
         * Process a request... (Eventually should be private method)

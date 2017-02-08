@@ -47,6 +47,7 @@
 #include "Error.h"
 #include "Connection.h"
 #include "ChunkReader.h"
+#include "makeunique.h"
 #include "Server.h" // TEMPORARY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 static const char __file__[] = __FILE__;
 
@@ -69,7 +70,7 @@ namespace shttps {
     //=========================================================================
 
     // trim from both ends
-    static inline std::string &trim(std::string &s) {
+    static inline std::string trim(std::string &s) {
         return ltrim(rtrim(s));
     }
     //=========================================================================
@@ -286,12 +287,7 @@ namespace shttps {
                     if (opts.count("keep-alive") == 1) {
                         _keep_alive = true;
                     }
-                    if (opts.count("close") == 1) {
-                        _keep_alive = false;
-                    }
-                    else {
-                        _keep_alive = true; // keep_alive is the default with HTTP/1.1
-                    }
+                    _keep_alive = opts.count("close") != 1;
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
                     }
@@ -307,7 +303,7 @@ namespace shttps {
                     }
                 }
                 else if (name == "content-length") {
-                    content_length = stoi(value);
+                    content_length = static_cast<size_t>(stoi(value));
                 }
                 else if (name == "transfer-encoding") {
                     if (value == "chunked") {
@@ -341,20 +337,20 @@ namespace shttps {
 
 
     Connection::Connection(void) {
-        _server = NULL;
+        _server = nullptr;
         _secure = false;
-        ins = NULL;
-        os = NULL;
-        cachefile = NULL;
+        ins = nullptr;
+        os = nullptr;
+        cachefile = nullptr;
         outbuf_size = 0;
         outbuf_inc = 0;
-        outbuf = NULL;
+        outbuf = nullptr;
         header_sent = false;
         _keep_alive = false;  // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _content = NULL;
+        _content = nullptr;
         content_length = 0;
         _finished = false;
         _reset_connection = false;
@@ -367,13 +363,13 @@ namespace shttps {
     {
         _server = server_p;
         _secure = false;
-        cachefile = NULL;
+        cachefile = nullptr;
         header_sent = false;
         _keep_alive = false; // should be true as this is the default for HTTP/1.1, but ab makes a porblem
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _content = NULL;
+        _content = nullptr;
         content_length = 0;
         _finished = false;
         _reset_connection = false;
@@ -381,13 +377,13 @@ namespace shttps {
         status(OK); // thats the default...
 
         if (outbuf_size > 0) {
-            if ((outbuf = (char *) malloc(outbuf_size)) == NULL) {
+            if ((outbuf = (char *) malloc(outbuf_size)) == nullptr) {
                 throw Error(__file__, __LINE__, "malloc failed!", errno);
             }
             outbuf_nbytes = 0;
         }
         else {
-            outbuf = NULL;
+            outbuf = nullptr;
         }
 
         string line;
@@ -478,25 +474,25 @@ namespace shttps {
                 if (content_length > 0) {
                     vector <string> content_type_opts = process_header_value(header_in["content-type"]);
                     if (content_type_opts[0] == "application/x-www-form-urlencoded") {
-                        char *bodybuf = NULL;
+                        char *bodybuf = nullptr;
                         if (_chunked_transfer_in) {
-                            char *tmp;
+                            char *chunk_buf;
                             ChunkReader ckrd(ins);
-                            content_length = ckrd.readAll(&tmp);
-                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                            content_length = ckrd.readAll(&chunk_buf);
+                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
-                            memcpy(_content, tmp, content_length);
-                            free (tmp);
+                            memcpy(_content, chunk_buf, content_length);
+                            free(chunk_buf);
                         }
                         else {
-                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
                             ins->read(bodybuf, content_length);
                             if (ins->fail() || ins->eof()) {
                                 free(bodybuf);
-                                bodybuf = NULL;
+                                bodybuf = nullptr;
                                 throw -1;
                             }
                         }
@@ -624,16 +620,16 @@ namespace shttps {
                                     }
 
                                     tmpname = _tmpdir + "/sipi_XXXXXXXX";
-                                    char *writable = new char[tmpname.size() + 1];
-                                    std::copy(tmpname.begin(), tmpname.end(), writable);
-                                    writable[tmpname.size()] = '\0'; // don't forget the terminating 0
+                                    auto writable = make_unique<char[]>(tmpname.size() + 1);
+                                    std::copy(tmpname.begin(), tmpname.end(), writable.get());
+                                    (writable.get())[tmpname.size()] = '\0'; // don't forget the terminating 0
+                                    int fd = mkstemp(writable.get());
 
-                                    int fd;
-                                    if ((fd = mkstemp(writable)) == -1) {
+                                    if (fd == -1) {
                                         throw Error(__file__, __LINE__, "Could not create temporary filename!");
                                     }
-                                    tmpname = string(writable);
-                                    delete[] writable;
+
+                                    tmpname = string(writable.get());
                                     close(fd); // here we close the file created by mkstemp
 
                                     ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);
@@ -716,7 +712,7 @@ namespace shttps {
                             char *tmp;
                             ChunkReader ckrd(ins);
                             content_length = ckrd.readAll(&tmp);
-                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
                             memcpy(_content, tmp, content_length);
@@ -724,13 +720,13 @@ namespace shttps {
                             _content[content_length] = '\0';
                         }
                         else if (content_length > 0) {
-                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
                             ins->read(_content, content_length);
                             if (ins->fail() || ins->eof()) {
                                 free(_content);
-                                _content = NULL;
+                                _content = nullptr;
                                 throw -1;
                             }
                             _content[content_length] = '\0';
@@ -760,7 +756,7 @@ namespace shttps {
                         char *tmp;
                         ChunkReader ckrd(ins);
                         content_length = ckrd.readAll(&tmp);
-                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == NULL) {
+                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
                         }
                         memcpy(_content, tmp, content_length);
@@ -770,13 +766,13 @@ namespace shttps {
                     else if (content_length > 0) {
 
                         _content = (char *) malloc(content_length + 1);
-                        if (_content == NULL) {
+                        if (_content == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
                         }
                         ins->read(_content, content_length);
                         if (ins->fail() || ins->eof()) {
                             free(_content);
-                            _content = NULL;
+                            _content = nullptr;
                             throw -1;
                         }
                         _content[content_length] = '\0';
@@ -822,15 +818,15 @@ namespace shttps {
         catch (int i) {
             // do nothing....
         }
-        if (_content != NULL) {
+        if (_content != nullptr) {
             free(_content);
         }
-        if (outbuf != NULL) {
+        if (outbuf != nullptr) {
             free (outbuf);
         }
-        if (cachefile != NULL) {
+        if (cachefile != nullptr) {
             delete cachefile;
-            cachefile = NULL;
+            cachefile = nullptr;
         }
     }
     //=============================================================================
@@ -985,8 +981,8 @@ namespace shttps {
         if (header_sent) {
             throw Error(__file__, __LINE__, "Header already sent - cannot changed to buffered mode!");
         }
-        if (outbuf == NULL) {
-            if ((outbuf = (char *) malloc(outbuf_size)) == NULL) {
+        if (outbuf == nullptr) {
+            if ((outbuf = (char *) malloc(outbuf_size)) == nullptr) {
                 throw Error(__file__, __LINE__, "malloc failed!", errno);
             }
             outbuf_nbytes = 0;
@@ -1018,7 +1014,7 @@ namespace shttps {
     {
         cachefile->close();
         delete cachefile;
-        cachefile = NULL;
+        cachefile = nullptr;
     }
     //=============================================================================
 
@@ -1057,7 +1053,7 @@ namespace shttps {
 
     void Connection::corsHeader(const char *origin)
     {
-        if (origin == NULL) return;
+        if (origin == nullptr) return;
         header_out["Access-Control-Allow-Origin"] = origin;
         header_out["Access-Control-Allow-Credentials"] = "true";
         //header_out["Access-Control-Expose-Headers"] = "FooBar";
@@ -1082,7 +1078,7 @@ namespace shttps {
         }
         os->write((char *) buffer, n);
         if (os->eof() || os->fail()) throw -1;
-        if (cachefile != NULL) cachefile->write((char *) buffer, n);
+        if (cachefile != nullptr) cachefile->write((char *) buffer, n);
     }
     //=============================================================================
 
@@ -1091,7 +1087,7 @@ namespace shttps {
     {
         if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
 
-        if (outbuf != NULL) {
+        if (outbuf != nullptr) {
             //
             // we have a buffer -> we add the data to the buffer
             //
@@ -1111,7 +1107,7 @@ namespace shttps {
                     if (os->eof() || os->fail()) throw -1;
                     os->write((char *) buffer, n);
                     if (os->eof() || os->fail()) throw -1;
-                    if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                    if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
                     if (os->eof() || os->fail()) throw -1;
                     os->flush();
@@ -1124,7 +1120,7 @@ namespace shttps {
                     send_header(n); // sends content length if not buffer nor chunked
                     os->write((char *) buffer, n);
                     if (os->eof() || os->fail()) throw -1;
-                    if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                    if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     os->flush();
                     if (os->eof() || os->fail()) throw -1;
                     _finished = true; // no more data can be sent
@@ -1139,7 +1135,7 @@ namespace shttps {
                     if (os->eof() || os->fail()) throw -1;
                     os->write((char *) buffer, n);
                     if (os->eof() || os->fail()) throw -1;
-                    if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                    if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
                     if (os->eof() || os->fail()) throw -1;
                     os->flush();
@@ -1161,7 +1157,7 @@ namespace shttps {
     {
         if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
 
-        if (outbuf != NULL) {
+        if (outbuf != nullptr) {
             //
             // we have a buffer -> we add the data to the buffer
             //
@@ -1175,7 +1171,7 @@ namespace shttps {
             if (!header_sent) {
                 send_header(); // sends content length if nor buffer nor chunked
             }
-            if (outbuf != NULL) {
+            if (outbuf != nullptr) {
                 //
                 // we use the buffer -> send buffer as chunk
                 //
@@ -1183,7 +1179,7 @@ namespace shttps {
                 if (os->eof() || os->fail()) throw -1;
                 os->write((char *) outbuf, outbuf_nbytes);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) outbuf, outbuf_nbytes);
+                if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 outbuf_nbytes = 0;
             }
             else {
@@ -1194,7 +1190,7 @@ namespace shttps {
                 if (os->eof() || os->fail()) throw -1;
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             *os << "\r\n";
             if (os->eof() || os->fail()) throw -1;
@@ -1205,7 +1201,7 @@ namespace shttps {
             //
             // we don't use chunks, so we *need* the Content-Length header!
             //
-            if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
+            if ((outbuf != nullptr) && (outbuf_nbytes > 0)) {
                 //
                 // we use the buffer, the header *must* contain the Content-Length header!
                 // then we send the data in the buffer
@@ -1218,7 +1214,7 @@ namespace shttps {
                 }
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             else {
                 //
@@ -1232,7 +1228,7 @@ namespace shttps {
                 }
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) buffer, n);
+                if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                 outbuf_nbytes = 0;
             }
             os->flush();
@@ -1262,7 +1258,7 @@ namespace shttps {
         size_t orig_fsize;
 
         FILE *infile = fopen(path.c_str(), "rb");
-        if (infile == NULL) {
+        if (infile == nullptr) {
             throw Error(__file__, __LINE__, "File not readable!");
         }
 
@@ -1288,7 +1284,7 @@ namespace shttps {
             fsize -= (orig_fsize - to);
         }
 
-        if (outbuf != NULL) {
+        if (outbuf != nullptr) {
             char buf[bufsize];
             size_t n;
             while ((n = fread(buf, sizeof(char), bufsize, infile)) > 0) {
@@ -1341,14 +1337,14 @@ namespace shttps {
             if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
             send_header(); // sends content length if not buffer nor chunked
         }
-        if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
+        if ((outbuf != nullptr) && (outbuf_nbytes > 0)) {
             if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
             if (_chunked_transfer_out) {
                 *os << std::hex << outbuf_nbytes << "\r\n";
                 if (os->eof() || os->fail()) throw -1;
                 os->write((char *) outbuf, outbuf_nbytes);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) outbuf, outbuf_nbytes);
+                if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 *os << "\r\n";
                 if (os->eof() || os->fail()) throw -1;
                 os->flush();
@@ -1357,7 +1353,7 @@ namespace shttps {
             else {
                 os->write((char *) outbuf, outbuf_nbytes);
                 if (os->eof() || os->fail()) throw -1;
-                if (cachefile != NULL) cachefile->write((char *) outbuf, outbuf_nbytes);
+                if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 os->flush();
                 if (os->eof() || os->fail()) throw -1;
                 _finished = true;
@@ -1409,7 +1405,7 @@ namespace shttps {
         if (outbuf_nbytes + n > outbuf_size) {
             size_t incsize = outbuf_size + ((n + outbuf_inc - 1) / outbuf_inc)*outbuf_inc;
             char *tmpbuf;
-            if ((tmpbuf = (char *) realloc(outbuf, incsize)) == NULL) {
+            if ((tmpbuf = (char *) realloc(outbuf, incsize)) == nullptr) {
                 throw Error(__file__, __LINE__, "realloc failed!", errno);
             }
             outbuf = tmpbuf;
@@ -1438,7 +1434,7 @@ namespace shttps {
             if (os->eof() || os->fail()) throw -1;
         }
         else {
-            if ((outbuf != NULL) && (outbuf_nbytes > 0)) {
+            if ((outbuf != nullptr) && (outbuf_nbytes > 0)) {
                 *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
                 if (os->eof() || os->fail()) throw -1;
             }

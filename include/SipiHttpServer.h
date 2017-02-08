@@ -33,6 +33,7 @@
 #include <string>
 #include <sys/types.h>
 #include <unistd.h>
+#include <memory>
 
 #include "shttps/Server.h"
 #include "iiifparser/SipiRegion.h"
@@ -60,7 +61,7 @@ namespace Sipi {
         std::string _salsah_prefix;
         bool _prefix_as_path;
         std::string _logfile;
-        SipiCache *_cache;
+        std::shared_ptr<SipiCache> _cache;
     public:
        /*!
         * Constructor which automatically starts the server
@@ -69,10 +70,17 @@ namespace Sipi {
         * \param root_p Path to the root of directory containing the images
         */
         SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "sipi.log", const std::string &loglevel_p = "DEBUG");
-        ~SipiHttpServer();
         void run();
 
-        std::pair<std::string,std::string> get_canonical_url(int img_w, int img_h, const std::string &host, const std::string &prefix, const std::string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format);
+        std::pair<std::string,std::string> get_canonical_url(int img_w,
+                                                             int img_h,
+                                                             const std::string &host,
+                                                             const std::string &prefix,
+                                                             const std::string &identifier,
+                                                             std::shared_ptr<SipiRegion> region,
+                                                             std::shared_ptr<SipiSize> size,
+                                                             SipiRotation &rotation,
+                                                             SipiQualityFormat &quality_format);
 
 
         inline pid_t pid(void) { return _pid; }
@@ -87,7 +95,7 @@ namespace Sipi {
         inline void prefix_as_path(bool prefix_as_path_p) { _prefix_as_path = prefix_as_path_p; }
 
         void cache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0, float cache_hysteresis_p = 0.1);
-        inline SipiCache *cache() { return _cache; }
+        inline std::shared_ptr<SipiCache> cache() { return _cache; }
 
     };
 

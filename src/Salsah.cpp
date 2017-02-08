@@ -56,7 +56,7 @@ namespace Sipi {
             unsigned int nfields = mysql_num_fields(result);
             fields = mysql_fetch_fields(result); //fields[i].name
             if (mysql_num_rows(result) > 0) {
-                while ((row = mysql_fetch_row (result)) != NULL) {
+                while ((row = mysql_fetch_row (result)) != nullptr) {
                     std::map<std::string, std::string> m;
                     for (unsigned int i = 0; i < nfields; i++) {
                         m[std::string(fields[i].name)] = std::string(row[i] ? row[i] : "NULL");
@@ -106,7 +106,7 @@ namespace Sipi {
         std::string query5 = R"(SELECT * FROM `person_in_group` WHERE (`person_id` = {{PERSONID}}))";
 
         mysql_init(&mysql);
-        if (!mysql_real_connect (&mysql, "localhost", "salsah", "imago", "salsah", 0, NULL, 0)) {
+        if (!mysql_real_connect (&mysql, "localhost", "salsah", "imago", "salsah", 0, nullptr, 0)) {
             throw SipiError(__file__, __LINE__, mysql_error (&mysql));
         }
 

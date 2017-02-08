@@ -178,11 +178,11 @@ namespace Sipi {
         std::string check(const std::string &origpath_p, const std::string &canonical_p);
 
         /*!
-         * generate a new name for a cache file
+         * Creates a new cache file with a unique name.
          *
-         * \returns New name for cache file.
+         * \return the name of the file.
          */
-        std::string getNewCacheName(void);
+        std::string getNewCacheFileName(void);
 
         /*!
          * Add (or replace) a file to the cache.

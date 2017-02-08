@@ -33,6 +33,7 @@
 
 #include "SipiError.h"
 #include "Hash.h"
+#include "makeunique.h"
 
 using namespace std;
 
@@ -42,33 +43,33 @@ namespace shttps {
 
     Hash::Hash(HashType type) {
         context = EVP_MD_CTX_create();
-        if (context == NULL) {
+        if (context == nullptr) {
             throw Sipi::SipiError(__file__, __LINE__, "EVP_MD_CTX_create failed!");
         }
         int status;
         switch (type) {
             case none: {
-                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_md5(), nullptr);
                 break;
             }
             case md5: {
-                status = EVP_DigestInit_ex(context, EVP_md5(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_md5(), nullptr);
                 break;
             }
             case sha1: {
-                status = EVP_DigestInit_ex(context, EVP_sha1(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha1(), nullptr);
                 break;
             }
             case sha256: {
-                status = EVP_DigestInit_ex(context, EVP_sha256(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha256(), nullptr);
                 break;
             }
             case sha384: {
-                status = EVP_DigestInit_ex(context, EVP_sha384(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha384(), nullptr);
                 break;
             }
             case sha512: {
-                status = EVP_DigestInit_ex(context, EVP_sha512(), NULL);
+                status = EVP_DigestInit_ex(context, EVP_sha512(), nullptr);
                 break;
             }
         }
@@ -90,19 +91,19 @@ namespace shttps {
     //==========================================================================
 
     bool Hash::hash_of_file(const string &path, size_t buflen) {
-        char *buf = new char[buflen];
+        auto buf = make_unique<char[]>(buflen);
 
         int fptr = ::open(path.c_str(), O_RDONLY);
         if (fptr == -1) {
             return false;
         }
         size_t n;
-        while ((n = ::read(fptr, buf, buflen)) > 0) {
+        while ((n = ::read(fptr, buf.get(), buflen)) > 0) {
             if (n == -1) {
                 ::close (fptr);
                 return false;
             }
-            if (!EVP_DigestUpdate(context, buf, n)) {
+            if (!EVP_DigestUpdate(context, buf.get(), n)) {
                 ::close(fptr);
                 return false;
             }

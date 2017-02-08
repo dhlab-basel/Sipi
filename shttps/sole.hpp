@@ -377,7 +377,7 @@ namespace sole {
             FILETIME ft;
             uint64_t tmpres = 0;
 
-            if( NULL != tv ) {
+            if (tv != nullptr) {
                 GetSystemTimeAsFileTime(&ft);
 
                 // The GetSystemTimeAsFileTime returns the number of 100 nanosecond
@@ -400,7 +400,7 @@ namespace sole {
                 tv->tv_usec = (tmpres % 1000000UL);
             }
 
-            if( NULL != tz ) {
+            if (tz != nullptr) {
                 static bool once = true;
                 if( once ) {
                     once = false;
@@ -429,7 +429,7 @@ namespace sole {
     $lelse( $belse( // if not linux, if not bsd... valid for apple/win32
         inline int clock_gettime( int /*clk_id*/, struct timespec* t ) {
             struct timeval now;
-            int rv = gettimeofday(&now, NULL);
+            int rv = gettimeofday(&now, nullptr);
             if( rv ) return rv;
             t->tv_sec  = now.tv_sec;
             t->tv_nsec = now.tv_usec * 1000;

@@ -148,7 +148,7 @@ namespace Sipi {
             std::string errStr = rhs.to_string();
             outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
             return outStream;
-    }
+        }
     };
 
 
@@ -169,9 +169,10 @@ namespace Sipi {
         friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
     private:
-        static std::unordered_map<std::string,SipiIO*> io; //!< member variable holding a map of I/O class instances for the different file formats
+        static std::unordered_map<std::string, std::shared_ptr<SipiIO> > io; //!< member variable holding a map of I/O class instances for the different file formats
         byte bilinn (byte buf[], register int nx, register float x, register float y, register int c, register int n);
         word bilinn (word buf[], register int nx, register float x, register float y, register int c, register int n);
+        void ensure_exif();
     protected:
         int nx;         //!< Number of horizontal pixels (width)
         int ny;         //!< Number of vertical pixels (height)
@@ -180,12 +181,12 @@ namespace Sipi {
         std::vector<ExtraSamples> es; //!< meaning of extra samples
         PhotometricInterpretation photo;    //!< Image type, that is the meaning of the channels
         byte *pixels;   //!< Pointer to block of memory holding the pixels
-        SipiXmp *xmp;   //!< Pointer to instance SipiXmp class (\ref SipiXmp), or NULL
-        SipiIcc *icc;   //!< Pointer to instance of SipiIcc class (\ref SipiIcc), or NULL
-        SipiIptc *iptc; //!< Pointer to instance of SipiIptc class (\ref SipiIptc), or NULL
-        SipiExif *exif; //!< Pointer to instance of SipiExif class (\ref SipiExif), or NULL
+        std::shared_ptr<SipiXmp> xmp;   //!< Pointer to instance SipiXmp class (\ref SipiXmp), or NULL
+        std::shared_ptr<SipiIcc> icc;   //!< Pointer to instance of SipiIcc class (\ref SipiIcc), or NULL
+        std::shared_ptr<SipiIptc> iptc; //!< Pointer to instance of SipiIptc class (\ref SipiIptc), or NULL
+        std::shared_ptr<SipiExif> exif; //!< Pointer to instance of SipiExif class (\ref SipiExif), or NULL
         SipiEssentials emdata; //!< Metadata to be stored in file header
-        shttps::Connection *conobj; //!< Pointer to mongoose webserver connection data
+        shttps::Connection* conobj; //!< Pointer to HTTP connection
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
     public:
         static std::unordered_map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
@@ -237,7 +238,7 @@ namespace Sipi {
        /*!
         * Getter for number of alpha channels
         */
-        inline int getNalpha() { return es.size(); }
+        inline unsigned long getNalpha() { return es.size(); }
 
         /*! Destructor
          *
@@ -274,7 +275,7 @@ namespace Sipi {
                     if (val > 0xffff) throw ((int) 6);
                 }
             }
-        };
+        }
 
         /*!
          * Assignment operator
@@ -305,11 +306,11 @@ namespace Sipi {
         *
         * \returns Pointer to connection data
         */
-         inline shttps::Connection *connection() { return conobj; };
+        inline shttps::Connection *connection() { return conobj; };
 
-         inline void essential_metadata(const SipiEssentials &emdata_p) { emdata = emdata_p; }
+        inline void essential_metadata(const SipiEssentials &emdata_p) { emdata = emdata_p; }
 
-         inline SipiEssentials essential_metadata(void) { return emdata; }
+        inline SipiEssentials essential_metadata(void) { return emdata; }
 
        /*!
         * Read an image from the given path
@@ -322,7 +323,7 @@ namespace Sipi {
         *
         * \throws SipiError
         */
-        void read(std::string filepath, SipiRegion *region = NULL, SipiSize *size = NULL, bool force_bps_8 = false);
+        void read(std::string filepath, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
 
        /*!
         * Read an image that is to be considered an "original image". In this case
@@ -344,7 +345,7 @@ namespace Sipi {
         *
         * \returns true, if everythin worked. False, if the checksums do not match.
         */
-        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, shttps::HashType htype = shttps::HashType::sha256);
+        bool readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, shttps::HashType htype = shttps::HashType::sha256);
 
         /*!
          * Read an image that is to be considered an "original image". In this case
@@ -367,7 +368,7 @@ namespace Sipi {
          *
          * \returns true, if everythin worked. False, if the checksums do not match.
          */
-        bool readOriginal(const std::string &filepath, SipiRegion *region, SipiSize *size, const std::string &origname, shttps::HashType htype);
+        bool readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, const std::string &origname, shttps::HashType htype);
 
 
        /*!
@@ -431,7 +432,7 @@ namespace Sipi {
         * \param[in] width Width of the region. If the region goes beyond the image dimensions, it's adjusted.
         * \param[in] height Height of the region. If the region goes beyond the image dimensions, it's adjusted
         */
-        bool crop(SipiRegion *region);
+        bool crop(std::shared_ptr<SipiRegion> region);
 
        /*!
         * Resize an image

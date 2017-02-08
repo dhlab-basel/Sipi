@@ -30,7 +30,7 @@ static const char __file__[] = __FILE__;
 namespace Sipi {
 
     SipiExif::SipiExif() {
-        binaryExif = NULL;
+        binaryExif = nullptr;
         binary_size = 0;
         byteorder = Exiv2::littleEndian; // that's today's default....
     };

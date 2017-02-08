@@ -64,13 +64,13 @@ namespace shttps {
             throw Error(__file__, __LINE__, ia.what());
         }
         if (n == 0) return 0;
-        if (*buf == NULL) {
-            if ((*buf = (char *) malloc((n + 1)*sizeof(char))) == NULL) {
+        if (*buf == nullptr) {
+            if ((*buf = (char *) malloc((n + 1)*sizeof(char))) == nullptr) {
                 throw Error(__file__, __LINE__, "malloc failed", errno);
             }
         }
         else {
-            if ((*buf = (char *) realloc(*buf, (offs + n + 1)*sizeof(char))) == NULL) {
+            if ((*buf = (char *) realloc(*buf, (offs + n + 1)*sizeof(char))) == nullptr) {
                 throw Error(__file__, __LINE__, "realloc failed", errno);
             }
         }
@@ -96,7 +96,7 @@ namespace shttps {
 
     size_t ChunkReader::readAll(char **buf) {
         size_t n, nbytes = 0;
-        *buf = NULL;
+        *buf = nullptr;
         while ((n = read_chunk(*ins, buf, nbytes)) > 0) {
             nbytes += n;
         }

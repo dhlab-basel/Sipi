@@ -126,7 +126,7 @@ namespace Sipi {
         // now we looking for files that are not in the list of cached files
         // and we delete them
         //
-        n = scandir(_cachedir.c_str(), &namelist, NULL, alphasort);
+        n = scandir(_cachedir.c_str(), &namelist, nullptr, alphasort);
         if (n < 0) {
             perror("scandir");
         }
@@ -332,23 +332,23 @@ namespace Sipi {
     }
     //============================================================================
 
-    std::string SipiCache::getNewCacheName(void)
+    /*!
+     * Creates a new cache file with a unique name.
+     *
+     * \return the name of the file.
+     */
+    std::string SipiCache::getNewCacheFileName(void)
     {
-        //
-        // create a unique temporary filename
-        //
-        std::string tmpname = _cachedir + "/cache_XXXXXXXXXX";
-        char *writable = new char[tmpname.size() + 1];
-        std::copy(tmpname.begin(), tmpname.end(), writable);
-        writable[tmpname.size()] = '\0'; // don't forget the terminating 0
+        std::string filename = _cachedir + "/cache_XXXXXXXXXX";
+        char* c_filename = &filename[0];
+        int tmp_fd = mkstemp(c_filename);
 
-        if (mktemp(writable) == NULL) {
-            throw SipiError(__file__, __LINE__, std::string("Couldn't create temporary file ") + std::string(writable), errno);
+        if (tmp_fd == -1) {
+            throw SipiError(__file__, __LINE__, std::string("Couldn't create cache file ") + filename, errno);
         }
-        tmpname = std::string(writable);
-        delete[] writable;
 
-        return tmpname;
+        close(tmp_fd);
+        return filename;
     }
     //============================================================================
 

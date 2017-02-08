@@ -70,7 +70,7 @@ namespace Sipi {
 
 
 
-    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, SipiRegion *region, SipiSize *size)
+    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size)
     {
         auto logger = Logger::getLogger(shttps::loggername);
         FILE *reader;
@@ -80,7 +80,7 @@ namespace Sipi {
 
         opj_set_default_decoder_parameters(&parameters);
 
-        if ((reader = fopen(filepath.c_str(), "rb")) == NULL) {
+        if ((reader = fopen(filepath.c_str(), "rb")) == nullptr) {
             throw SipiError(__file__, __LINE__, "Couldn't open input file!", errno);
         };
         unsigned char buf[12];
@@ -147,7 +147,7 @@ namespace Sipi {
             throw SipiError(__file__, __LINE__, "OpenJPEG2000: failed to setup the decoder!");
         }
 
-        opj_image_t *image = NULL;
+        opj_image_t *image = nullptr;
         /* Read the main header of the codestream and if necessary the JP2 boxes*/
         if(! opj_read_header(l_stream, l_codec, &image)){
             opj_stream_destroy(l_stream);
@@ -169,7 +169,7 @@ namespace Sipi {
         // is there a region of interest defined ? If yes, get the cropping parameters...
         //
         bool do_roi = false;
-        if ((region != NULL) && (region->getType()) != SipiRegion::FULL) {
+        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
             int x, y, nx, ny;
             try {
                 region->crop_coords(__nx, __ny, x, y, nx, ny);

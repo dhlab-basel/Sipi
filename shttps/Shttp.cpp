@@ -31,13 +31,13 @@
 #include "Server.h"
 #include "LuaServer.h"
 
-shttps::Server *serverptr = NULL;
+shttps::Server *serverptr = nullptr;
 
 static sig_t old_sighandler;
 static sig_t old_broken_pipe_handler;
 
 static void sighandler(int sig) {
-    if (serverptr != NULL) {
+    if (serverptr != nullptr) {
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Got SIGINT, stopping server");
         setlogmask(old_ll);
@@ -60,7 +60,7 @@ static int lua_gaga (lua_State *L)
 
     for (int i = 1; i <= top; i++) {
         const char *str = lua_tostring(L, i);
-        if (str != NULL) {
+        if (str != nullptr) {
             conn->send("GAGA: ", 5);
             conn->send(str, strlen(str));
         }
@@ -229,7 +229,7 @@ int main(int argc, char *argv[]) {
     //
     // Test handler (should be removed for production system)
     //
-    server.addRoute(shttps::Connection::GET, "/test", TestHandler, NULL);
+    server.addRoute(shttps::Connection::GET, "/test", TestHandler, nullptr);
 
     serverptr = &server;
     old_sighandler = signal(SIGINT, sighandler);

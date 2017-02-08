@@ -354,8 +354,8 @@ namespace Sipi {
         //
         // get cache info
         //
-        SipiCache *cache = serv->cache();
-        if ((cache == NULL) || !cache->getSize(infile, width, height)) {
+        std::shared_ptr<SipiCache> cache = serv->cache();
+        if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
             Sipi::SipiImage tmpimg;
             try {
                 tmpimg.getDim(infile, width, height);
@@ -442,7 +442,15 @@ namespace Sipi {
     //=========================================================================
 
 
-    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(int tmp_w, int tmp_h, const std::string &host, const std::string &prefix, const std::string &identifier, SipiRegion &region, SipiSize &size, SipiRotation &rotation, SipiQualityFormat &quality_format)
+    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(int tmp_w,
+                                                                          int tmp_h,
+                                                                          const std::string &host,
+                                                                          const std::string &prefix,
+                                                                          const std::string &identifier,
+                                                                          std::shared_ptr<SipiRegion> region,
+                                                                          std::shared_ptr<SipiSize> size,
+                                                                          SipiRotation &rotation,
+                                                                          SipiQualityFormat &quality_format)
     {
         static const int canonical_len = 127;
 
@@ -452,15 +460,17 @@ namespace Sipi {
         int tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h, tmp_red;
         bool tmp_ro;
 
-        if (region.getType() != SipiRegion::FULL) {
-            region.crop_coords(tmp_w, tmp_h, tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h);
+        if (region->getType() != SipiRegion::FULL) {
+            region->crop_coords(tmp_w, tmp_h, tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h);
         }
-        region.canonical(canonical_region, canonical_len);
 
-        if (size.getType() != SipiSize::FULL) {
-            size.get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+        region->canonical(canonical_region, canonical_len);
+
+        if (size->getType() != SipiSize::FULL) {
+            size->get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
         }
-        size.canonical(canonical_size, canonical_len);
+
+        size->canonical(canonical_size, canonical_len);
 
         float angle;
         bool mirror = rotation.get_rotation(angle);
@@ -542,7 +552,7 @@ namespace Sipi {
         std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
                            std::string(canonical_size) + "/" + std::string(canonical_rotation) + format + std::string(ext);
 
-        return make_pair(canonical_header, canonical);
+        return make_pair(std::string(canonical_header), canonical);
     }
     //=========================================================================
 
@@ -643,11 +653,11 @@ namespace Sipi {
          //
         // getting region parameters
         //
-        SipiRegion region;
+        auto region = std::make_shared<SipiRegion>();
         try {
-            region = SipiRegion(params[iiif_region]);
+            region = std::make_shared<SipiRegion>(params[iiif_region]);
             std::stringstream ss;
-            ss << region;
+            ss << *region;
             syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
@@ -658,11 +668,11 @@ namespace Sipi {
         //
         // getting scaling/size parameters
         //
-        SipiSize size;
+        auto size = std::make_shared<SipiSize>();
         try {
-            size = SipiSize(params[iiif_size]);
+            size = std::make_shared<SipiSize>(params[iiif_size]);
             std::stringstream ss;
-            ss << size;
+            ss << *size;
             syslog(LOG_DEBUG, "%s", ss.str().c_str());
         }
         catch (Sipi::SipiError &err) {
@@ -731,7 +741,7 @@ namespace Sipi {
         std::string infile;  // path to the input file on the server
         std::string permission; // the permission string
         std::string watermark; // path to watermark file, or empty, if no watermark required
-        SipiSize restriction_size; // size of restricted image... (SizeType::FULL if unrestricted)
+        auto restriction_size = std::make_shared<SipiSize>(); // size of restricted image... (SizeType::FULL if unrestricted)
 
         if (luaserver.luaFunctionExists(pre_flight_func_name)) {
             std::pair<std::string, std::string> pre_flight_return_values;
@@ -746,22 +756,22 @@ namespace Sipi {
             permission = pre_flight_return_values.first;
             infile = pre_flight_return_values.second;
 
-            size_t pos = permission.find(':');
+            size_t colon_pos = permission.find(':');
             std::string qualifier;
-            if (pos != std::string::npos) {
-                qualifier = permission.substr(pos + 1);
-                permission = permission.substr(0, pos);
+            if (colon_pos != std::string::npos) {
+                qualifier = permission.substr(colon_pos + 1);
+                permission = permission.substr(0, colon_pos);
             }
             if (permission != "allow") {
                 if (permission == "restrict") {
-                    pos = qualifier.find('=');
-                    std::string restriction_type = qualifier.substr(0, pos);
-                    std::string restriction_param = qualifier.substr(pos + 1);
+                    colon_pos = qualifier.find('=');
+                    std::string restriction_type = qualifier.substr(0, colon_pos);
+                    std::string restriction_param = qualifier.substr(colon_pos + 1);
                     if (restriction_type == "watermark") {
                         watermark = restriction_param;
                     }
                     else if (restriction_type == "size") {
-                        restriction_size = SipiSize(restriction_param);
+                        restriction_size = std::make_shared<SipiSize>(restriction_param);
                     }
                     else {
                         send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
@@ -819,15 +829,15 @@ namespace Sipi {
         //
         // get cache info
         //
-        SipiCache *cache = serv->cache();
+        std::shared_ptr<SipiCache> cache = serv->cache();
 
         int img_w = 0, img_h = 0;
         if (in_format == SipiQualityFormat::PDF) {
-            if (size.getType() != SipiSize::FULL) {
+            if (size->getType() != SipiSize::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
                 return;
             }
-            if (region.getType() != SipiRegion::FULL) {
+            if (region->getType() != SipiRegion::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have region qualifier of \"full\"");
                 return;
             }
@@ -845,7 +855,7 @@ namespace Sipi {
             //
             // get image dimensions, needed for get_canonical...
             //
-            if ((cache == NULL) || !cache->getSize(infile, img_w, img_h)) {
+            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h)) {
                 Sipi::SipiImage tmpimg;
                 try {
                     tmpimg.getDim(infile, img_w, img_h);
@@ -858,10 +868,10 @@ namespace Sipi {
 
             int tmp_r_w, tmp_r_h, tmp_red;
             bool tmp_ro;
-            size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
-            restriction_size.get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            restriction_size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
 
-            if (size > restriction_size) {
+            if (*size > *restriction_size) {
                 size = restriction_size;
             }
         }
@@ -872,8 +882,15 @@ namespace Sipi {
         //
         std::pair<std::string, std::string> tmppair;
         try {
-            tmppair = serv->get_canonical_url(img_w, img_h, conn_obj.host(), params[iiif_prefix], params[iiif_identifier],
-                                        region, size, rotation, quality_format);
+            tmppair = serv->get_canonical_url(img_w,
+                                              img_h,
+                                              conn_obj.host(),
+                                              params[iiif_prefix],
+                                              params[iiif_identifier],
+                                              region,
+                                              size,
+                                              rotation,
+                                              quality_format);
         }
         catch(Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
@@ -886,8 +903,8 @@ namespace Sipi {
         //
         // now we check if we can send the file directly
         //
-        if ((region.getType() == SipiRegion::FULL) &&
-            (size.getType() == SipiSize::FULL) &&
+        if ((region->getType() == SipiRegion::FULL) &&
+            (size->getType() == SipiSize::FULL) &&
             (angle == 0.0) &&
             (!mirror) && watermark.empty() &&
             (quality_format.format() == in_format) &&
@@ -942,7 +959,7 @@ namespace Sipi {
         }
         syslog(LOG_DEBUG, "Checking for cache...");
 
-        if (cache != NULL) {
+        if (cache != nullptr) {
             syslog(LOG_DEBUG, "Cache found, testing for canonical %s", canonical.c_str());
             std::string cachefile = cache->check(infile, canonical);
             if (!cachefile.empty()) {
@@ -989,7 +1006,7 @@ namespace Sipi {
         syslog(LOG_WARNING, "Nothing found in cache, reading and transforming file...");
         Sipi::SipiImage img;
         try {
-            img.read(infile, &region, &size, quality_format.format() == SipiQualityFormat::JPG);
+            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG);
         }
         catch(const SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
@@ -1049,8 +1066,8 @@ namespace Sipi {
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
 
         std::string cachefile;
-        if (cache != NULL) {
-            cachefile = cache->getNewCacheName();
+        if (cache != nullptr) {
+            cachefile = cache->getNewCacheFileName();
             syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
         }
         try {
@@ -1065,7 +1082,7 @@ namespace Sipi {
                     Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conn_obj.setChunkedTransfer();
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     syslog(LOG_DEBUG, "Before writing JPG...");
@@ -1074,14 +1091,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing JPG...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_INFO, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1094,7 +1111,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
                     syslog(LOG_DEBUG, "Before writing J2K...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     try {
@@ -1102,7 +1119,7 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
@@ -1116,7 +1133,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
                     syslog(LOG_DEBUG, "Before writing TIF...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     try {
@@ -1124,14 +1141,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing TIF...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1143,10 +1160,10 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
                     }
                     syslog(LOG_DEBUG, "Before writing PNG...");
@@ -1155,14 +1172,14 @@ namespace Sipi {
                     }
                     catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
-                        if (cache != NULL) {
+                        if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
                         }
                         break;
                     }
                     syslog(LOG_DEBUG, "After writing PNG...");
-                    if (cache != NULL) {
+                    if (cache != nullptr) {
                         conn_obj.closeCacheFile();
                         syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
                         cache->add(infile, canonical, cachefile, img_w, img_h);
@@ -1227,23 +1244,17 @@ namespace Sipi {
         : Server::Server(port_p, nthreads_p, userid_str, logfile_p, loglevel_p)
     {
         _salsah_prefix = "imgrep";
-        _cache = NULL;
-    }
-    //=========================================================================
-
-    SipiHttpServer::~SipiHttpServer()
-    {
-        if (_cache != NULL) delete _cache;
+        _cache = nullptr;
     }
     //=========================================================================
 
     void SipiHttpServer::cache(const std::string &cachedir_p, long long max_cachesize_p, unsigned max_nfiles_p, float cache_hysteresis_p)
     {
         try {
-            _cache = new SipiCache(cachedir_p, max_cachesize_p, max_nfiles_p, cache_hysteresis_p);
+            _cache = std::make_shared<SipiCache>(cachedir_p, max_cachesize_p, max_nfiles_p, cache_hysteresis_p);
         }
         catch (const SipiError &err) {
-            _cache = NULL;
+            _cache = nullptr;
             syslog(LOG_WARNING, "Couldn't open cache directory %s: %s", cachedir_p.c_str(), err.to_string().c_str());
         }
     }

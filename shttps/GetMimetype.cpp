@@ -25,38 +25,36 @@
 
 #include "magic.h"
 
-using namespace std;
-
 static const char __file__[] = __FILE__;
 
 namespace shttps {
 
-    pair<string,string> GetMimetype::getMimetype(const string &fpath)
+    std::pair<std::string, std::string> GetMimetype::getMimetype(const std::string &fpath)
     {
         magic_t handle;
-        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == NULL) {
+        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
             throw Error(__file__, __LINE__, magic_error(handle));
         }
 
-        if (magic_load(handle, NULL) != 0) {
+        if (magic_load(handle, nullptr) != 0) {
             throw Error(__file__, __LINE__, magic_error(handle));
         }
         const char *result = magic_file(handle, fpath.c_str());
 
-        string mimestr = result;
+        std::string mimestr = result;
 
-        string mimetype;
-        string charset;
+        std::string mimetype;
+        std::string charset;
 
         size_t pos = mimestr.find(';');
-        if (pos != string::npos) {
+        if (pos != std::string::npos) {
             mimetype = mimestr.substr(0, pos);
             charset = mimestr.substr(pos + 1);
         }
         else {
             mimetype = mimestr;
         }
-        return make_pair(mimetype, charset);
+        return std::make_pair(mimetype, charset);
     }
 
 }
