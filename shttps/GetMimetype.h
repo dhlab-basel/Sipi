@@ -24,6 +24,7 @@
 #define __shttps_getmimetype_h
 
 #include <string>
+#include <regex>
 
 namespace shttps {
 
@@ -34,8 +35,16 @@ namespace shttps {
     * using the magic number (that is the signature of the first few bytes)
     * of a file.
     */
-    class GetMimetype {
-    public:
+    namespace GetMimetype {
+        /*!
+         * Parses a string containing a MIME type and optional character set, such as the Content-Type header defined by
+         * <https://tools.ietf.org/html/rfc7231#section-3.1.1>.
+         * @param mimestr a string containing the MIME type.
+         * @return the MIME type and optional character set.
+         */
+        std::pair<std::string, std::string> parseMimetype(const std::string mimestr);
+
+
        /*!
         * Determine the mimetype of a file using the magic number
         *
@@ -43,7 +52,7 @@ namespace shttps {
         * \returns pair<string,string> containing the mimetype as first part
         *          and the charset as second part. Access as val.first and val.second!
         */
-        static std::pair<std::string,std::string> getMimetype(const std::string &fpath);
+        std::pair<std::string,std::string> getFileMimetype(const std::string &fpath);
     };
 
 }

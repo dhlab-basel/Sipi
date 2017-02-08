@@ -2011,7 +2011,7 @@ namespace shttps {
                 lua_pushstring(L, "'server.log()': level is not integer");
                 return 2;
             }
-            level = lua_tointeger(L, 2);
+            level = static_cast<int>(lua_tointeger(L, 2));
         }
 
         if (!message.empty()) {
@@ -2027,43 +2027,8 @@ namespace shttps {
     }
     //=========================================================================
 
-    /*!
-     * Lua: success, mimetype = server.mimetype(path)
-     */
-    static int lua_mimetype(lua_State *L) {
-        std::string path;
-        int top = lua_gettop(L);
-        if (top < 1) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': no path given");
-            return 2;
-        }
-        if (!lua_isstring(L, 1)) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': path is not a string");
-            return 2;
-        }
-        path = lua_tostring(L, 1);
-
-        lua_pop(L, top);
-
-        std::pair<std::string, std::string> mimetype;
-
-        try {
-            mimetype =  GetMimetype::getMimetype(path); // returns a pair of strings: mimetype and charset
-        }
-        catch (Error &err) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            std::string tmpstr = std::string("'server.mimetype(path) failed': ") + err.to_string();
-            lua_pushstring(L, tmpstr.c_str());
-            return 2;
-        }
-
+    static int return_mimetype_to_lua(lua_State *L, const std::pair<std::string, std::string>& mimetype) {
         lua_pushboolean(L, true);
-
         lua_createtable(L, 0, 2); // table
 
         lua_pushstring(L, "mimetype"); // table - "mimetype"
@@ -2071,9 +2036,90 @@ namespace shttps {
         lua_rawset(L, -3); // table
 
         lua_pushstring(L, "charset"); // table - "charset"
-        lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
+
+        if (mimetype.second.empty()) {
+            lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
+        } else {
+            lua_pushnil(L);
+        }
+
         lua_rawset(L, -3); // table
         return 2;
+    }
+
+    /*!
+     * Lua: success, mimetype = server.parse_mimetype(str)
+     */
+    static int lua_parse_mimetype(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.parse_mimetype(): no argument given");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.parse_mimetype(): argument is not a string");
+            return 2;
+        }
+
+        std::string mimestr = lua_tostring(L, 1);
+        lua_pop(L, top);
+
+        try {
+            std::pair<std::string, std::string> mimetype = GetMimetype::parseMimetype(mimestr); // returns a pair of strings: mimetype and charset
+            return return_mimetype_to_lua(L, mimetype);
+        }
+        catch (Error &err) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            std::ostringstream error_msg;
+            error_msg << "server.parse_mimetype() failed: " << err.to_string();
+            lua_pushstring(L, error_msg.str().c_str());
+            return 2;
+        }
+
+    }
+
+    /*!
+     * Lua: success, mimetype = server.file_mimetype(path)
+     */
+    static int lua_file_mimetype(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimetype(): no path given");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimetype(): path is not a string");
+            return 2;
+        }
+
+        std::string path = lua_tostring(L, 1);
+        lua_pop(L, top);
+
+        try {
+            std::pair<std::string, std::string> mimetype = GetMimetype::getFileMimetype(path); // returns a pair of strings: mimetype and charset
+            return return_mimetype_to_lua(L, mimetype);
+        }
+        catch (Error &err) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            std::ostringstream error_msg;
+            error_msg << "server.file_mimetype() failed: " << err.to_string();
+            lua_pushstring(L, error_msg.str().c_str());
+            return 2;
+        }
     }
 
     void LuaServer::setLuaPath(const std::string &path) {
@@ -2362,8 +2408,12 @@ namespace shttps {
 
 #endif
 
-        lua_pushstring(L, "mimetype"); // table1 - "index_L1"
-        lua_pushcfunction(L, lua_mimetype); // table1 - "index_L1" - function
+        lua_pushstring(L, "parse_mimetype"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_parse_mimetype); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "file_mimetype"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_file_mimetype); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "log"); // table1 - "index_L1"

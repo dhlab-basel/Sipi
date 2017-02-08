@@ -64,19 +64,19 @@ if not readable then
 end
 
 -- check for the mimetype of the file
-success, mimetype = server.mimetype(sourcePath)
+success, real_mimetype = server.file_mimetype(sourcePath)
 
 if not success then
-    server.log("server.mimetype() failed: " .. exists, server.loglevel.LOG_ERR)
+    server.log("server.file_mimetype() failed: " .. exists, server.loglevel.LOG_ERR)
     send_error(500, "mimetype of file could not be determined")
 end
 
 -- handle the file depending on its media type (image, text file)
-mediatype = get_mediatype(mimetype.mimetype)
+mediatype = get_mediatype(real_mimetype.mimetype)
 
 -- in case of an unsupported mimetype, the function returns false
 if not mediatype then
-    send_error(400, "Mimetype '" .. mimetype.mimetype .. "' is not supported")
+    send_error(400, "Mimetype '" .. real_mimetype.mimetype .. "' is not supported")
     return
 end
 
@@ -207,21 +207,26 @@ elseif mediatype == TEXT then
 
     local success, filename = server.uuid62()
     if not success then
-        send_error(500, "Couldn't generate uuid62!")
+        send_error(500, "Couldn't generate uuid62")
         return -1
     end
 
     -- check file extension
-    if not check_file_extension(mimetype.mimetype, originalFilename) then
+    if not check_file_extension(real_mimetype.mimetype, originalFilename) then
         send_error(400, MIMETYPES_INCONSISTENCY)
         return
     end
 
-    -- check mimetype
-    -- original mimetype may also contain the encoding, e.g. "application/xml; charset=UTF-8"
-    local orig_mime, orig_charset = split_mimetype_and_charset(originalMimetype)
+    -- check that the submitted mimetype is the same as the real mimetype of the file
 
-    if (mimetype.mimetype ~= orig_mime) then
+    local success, submitted_mimetype = server.parse_mimetype(originalMimetype)
+
+    if not success then
+        send_error(400, "Couldn't parse mimetype: " .. originalMimetype)
+        return -1
+    end
+
+    if (real_mimetype.mimetype ~= submitted_mimetype.mimetype) then
         send_error(400, MIMETYPES_INCONSISTENCY)
         return
     end
@@ -235,8 +240,8 @@ elseif mediatype == TEXT then
     end
 
     result = {
-        mimetype = mimetype.mimetype,
-        charset = mimetype.charset,
+        mimetype = submitted_mimetype.mimetype,
+        charset = submitted_mimetype.charset,
         file_type = TEXT,
         filename = filename,
         original_mimetype = originalMimetype,

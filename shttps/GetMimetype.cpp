@@ -20,6 +20,10 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <regex>
+#include <sstream>
+
 #include "GetMimetype.h"
 #include "Error.h"
 
@@ -29,35 +33,45 @@ static const char __file__[] = __FILE__;
 
 namespace shttps {
 
-    std::pair<std::string, std::string> GetMimetype::getMimetype(const std::string &fpath)
-    {
-        magic_t handle;
-        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
-            throw Error(__file__, __LINE__, magic_error(handle));
+    namespace GetMimetype {
+        std::regex mime_regex("^([^;]+)(;\\s*charset=\"?(.+)\"?)?$",
+                                     std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+        std::pair<std::string, std::string> parseMimetype(const std::string mimestr) {
+            std::smatch mime_match;
+            std::string mimetype;
+            std::string charset;
+
+            if (std::regex_match(mimestr, mime_match, mime_regex)) {
+                if (mime_match.size() > 1) {
+                    mimetype = mime_match[1].str();
+
+                    if (mime_match.size() == 3) {
+                        charset = mime_match[2].str();
+                    }
+                }
+            } else {
+                std::ostringstream error_msg;
+                error_msg << "Could not parse MIME type: " << mimestr;
+                throw Error(__file__, __LINE__, error_msg.str());
+            }
+
+            return std::make_pair(mimetype, charset);
         }
 
-        if (magic_load(handle, nullptr) != 0) {
-            throw Error(__file__, __LINE__, magic_error(handle));
-        }
-        const char *result = magic_file(handle, fpath.c_str());
 
-        std::string mimestr = result;
+        std::pair<std::string, std::string> getFileMimetype(const std::string &fpath) {
+            magic_t handle;
+            if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
+                throw Error(__file__, __LINE__, magic_error(handle));
+            }
 
-        std::string mimetype;
-        std::string charset;
+            if (magic_load(handle, nullptr) != 0) {
+                throw Error(__file__, __LINE__, magic_error(handle));
+            }
 
-        // if also the encoding of the file is given,
-        // the charset is separated by a semicolon followed by a space,
-        // e.g. "application/xml; charset=UTF-8"
-        size_t pos = mimestr.find("; ");
-        if (pos != std::string::npos) {
-            mimetype = mimestr.substr(0, pos);
-            charset = mimestr.substr(pos + 2); // semicolon followed by a space
+            std::string mimestr(magic_file(handle, fpath.c_str()));
+            return parseMimetype(mimestr);
         }
-        else {
-            mimetype = mimestr;
-        }
-        return std::make_pair(mimetype, charset);
     }
-
 }
