@@ -42,7 +42,7 @@ namespace shttps {
          * @param mimestr a string containing the MIME type.
          * @return the MIME type and optional character set.
          */
-        std::pair<std::string, std::string> parseMimetype(const std::string mimestr);
+        std::pair<std::string, std::string> parseMimetype(const std::string& mimestr);
 
 
        /*!
@@ -52,7 +52,7 @@ namespace shttps {
         * \returns pair<string,string> containing the mimetype as first part
         *          and the charset as second part. Access as val.first and val.second!
         */
-        std::pair<std::string,std::string> getFileMimetype(const std::string &fpath);
+        std::pair<std::string,std::string> getFileMimetype(const std::string& fpath);
     };
 
 }

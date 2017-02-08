@@ -2037,7 +2037,7 @@ namespace shttps {
 
         lua_pushstring(L, "charset"); // table - "charset"
 
-        if (mimetype.second.empty()) {
+        if (!mimetype.second.empty()) {
             lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
         } else {
             lua_pushnil(L);
