@@ -1092,7 +1092,7 @@ namespace Sipi {
         if (!doit) return true; // we have to do nothing, it's already bitonal
 
         short *outbuf = new(std::nothrow) short[nx*ny]; // must be signed!! Error propagation my result inm values < 0 or > 255
-        if (outbuf == NULL) return false; // TODO: throw an error with a reasonable error message
+        if (outbuf == nullptr) return false; // TODO: throw an error with a reasonable error message
         for (size_t i = 0; i < nx*ny; i++) {
             outbuf[i] = pixels[i];  // copy buffer
         }
