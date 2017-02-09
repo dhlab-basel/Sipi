@@ -36,39 +36,37 @@ namespace shttps {
     namespace GetMimetype {
 
         std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
-            static std::regex mime_regex;
-
             try {
                 // A regex for parsing the value of an HTTP Content-Type header.
-                mime_regex = std::regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+                static std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+                std::smatch mime_match;
+                std::string mimetype;
+                std::string charset;
+
+                if (std::regex_match(mimestr, mime_match, mime_regex)) {
+                    if (mime_match.size() > 1) {
+                        mimetype = mime_match[1].str();
+
+                        if (mime_match.size() == 4) {
+                            charset = mime_match[3].str();
+                        }
+                    }
+                } else {
+                    std::ostringstream error_msg;
+                    throw Error(__file__, __LINE__, error_msg.str());
+                }
+
+                // Convert MIME type and charset to lower case
+                std::transform(mimetype.begin(), mimetype.end(), mimetype.begin(), ::tolower);
+                std::transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
+
+                return std::make_pair(mimetype, charset);
             } catch (std::regex_error& e) {
                 std::ostringstream error_msg;
-                error_msg << "Regex parsing error: " << e.what();
+                error_msg << "Regex error: " << e.what();
                 throw Error(__file__, __LINE__, error_msg.str());
             }
-
-            std::smatch mime_match;
-            std::string mimetype;
-            std::string charset;
-
-            if (std::regex_match(mimestr, mime_match, mime_regex)) {
-                if (mime_match.size() > 1) {
-                    mimetype = mime_match[1].str();
-
-                    if (mime_match.size() == 4) {
-                        charset = mime_match[3].str();
-                    }
-                }
-            } else {
-                std::ostringstream error_msg;
-                throw Error(__file__, __LINE__, error_msg.str());
-            }
-
-            // Convert MIME type and charset to lower case
-            std::transform(mimetype.begin(), mimetype.end(), mimetype.begin(), ::tolower);
-            std::transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
-
-            return std::make_pair(mimetype, charset);
         }
 
         std::pair<std::string, std::string> getFileMimetype(const std::string& fpath) {
