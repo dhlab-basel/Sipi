@@ -137,9 +137,7 @@ sipi = {
 }
 
 --
--- here we define routes that are handled by lua scripts. A route is a defined url:
--- http://<server-DNS>/<route>
--- executes the given script defined below
+-- Custom routes. Each route is URL path associated with a Lua script.
 --
 routes = {
     {
