@@ -77,69 +77,6 @@
  *
  */
 
-Sipi::SipiConf sipiConf;
-enum FileType {image, video, audio, text, binary};
-
-static std::string fileType_string(FileType f_type) {
-    std::string type_string;
-
-    switch (f_type) {
-        case image:
-            type_string = "image";
-            break;
-        case video:
-            type_string = "video";
-            break;
-        case audio:
-            type_string = "audio";
-            break;
-        case text:
-            type_string = "text";
-            break;
-        case binary:
-            type_string = "binary";
-            break;
-    }
-
-    return type_string;
-};
-//=========================================================================
-
-
-static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, std::string msg)
-{
-    conobj.status(code);
-    conobj.header("Content-Type", "application/json");
-
-    json_t *root = json_object();
-    json_object_set_new(root, "status", json_integer(1));
-    json_object_set_new(root, "message", json_string(msg.c_str()));
-
-    char *json_str = json_dumps(root, JSON_INDENT(3));
-    conobj << json_str << shttps::Connection::flush_data;
-    free (json_str);
-    json_decref(root);
-}
-//=========================================================================
-
-
-static void send_error(shttps::Connection &conobj, shttps::Connection::StatusCodes code, Sipi::SipiError &err)
-{
-    conobj.status(code);
-    conobj.header("Content-Type", "application/json");
-
-    json_t *root = json_object();
-    json_object_set_new(root, "status", json_integer(1));
-    std::stringstream ss;
-    ss << err;
-    json_object_set_new(root, "message", json_string(ss.str().c_str()));
-    char *json_str = json_dumps(root, JSON_INDENT(3));
-    conobj << json_str << shttps::Connection::flush_data;
-    free (json_str);
-    json_decref(root);
-}
-//=========================================================================
-
 static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
 
@@ -228,41 +165,42 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
     lua_setglobal(L, "config");
 }
-enum  optionIndex { UNKNOWN, CONFIGFILE, FILEIN , FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
-                    SKIPMETA, MIRROR, ROTATE, SALSAH, WATERMARK, COMPARE, SERVERPORT, NTHREADS,
-                    IMGROOT, LOGLEVEL, HELP
-                  };
-option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
-{
-    if (option.arg != 0)
-    {
-        try
-        {
-            std::string str(option.arg);
-            switch(option.index())
-            {
-            case FORMAT:
-                if (str=="jpx" || str=="jpg" || str=="tif" || str=="png") return option::ARG_OK;
 
-                break;
-            case ICC:
-                if (str=="none" || str=="sRGB" || str=="AdobeRGB" || str=="GRAY") return option::ARG_OK;
-                break;
-            case MIRROR:
-                if (str=="none" || str=="horizontal" || str=="vertical") return option::ARG_OK;
-                break;
-            case LOGLEVEL:
-                if (str=="TRACE" || str=="DEBUG" || str=="INFO" || str=="WARN" || str=="ERROR" || str=="CRITICAL" || str=="OFF") return option::ARG_OK;
-                break;
-            case SKIPMETA:
-                if (str=="none" || str=="all") return option::ARG_OK;
-                break;
-			default: return option::ARG_ILLEGAL;
+enum optionIndex {
+    UNKNOWN, CONFIGFILE, FILEIN, FORMAT, ICC, QUALITY, REGION, REDUCE, SIZE, SCALE,
+    SKIPMETA, MIRROR, ROTATE, SALSAH, WATERMARK, COMPARE, SERVERPORT, NTHREADS,
+    IMGROOT, LOGLEVEL, HELP
+};
+
+option::ArgStatus SipiMultiChoice(const option::Option &option, bool msg) {
+    if (option.arg != 0) {
+        try {
+            std::string str(option.arg);
+            switch (option.index()) {
+                case FORMAT:
+                    if (str == "jpx" || str == "jpg" || str == "tif" || str == "png") return option::ARG_OK;
+
+                    break;
+                case ICC:
+                    if (str == "none" || str == "sRGB" || str == "AdobeRGB" || str == "GRAY") return option::ARG_OK;
+                    break;
+                case MIRROR:
+                    if (str == "none" || str == "horizontal" || str == "vertical") return option::ARG_OK;
+                    break;
+                case LOGLEVEL:
+                    if (str == "TRACE" || str == "DEBUG" || str == "INFO" || str == "WARN" || str == "ERROR" ||
+                        str == "CRITICAL" || str == "OFF")
+                        return option::ARG_OK;
+                    break;
+                case SKIPMETA:
+                    if (str == "none" || str == "all") return option::ARG_OK;
+                    break;
+                default:
+                    return option::ARG_ILLEGAL;
             }
         }
-        catch(std::exception& e)
-        {
-            std::cerr<<"Option '"<< option<< "' not a valid argument"<<std::endl;
+        catch (std::exception &e) {
+            std::cerr << "Option '" << option << "' not a valid argument" << std::endl;
             return option::ARG_ILLEGAL;
         }
     }
@@ -271,50 +209,56 @@ option::ArgStatus SipiMultiChoice(const option::Option& option, bool msg)
     if (msg) std::cerr << "Option '" << option << "' requires " << option.desc->help;
     return option::ARG_ILLEGAL;
 }
-const option::Descriptor usage[] =
-{
-    {
-        UNKNOWN, 0, "", "",option::Arg::None, "Sipi (Simple Image Presentation Interface)\nSipi is developed by the Digital Humanities Lab at the University of Basel\n"
-        "USAGE : sipi [options]\n"
-        "Options:"
-    },
 
-    {CONFIGFILE, 0,"c", "config", option::Arg::NonEmpty, "  --config filename, -c filename  \tConfiguration file for webserver.\n" },
-    {FILEIN, 0,"f", "file", option::Arg::NonEmpty, "  --file fileIn, -f fileIn  \tinput file to be converted . USAGE: sipi [options] -ffileIn fileout\n" },
-    {FORMAT, 0,"F", "format", SipiMultiChoice, "  --format Value, -F Value  \tOutput format Value can be: jpx,jpg,tif,png.\n" },
-    {ICC, 0,"I", "ICC", SipiMultiChoice, "  --ICC Value, -I Value  \tConvert to ICC profile. Value can be: none,sRGB,AdobeRGB,GRAY.\n" },
-    {QUALITY, 0, "q", "quality", option::Arg::NumericI, "  --quality Value, -q Value  \tQuality (compression) Value can any integer between 1 and 100\n" },
-    {REGION, 0, "r", "region", option::Arg::NonEmpty, "  --region x,y,w,h, -r x,y,w,h  \tSelect region of interest (x,y,w,h) are integer values\n" },
-    {REDUCE, 0, "R", "Reduce", option::Arg::NumericI, "  --Reduce Value, -R Value  \tReduce image size by factor Value (Cannot be used together with \"-size\" and \"-scale\".\n"},
-    {SIZE, 0, "s", "size", option::Arg::NonEmpty, "  --size w,h -s w,h  \tResize image to given size w,h (Cannot be used together with \"-reduce\" and \"-scale\")\n" },
-    {SCALE, 0, "S", "Scale", option::Arg::NonEmpty, "  --Scale Value, -S Value  \tResize image by the given percentage Value (Cannot be used together with \"-size\" and \"-reduce\")\n" },
-    {SKIPMETA, 0, "k", "skipmeta", SipiMultiChoice, "  --skipmeta Value, -k Value  \tSkip the given metadata Value can be none,all\n" },
-    {MIRROR, 0, "m", "mirror", SipiMultiChoice, "  --mirror Value, -m Value  \tMirror the image Value can be: none,horizontal,vertical\n" },
-    {ROTATE, 0, "o", "rotate", option::Arg::NumericD, "  --rotate Value, -o Value  \tRotate the image by degree Value, angle between (0:360)\n" },
-    {SALSAH, 0, "a", "salsah", option::Arg::None, "  --salsah, -s  \tSpecial flag for SALSAH internal use\n" },
-    {COMPARE, 0, "C", "Compare", option::Arg::NonEmpty, "  --Compare file1 --Compare file2 or -C file1 -C file2  \tCompare two files\n" },
-    {WATERMARK, 0, "w", "watermark", option::Arg::NonEmpty, "  --watermark file, -w file  \tAdd a watermark to the image\n"},
-    {SERVERPORT, 0, "p", "serverport", option::Arg::NonEmpty, "  --serverport Value, -p Value  \tPort of the webserver\n" },
-    {NTHREADS, 0, "t", "nthreads", option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for webserver\n" },
-    {IMGROOT, 0, "i", "imgroot", option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images (webserver)\n" },
-    {LOGLEVEL, 0, "l", "loglevel", SipiMultiChoice, "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n" },
-    {HELP, 0,"", "help",option::Arg::None, "  --help  \tPrint usage and exit.\n" },
-    {
-        UNKNOWN, 0, "", "",option::Arg::None, "\nExamples:\n"
-        "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted .lua configuration file\n"
-        "USAGE (server): sipi [options]\n"
-        "USAGE (image converter): sipi [options] -f fileIn fileout \n"
-        "USAGE (image diff): sipi --Compare file1 --Compare file2 oor sipi --C file1 -C file2 \n\n"
-    },
-    {0,0,nullptr,nullptr,0,nullptr}
-};
+const option::Descriptor usage[] =
+        {
+                {
+                        UNKNOWN,    0, "",      "",           option::Arg::None,     "Sipi (Simple Image Presentation Interface)\nSipi is developed by the Digital Humanities Lab at the University of Basel\n"
+                                                                                             "USAGE : sipi [options]\n"
+                                                                                             "Options:"
+                },
+
+                {       CONFIGFILE, 0, "c",     "config",     option::Arg::NonEmpty, "  --config filename, -c filename  \tConfiguration file for webserver.\n"},
+                {       FILEIN,     0, "f",     "file",       option::Arg::NonEmpty, "  --file fileIn, -f fileIn  \tinput file to be converted . USAGE: sipi [options] -ffileIn fileout\n"},
+                {       FORMAT,     0, "F",     "format",     SipiMultiChoice,       "  --format Value, -F Value  \tOutput format Value can be: jpx,jpg,tif,png.\n"},
+                {       ICC,        0, "I",     "ICC",        SipiMultiChoice,       "  --ICC Value, -I Value  \tConvert to ICC profile. Value can be: none,sRGB,AdobeRGB,GRAY.\n"},
+                {       QUALITY,    0, "q",     "quality",    option::Arg::NumericI, "  --quality Value, -q Value  \tQuality (compression) Value can any integer between 1 and 100\n"},
+                {       REGION,     0, "r",     "region",     option::Arg::NonEmpty, "  --region x,y,w,h, -r x,y,w,h  \tSelect region of interest (x,y,w,h) are integer values\n"},
+                {       REDUCE,     0, "R",     "Reduce",     option::Arg::NumericI, "  --Reduce Value, -R Value  \tReduce image size by factor Value (Cannot be used together with \"-size\" and \"-scale\".\n"},
+                {       SIZE,       0, "s",     "size",       option::Arg::NonEmpty, "  --size w,h -s w,h  \tResize image to given size w,h (Cannot be used together with \"-reduce\" and \"-scale\")\n"},
+                {       SCALE,      0, "S",     "Scale",      option::Arg::NonEmpty, "  --Scale Value, -S Value  \tResize image by the given percentage Value (Cannot be used together with \"-size\" and \"-reduce\")\n"},
+                {       SKIPMETA,   0, "k",     "skipmeta",   SipiMultiChoice,       "  --skipmeta Value, -k Value  \tSkip the given metadata Value can be none,all\n"},
+                {       MIRROR,     0, "m",     "mirror",     SipiMultiChoice,       "  --mirror Value, -m Value  \tMirror the image Value can be: none,horizontal,vertical\n"},
+                {       ROTATE,     0, "o",     "rotate",     option::Arg::NumericD, "  --rotate Value, -o Value  \tRotate the image by degree Value, angle between (0:360)\n"},
+                {       SALSAH,     0, "a",     "salsah",     option::Arg::None,     "  --salsah, -s  \tSpecial flag for SALSAH internal use\n"},
+                {       COMPARE,    0, "C",     "Compare",    option::Arg::NonEmpty, "  --Compare file1 --Compare file2 or -C file1 -C file2  \tCompare two files\n"},
+                {       WATERMARK,  0, "w",     "watermark",  option::Arg::NonEmpty, "  --watermark file, -w file  \tAdd a watermark to the image\n"},
+                {       SERVERPORT, 0, "p",     "serverport", option::Arg::NonEmpty, "  --serverport Value, -p Value  \tPort of the webserver\n"},
+                {       NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for webserver\n"},
+                {       IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images (webserver)\n"},
+                {       LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n"},
+                {       HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
+                {
+                        UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
+                                                                                             "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted .lua configuration file\n"
+                                                                                             "USAGE (server): sipi [options]\n"
+                                                                                             "USAGE (image converter): sipi [options] -f fileIn fileout \n"
+                                                                                             "USAGE (image diff): sipi --Compare file1 --Compare file2 oor sipi --C file1 -C file2 \n\n"
+                },
+                {       0,          0, nullptr, nullptr,      0,                     nullptr}
+        };
+
 //small function to check if file exist
-inline bool exists_file(const std::string& name){
+inline bool exists_file(const std::string &name) {
     struct stat buffer;
-    return (stat(name.c_str(),&buffer)==0);
+    return (stat(name.c_str(), &buffer) == 0);
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
+    /*!
+     * This class does global initialisation and cleanup using the RAII pattern.
+     * There is one instance of this class, constructed here.
+     */
     class _SipiInit {
     public:
         _SipiInit() {
@@ -334,12 +278,14 @@ int main (int argc, char *argv[]) {
             curl_global_cleanup();
             Exiv2::XmpParser::terminate();
         }
-    } sipiInit;
+    };
+
+    _SipiInit sipiInit;
 
     argc -= (argc > 0);
     argv += (argc > 0); // skip program name argv[0] if present
 
-    option::Stats  stats(usage, argc, argv);
+    option::Stats stats(usage, argc, argv);
     std::vector<option::Option> options(stats.options_max);
     std::vector<option::Option> buffer(stats.buffer_max);
     option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
@@ -348,28 +294,25 @@ int main (int argc, char *argv[]) {
         std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
-    }
-    else if (options[HELP] || argc == 0) {
+    } else if (options[HELP] || argc == 0) {
         std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
-    }
-    else if (options[COMPARE] && options[COMPARE].count() == 2) {
+    } else if (options[COMPARE] && options[COMPARE].count() == 2) {
 
-        std::string infname1,infname2;
-        for (option::Option* opt = options[COMPARE]; opt; opt = opt->next()) {
+        std::string infname1, infname2;
+        for (option::Option *opt = options[COMPARE]; opt; opt = opt->next()) {
             try {
                 if (opt->isFirst()) {
                     infname1 = std::string(opt->arg);
-                }
-                else {
+                } else {
                     infname2 = std::string(opt->arg);
                 }
-                std::cout << "comparing files: " << infname1 <<" and "<< infname2 << std::endl;
+                std::cout << "comparing files: " << infname1 << " and " << infname2 << std::endl;
             }
-            catch(std::exception& err) {
+            catch (std::exception &err) {
                 std::cout << "##" << __LINE__ << std::endl;
-                std::cerr<<options[COMPARE].desc->help<<std::endl;
+                std::cerr << options[COMPARE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -400,21 +343,20 @@ int main (int argc, char *argv[]) {
         }
 
         return (result) ? 0 : -1;
-    //
-    // if a config file is given, we start sipi as IIIF compatible server
-    //
-    }
-    else if (options[CONFIGFILE]) {
+        //
+        // if a config file is given, we start sipi as IIIF compatible server
+        //
+    } else if (options[CONFIGFILE]) {
         std::string configfile;
 
-            try {
-                configfile = std::string(options[CONFIGFILE].arg);
-                // std::cout << "Config file: " << configfile << std::endl;
-            }
-            catch(std::logic_error& err) {
-                std::cerr << options[CONFIGFILE].desc->help << std::endl;
-                return EXIT_FAILURE;
-            }
+        try {
+            configfile = std::string(options[CONFIGFILE].arg);
+            // std::cout << "Config file: " << configfile << std::endl;
+        }
+        catch (std::logic_error &err) {
+            std::cerr << options[CONFIGFILE].desc->help << std::endl;
+            return EXIT_FAILURE;
+        }
 
         if (!exists_file(configfile)) {
             std::cout << "##" << __LINE__ << std::endl;
@@ -430,11 +372,11 @@ int main (int argc, char *argv[]) {
             shttps::LuaServer luacfg(configfile);
 
             //store the config option in a SipiConf obj
-            sipiConf = Sipi::SipiConf(luacfg);
+            Sipi::SipiConf sipiConf(luacfg);
 
             //Create object SipiHttpServer
             Sipi::SipiHttpServer server(sipiConf.getPort(), static_cast<unsigned int> (sipiConf.getNThreads()),
-                sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
+                                        sipiConf.getUseridStr(), sipiConf.getLogfile(), sipiConf.getLoglevel());
 
             int old_ll = setlogmask(LOG_MASK(LOG_INFO));
             syslog(LOG_INFO, SIPI_BUILD_DATE);
@@ -455,7 +397,8 @@ int main (int argc, char *argv[]) {
             // set tmpdir for uploads (defined in sipi.config.lua)
             server.tmpdir(sipiConf.getTmpDir());
 
-            server.scriptdir(sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
+            server.scriptdir(
+                    sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
             server.luaRoutes(sipiConf.getRoutes());
             server.add_lua_globals_func(sipiConfGlobals, &sipiConf);
             server.add_lua_globals_func(shttps::sqliteGlobals); // add new lua function "gaga"
@@ -475,12 +418,10 @@ int main (int argc, char *argv[]) {
                     size_t l = cachesize_str.length();
                     char c = cachesize_str[l - 1];
                     if (c == 'M') {
-                        cachesize = stoll(cachesize_str.substr(0, l - 1))*1024*1024;
-                    }
-                    else if (c == 'G') {
-                        cachesize = stoll(cachesize_str.substr(0, l - 1))*1024*1024*1024;
-                    }
-                    else {
+                        cachesize = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024;
+                    } else if (c == 'G') {
+                        cachesize = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024 * 1024;
+                    } else {
                         cachesize = stoll(cachesize_str);
                     }
                 }
@@ -499,7 +440,7 @@ int main (int argc, char *argv[]) {
             //
             std::string docroot = sipiConf.getDocRoot();
             std::string docroute = sipiConf.getDocRoute();
-            std::pair<std::string,std::string> filehandler_info;
+            std::pair<std::string, std::string> filehandler_info;
 
             if (!(docroute.empty() || docroot.empty())) {
                 filehandler_info.first = docroute;
@@ -514,22 +455,21 @@ int main (int argc, char *argv[]) {
         catch (shttps::Error &err) {
             std::cerr << err << std::endl;
         }
-    //
-    // if a server port is given, we start sipi as IIIF compatible server on the given port
-    //
-    }
-    else if (options[SERVERPORT] && options[IMGROOT]) {
+        //
+        // if a server port is given, we start sipi as IIIF compatible server on the given port
+        //
+    } else if (options[SERVERPORT] && options[IMGROOT]) {
         unsigned int nthreads = 0;
         if (options[NTHREADS]) {
             nthreads = static_cast<unsigned int> (std::stoi(options[NTHREADS].arg));
             if (nthreads < 1 || nthreads > std::thread::hardware_concurrency()) {
-                std::cerr << "incorrect number of threads, maximum supported number is: "<<std::thread::hardware_concurrency() << std::endl;
-                nthreads =std::thread::hardware_concurrency();
+                std::cerr << "incorrect number of threads, maximum supported number is: "
+                          << std::thread::hardware_concurrency() << std::endl;
+                nthreads = std::thread::hardware_concurrency();
             }
-        }
-        else{
+        } else {
 
-            nthreads =std::thread::hardware_concurrency();
+            nthreads = std::thread::hardware_concurrency();
         }
 
         Sipi::SipiHttpServer server(std::stoi(options[SERVERPORT].arg), nthreads);
@@ -537,7 +477,7 @@ int main (int argc, char *argv[]) {
         try {
             server.imgroot(std::string(options[IMGROOT].arg));
         }
-        catch(std::exception& err) {
+        catch (std::exception &err) {
             std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[IMGROOT].desc->help << std::endl;
             return EXIT_FAILURE;
@@ -545,8 +485,7 @@ int main (int argc, char *argv[]) {
 
         server.run();
 
-    }
-    else if (options[FILEIN]) {
+    } else if (options[FILEIN]) {
 
         //
         // get the input image name
@@ -555,7 +494,7 @@ int main (int argc, char *argv[]) {
         try {
             infname = std::string(options[FILEIN].arg);
         }
-        catch (std::exception& err) {
+        catch (std::exception &err) {
             std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "Invalid input filename." << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
@@ -565,7 +504,7 @@ int main (int argc, char *argv[]) {
         if (!exists_file(infname)) {
             std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname << std::endl;
-            std::cerr << options[FILEIN].desc->help<<std::endl;
+            std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
@@ -584,8 +523,7 @@ int main (int argc, char *argv[]) {
                 std::cerr << options[FILEIN].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
-        }
-        else {
+        } else {
             std::cerr << "missing output filename, using default out.jpx " << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
         }
@@ -599,7 +537,7 @@ int main (int argc, char *argv[]) {
             try {
                 format = std::string(options[FORMAT].arg);
             }
-            catch (std::exception& err) {
+            catch (std::exception &err) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[FORMAT].desc->help;
                 return EXIT_FAILURE;
@@ -618,18 +556,18 @@ int main (int argc, char *argv[]) {
                 int regionC;
                 while (ss >> regionC) {
                     regV.push_back(regionC);
-                    if (ss.peek()==',') {
+                    if (ss.peek() == ',') {
                         ss.ignore();
                     }
                 }
-                if (regV.size()!=4) {
+                if (regV.size() != 4) {
                     std::cout << "##" << __LINE__ << std::endl;
                     std::cerr << options[REGION].desc->help << std::endl;
                     return EXIT_FAILURE;
                 }
 
             }
-            catch(std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[REGION].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -652,43 +590,40 @@ int main (int argc, char *argv[]) {
         try {
             reduce = options[REDUCE] ? (std::stoi(options[REDUCE].arg)) : 0;
         }
-        catch(std::exception& e) {
+        catch (std::exception &e) {
             std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[REDUCE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
         if (reduce > 0) {
             size = std::make_shared<Sipi::SipiSize>(reduce);
-        }
-        else if (options[SIZE]) {
+        } else if (options[SIZE]) {
             try {
                 std::stringstream ss(options[SIZE].arg);
                 std::vector<int> sizV;
                 int sizC;
-                while(ss >> sizC) {
+                while (ss >> sizC) {
                     sizV.push_back(sizC);
-                    if (ss.peek()==',') {
+                    if (ss.peek() == ',') {
                         ss.ignore();
                     }
                 }
                 if (sizV.size() == 2) {
                     size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(1));
-                }
-                else {
+                } else {
                     size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(0), true);
                 }
             }
-            catch(std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SIZE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
-        }
-        else if (options[SCALE]) {
+        } else if (options[SCALE]) {
             try {
                 size = std::make_shared<Sipi::SipiSize>(std::stoi(options[SCALE].arg));
             }
-            catch(std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SCALE].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -715,7 +650,7 @@ int main (int argc, char *argv[]) {
             try {
                 skipmeta = options[SKIPMETA].arg;
             }
-            catch (std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SKIPMETA].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -734,7 +669,7 @@ int main (int argc, char *argv[]) {
             try {
                 iccprofile = options[ICC].arg;
             }
-            catch (std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ICC].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -745,14 +680,11 @@ int main (int argc, char *argv[]) {
             Sipi::SipiIcc icc;
             if (iccprofile == "sRGB") {
                 icc = Sipi::SipiIcc(Sipi::icc_sRGB);
-            }
-            else if (iccprofile == "AdobeRGB") {
+            } else if (iccprofile == "AdobeRGB") {
                 icc = Sipi::SipiIcc(Sipi::icc_AdobeRGB);
-            }
-            else if (iccprofile == "GRAY") {
+            } else if (iccprofile == "GRAY") {
                 icc = Sipi::SipiIcc(Sipi::icc_GRAY_D50);
-            }
-            else {
+            } else {
                 icc = Sipi::SipiIcc(Sipi::icc_sRGB);
             }
             img.convertToIcc(icc, 8);
@@ -766,18 +698,18 @@ int main (int argc, char *argv[]) {
             try {
                 mirror = options[MIRROR].arg;
             }
-            catch(std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[MIRROR].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
-        float angle=0.0F;
+        float angle = 0.0F;
         if (options[ROTATE]) {
             try {
                 angle = std::stof(options[ROTATE].arg);
             }
-            catch (std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ROTATE].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -787,16 +719,13 @@ int main (int argc, char *argv[]) {
         if (mirror != "none") {
             if (mirror == "horizontal") {
                 img.rotate(angle, true);
-            }
-            else if (mirror == "vertical") {
+            } else if (mirror == "vertical") {
                 angle += 180.0F;
                 img.rotate(angle, true);
-            }
-            else {
+            } else {
                 img.rotate(angle, false);
             }
-        }
-        else if (angle != 0.0F) {
+        } else if (angle != 0.0F) {
             img.rotate(angle, false);
         }
 
@@ -805,7 +734,7 @@ int main (int argc, char *argv[]) {
             try {
                 infname = std::string(options[WATERMARK].arg);
             }
-            catch (std::exception& err) {
+            catch (std::exception &err) {
                 std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "Invalid watermark filename." << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
@@ -829,9 +758,9 @@ int main (int argc, char *argv[]) {
             try {
                 quality = std::stoi(options[QUALITY].arg);
             }
-            catch (std::exception& e) {
+            catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
-                std::cerr<<options[QUALITY].desc->help<<std::endl;
+                std::cerr << options[QUALITY].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
