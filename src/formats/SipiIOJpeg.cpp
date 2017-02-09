@@ -418,26 +418,22 @@ namespace Sipi {
 
     bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
         int infile;
-
         //
         // open the input file
         //
         if ((infile = ::open (filepath.c_str(), O_RDONLY)) == -1) {
             return false;
         }
-
         // workaround for bug #0011: jpeglib crashes the app when the file is not a jpeg file
         // we check the magic number before calling any jpeglib routines
         unsigned char magic[2];
         if (::read(infile, magic, 2) != 2) {
             return false;
         }
-
         if ((magic[0] != 0xff) || (magic[1] != 0xd8)) {
             close (infile);
             return false; // it's not a JPEG file!
         }
-
         // move infile position back to the beginning of the file
         ::lseek(infile, 0, SEEK_SET);
 
@@ -459,7 +455,6 @@ namespace Sipi {
         jpeg_create_decompress (&cinfo);
 
         cinfo.dct_method = JDCT_FLOAT;
-
 
         cinfo.err = jpeg_std_error(&jerr);
         jerr.error_exit = jpegErrorExit;
@@ -524,56 +519,64 @@ namespace Sipi {
                 //
                 pos = (unsigned char *) memmem(marker->data, marker->data_length, "http://ns.adobe.com/xap/1.0/\000", 29);
                 if (pos != nullptr) {
-                    char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n', '\0'};
-                    char end[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'e', 'n', 'd', '\0'};
-
-                    char *s;
-                    unsigned int ll = 0;
-                    do {
-                        s = start;
-                        while ((ll < marker->data_length) && (*pos != *s)) {
-                            pos++; //// ISSUE: code failes here if there are many concurrent access; data overrrun??
-                            ll++;
-                        }
-                        while ((ll < marker->data_length) && (*s != '\0') && (*pos == *s)) {
-                            pos++;
-                            s++;
-                            ll++;
-                        }
-                    } while (*s != '\0');
-                    while ((ll < marker->data_length) && (*pos != '>')) {
-                        ll++;
-                        pos++;
-                    }
-                    pos++; // finally we have the start of XMP string
-                    unsigned char *start_xmp = pos;
-
-                    unsigned char *end_xmp;
-                    do {
-                        s = end;
-                        while (*pos != *s) pos++;
-                        end_xmp = pos; // a candidate
-                        while ((*s != '\0') && (*pos == *s)) {
-                            pos++;
-                            s++;
-                        }
-                    } while (*s != '\0');
-                    while (*pos != '>') pos++;
-                    pos++;
-
-                    size_t xmp_len = end_xmp - start_xmp;
-
-                    std::string xmpstr((char *) start_xmp, xmp_len);
-                    size_t npos = xmpstr.find("</x:xmpmeta>");
-                    xmpstr = xmpstr.substr(0, npos + 12);
-
                     try {
+                        char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n', '\0'};
+                        char end[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'e', 'n', 'd', '\0'};
+
+                        char *s;
+                        unsigned int ll = 0;
+                        do {
+                            s = start;
+                            // skip to the start marker
+                            while ((ll < marker->data_length) && (*pos != *s)) {
+                                pos++; //// ISSUE: code failes here if there are many concurrent access; data overrrun??
+                                ll++;
+                            }
+                            // read the start marker
+                            while ((ll < marker->data_length) && (*s != '\0') && (*pos == *s)) {
+                                pos++;
+                                s++;
+                                ll++;
+                            }
+                        } while ((ll < marker->data_length) && (*s != '\0'));
+                        if (ll == marker->data_length) {
+                            // we didn't find anything....
+                            throw SipiError(__file__, __LINE__, "XMP Problem");
+                        }
+                        // now we start reading the data
+                        while ((ll < marker->data_length) && (*pos != '>')) {
+                            ll++;
+                            pos++;
+                        }
+                        pos++; // finally we have the start of XMP string
+                        unsigned char *start_xmp = pos;
+
+                        unsigned char *end_xmp;
+                        do {
+                            s = end;
+                            while (*pos != *s) pos++;
+                            end_xmp = pos; // a candidate
+                            while ((*s != '\0') && (*pos == *s)) {
+                                pos++;
+                                s++;
+                            }
+                        } while (*s != '\0');
+                        while (*pos != '>') {
+                            pos++;
+                        }
+                        pos++;
+
+                        size_t xmp_len = end_xmp - start_xmp;
+
+                        std::string xmpstr((char *) start_xmp, xmp_len);
+                        size_t npos = xmpstr.find("</x:xmpmeta>");
+                        xmpstr = xmpstr.substr(0, npos + 12);
+
                         img->xmp = std::make_shared<SipiXmp>(xmpstr);
                     }
                     catch (SipiError &err) {
-                        std::cerr << "Failed to parse XMP... xmp_len = " << xmp_len << std::endl;
+                        std::cerr << "Failed to parse XMP..." << std::endl;
                     }
-
                 }
             }
             else if (marker->marker == JPEG_APP0+2) { // ICC MARKER.... may span multiple marker segments
