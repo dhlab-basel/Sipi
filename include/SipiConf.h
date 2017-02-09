@@ -39,6 +39,7 @@ namespace Sipi {
     class SipiConf {
     private:
         std::string userid_str;
+        std::string hostname;
         int port; //<! port number for server
 #ifdef SHTTPS_ENABLE_SSL
         int ssl_port = -1;
@@ -73,6 +74,8 @@ namespace Sipi {
         SipiConf(shttps::LuaServer &luacfg);
 
         inline std::string getUseridStr(void) { return userid_str; }
+
+        inline std::string getHostname(void) { return hostname; }
 
         inline int getPort(void) { return port; }
 

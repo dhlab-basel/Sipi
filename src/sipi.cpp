@@ -145,6 +145,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
     lua_createtable(L, 0, 14); // table1
 
+    lua_pushstring(L, "hostname"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getHostname().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "port"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getPort());
     lua_rawset(L, -3); // table1
