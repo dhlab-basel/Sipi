@@ -37,7 +37,8 @@ namespace shttps {
 
         std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
             try {
-                // A regex for parsing the value of an HTTP Content-Type header.
+                // A regex for parsing the value of an HTTP Content-Type header. In C++11, initialization of this
+                // static local variable happens once and is thread-safe.
                 static std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
 
                 std::smatch mime_match;

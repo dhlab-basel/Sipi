@@ -48,6 +48,8 @@
 #include "shttps/GetMimetype.h"
 #include "SipiConf.h"
 
+#define _unused(x) ((void)(x))
+
 /*!
  * \mainpage
  *
@@ -76,6 +78,8 @@
  *     sipi [options] <infile> <outfile>
  *
  */
+
+static const char __file__[] = __FILE__;
 
 static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_data) {
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
@@ -254,36 +258,58 @@ inline bool exists_file(const std::string &name) {
     return (stat(name.c_str(), &buffer) == 0);
 }
 
-int main(int argc, char *argv[]) {
+/*!
+ * A singleton that does global initialisation and cleanup of libraries used by Sipi. This class is used only
+ * in main().
+ */
+class LibraryInitialiser {
+public:
     /*!
-     * This class does global initialisation and cleanup using the RAII pattern.
-     * There is one instance of this class, constructed here.
+     * @return the singleton instance.
      */
-    class _SipiInit {
-    public:
-        _SipiInit() {
-            // Initialise libcurl.
-            curl_global_init(CURL_GLOBAL_ALL);
+    static LibraryInitialiser &instance() {
+        // In C++11, initialization of this static local variable happens once and is thread-safe.
+        static LibraryInitialiser sipi_init;
+        return sipi_init;
+    }
 
-            // register namespace sipi in xmp. Since this part of the XMP library is
-            // not reentrant, it must be done here in the main thread!
-            if (!Exiv2::XmpParser::initialize(Sipi::xmplock_func, &Sipi::xmp_mutex)) {
-                std::cerr << "Exiv2::XmpParser::initialize failed" << std::endl;
-            }
+private:
+    LibraryInitialiser() {
+        // Initialise libcurl.
+        curl_global_init(CURL_GLOBAL_ALL);
 
-            Sipi::SipiIOTiff::initLibrary();
+        // Initialise Exiv2, registering namespace sipi. Since this is not thread-safe, it must
+        // be done here in the main thread.
+        if (!Exiv2::XmpParser::initialize(Sipi::xmplock_func, &Sipi::xmp_mutex)) {
+            throw shttps::Error(__file__, __LINE__, "Exiv2::XmpParser::initialize failed");
         }
 
-        ~_SipiInit() {
-            curl_global_cleanup();
-            Exiv2::XmpParser::terminate();
-        }
-    };
+        // Inititalise the TIFF library.
+        Sipi::SipiIOTiff::initLibrary();
+    }
 
-    _SipiInit sipiInit;
+    ~LibraryInitialiser() {
+        // Clean up libcurl.
+        curl_global_cleanup();
 
+        // Clean up Exiv2.
+        Exiv2::XmpParser::terminate();
+    }
+};
+
+int main(int argc, char *argv[]) {
+    try {
+        // Initialise libraries used by Sipi.
+        LibraryInitialiser &sipi_init = LibraryInitialiser::instance();
+        _unused(sipi_init); // Silence compiler warning about unused variable.
+    } catch (shttps::Error &e) {
+        std::cerr << e.to_string() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // skip program name argv[0] if present
     argc -= (argc > 0);
-    argv += (argc > 0); // skip program name argv[0] if present
+    argv += (argc > 0);
 
     option::Stats stats(usage, argc, argv);
     std::vector<option::Option> options(stats.options_max);
@@ -316,7 +342,6 @@ int main(int argc, char *argv[]) {
                 return EXIT_FAILURE;
             }
         }
-
 
         if (!exists_file(infname1)) {
             std::cout << "##" << __LINE__ << std::endl;
