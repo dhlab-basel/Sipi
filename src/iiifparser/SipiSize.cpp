@@ -79,10 +79,10 @@ namespace Sipi {
         else {
             if (str[0] == '!') {
                 size_type = SizeType::MAXDIM;
-                n = sscanf(str.c_str(), "!%d,%d", &nx, &ny);
+                n = sscanf(str.c_str(), "!%ld,%ld", &nx, &ny);
             }
             else {
-                n = sscanf(str.c_str(), "%d,%d", &nx, &ny);
+                n = sscanf(str.c_str(), "%ld,%ld", &nx, &ny);
                 if (n == 2) {
                     size_type = SizeType::PIXELS_XY;
                 }
@@ -90,7 +90,7 @@ namespace Sipi {
                     size_type = SizeType::PIXELS_X;
                 }
                 else {
-                    n = sscanf(str.c_str(), ",%d", &ny);
+                    n = sscanf(str.c_str(), ",%ld", &ny);
                     if (n != 1) {
                         throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\" !");
                     }
@@ -105,22 +105,22 @@ namespace Sipi {
     };
     //-------------------------------------------------------------------------
 
-    SipiSize::SipiSize(int nx_p, int ny_p, bool maxdim) {
+    SipiSize::SipiSize(size_t nx_p, size_t ny_p, bool maxdim) {
         canonical_ok = false;
-        if (nx_p <= 0) {
+        if (nx_p == 0) {
             ny = ny_p;
             if (ny < 1) ny = 1;
             if (ny > limitdim) ny = limitdim;
             size_type = SizeType::PIXELS_Y;
         }
-        else if (ny_p <= 0) {
+        else if (ny_p == 0) {
             nx = nx_p;
             if (nx < 1) nx = 1;
             if (nx > limitdim) nx = limitdim;
             size_type = SizeType::PIXELS_X;
         }
-        else if ((nx_p <= 0) && (ny_p <= 0)) {
-            throw SipiError(__file__, __LINE__, "Invalid Size parameter! Both dimensions <= 0!");
+        else if ((nx_p == 0) && (ny_p == 0)) {
+            throw SipiError(__file__, __LINE__, "Invalid Size parameter! Both dimensions == 0!");
         }
         else {
             nx = nx_p;
@@ -179,7 +179,7 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-    SipiSize::SizeType SipiSize::get_size(int img_w, int img_h, int &w_p, int &h_p, int &reduce_p, bool &redonly_p) {
+    SipiSize::SizeType SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
 
         switch (size_type) {
@@ -387,27 +387,27 @@ namespace Sipi {
         }
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
-                n = snprintf(buf, buflen, "%d,%d", w, h);
+                n = snprintf(buf, buflen, "%ld,%ld", w, h);
                 break;
             }
             case SipiSize::PIXELS_X: {
-                n = snprintf(buf, buflen, "%d,", w);
+                n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
             case SipiSize::PIXELS_Y: {
-                n = snprintf(buf, buflen, "%d,", w);
+                n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
             case SipiSize::MAXDIM: {
-                n = snprintf(buf, buflen, "%d,", w);
+                n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
             case SipiSize::PERCENTS: {
-                n = snprintf(buf, buflen, "%d,", w);
+                n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
             case SipiSize::REDUCE: {
-                n = snprintf(buf, buflen, "%d,", w);
+                n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
             case SipiSize::FULL: {

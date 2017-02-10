@@ -352,7 +352,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiCache::add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, int img_w_p, int img_h_p)
+    void SipiCache::add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, size_t img_w_p, size_t img_h_p)
     {
         size_t pos = cachepath_p.rfind('/');
         std::string cachepath;
@@ -481,7 +481,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiCache::getSize(const std::string &origname_p, int &img_w, int &img_h) {
+    bool SipiCache::getSize(const std::string &origname_p, size_t &img_w, size_t &img_h) {
         struct stat fileinfo;
         if (stat(origname_p.c_str(), &fileinfo) != 0) {
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origname_p + "\"!", errno);

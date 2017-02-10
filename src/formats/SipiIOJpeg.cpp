@@ -652,7 +652,7 @@ namespace Sipi {
 
         try {
             linbuf = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 jpeg_read_scanlines(&cinfo, linbuf, 1);
                 memcpy(&(img->pixels[i * sll]), linbuf[0], (size_t) sll);
             }
@@ -690,8 +690,9 @@ namespace Sipi {
         //
         // resize/Scale the image if necessary
         //
-        if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
-            int nnx, nny, reduce;
+        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
+            size_t nnx, nny;
+            int reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
@@ -711,7 +712,7 @@ namespace Sipi {
                               (a) = (cc_<<8) + (dd_); \
                           } while(0)
 
-    bool SipiIOJpeg::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOJpeg::getDim(std::string filepath, size_t &width, size_t &height) {
         // portions derived from IJG code */
 
         FILE *infile;
@@ -759,8 +760,12 @@ namespace Sipi {
                 case 0xCF: {
                     readword(dummy, infile);	/* usual parameter length count */
                     readbyte(dummy, infile);
-                    readword(height, infile);
-                    readword(width, infile);
+                    unsigned int tmp_height;
+                    readword(tmp_height, infile);
+                    height = tmp_height;
+                    unsigned int tmp_width;
+                    readword(tmp_width, infile);
+                    width = tmp_width;
                     readbyte(dummy, infile);
                     fclose (infile);
                     return true;
@@ -819,16 +824,16 @@ namespace Sipi {
                 jpeg_stdio_dest(&cinfo, stdout);
             }
             else {
-                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP)) == -1) {
+                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
                     throw SipiImageError(__file__, __LINE__, "Cannot open file \"" + filepath + "\"!");
                 }
                 jpeg_file_dest(&cinfo, outfile);
             }
         }
 
-        cinfo.image_width = img->nx; 	/* image width and height, in pixels */
-        cinfo.image_height = img->ny;
-        cinfo.input_components = img->nc;		/* # of color components per pixel */
+        cinfo.image_width = (int) img->nx; 	/* image width and height, in pixels */
+        cinfo.image_height = (int) img->ny;
+        cinfo.input_components = (int) img->nc;		/* # of color components per pixel */
         switch (img->photo) {
             case MINISWHITE:
             case MINISBLACK: {
@@ -856,7 +861,7 @@ namespace Sipi {
                 break;
             }
             default: {
-                throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace!");
+                throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace: " + std::to_string(img->photo));
             }
         }
         cinfo.progressive_mode = TRUE;
@@ -877,7 +882,6 @@ namespace Sipi {
             //outlock.unlock();
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
-
 
 
 
@@ -1018,7 +1022,6 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
         }
-
 
         row_stride = img->nx * img->nc;	/* JSAMPLEs per row in image_buffer */
 

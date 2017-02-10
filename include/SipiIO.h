@@ -62,7 +62,7 @@ namespace Sipi {
         * \param[out] width Width of the image in pixels
         * \param[out] height Height of the image in pixels
         */
-        virtual bool getDim(std::string filepath, int &width, int &height) = 0;
+        virtual bool getDim(std::string filepath, size_t &width, size_t &height) = 0;
 
         /*!
          * Write an image for a file using the given file format implemented by the subclass
