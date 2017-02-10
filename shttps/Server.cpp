@@ -314,7 +314,7 @@ namespace shttps {
             return;
         }
 
-        std::pair<std::string, std::string> mime = GetMimetype::getMimetype(infile);
+        std::pair<std::string, std::string> mime = GetMimetype::getFileMimetype(infile);
 
         size_t extpos = uri.find_last_of('.');
         std::string extension;

@@ -37,6 +37,7 @@ end
 
 originalFilename = server.post['originalfilename']
 originalMimetype = server.post['originalmimetype']
+
 filename = server.post['filename']
 
 
@@ -93,7 +94,15 @@ if not success then
     return
 end
 
-success, check = fullImg:mimetype_consistency(originalMimetype, originalFilename)
+local success, submitted_mimetype = server.parse_mimetype(originalMimetype)
+
+if not success then
+    send_error(400, "Couldn't parse mimetype: " .. originalMimetype)
+    return -1
+end
+
+success, check = fullImg:mimetype_consistency(submitted_mimetype.mimetype, originalFilename)
+
 if not success then
     server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.LOG_ERR)
     return

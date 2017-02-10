@@ -21,7 +21,7 @@
 -- String constants to be returned
 -------------------------------------------------------------------------------
 TEXT = "text"
-IMAGE= "image"
+IMAGE = "image"
 
 -------------------------------------------------------------------------------
 -- Mimetype constants
@@ -33,10 +33,10 @@ PLAIN_TEXT = "plain/text"
 -------------------------------------------------------------------------------
 -- This function is called from the route to determine the media type (image, text file) of a given file.
 -- Parameters:
---     'mimetype' (string):  the mimetype of the file.
+-- 'mimetype' (string):  the mimetype of the file.
 --
 -- Returns:
---    the media type of the file or false in case no supported type could be determined.
+-- the media type of the file or false in case no supported type could be determined.
 -------------------------------------------------------------------------------
 function get_mediatype(mimetype)
 
@@ -47,31 +47,30 @@ function get_mediatype(mimetype)
 
         return IMAGE
 
-    -- TODO: implement video and audio
+        -- TODO: implement video and audio
 
     else
 
         -- no supported mediatype could be determined
         return false
-
     end
-
-
 end
 
 -------------------------------------------------------------------------------
 -- This function is called from the route to check the file extension of the given filename.
 -- Parameters:
---     'mimetype' (string):  the mimetype of the file.
---     `filename` (string): the name of the file excluding the file extension.
+-- 'mimetype' (string):  the mimetype of the file.
+-- `filename` (string): the name of the file excluding the file extension.
 --
 -- Returns:
---    a boolean indicating whether the file extension is correct or not.
+-- a boolean indicating whether the file extension is correct or not.
 -------------------------------------------------------------------------------
 function check_file_extension(mimetype, filename)
 
     if (mimetype == XML) then
-        return string.sub(filename, -4) == ".xml"
-    end
+        local ext = string.sub(filename, -4)
 
+        -- valid extensions are: xml, xsl (XSLT), and .xsd (XML Schema)
+        return ext == ".xml" or ext == ".xsl" or ext == ".xsd"
+    end
 end
