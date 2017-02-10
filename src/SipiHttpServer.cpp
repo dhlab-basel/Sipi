@@ -235,12 +235,12 @@ namespace Sipi {
             throw SipiError(__file__, __LINE__, err_msg.str());
         }
 
-        // If the permission code is "allow", there must also be a file path.
-        if (permission == "allow") {
+        // If the permission code is "allow" or begins with "restrict", there must also be a file path.
+        if (permission == "allow" || permission.find("restrict") == 0) {
             if (rvals.size() == 2) {
                 auto infile_return_val = rvals.at(1);
 
-                // The file path mudst be a string.
+                // The file path must be a string.
                 if (infile_return_val.type == LuaValstruct::STRING_TYPE) {
                     infile = infile_return_val.value.s;
                 } else {
@@ -764,6 +764,7 @@ namespace Sipi {
                 qualifier = permission.substr(colon_pos + 1);
                 permission = permission.substr(0, colon_pos);
             }
+
             if (permission != "allow") {
                 if (permission == "restrict") {
                     colon_pos = qualifier.find('=');

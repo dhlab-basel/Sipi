@@ -149,7 +149,7 @@ namespace shttps {
 
 
         std::string configString(const std::string table, const std::string variable, const std::string defval);
-        int configBoolean(const std::string table, const std::string variable, const bool defval);
+        bool configBoolean(const std::string table, const std::string variable, const bool defval);
         int configInteger(const std::string table, const std::string variable, const int defval);
         float configFloat(const std::string table, const std::string variable, const float defval);
         const std::vector<LuaRoute> configRoute(const std::string routetable);

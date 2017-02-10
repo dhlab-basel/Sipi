@@ -43,18 +43,18 @@ option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 #
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
-        message(FATAL_ERROR "Requires at leat Clang Version 7.3 or greater!")
+        message(FATAL_ERROR "Requires clang 7.3 or greater.")
         set(ENV(CXX) "clang++")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8")
-        message(FATAL_ERROR "Requires at leat gcc++ Version 4.8 or greater!")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+        message(FATAL_ERROR "Requires GCC 5.3 or greater.")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")
     endif()
 else()
-    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+    message(WARNING "You are using an unsupported compiler. Compilation has only been tested with Clang and GCC.")
 endif()
 
 
@@ -197,7 +197,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${DOXYGEN_FILES_DIR}/Doxyfile.in ${DOXYGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
         ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILES_DIR}/Doxyfile
         WORKING_DIRECTORY ${DOXYGEN_FILES_DIR}
