@@ -44,22 +44,22 @@ sipi = {
     --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
     -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
-    -- or <imgroot>/<imageid> (prefix_as_path = FALSE). Please note that "prefix" and "imageid" are
+    -- or <imgroot>/<imageid> (prefix_as_path = true). Please note that "prefix" and "imageid" are
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recognized and expanded
-    -- in the final path the image file!
+    -- in the final path the image file.
     --
-    -- imgroot = './test_server/images',
+    -- To use Sipi's test data, use the following imgroot, and set prefix_as_path to true below:
+    -- imgroot = './test/_test_data/images',
     imgroot = './images',
 
     --
-    -- If FALSE, the prefix is not used to build the path to the image files
+    -- If true, the IIIF prefix is used to build the path to the image files.
     --
     prefix_as_path = false,
 
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    -- initscript = 'sipi.knora.lua',
     initscript = './config/sipi.init.lua',
 
     --

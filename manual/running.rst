@@ -72,71 +72,71 @@ Command-line Options
 ::
 
    Options:
-     --config=filename, -cfilename                        
-                       Configuration file for webserver.
+     --config filename, -c filename
+                       Configuration file for web server.
 
-     --file=fileIn, -ffileIn                              
-                       input file to be converted . USAGE: sipi [options] -ffileIn
+     --file fileIn, -f fileIn
+                       input file to be converted. Usage: sipi [options] -f fileIn
                        fileout
 
-     --format=Value, -FValue                              
+     --format Value, -F Value
                        Output format Value can be: jpx,jpg,tif,png.
 
-     --ICC=Value, -IValue                                 
+     --ICC Value, -I Value
                        Convert to ICC profile. Value can be:
                        none,sRGB,AdobeRGB,GRAY.
 
-     --quality=Value, -qValue                             
-                       Quality (compression) Value can any integer between 1 and
+     --quality Value, -q Value
+                       Quality (compression). Value can any integer between 1 and
                        100
 
-     --region=x,y,w,h, -rx,y,w,h                          
-                       Select region of interest (x,y,w,h) are integer values
+     --region x,y,w,h, -r x,y,w,h
+                       Select region of interest, where x,y,w,h are integer values
 
-     --Reduce=Value, -RValue                              
-                       Reduce image size by factor Value (Cannot be used together
-                       with "-size" and "-scale".
+     --Reduce Value, -R Value
+                       Reduce image size by factor Value (cannot be used together
+                       with --size and --scale)
 
-     --size=w,h -sw,h                                     
-                       Resize image to given size w,h (Cannot be used together with
-                       "-reduce" and "-scale")
+     --size w,h -s w,h
+                       Resize image to given size w,h (cannot be used together with
+                       --reduce and --scale)
 
-     --Scale=Value, -SValue                               
-                       Resize image by the given percentage Value (Cannot be used
-                       together with "-size" and "-reduce")
+     --Scale Value, -S Value
+                       Resize image by the given percentage Value (cannot be used
+                       together with --size and --reduce)
 
-     --skipmeta=Value, -kValue                            
-                       Skip the given metadata Value can be none,all
+     --skipmeta Value, -k Value
+                       Skip the given metadata. Value can be none,all
 
-     --mirror=Value, -mValue                              
-                       Mirror the image Value can be: none,horizontal,vertical
+     --mirror Value, -m Value
+                       Mirror the image. Value can be: none,horizontal,vertical
 
-     --rotate=Value, -oValue                              
-                       Rotate the image by degree Value, angle between (0:360)
+     --rotate Value, -o Value
+                       Rotate the image. by degree Value, angle between (0:360)
 
-     --salsah, -s                                         
+     --salsah, -s
                        Special flag for SALSAH internal use
 
-     -Cfile1 -Cfile2, or --Compare=file1 --Compare=file2  
+     --Compare file1 --Compare file2 or -C file1 -C file2
                        Compare two files
 
-     --watermark=file, -wfile                             
+     --watermark file, -w file
                        Add a watermark to the image
 
-     --serverport=Value, -pValue                          
-                       Port of the webserver
+     --serverport Value, -p Value
+                       Port of the web server
 
-     --nthreads=Value, -tValue                            
-                       Number of threads for webserver
+     --nthreads Value, -t Value
+                       Number of threads for web server
 
-     --imgroot=Value, -iValue                             
-                       Root directory containing the images (webserver)
+     --imgroot Value, -i Value
+                       Root directory containing the images for the web server
 
-     --loglevel=Value, -lValue                            
+     --loglevel Value, -l Value
                        Logging level Value can be:
                        TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF
 
-     --help                                               
+     --help
                        Print usage and exit.
 
 

@@ -223,29 +223,29 @@ const option::Descriptor usage[] =
                                                                                              "Options:"
                 },
 
-                {       CONFIGFILE, 0, "c",     "config",     option::Arg::NonEmpty, "  --config filename, -c filename  \tConfiguration file for webserver.\n"},
-                {       FILEIN,     0, "f",     "file",       option::Arg::NonEmpty, "  --file fileIn, -f fileIn  \tinput file to be converted . USAGE: sipi [options] -ffileIn fileout\n"},
+                {       CONFIGFILE, 0, "c",     "config",     option::Arg::NonEmpty, "  --config filename, -c filename  \tConfiguration file for web server.\n"},
+                {       FILEIN,     0, "f",     "file",       option::Arg::NonEmpty, "  --file fileIn, -f fileIn  \tinput file to be converted. Usage: sipi [options] -f fileIn fileout\n"},
                 {       FORMAT,     0, "F",     "format",     SipiMultiChoice,       "  --format Value, -F Value  \tOutput format Value can be: jpx,jpg,tif,png.\n"},
                 {       ICC,        0, "I",     "ICC",        SipiMultiChoice,       "  --ICC Value, -I Value  \tConvert to ICC profile. Value can be: none,sRGB,AdobeRGB,GRAY.\n"},
-                {       QUALITY,    0, "q",     "quality",    option::Arg::NumericI, "  --quality Value, -q Value  \tQuality (compression) Value can any integer between 1 and 100\n"},
-                {       REGION,     0, "r",     "region",     option::Arg::NonEmpty, "  --region x,y,w,h, -r x,y,w,h  \tSelect region of interest (x,y,w,h) are integer values\n"},
-                {       REDUCE,     0, "R",     "Reduce",     option::Arg::NumericI, "  --Reduce Value, -R Value  \tReduce image size by factor Value (Cannot be used together with \"-size\" and \"-scale\".\n"},
-                {       SIZE,       0, "s",     "size",       option::Arg::NonEmpty, "  --size w,h -s w,h  \tResize image to given size w,h (Cannot be used together with \"-reduce\" and \"-scale\")\n"},
-                {       SCALE,      0, "S",     "Scale",      option::Arg::NonEmpty, "  --Scale Value, -S Value  \tResize image by the given percentage Value (Cannot be used together with \"-size\" and \"-reduce\")\n"},
-                {       SKIPMETA,   0, "k",     "skipmeta",   SipiMultiChoice,       "  --skipmeta Value, -k Value  \tSkip the given metadata Value can be none,all\n"},
-                {       MIRROR,     0, "m",     "mirror",     SipiMultiChoice,       "  --mirror Value, -m Value  \tMirror the image Value can be: none,horizontal,vertical\n"},
-                {       ROTATE,     0, "o",     "rotate",     option::Arg::NumericD, "  --rotate Value, -o Value  \tRotate the image by degree Value, angle between (0:360)\n"},
+                {       QUALITY,    0, "q",     "quality",    option::Arg::NumericI, "  --quality Value, -q Value  \tQuality (compression). Value can any integer between 1 and 100\n"},
+                {       REGION,     0, "r",     "region",     option::Arg::NonEmpty, "  --region x,y,w,h, -r x,y,w,h  \tSelect region of interest, where x,y,w,h are integer values\n"},
+                {       REDUCE,     0, "R",     "Reduce",     option::Arg::NumericI, "  --Reduce Value, -R Value  \tReduce image size by factor Value (cannot be used together with --size and --scale)\n"},
+                {       SIZE,       0, "s",     "size",       option::Arg::NonEmpty, "  --size w,h -s w,h  \tResize image to given size w,h (cannot be used together with --reduce and --scale)\n"},
+                {       SCALE,      0, "S",     "Scale",      option::Arg::NonEmpty, "  --Scale Value, -S Value  \tResize image by the given percentage Value (cannot be used together with --size and --reduce)\n"},
+                {       SKIPMETA,   0, "k",     "skipmeta",   SipiMultiChoice,       "  --skipmeta Value, -k Value  \tSkip the given metadata. Value can be none,all\n"},
+                {       MIRROR,     0, "m",     "mirror",     SipiMultiChoice,       "  --mirror Value, -m Value  \tMirror the image. Value can be: none,horizontal,vertical\n"},
+                {       ROTATE,     0, "o",     "rotate",     option::Arg::NumericD, "  --rotate Value, -o Value  \tRotate the image. by degree Value, angle between (0:360)\n"},
                 {       SALSAH,     0, "a",     "salsah",     option::Arg::None,     "  --salsah, -s  \tSpecial flag for SALSAH internal use\n"},
                 {       COMPARE,    0, "C",     "Compare",    option::Arg::NonEmpty, "  --Compare file1 --Compare file2 or -C file1 -C file2  \tCompare two files\n"},
                 {       WATERMARK,  0, "w",     "watermark",  option::Arg::NonEmpty, "  --watermark file, -w file  \tAdd a watermark to the image\n"},
-                {       SERVERPORT, 0, "p",     "serverport", option::Arg::NonEmpty, "  --serverport Value, -p Value  \tPort of the webserver\n"},
-                {       NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for webserver\n"},
-                {       IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images (webserver)\n"},
+                {       SERVERPORT, 0, "p",     "serverport", option::Arg::NonEmpty, "  --serverport Value, -p Value  \tPort of the web server\n"},
+                {       NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for web server\n"},
+                {       IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images for the web server\n"},
                 {       LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n"},
                 {       HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
                 {
                         UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
-                                                                                             "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted .lua configuration file\n"
+                                                                                             "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted configuration file in Lua\n"
                                                                                              "USAGE (server): sipi [options]\n"
                                                                                              "USAGE (image converter): sipi [options] -f fileIn fileout \n"
                                                                                              "USAGE (image diff): sipi --Compare file1 --Compare file2 oor sipi --C file1 -C file2 \n\n"

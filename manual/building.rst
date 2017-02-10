@@ -161,7 +161,7 @@ Then:
 Compiling the Source Code
 *************************
 
-Start in the ``build`` directory:
+Start in the ``build`` subdirectory of the source tree:
 
 ::
 
@@ -174,14 +174,38 @@ Then compile Sipi:
     cmake ..
     make
 
-Install Sipi in the ``local`` subdirectory of the source tree:
+
+*************
+Running Tests
+*************
+
+The tests are currently very incomplete, but you can run them in the ``build`` directory like this:
+
+::
+
+    make check
+
+
+*******************************************
+Making a Directory Tree for Installing Sipi
+*******************************************
+
+In ``build``, type this to install Sipi in the ``local`` subdirectory of the source tree:
 
 ::
 
     make install
 
+
+You can then copy the contents of ``local`` to the desired location.
+
+
+************************
+Generating Documentation
+************************
+
 To generate this manual in HTML format, ``cd`` to the ``manual``
-directory and type:
+subdirectory of the source tree and type:
 
 ::
 
@@ -200,6 +224,10 @@ You will find the developer documentation in HTML format under
 ``doc/html``. To generate developer documentation in PDF format,
 first ensure that you have LaTeX_ installed. Then ``cd``
 to ``doc/html/latex`` and type ``make``.
+
+*************
+Starting Over
+*************
 
 To delete the previous build and start over from scratch, ``cd`` to
 the top level of the source tree and type:
