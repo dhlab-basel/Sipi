@@ -170,10 +170,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# TODO: rtmp doesn't compile because it doesn't find the OpenSSL headers. And anyway, what
-# if OpenSSL isn't installed?
-#add_subdirectory(${EXT_PROJECTS_DIR}/rtmp)
-
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
@@ -336,7 +332,7 @@ target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_a
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 else()
-    target_link_libraries(sipi rtmp rt)
+    target_link_libraries(sipi rt)
 endif()
 
 if(OPENSSL_FOUND)
