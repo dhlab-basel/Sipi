@@ -26,7 +26,9 @@ Freely distributable binary releases will be available soon.
 
 # Documentation
 
-To build the documentation, you will need [Sphinx](http://www.sphinx-doc.org/en/stable/index.html).
+The manual is online at http://dhlab-basel.github.io/Sipi/.
+
+To build it locally, you will need [Sphinx](http://www.sphinx-doc.org/en/stable/index.html).
 In the `manual` subdirectory of the source tree, type:
 
 ```
