@@ -170,7 +170,10 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_subdirectory(${EXT_PROJECTS_DIR}/rtmp)
+# TODO: rtmp doesn't compile because it doesn't find the OpenSSL headers. And anyway, what
+# if OpenSSL isn't installed?
+#add_subdirectory(${EXT_PROJECTS_DIR}/rtmp)
+
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)

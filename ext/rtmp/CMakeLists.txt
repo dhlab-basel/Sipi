@@ -9,6 +9,7 @@ ExternalProject_Add(project_rtmp
         INSTALL_DIR ${COMMON_LOCAL}
         URL http://rtmpdump.mplayerhq.hu/download/rtmpdump-2.3.tgz
         SOURCE_DIR ${COMMON_SRCS}/rtmpdump-2.3
+        CONFIGURE_COMMAND ""
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
