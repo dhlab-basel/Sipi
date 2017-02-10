@@ -45,7 +45,7 @@ The Kakadu source code archive ``v7_9-01727L.zip`` must be placed in the
 ``vendor`` subdirectory of the source tree before building Sipi.
 
 Sipi's build process requires CMake_, a C++ compiler that supports the C++11
-standard (such as gcc_ or clang_), and several libraries that are readily
+standard (such as GCC_ or clang_), and several libraries that are readily
 available on supported platforms. The test framework requires `Python 3`_ and
 nginx_. Instructions for installing these prerequisites are given below.
 
@@ -124,9 +124,17 @@ and run:
 CentOS 7
 ========
 
+This requires GCC_ version 5.3 or greater. You can install it by installing
+devtoolset-4_, and adding this to your ``.bash_profile``:
+
 ::
 
-    sudo yum -y install gcc-c++
+    source scl_source enable devtoolset-4
+
+Then:
+
+::
+
     sudo yum -y install cmake
     sudo yum -y install readline-devel
     sudo yum -y install doxygen
@@ -203,7 +211,7 @@ the top level of the source tree and type:
 
 .. _Kakadu: http://kakadusoftware.com/
 .. _CMake: https://cmake.org/
-.. _gcc: https://gcc.gnu.org
+.. _GCC: https://gcc.gnu.org
 .. _clang: https://clang.llvm.org/
 .. _Python 3: https://www.python.org/
 .. _nginx: https://nginx.org/en/
@@ -211,4 +219,4 @@ the top level of the source tree and type:
 .. _CLion: https://www.jetbrains.com/clion/
 .. _`Code::Blocks`: http://www.codeblocks.org/
 .. _LaTeX: https://www.latex-project.org/
-
+.. _devtoolset-4: https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/
