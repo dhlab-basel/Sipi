@@ -48,6 +48,7 @@
 #include "shttps/GetMimetype.h"
 #include "SipiConf.h"
 
+// A macro for silencing incorrect compiler warnings about unused variables.
 #define _unused(x) ((void)(x))
 
 /*!
