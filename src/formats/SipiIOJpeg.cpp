@@ -897,21 +897,26 @@ namespace Sipi {
         if (img->exif != nullptr) {
             unsigned int len;
             unsigned char *buf = img->exif->exifBytes(len);
-            char start[] = "Exif\000\000";
-            size_t start_l = sizeof(start) - 1;  // remove trailing '\0';
-            auto exifchunk = shttps::make_unique<unsigned char[]>(len + start_l);
-            Sipi::memcpy(exifchunk.get(), start, (size_t) start_l);
-            Sipi::memcpy(exifchunk.get() + start_l, buf, (size_t) len);
-            delete [] buf;
+            if (len <= 65535) {
+                char start[] = "Exif\000\000";
+                size_t start_l = sizeof(start) - 1;  // remove trailing '\0';
+                auto exifchunk = shttps::make_unique<unsigned char[]>(len + start_l);
+                Sipi::memcpy(exifchunk.get(), start, (size_t) start_l);
+                Sipi::memcpy(exifchunk.get() + start_l, buf, (size_t) len);
+                delete [] buf;
 
-            try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) exifchunk.get(), start_l + len);
+                try {
+                    jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) exifchunk.get(), start_l + len);
+                }
+                catch (JpegError &jpgerr) {
+                    jpeg_finish_compress (&cinfo);
+                    jpeg_destroy_compress(&cinfo);
+                    if (outfile != -1) close(outfile);
+                    throw SipiImageError(__file__, __LINE__, jpgerr.what());
+                }
             }
-            catch (JpegError &jpgerr) {
-                jpeg_finish_compress (&cinfo);
-                jpeg_destroy_compress(&cinfo);
-                if (outfile != -1) close(outfile);
-                throw SipiImageError(__file__, __LINE__, jpgerr.what());
+            else {
+                // std::cerr << "exif to big" << std::endl;
             }
         }
 
@@ -924,20 +929,25 @@ namespace Sipi {
             catch (SipiError &err) {
                 std::cerr << err << std::endl;
             }
-            char start[] = "http://ns.adobe.com/xap/1.0/\000";
-            size_t start_l = sizeof(start) - 1; // remove trailing '\0';
-            auto xmpchunk = shttps::make_unique<char[]>(len + start_l);
-            Sipi::memcpy(xmpchunk.get(), start, (size_t) start_l);
-            Sipi::memcpy(xmpchunk.get() + start_l, buf, (size_t) len);
-            delete [] buf;
-            try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk.get(), start_l + len);
+            if (len <= 65535) {
+                char start[] = "http://ns.adobe.com/xap/1.0/\000";
+                size_t start_l = sizeof(start) - 1; // remove trailing '\0';
+                auto xmpchunk = shttps::make_unique<char[]>(len + start_l);
+                Sipi::memcpy(xmpchunk.get(), start, (size_t) start_l);
+                Sipi::memcpy(xmpchunk.get() + start_l, buf, (size_t) len);
+                delete [] buf;
+                try {
+                    jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk.get(), start_l + len);
+                }
+                catch (JpegError &jpgerr) {
+                    jpeg_finish_compress (&cinfo);
+                    jpeg_destroy_compress(&cinfo);
+                    if (outfile != -1) close(outfile);
+                    throw SipiImageError(__file__, __LINE__, jpgerr.what());
+                }
             }
-            catch (JpegError &jpgerr) {
-                jpeg_finish_compress (&cinfo);
-                jpeg_destroy_compress(&cinfo);
-                if (outfile != -1) close(outfile);
-                throw SipiImageError(__file__, __LINE__, jpgerr.what());
+            else {
+                // std::cerr << "xml to big" << std::endl;
             }
         }
 
@@ -982,28 +992,33 @@ namespace Sipi {
         if (img->iptc != nullptr) {
             unsigned int len;
             const unsigned char *buf = img->iptc->iptcBytes(len);
-            char start[] = "Photoshop 3.0\0008BIM\004\004\000\000";
-            size_t start_l = sizeof(start) - 1;
-            unsigned char siz[4];
-            siz[0] = (unsigned char) ((len >> 24) & 0x000000ff);
-            siz[1] = (unsigned char) ((len >> 16) & 0x000000ff);
-            siz[2] = (unsigned char) ((len >> 8) & 0x000000ff);
-            siz[3] = (unsigned char) (len & 0x000000ff);
+            if (len <= 65535) {
+                char start[] = " Photoshop 3.0\0008BIM\004\004\000\000";
+                size_t start_l = sizeof(start) - 1;
+                unsigned char siz[4];
+                siz[0] = (unsigned char) ((len >> 24) & 0x000000ff);
+                siz[1] = (unsigned char) ((len >> 16) & 0x000000ff);
+                siz[2] = (unsigned char) ((len >> 8) & 0x000000ff);
+                siz[3] = (unsigned char) (len & 0x000000ff);
 
-            auto iptcchunk = shttps::make_unique<char[]>(start_l + 4 + len);
-            Sipi::memcpy(iptcchunk.get(), start, (size_t) start_l);
-            Sipi::memcpy(iptcchunk.get() + start_l, siz, (size_t) 4);
-            Sipi::memcpy(iptcchunk.get() + start_l + 4, buf, (size_t) len);
+                auto iptcchunk = shttps::make_unique<char[]>(start_l + 4 + len);
+                Sipi::memcpy(iptcchunk.get(), start, (size_t) start_l);
+                Sipi::memcpy(iptcchunk.get() + start_l, siz, (size_t) 4);
+                Sipi::memcpy(iptcchunk.get() + start_l + 4, buf, (size_t) len);
 
-            delete [] buf;
-            try {
+                delete [] buf;
+                try {
                 jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk.get(), start_l + len);
+                }
+                catch (JpegError &jpgerr) {
+                    jpeg_destroy_compress(&cinfo);
+                    if (outfile != -1) close(outfile);
+                    throw SipiImageError(__file__, __LINE__, jpgerr.what());
+                }
             }
-            catch (JpegError &jpgerr) {
-                jpeg_destroy_compress(&cinfo);
-                if (outfile != -1) close(outfile);
-                throw SipiImageError(__file__, __LINE__, jpgerr.what());
-            }
+        }
+        else {
+            // std::cerr << "iptc to big" << std::endl;
         }
 
         SipiEssentials es = img->essential_metadata();
