@@ -31,6 +31,11 @@ sipi = {
     -- userid = '_www',
 
     --
+    -- sipi's hostname as reported in the thumbnail response, default is "localhost"
+    --
+    -- hostname = 'localhost',
+
+    --
     -- port number the server is listening to
     --
     port = 1024,

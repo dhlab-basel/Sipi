@@ -29,6 +29,7 @@ namespace Sipi {
     SipiConf::SipiConf(shttps::LuaServer &luacfg) {
             userid_str = luacfg.configString("sipi", "userid", "");
             img_root = luacfg.configString("sipi", "imgroot", ".");
+            hostname = luacfg.configString("sipi", "hostname", "localhost");
             port = luacfg.configInteger("sipi", "port", 3333);
 #ifdef SHTTPS_ENABLE_SSL
             ssl_port = luacfg.configInteger("sipi", "ssl_port", -1);
