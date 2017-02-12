@@ -68,8 +68,8 @@ class SipiTestManager:
         self.sipi_command = "build/sipi --config config/{}".format(self.sipi_config_file)
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
         self.sipi_port = sipi_config["port"]
-        self.sipi_prefix = sipi_config["prefix"]
-        self.sipi_base_url = "http://localhost:{}/{}".format(self.sipi_port, self.sipi_prefix)
+        self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
+        self.sipi_base_url = "http://localhost:{}".format(self.sipi_port)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -83,9 +83,10 @@ class SipiTestManager:
         self.start_nginx_command = "nginx -p {} -c nginx.conf".format(self.nginx_working_dir)
         self.stop_nginx_command = "nginx -p {} -c nginx.conf -s stop".format(self.nginx_working_dir)
 
-        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.sipi_prefix)
+        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
         self.compare_command = "gm compare -metric MAE {} {}"
+        self.info_command = "gm identify -verbose {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -179,9 +180,18 @@ class SipiTestManager:
         if subprocess.run(nginx_args).returncode != 0:
             raise SipiTestError("nginx failed to stop")
 
+    def make_sipi_url(self, url_path):
+        """
+        Makes a URL for a request to Sipi.
+
+        url_path: a path that will be appended to the Sipi base URL to make the request.
+        """
+
+        return "{}{}".format(self.sipi_base_url, url_path)
+
     def download_file(self, url_path, suffix=None, headers=None):
         """
-            Makes an HTTP request and downloads the response content to a temporary file.
+            Makes an HTTP request to Sipi and downloads the response content to a temporary file.
             Returns the absolute path of the temporary file.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
@@ -189,8 +199,8 @@ class SipiTestManager:
             headers: an optional dictionary of request headers.
         """
 
-        url = "{}/{}".format(self.sipi_base_url, url_path)
-        response = requests.get(url, headers=headers, stream=True)
+        sipi_url = self.make_sipi_url(url_path)
+        response = requests.get(sipi_url, headers=headers, stream=True)
         response.raise_for_status()
         temp_fd, temp_file_path = tempfile.mkstemp(suffix=suffix)
         temp_file = os.fdopen(temp_fd, mode="wb")
@@ -221,10 +231,42 @@ class SipiTestManager:
             self.write_sipi_log()
             raise SipiTestError("Downloaded file {} is different from expected file {} (wrote {})".format(downloaded_file_path, expected_file_path, self.sipi_log_file))
 
+    def expect_status_code(self, url_path, status_code, headers=None):
+        """
+        Requests a file and expects to get a particular HTTP status code.
+
+        url_path: a path that will be appended to the Sipi base URL to make the request.
+        status_code: the expected status code.
+        headers: an optional dictionary of request headers.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+        response = requests.get(sipi_url, headers=headers)
+
+        if response.status_code != status_code:
+            raise SipiTestError("Received status code {} for URL {}, expected {} (wrote {}). Response:\n{}".format(response.status_code, sipi_url, status_code, self.sipi_log_file, response.text))
+
+    def get_image_info(self, url_path, headers=None):
+        """
+            Downloads a temporary image file, gets informationa about it using GraphicsMagick's 'gm identify'
+            program with the '-verbose' option, and returns the resulting output.
+
+            url_path: a path that will be appended to the Sipi base URL to make the request.
+            headers: an optional dictionary of request headers.
+        """
+
+        downloaded_file_path = self.download_file(url_path, headers=headers)
+        info_process_args = shlex.split(self.info_command.format(downloaded_file_path))
+        info_process = subprocess.run(info_process_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines = True)
+        return info_process.stdout
+
     def compare_images(self, url_path, filename, headers=None):
         """
-            Downloads a temporary image file and compares it with an existing image file on disk, using ImageMagick's
-            'compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
+            Downloads a temporary image file and compares it with an existing image file on disk, using GraphicsMagick's
+            'gm compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
             otherwise writes Sipi's output to sipi.log and raises an exception. Note that this method does not compare image
             metadata.
 

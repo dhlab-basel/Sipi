@@ -162,6 +162,10 @@ routes = {
         method = 'POST',
         route = '/Knora_logout',
         script = 'Knora_logout.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_functions',
+        script = 'test_functions.lua'
     }
-
 }

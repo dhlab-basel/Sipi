@@ -68,16 +68,50 @@ namespace shttps {
     char luaconnection[] = "__shttpsconnection";
 
     /*!
-     * Error handler for Lua errors!
+     * Dumps the Lua stack to a string.
+     * @param L the Lua interpreter.
+     * @return a string containing the stack dump.
+     */
+    static std::string stackDump(lua_State *L) {
+        std::ostringstream errorMsg;
+        errorMsg << "Lua error. Stack dump: ";
+        int top = lua_gettop(L);
+
+        for (int i = 1; i <= top; i++) {
+            if (i > 1) {
+                errorMsg << " | ";
+            }
+
+            int t = lua_type(L, i);
+            switch (t) {
+
+                case LUA_TSTRING:
+                    errorMsg << lua_tostring(L, i);
+                    break;
+
+                case LUA_TBOOLEAN:
+                    errorMsg << (lua_toboolean(L, i) ? "true" : "false");
+                    break;
+
+                case LUA_TNUMBER:
+                    errorMsg << lua_tonumber(L, i);
+                    break;
+
+                default:
+                    errorMsg << lua_typename(L, t);
+                    break;
+
+            }
+        }
+        return errorMsg.str();
+    }
+
+    /*!
+     * Error handler for Lua errors.
      */
     static int dont_panic(lua_State *L) {
-        std::string errorMsg = "";
-        int n = lua_gettop(L);
-        for (int i = 1; i <= n; i++) {
-            const char *tmpstr = lua_tostring(L, i);
-            errorMsg += tmpstr + std::string("\n");
-        }
-        throw Error(__file__, __LINE__, std::string("Lua panic: ") + errorMsg);
+        std::string errorMsg = stackDump(L);
+        throw Error(__file__, __LINE__, errorMsg);
     }
 
     /*
@@ -307,13 +341,13 @@ namespace shttps {
      * LUA: server.setBuffer([bufsize][,incsize])
      */
     static int lua_setbuffer(lua_State *L) {
-        int bufsize = 0;
-        int incsize = 0;
+        size_t bufsize = 0;
+        size_t incsize = 0;
 
         int top = lua_gettop(L);
         if (top > 0) {
             if (lua_isinteger(L, 1)) {
-                bufsize = lua_tointeger(L, 1);
+                bufsize = static_cast<size_t>(lua_tointeger(L, 1));
             }
             else {
                 lua_settop(L, 0); // clear stack
@@ -324,7 +358,7 @@ namespace shttps {
         }
         if (top > 1) {
             if (lua_isinteger(L, 2)) {
-                incsize = lua_tointeger(L, 2);
+                incsize = static_cast<size_t>(lua_tointeger(L, 2));
             }
             else {
                 lua_settop(L, 0); // clear stack
@@ -438,12 +472,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, R_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, R_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -470,12 +499,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, W_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, W_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -502,12 +526,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, X_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, X_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -534,12 +553,7 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         lua_pushboolean(L, true);
-        if (access(filename, F_OK) == 0) {
-            lua_pushboolean(L, true);
-        }
-        else {
-            lua_pushboolean(L, false);
-        }
+        lua_pushboolean(L, access(filename, F_OK) == 0);
         return 2;
     }
     //=========================================================================
@@ -605,7 +619,7 @@ namespace shttps {
             return 2;
         }
         const char *dirname = lua_tostring(L, 1);
-        int mode = lua_tointeger(L, 2);
+        mode_t mode = static_cast<mode_t>(lua_tointeger(L, 2));
         lua_settop(L, 0); // clear stack
 
         if (mkdir(dirname, mode) != 0) {
@@ -1209,7 +1223,7 @@ namespace shttps {
             }
         }
         else if (lua_isinteger(L, 3)) { // process timeout
-            timeout = lua_tointeger(L, 1);
+            timeout = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
         }
 
@@ -1772,7 +1786,7 @@ namespace shttps {
         int top = lua_gettop(L);
         int istatus = 200;
         if (top == 1) {
-            istatus = lua_tointeger(L, 1);
+            istatus = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
         }
         Connection::StatusCodes status = static_cast<Connection::StatusCodes>(istatus);
@@ -1817,7 +1831,7 @@ namespace shttps {
 
         std::vector<Connection::UploadedFile> uploads = conn->uploads();
 
-        int tmpfile_id = lua_tointeger(L, 1);
+        int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
 
         std::string infile;
 
@@ -2011,7 +2025,7 @@ namespace shttps {
                 lua_pushstring(L, "'server.log()': level is not integer");
                 return 2;
             }
-            level = lua_tointeger(L, 2);
+            level = static_cast<int>(lua_tointeger(L, 2));
         }
 
         if (!message.empty()) {
@@ -2027,43 +2041,8 @@ namespace shttps {
     }
     //=========================================================================
 
-    /*!
-     * Lua: success, mimetype = server.mimetype(path)
-     */
-    static int lua_mimetype(lua_State *L) {
-        std::string path;
-        int top = lua_gettop(L);
-        if (top < 1) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': no path given");
-            return 2;
-        }
-        if (!lua_isstring(L, 1)) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "'server.mimetype()': path is not a string");
-            return 2;
-        }
-        path = lua_tostring(L, 1);
-
-        lua_pop(L, top);
-
-        std::pair<std::string, std::string> mimetype;
-
-        try {
-            mimetype =  GetMimetype::getMimetype(path); // returns a pair of strings: mimetype and charset
-        }
-        catch (Error &err) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            std::string tmpstr = std::string("'server.mimetype(path) failed': ") + err.to_string();
-            lua_pushstring(L, tmpstr.c_str());
-            return 2;
-        }
-
+    static int return_mimetype_to_lua(lua_State *L, const std::pair<std::string, std::string>& mimetype) {
         lua_pushboolean(L, true);
-
         lua_createtable(L, 0, 2); // table
 
         lua_pushstring(L, "mimetype"); // table - "mimetype"
@@ -2071,9 +2050,90 @@ namespace shttps {
         lua_rawset(L, -3); // table
 
         lua_pushstring(L, "charset"); // table - "charset"
-        lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
+
+        if (!mimetype.second.empty()) {
+            lua_pushstring(L, mimetype.second.c_str()); // table - "charset" - <mimetype.second>
+        } else {
+            lua_pushnil(L);
+        }
+
         lua_rawset(L, -3); // table
         return 2;
+    }
+
+    /*!
+     * Lua: success, mimetype = server.parse_mimetype(str)
+     */
+    static int lua_parse_mimetype(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.parse_mimetype(): no argument given");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.parse_mimetype(): argument is not a string");
+            return 2;
+        }
+
+        std::string mimestr = lua_tostring(L, 1);
+        lua_pop(L, top);
+
+        try {
+            std::pair<std::string, std::string> mimetype = GetMimetype::parseMimetype(mimestr); // returns a pair of strings: mimetype and charset
+            return return_mimetype_to_lua(L, mimetype);
+        }
+        catch (Error &err) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            std::ostringstream error_msg;
+            error_msg << "server.parse_mimetype() failed: " << err.to_string();
+            lua_pushstring(L, error_msg.str().c_str());
+            return 2;
+        }
+
+    }
+
+    /*!
+     * Lua: success, mimetype = server.file_mimetype(path)
+     */
+    static int lua_file_mimetype(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimetype(): no path given");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimetype(): path is not a string");
+            return 2;
+        }
+
+        std::string path = lua_tostring(L, 1);
+        lua_pop(L, top);
+
+        try {
+            std::pair<std::string, std::string> mimetype = GetMimetype::getFileMimetype(path); // returns a pair of strings: mimetype and charset
+            return return_mimetype_to_lua(L, mimetype);
+        }
+        catch (Error &err) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            std::ostringstream error_msg;
+            error_msg << "server.file_mimetype() failed: " << err.to_string();
+            lua_pushstring(L, error_msg.str().c_str());
+            return 2;
+        }
     }
 
     void LuaServer::setLuaPath(const std::string &path) {
@@ -2362,8 +2422,12 @@ namespace shttps {
 
 #endif
 
-        lua_pushstring(L, "mimetype"); // table1 - "index_L1"
-        lua_pushcfunction(L, lua_mimetype); // table1 - "index_L1" - function
+        lua_pushstring(L, "parse_mimetype"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_parse_mimetype); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "file_mimetype"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_file_mimetype); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "log"); // table1 - "index_L1"
@@ -2446,7 +2510,7 @@ namespace shttps {
     //=========================================================================
 
 
-    int LuaServer::configBoolean(const std::string table, const std::string variable, const bool defval) {
+    bool LuaServer::configBoolean(const std::string table, const std::string variable, const bool defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
             return defval;
@@ -2459,7 +2523,7 @@ namespace shttps {
         if (!lua_isboolean(L, -1)) {
             throw Error(__file__, __LINE__, "Integer expected for " + table + "." + variable);
         }
-        bool retval = lua_toboolean(L, -1);
+        bool retval = lua_toboolean(L, -1) == 1;
 
         lua_pop(L, 2);
         return retval;
@@ -2479,7 +2543,7 @@ namespace shttps {
         if (!lua_isinteger(L, -1)) {
             throw Error(__file__, __LINE__, "Integer expected for " + table + "." + variable);
         }
-        int retval = lua_tointeger(L, -1);
+        int retval = static_cast<int>(lua_tointeger(L, -1));
         lua_pop(L, 2);
         return retval;
     }
@@ -2519,7 +2583,11 @@ namespace shttps {
         std::vector<LuaRoute> routes;
 
         lua_getglobal(L, routetable.c_str());
-        luaL_checktype(L, -1, LUA_TTABLE);
+
+        if (!lua_istable(L, -1)) {
+            throw Error(__file__, __LINE__, "Value '" + routetable + "' in config file must be a table");
+        }
+
         int i;
         for (i = 1; ; i++) {
             lua_rawgeti(L, -1, i);
@@ -2531,8 +2599,7 @@ namespace shttps {
             luaL_checktype(L, -1, LUA_TTABLE);
             int field_index;
             LuaRoute route;
-            for (field_index = 0; (fields[field_index].name != nullptr
-                                   && fields[field_index].name != nullptr); field_index++) {
+            for (field_index = 0; fields[field_index].name != nullptr; field_index++) {
                 lua_getfield(L, -1, fields[field_index].name);
                 luaL_checktype(L, -1, fields[field_index].type);
 
@@ -2602,7 +2669,7 @@ namespace shttps {
         }
         int top = lua_gettop(L);
         if (top == 1) {
-            int status = lua_tointeger(L, 1);
+            int status = static_cast<int>(lua_tointeger(L, 1));
             lua_pop(L, 1);
             return status;
         }

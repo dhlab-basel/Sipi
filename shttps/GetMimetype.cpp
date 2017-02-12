@@ -20,6 +20,10 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <regex>
+#include <sstream>
+
 #include "GetMimetype.h"
 #include "Error.h"
 
@@ -29,32 +33,55 @@ static const char __file__[] = __FILE__;
 
 namespace shttps {
 
-    std::pair<std::string, std::string> GetMimetype::getMimetype(const std::string &fpath)
-    {
-        magic_t handle;
-        if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
-            throw Error(__file__, __LINE__, magic_error(handle));
+    namespace GetMimetype {
+
+        std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
+            try {
+                // A regex for parsing the value of an HTTP Content-Type header. In C++11, initialization of this
+                // static local variable happens once and is thread-safe.
+                static std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+                std::smatch mime_match;
+                std::string mimetype;
+                std::string charset;
+
+                if (std::regex_match(mimestr, mime_match, mime_regex)) {
+                    if (mime_match.size() > 1) {
+                        mimetype = mime_match[1].str();
+
+                        if (mime_match.size() == 4) {
+                            charset = mime_match[3].str();
+                        }
+                    }
+                } else {
+                    std::ostringstream error_msg;
+                    throw Error(__file__, __LINE__, error_msg.str());
+                }
+
+                // Convert MIME type and charset to lower case
+                std::transform(mimetype.begin(), mimetype.end(), mimetype.begin(), ::tolower);
+                std::transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
+
+                return std::make_pair(mimetype, charset);
+            } catch (std::regex_error& e) {
+                std::ostringstream error_msg;
+                error_msg << "Regex error: " << e.what();
+                throw Error(__file__, __LINE__, error_msg.str());
+            }
         }
 
-        if (magic_load(handle, nullptr) != 0) {
-            throw Error(__file__, __LINE__, magic_error(handle));
-        }
-        const char *result = magic_file(handle, fpath.c_str());
+        std::pair<std::string, std::string> getFileMimetype(const std::string& fpath) {
+            magic_t handle;
+            if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
+                throw Error(__file__, __LINE__, magic_error(handle));
+            }
 
-        std::string mimestr = result;
+            if (magic_load(handle, nullptr) != 0) {
+                throw Error(__file__, __LINE__, magic_error(handle));
+            }
 
-        std::string mimetype;
-        std::string charset;
-
-        size_t pos = mimestr.find(';');
-        if (pos != std::string::npos) {
-            mimetype = mimestr.substr(0, pos);
-            charset = mimestr.substr(pos + 1);
+            std::string mimestr(magic_file(handle, fpath.c_str()));
+            return parseMimetype(mimestr);
         }
-        else {
-            mimetype = mimestr;
-        }
-        return std::make_pair(mimetype, charset);
     }
-
 }

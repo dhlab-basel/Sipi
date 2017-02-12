@@ -60,8 +60,8 @@ namespace Sipi {
         float percent;      //!< if the scaling is given in percent, this holds the value
         int reduce;         //!< if the scaling is given by a reduce value
         bool redonly;       //!< we *only* have a reduce in the resulting size
-        int nx, ny;         //!< the parameters given
-        int w, h;           //!< the resulting width and height after processing
+        size_t nx, ny;         //!< the parameters given
+        size_t w, h;           //!< the resulting width and height after processing
         bool canonical_ok;
 
     public:
@@ -85,7 +85,7 @@ namespace Sipi {
         inline SipiSize(float percent_p) : percent(percent_p) { size_type = SizeType::PERCENTS; }
 
        /*!
-        * Constructor with dimensions. IF one of the dimensions is less-equal zero, this dimension
+        * Constructor with dimensions. IF one of the dimensions is equal zero, this dimension
         * will be calculated from the other without distorting the image. If both dimensions are gt 0,
         * the image may be distorted
         *
@@ -93,7 +93,7 @@ namespace Sipi {
         * \param[in] ny_p Height of scaled image
         * \param[in] maxdim If true, the scaled image (without distortion) will fit into the given region
         */
-        SipiSize(int nx_p, int ny_p, bool maxdim = false);
+        SipiSize(size_t nx_p, size_t ny_p, bool maxdim = false);
 
        /*!
         * Construcor taking size/scale part of IIIF url as parameter
@@ -156,7 +156,7 @@ namespace Sipi {
         *
         * \returns enum SizeType which indicates how the size was specified
         */
-        SipiSize::SizeType get_size(int nx, int ny, int &w_p, int &h_p, int &reduce_p, bool &redonly_p);
+        SipiSize::SizeType get_size(size_t nx, size_t ny, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p);
 
        /*!
         * Returns the canoncial IIIF string for the given size/scaling

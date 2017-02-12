@@ -40,16 +40,16 @@ if not exists then
     local success, result = server.fs.mkdir(tmpdir, 511)
     if not success then
         send_error(500, "Couldn't create tmpdir: " .. result)
-        return
+        return -1
     end
 end
 
 if server.uploads == nil then
-    send_error(500, "no image uploaded")
+    send_error(400, "no image uploaded")
     return -1
 end
 
-for imgindex,imgparam in pairs(server.uploads) do
+for imgindex, imgparam in pairs(server.uploads) do
 
     --
     -- copy the file to a safe place
@@ -77,9 +77,14 @@ for imgindex,imgparam in pairs(server.uploads) do
     end
 
     local filename = imgparam["origname"]
-    local mimetype = imgparam["mimetype"]
+    local success, submitted_mimetype = server.parse_mimetype(imgparam["mimetype"])
 
-    local success, check = myimg:mimetype_consistency(mimetype, filename)
+    if not success then
+        send_error(400, "Couldn't parse mimetype: " .. imgparam["mimetype"])
+        return -1
+    end
+
+    local success, check = myimg:mimetype_consistency(submitted_mimetype.mimetype, filename)
     if not success then
         send_error(500, "Couldn't check mimteype consistency: " .. check)
         return -1
@@ -135,7 +140,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         mimetype_thumb = 'image/jpeg',
         preview_path = "http://localhost:1024/thumbs/" .. tmpname .. "_THUMB.jpg" .. "/full/full/0/default.jpg",
         filename = tmpname, -- make this a IIIF URL
-        original_mimetype = mimetype,
+        original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,
         file_type = 'IMAGE'
     }

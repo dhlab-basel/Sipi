@@ -43,18 +43,18 @@ option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 #
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
-        message(FATAL_ERROR "Requires at leat Clang Version 7.3 or greater!")
+        message(FATAL_ERROR "Requires clang 7.3 or greater.")
         set(ENV(CXX) "clang++")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8")
-        message(FATAL_ERROR "Requires at leat gcc++ Version 4.8 or greater!")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
+        message(FATAL_ERROR "Requires GCC 5.3 or greater.")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")
     endif()
 else()
-    message(WARNING "You are using an unsupported compiler! Compilation has only been tested with Clang and GCC.")
+    message(WARNING "You are using an unsupported compiler. Compilation has only been tested with Clang and GCC.")
 endif()
 
 
@@ -170,7 +170,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
@@ -186,7 +185,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/png)
 add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
-add_subdirectory(${EXT_PROJECTS_DIR}/libmagic)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 
@@ -198,7 +196,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    configure_file(${DOXYGEN_FILES_DIR}/Doxyfile.in ${DOXYGEN_FILES_DIR}/Doxyfile @ONLY)
     add_custom_target(doc
         ${DOXYGEN_EXECUTABLE} ${DOXYGEN_FILES_DIR}/Doxyfile
         WORKING_DIRECTORY ${DOXYGEN_FILES_DIR}
@@ -287,6 +284,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+    /usr/local/include
 )
 add_executable(
         sipi
@@ -330,10 +328,13 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m )
+target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
+else()
+    target_link_libraries(sipi rt)
 endif()
+
 if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()

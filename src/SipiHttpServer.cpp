@@ -235,12 +235,12 @@ namespace Sipi {
             throw SipiError(__file__, __LINE__, err_msg.str());
         }
 
-        // If the permission code is "allow", there must also be a file path.
-        if (permission == "allow") {
+        // If the permission code is "allow" or begins with "restrict", there must also be a file path.
+        if (permission == "allow" || permission.find("restrict") == 0) {
             if (rvals.size() == 2) {
                 auto infile_return_val = rvals.at(1);
 
-                // The file path mudst be a string.
+                // The file path must be a string.
                 if (infile_return_val.type == LuaValstruct::STRING_TYPE) {
                     infile = infile_return_val.value.s;
                 } else {
@@ -350,7 +350,7 @@ namespace Sipi {
 
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
-        int width, height;
+        size_t width, height;
         //
         // get cache info
         //
@@ -372,7 +372,8 @@ namespace Sipi {
         json_t *sizes = json_array();
         for (int i = 1; i < 5; i++) {
             SipiSize size(i);
-            int w, h, r;
+            size_t w, h;
+            int r;
             bool ro;
             size.get_size(width, height, w, h, r, ro);
             if ((w < 128) && (h < 128)) break;
@@ -389,14 +390,14 @@ namespace Sipi {
 
         const char * formats_str[] = {"tif", "jpg", "png", "jp2"};
         json_t *formats = json_array();
-        for (int i = 0; i < sizeof(formats_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(formats_str)/sizeof(char*); i++) {
             json_array_append_new(formats, json_string(formats_str[i]));
         }
         json_object_set_new(profile, "formats", formats);
 
         const char *qualities_str[] = {"color", "gray"};
         json_t *qualities = json_array();
-        for (int i = 0; i < sizeof(qualities_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(qualities_str)/sizeof(char*); i++) {
             json_array_append_new(qualities, json_string(qualities_str[i]));
         }
         json_object_set_new(profile, "qualities", qualities);
@@ -419,7 +420,7 @@ namespace Sipi {
             "sizeByWh"
         };
         json_t *supports = json_array();
-        for (int i = 0; i < sizeof(supports_str)/sizeof(char*); i++) {
+        for (unsigned int i = 0; i < sizeof(supports_str)/sizeof(char*); i++) {
             json_array_append_new(supports, json_string(supports_str[i]));
         }
         json_object_set_new(profile, "supports", supports);
@@ -442,8 +443,8 @@ namespace Sipi {
     //=========================================================================
 
 
-    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(int tmp_w,
-                                                                          int tmp_h,
+    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(size_t tmp_w,
+                                                                          size_t tmp_h,
                                                                           const std::string &host,
                                                                           const std::string &prefix,
                                                                           const std::string &identifier,
@@ -457,7 +458,8 @@ namespace Sipi {
         char canonical_region[canonical_len + 1];
         char canonical_size[canonical_len + 1];
 
-        int tmp_r_x, tmp_r_y, tmp_r_w, tmp_r_h, tmp_red;
+        int tmp_r_x, tmp_r_y, tmp_red;
+        size_t tmp_r_w, tmp_r_h;
         bool tmp_ro;
 
         if (region->getType() != SipiRegion::FULL) {
@@ -762,6 +764,7 @@ namespace Sipi {
                 qualifier = permission.substr(colon_pos + 1);
                 permission = permission.substr(0, colon_pos);
             }
+
             if (permission != "allow") {
                 if (permission == "restrict") {
                     colon_pos = qualifier.find('=');
@@ -831,7 +834,7 @@ namespace Sipi {
         //
         std::shared_ptr<SipiCache> cache = serv->cache();
 
-        int img_w = 0, img_h = 0;
+        size_t img_w = 0, img_h = 0;
         if (in_format == SipiQualityFormat::PDF) {
             if (size->getType() != SipiSize::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
@@ -866,7 +869,8 @@ namespace Sipi {
                 }
             }
 
-            int tmp_r_w, tmp_r_h, tmp_red;
+            size_t tmp_r_w, tmp_r_h;
+            int tmp_red;
             bool tmp_ro;
             size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
             restriction_size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
@@ -1077,7 +1081,7 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
                     if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
-                        for (int i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                        for (size_t i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
                     }
                     Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);

@@ -687,7 +687,8 @@ namespace Sipi {
                 }
             }
             else {
-                int roi_x, roi_y, roi_w, roi_h;
+                int roi_x, roi_y;
+                size_t roi_w, roi_h;
                 region->crop_coords(img->nx, img->ny, roi_x, roi_y, roi_w, roi_h);
 
                 int ps; // pixel size in bytes
@@ -816,8 +817,9 @@ namespace Sipi {
             //
             // resize/Scale the image if necessary
             //
-            if (size != nullptr) {
-                int nnx, nny, reduce;
+            if (size != NULL) {
+                size_t nnx, nny;
+                int reduce;
                 bool redonly;
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
                 if (rtype != SipiSize::FULL) {
@@ -838,7 +840,7 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiIOTiff::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOTiff::getDim(std::string filepath, size_t &width, size_t &height) {
     	TIFF *tif;
 
         if (nullptr != (tif = TIFFOpen (filepath.c_str(), "r"))) {
@@ -848,17 +850,21 @@ namespace Sipi {
             //
             (void) TIFFSetWarningHandler(nullptr);
 
-            if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &width) == 0) {
+            unsigned int tmp_width;
+            if (TIFFGetField (tif, TIFFTAG_IMAGEWIDTH, &tmp_width) == 0) {
                 std::cerr << "TIFF image file " << filepath << ": Error getting TIFFTAG_IMAGEWIDTH" << std::endl;
                 TIFFClose(tif);
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGEWIDTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
-            if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &height) == 0) {
+            width = tmp_width;
+            unsigned int tmp_height;
+            if (TIFFGetField (tif, TIFFTAG_IMAGELENGTH, &tmp_height) == 0) {
                 TIFFClose(tif);
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
+            height = tmp_height;
             TIFFClose(tif);
             return true;
         }
@@ -893,8 +899,8 @@ namespace Sipi {
             }
         }
 
-        TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      img->nx);
-        TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     img->ny);
+        TIFFSetField (tif, TIFFTAG_IMAGEWIDTH,      (int) img->nx);
+        TIFFSetField (tif, TIFFTAG_IMAGELENGTH,     (int) img->ny);
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
         TIFFSetField (tif, TIFFTAG_ROWSPERSTRIP,    TIFFDefaultStripSize(tif, rowsperstrip));
         TIFFSetField (tif, TIFFTAG_ORIENTATION,     ORIENTATION_TOPLEFT);
@@ -904,7 +910,7 @@ namespace Sipi {
             its_1_bit = true;
             if (img->bps == 8) {
                 byte *scan = img->pixels;
-                for (int i = 0; i < img->nx*img->ny; i++) {
+                for (size_t i = 0; i < img->nx*img->ny; i++) {
                     if ((scan[i] != 0) && (scan[i] != 255)) {
                         its_1_bit = false;
                     }
@@ -912,7 +918,7 @@ namespace Sipi {
             }
             else if (img->bps == 16) {
                 word *scan = (word *) img->pixels;
-                for (int i = 0; i < img->nx*img->ny; i++) {
+                for (size_t i = 0; i < img->nx*img->ny; i++) {
                     if ((scan[i] != 0) && (scan[i] != 65535)) {
                         its_1_bit = false;
                     }
@@ -1043,14 +1049,14 @@ namespace Sipi {
         if (its_1_bit) {
             unsigned int sll;
             unsigned char *buf = cvrt8BitTo1bit(*img, sll);
-            for (int i = 0; i < img->ny; i++) {
-                TIFFWriteScanline (tif, buf + i*sll, i, 0);
+            for (size_t i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, buf + i*sll, (int) i, 0);
             }
             delete [] buf;
         }
         else {
-            for (int i = 0; i < img->ny; i++) {
-                TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), i, 0);
+            for (size_t i = 0; i < img->ny; i++) {
+                TIFFWriteScanline (tif, img->pixels + i * img->nc * img->nx * (img->bps / 8), (int) i, 0);
             }
         }
 
