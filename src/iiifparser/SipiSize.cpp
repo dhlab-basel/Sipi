@@ -39,6 +39,7 @@
 
 
 #include "shttps/Global.h"
+#include "shttps/Parsing.h"
 #include "SipiError.h"
 #include "SipiSize.h"
 
@@ -46,156 +47,151 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    int SipiSize::limitdim = 32000;
+    size_t SipiSize::limitdim = 32000;
 
     SipiSize::SipiSize(std::string str) {
         nx = ny = 0;
         percent = 0.;
         canonical_ok = false;
 
-        int n;
-        if (str.empty() || (str == "full")) {
-            size_type = SizeType::FULL;
-        }
-        else if (str.find("pct") != std::string::npos) {
-            size_type = SizeType::PERCENTS;
-            std::string tmpstr = str.substr(4);
-            n = sscanf(tmpstr.c_str(), "%f", &percent);
-            if (n != 1) {
-                throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"pct:float\" !");
-            }
-            if (percent < 0.0) percent = 1.0;
-            if (percent > 100.0) percent = 100.0;
-        }
-        else if (str.find("red") != std::string::npos) {
-            size_type = SizeType::REDUCE;
-            std::string tmpstr = str.substr(4);
-            n = sscanf(tmpstr.c_str(), "%d", &reduce);
-            if (n != 1) {
-                throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\": Expected \"red:int\" !");
-            }
-            if (reduce < 0) percent = 0;
-        }
-        else {
-            if (str[0] == '!') {
-                size_type = SizeType::MAXDIM;
-                n = sscanf(str.c_str(), "!%ld,%ld", &nx, &ny);
-            }
-            else {
-                n = sscanf(str.c_str(), "%ld,%ld", &nx, &ny);
-                if (n == 2) {
-                    size_type = SizeType::PIXELS_XY;
-                }
-                else if (n == 1) {
-                    size_type = SizeType::PIXELS_X;
-                }
-                else {
-                    n = sscanf(str.c_str(), ",%ld", &ny);
-                    if (n != 1) {
-                        throw SipiError(__file__, __LINE__, "IIIF Error reading Size parameter  \"" + str + "\" !");
-                    }
-                    size_type = SizeType::PIXELS_Y;
-               }
-            }
-            if (nx < 1) nx = 1;
-            if (nx > limitdim) nx = limitdim;
-            if (ny < 1) ny = 1;
-            if (ny > limitdim) ny = limitdim;
-        }
-    };
-    //-------------------------------------------------------------------------
+        try {
+            if (str.empty() || str == "full" || str == "max") {
+                size_type = SizeType::FULL;
+            } else if (str.find("pct") != std::string::npos) {
+                size_type = SizeType::PERCENTS;
+                std::string percent_str = str.substr(4);
+                percent = shttps::Parsing::parse_double(percent_str);
 
-    SipiSize::SipiSize(size_t nx_p, size_t ny_p, bool maxdim) {
-        canonical_ok = false;
-        if (nx_p == 0) {
-            ny = ny_p;
-            if (ny < 1) ny = 1;
-            if (ny > limitdim) ny = limitdim;
-            size_type = SizeType::PIXELS_Y;
-        }
-        else if (ny_p == 0) {
-            nx = nx_p;
-            if (nx < 1) nx = 1;
-            if (nx > limitdim) nx = limitdim;
-            size_type = SizeType::PIXELS_X;
-        }
-        else if ((nx_p == 0) && (ny_p == 0)) {
-            throw SipiError(__file__, __LINE__, "Invalid Size parameter! Both dimensions == 0!");
-        }
-        else {
-            nx = nx_p;
-            ny = ny_p;
-            if (nx < 1) nx = 1;
-            if (nx > limitdim) nx = limitdim;
-            if (ny < 1) ny = 1;
-            if (ny > limitdim) ny = limitdim;
-            if (maxdim) {
-                size_type = SizeType::MAXDIM;
+                if (percent < 0.0) percent = 1.0;
+                if (percent > 100.0) percent = 100.0;
+            } else if (str.find("red") != std::string::npos) {
+                size_type = SizeType::REDUCE;
+                std::string reduce_str = str.substr(4);
+                reduce = static_cast<int>(shttps::Parsing::parse_int(reduce_str));
+                if (reduce < 0) percent = 0;
+            } else {
+                bool exclamation_mark = str[0] == '!';
+
+                if (exclamation_mark) {
+                    str.erase(0, 1);
+                }
+
+                size_t comma_pos = str.find(',');
+
+                if (comma_pos == std::string::npos) {
+                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
+                }
+
+                std::string width_str = str.substr(0, comma_pos);
+                std::string height_str = str.substr(comma_pos + 1);
+
+                if ((width_str.empty() && height_str.empty()) ||
+                    (size_type == SizeType::MAXDIM && (width_str.empty() || height_str.empty()))) {
+                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
+                }
+
+                if (width_str.empty()) {
+                    ny = shttps::Parsing::parse_int(height_str);
+
+                    if (ny == 0) {
+                        throw SipiError(__file__, __LINE__, "IIIF height cannot be zero");
+                    }
+
+                    size_type = SizeType::PIXELS_X;
+                } else if (height_str.empty()) {
+                    nx = shttps::Parsing::parse_int(width_str);
+
+                    if (nx == 0) {
+                        throw SipiError(__file__, __LINE__, "IIIF width cannot be zero");
+                    }
+
+                    size_type = SizeType::PIXELS_X;
+                } else {
+                    nx = shttps::Parsing::parse_int(width_str);
+                    ny = shttps::Parsing::parse_int(height_str);
+
+                    if (nx == 0 || ny == 0) {
+                        throw SipiError(__file__, __LINE__, "IIIF size would result in a width or height of zero: " + str);
+                    }
+
+                    if (exclamation_mark) {
+                        size_type = SizeType::MAXDIM;
+                    } else {
+                        size_type = SizeType::PIXELS_XY;
+                    }
+                }
+
+                if (nx > limitdim) nx = limitdim;
+                if (ny > limitdim) ny = limitdim;
             }
-            else {
-                size_type = SizeType::PIXELS_XY;
-            }
+        } catch (SipiError &sipi_error) {
+            throw sipi_error;
+        } catch (shttps::Error &error) {
+            throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
         }
     }
+
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator >(const SipiSize &s)
-    {
+    bool SipiSize::operator>(const SipiSize &s) {
         if (!canonical_ok) {
-            std::string msg = "Final size not yet determined!";
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
+
         return ((w > s.w) || (h > s.h));
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator >=(const SipiSize &s)
-    {
+    bool SipiSize::operator>=(const SipiSize &s) {
         if (!canonical_ok) {
-            std::string msg = "Final size not yet determined!";
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
+
         return ((w >= s.w) || (h >= s.h));
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator <(const SipiSize &s)
-    {
+    bool SipiSize::operator<(const SipiSize &s) {
         if (!canonical_ok) {
-            std::string msg = "Final size not yet determined!";
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
+
         return ((w < s.w) && (h < s.h));
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator <=(const SipiSize &s)
-    {
+    bool SipiSize::operator<=(const SipiSize &s) {
         if (!canonical_ok) {
-            std::string msg = "Final size not yet determined!";
-            throw SipiError(__file__, __LINE__, msg);
+            throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
+
         return ((w <= s.w) && (h <= s.h));
     }
     //-------------------------------------------------------------------------
 
-    SipiSize::SizeType SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
+    SipiSize::SizeType
+    SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
+
+        double img_w_double = static_cast<double>(img_w);
+        double img_h_double = static_cast<double>(img_h);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
                 //
-                // first we check how far the new image width and image hight can be reached by a reduce factor
+                // first we check how far the new image width and image height can be reached by a reduce factor
                 //
                 int sf_w = 1;
                 int reduce_w = 0;
                 bool exact_match_w = true;
-                w = ceil((float) img_w / (float) sf_w);
+                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
+
                 while (w > nx) {
                     sf_w *= 2;
-                    w = ceil((float) img_w / (float) sf_w);
+                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
                     reduce_w++;
                 }
+
                 if (w != nx) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_w = false;
@@ -206,12 +202,14 @@ namespace Sipi {
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
-                h = ceil((float) img_h / (float) sf_h);
+                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+
                 while (h > ny) {
                     sf_h *= 2;
-                    h = ceil((float) img_h / (float) sf_h);
+                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
                     reduce_h++;
                 }
+
                 if (h != ny) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
@@ -222,8 +220,7 @@ namespace Sipi {
                 if (exact_match_w && exact_match_h && (reduce_w == reduce_h)) {
                     reduce = reduce_w;
                     redonly = true;
-                }
-                else {
+                } else {
                     reduce = reduce_w < reduce_h ? reduce_w : reduce_h; // min()
                     redonly = false;
                 }
@@ -232,6 +229,7 @@ namespace Sipi {
                 h = ny;
                 break;
             }
+
             case SipiSize::PIXELS_X: {
                 //
                 // first we check how far the new image width can be reached by a reduce factor
@@ -239,10 +237,10 @@ namespace Sipi {
                 int sf_w = 1;
                 int reduce_w = 0;
                 bool exact_match_w = true;
-                w = ceil((float) img_w / (float) sf_w);
+                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
                 while (w > nx) {
                     sf_w *= 2;
-                    w = ceil((float) img_w / (float) sf_w);
+                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
                     reduce_w++;
                 }
                 if (w != nx) {
@@ -254,28 +252,32 @@ namespace Sipi {
 
                 w = nx;
                 reduce = reduce_w;
-                redonly = exact_match_w; // if exact_match, then reduce only!
+                redonly = exact_match_w; // if exact_match, then reduce only
+
                 if (exact_match_w) {
-                    h = ceil((float) img_h / (float) sf_w);
+                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_w)));
+                } else {
+                    h = static_cast<size_t>(ceil(static_cast<double>(img_h * nx) / img_w_double));
                 }
-                else {
-                    h = ceil((float) (img_h*nx) / (float) img_w);
-                }
+
                 break;
             }
+
             case SipiSize::PIXELS_Y: {
                 //
-                // first we check how far the new image hight can be reched by a reduce factor
+                // first we check how far the new image height can be reached by a reduce factor
                 //
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
-                h = ceil((float) img_h / (float) sf_h);
+                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+
                 while (h > ny) {
                     sf_h *= 2;
-                    h = ceil((float) img_h / (float) sf_h);
+                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
                     reduce_h++;
                 }
+
                 if (h != ny) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
@@ -285,29 +287,34 @@ namespace Sipi {
 
                 h = ny;
                 reduce = reduce_h;
-                redonly = exact_match_h; // if exact_match, then reduce only!
+                redonly = exact_match_h; // if exact_match, then reduce only
+
                 if (exact_match_h) {
-                    w = ceil((float) img_w / (float) sf_h);
+                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_h)));
+                } else {
+                    w = static_cast<size_t>(ceil(static_cast<double>(img_w * ny) / img_h_double));
                 }
-                else {
-                    w = ceil((float) (img_w*ny) / (float) img_h);
-                }
+
                 break;
             }
+
             case SipiSize::PERCENTS: {
-                w = ceil(img_w*percent / 100.F);
-                h = ceil(img_h*percent / 100.F);
+                w = static_cast<size_t>(ceil(img_w * percent / 100.F));
+                h = static_cast<size_t>(ceil(img_h * percent / 100.F));
 
                 reduce = 0;
-                float r = 100. / percent;
-                float s = 1.0;
-                while (2.0*s <= r) {
+                double r = 100. / percent;
+                double s = 1.0;
+
+                while (2.0 * s <= r) {
                     s *= 2.0;
                     reduce++;
                 }
-                if (fabsf(s - r) < 1.0e-5) {
+
+                if (fabs(s - r) < 1.0e-5) {
                     redonly = true;
                 }
+
                 break;
             }
             case SipiSize::REDUCE: {
@@ -317,13 +324,16 @@ namespace Sipi {
                     redonly = true;
                     break;
                 }
+
                 int sf = 1;
                 for (int i = 0; i < reduce; i++) sf *= 2;
-                w = ceil((float) img_w / (float) sf);
-                h = ceil((float) img_h / (float) sf);
+
+                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf)));
+                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf)));
                 redonly = true;
                 break;
             }
+
             case SipiSize::MAXDIM: {
                 float fx = (float) nx / (float) img_w;
                 float fy = (float) ny / (float) img_h;
@@ -331,12 +341,11 @@ namespace Sipi {
                 float r;
                 if (fx < fy) { // scaling has to be done by fx
                     w = nx;
-                    h = ceil(img_h*fx);
+                    h = static_cast<size_t>(ceil(img_h * fx));
 
                     r = (float) img_w / (float) w;
-                }
-                else { // scaling has to be done fy
-                    w = ceil(img_w*fy);
+                } else { // scaling has to be done fy
+                    w = static_cast<size_t>(ceil(img_w * fy));
                     h = ny;
 
                     r = (float) img_h / (float) h;
@@ -344,15 +353,19 @@ namespace Sipi {
 
                 float s = 1.0;
                 reduce = 0;
-                while (2.0*s <= r) {
+
+                while (2.0 * s <= r) {
                     s *= 2.0;
                     reduce++;
                 }
+
                 if (fabsf(s - r) < 1.0e-5) {
                     redonly = true;
                 }
+
                 break;
             }
+
             case SipiSize::FULL: {
                 w = img_w;
                 h = img_h;
@@ -363,7 +376,7 @@ namespace Sipi {
 
         std::stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
-            << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
+           << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
         syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         w_p = w;
@@ -423,13 +436,13 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (std::ostream &outstr, const SipiSize &rhs) {
+    std::ostream &operator<<(std::ostream &outstr, const SipiSize &rhs) {
         outstr << "IIIF-Server Size parameter:";
         outstr << "  Size type: " << rhs.size_type;
         outstr
-            << " | percent = " << std::to_string(rhs.percent)
-            << " | nx = " << std::to_string(rhs.nx)
-            << " | ny = " << std::to_string(rhs.ny);
+                << " | percent = " << std::to_string(rhs.percent)
+                << " | nx = " << std::to_string(rhs.nx)
+                << " | ny = " << std::to_string(rhs.ny);
         return outstr;
     };
     //-------------------------------------------------------------------------

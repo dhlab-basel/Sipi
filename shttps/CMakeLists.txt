@@ -143,7 +143,7 @@ add_library(
         ChunkReader.cpp ChunkReader.h
         Connection.cpp Connection.h
         LuaServer.cpp LuaServer.h
-        GetMimetype.cpp GetMimetype.h
+        Parsing.cpp Parsing.h
         Server.cpp Server.h
         jwt.c jwt.h
 )
