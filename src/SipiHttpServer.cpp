@@ -475,7 +475,7 @@ namespace Sipi {
 
         size->canonical(canonical_size, canonical_len);
 
-        double angle;
+        float angle;
         bool mirror = rotation.get_rotation(angle);
 
         char canonical_rotation[canonical_len + 1];
@@ -834,7 +834,7 @@ namespace Sipi {
         }
 
 
-        double angle;
+        float angle;
         bool mirror = rotation.get_rotation(angle);
 
         //
@@ -854,7 +854,7 @@ namespace Sipi {
                 return;
             }
 
-            double rot;
+            float rot;
 
             if (rotation.get_rotation(rot) || (rot != 0.0)) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have rotation qualifier of \"0\"");
@@ -924,8 +924,8 @@ namespace Sipi {
             (angle == 0.0) &&
             (!mirror) && watermark.empty() &&
             (quality_format.format() == in_format) &&
-            (quality_format.quality() == SipiQualityFormat::DEFAULT)
-                ) {
+            (quality_format.quality() == SipiQualityFormat::DEFAULT)) {
+
             syslog(LOG_DEBUG, "Sending unmodified file....");
             conn_obj.status(Connection::OK);
             conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
@@ -935,38 +935,42 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     break;
                 }
+
                 case SipiQualityFormat::JPG: {
                     conn_obj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
                     break;
                 }
+
                 case SipiQualityFormat::PNG: {
                     conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                     break;
                 }
+
                 case SipiQualityFormat::JP2: {
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     break;
                 }
+
                 case SipiQualityFormat::PDF: {
                     conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
                     break;
                 }
-                default: {
-                }
+
+                default: {}
             }
+
             try {
                 syslog(LOG_INFO, "Sending file %s", infile.c_str());
                 conn_obj.sendFile(infile);
-            }
-            catch (int err) {
+            } catch (int err) {
                 // -1 was thrown
                 syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                 return;
-            }
-            catch (Sipi::SipiError &err) {
+            } catch (Sipi::SipiError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
+
             return;
         }
 
@@ -988,43 +992,47 @@ namespace Sipi {
                         conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                         break;
                     }
+
                     case SipiQualityFormat::JPG: {
                         conn_obj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
                         break;
                     }
+
                     case SipiQualityFormat::PNG: {
                         conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                         break;
                     }
+
                     case SipiQualityFormat::JP2: {
                         conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                         break;
                     }
-                    default: {
-                    }
+
+                    default: {}
                 }
+
                 try {
                     syslog(LOG_DEBUG, "Sending cachefile %s", cachefile.c_str());
                     conn_obj.sendFile(cachefile);
-                }
-                catch (int err) {
+                } catch (int err) {
                     // -1 was thrown
                     syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                     return;
-                }
-                catch (Sipi::SipiError &err) {
+                } catch (Sipi::SipiError &err) {
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                     return;
                 }
+
                 return;
             }
         }
+
         syslog(LOG_WARNING, "Nothing found in cache, reading and transforming file...");
         Sipi::SipiImage img;
+
         try {
             img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG);
-        }
-        catch (const SipiImageError &err) {
+        } catch (const SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
             return;
         }
