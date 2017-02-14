@@ -35,7 +35,6 @@
 #include "SipiLua.h"
 #include "SipiHttpServer.h"
 #include "SipiCache.h"
-#include "shttps/makeunique.h"
 
 namespace Sipi {
 
