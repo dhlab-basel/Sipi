@@ -51,7 +51,7 @@ namespace Sipi {
 
     SipiSize::SipiSize(std::string str) {
         nx = ny = 0;
-        percent = 0.;
+        percent = static_cast<float>(0.);
         canonical_ok = false;
 
         try {
@@ -60,7 +60,7 @@ namespace Sipi {
             } else if (str.find("pct") != std::string::npos) {
                 size_type = SizeType::PERCENTS;
                 std::string percent_str = str.substr(4);
-                percent = shttps::Parsing::parse_double(percent_str);
+                percent = shttps::Parsing::parse_float(percent_str);
 
                 if (percent < 0.0) percent = 1.0;
                 if (percent > 100.0) percent = 100.0;

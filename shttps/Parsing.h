@@ -63,7 +63,7 @@ namespace shttps {
          * @param str the string to be parsed.
          * @return the corresponding floating-point number.
          */
-        double parse_double(std::string &str);
+        float parse_float(std::string &str);
     }
 }
 

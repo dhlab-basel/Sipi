@@ -111,17 +111,17 @@ namespace shttps {
             }
         }
 
-        double parse_double(std::string &str) {
+        float parse_float(std::string &str) {
             try {
-                // A regex for parsing an integer containing only digits and an optional decimal point. In C++11,
+                // A regex for parsing a floating-point number containing only digits and an optional decimal point. In C++11,
                 // initialization of this static local variable happens once and is thread-safe.
-                static std::regex double_regex("^[0-9]+(\\.[0-9]+)?$", std::regex_constants::ECMAScript);
+                static std::regex float_regex("^[0-9]+(\\.[0-9]+)?$", std::regex_constants::ECMAScript);
 
-                std::smatch double_match;
+                std::smatch float_match;
 
-                if (std::regex_match(str, double_match, double_regex)) {
-                    std::stringstream sstream(double_match[0]);
-                    double result;
+                if (std::regex_match(str, float_match, float_regex)) {
+                    std::stringstream sstream(float_match[0]);
+                    float result;
                     sstream >> result;
                     return result;
                 } else {

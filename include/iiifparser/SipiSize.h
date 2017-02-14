@@ -57,7 +57,7 @@ namespace Sipi {
     private:
         static size_t limitdim; //!< maximal dimension of an image
         SizeType size_type; //!< Holds the type of size/scaling parameters given
-        double percent;      //!< if the scaling is given in percent, this holds the value
+        float percent;      //!< if the scaling is given in percent, this holds the value
         int reduce;         //!< if the scaling is given by a reduce value
         bool redonly;       //!< we *only* have a reduce in the resulting size
         size_t nx, ny;         //!< the parameters given
@@ -82,7 +82,7 @@ namespace Sipi {
          *
          * \param[in] percent_p Percentage parameter
          */
-        inline SipiSize(double percent_p) : percent(percent_p) { size_type = SizeType::PERCENTS; }
+        inline SipiSize(float percent_p) : percent(percent_p) { size_type = SizeType::PERCENTS; }
 
         /*!
          * Construcor taking size/scale part of IIIF url as parameter

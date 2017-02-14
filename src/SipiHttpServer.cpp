@@ -480,7 +480,7 @@ namespace Sipi {
 
         char canonical_rotation[canonical_len + 1];
         if (mirror || (angle != 0.0)) {
-            if ((angle - floor(angle)) < 1.0e-6) { // it's an integer
+            if ((angle - floorf(angle)) < 1.0e-6) { // it's an integer
                 if (mirror) {
                     (void) snprintf(canonical_rotation, canonical_len, "!%ld", lround(angle));
                 } else {

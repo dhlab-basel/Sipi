@@ -58,7 +58,7 @@ namespace Sipi {
                 str.erase(0, 1);
             }
 
-            rotation = static_cast<float>(shttps::Parsing::parse_double(str));
+            rotation = shttps::Parsing::parse_float(str);
         } catch (shttps::Error &error) {
             throw SipiError(__file__, __LINE__, "Could not parse IIIF rotation parameter: " + str);
         }
