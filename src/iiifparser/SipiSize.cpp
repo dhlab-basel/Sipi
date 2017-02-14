@@ -51,7 +51,7 @@ namespace Sipi {
 
     SipiSize::SipiSize(std::string str) {
         nx = ny = 0;
-        percent = static_cast<float>(0.);
+        percent = 0.F;
         canonical_ok = false;
 
         try {
@@ -173,8 +173,8 @@ namespace Sipi {
     SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
 
-        double img_w_double = static_cast<double>(img_w);
-        double img_h_double = static_cast<double>(img_h);
+        float img_w_float = static_cast<float>(img_w);
+        float img_h_float = static_cast<float>(img_h);
 
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
@@ -184,11 +184,11 @@ namespace Sipi {
                 int sf_w = 1;
                 int reduce_w = 0;
                 bool exact_match_w = true;
-                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
+                w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
 
                 while (w > nx) {
                     sf_w *= 2;
-                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
+                    w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
                     reduce_w++;
                 }
 
@@ -202,11 +202,11 @@ namespace Sipi {
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
-                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+                h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
 
                 while (h > ny) {
                     sf_h *= 2;
-                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+                    h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
                     reduce_h++;
                 }
 
@@ -237,10 +237,10 @@ namespace Sipi {
                 int sf_w = 1;
                 int reduce_w = 0;
                 bool exact_match_w = true;
-                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
+                w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
                 while (w > nx) {
                     sf_w *= 2;
-                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_w)));
+                    w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
                     reduce_w++;
                 }
                 if (w != nx) {
@@ -255,9 +255,9 @@ namespace Sipi {
                 redonly = exact_match_w; // if exact_match, then reduce only
 
                 if (exact_match_w) {
-                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_w)));
+                    h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_w)));
                 } else {
-                    h = static_cast<size_t>(ceil(static_cast<double>(img_h * nx) / img_w_double));
+                    h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
 
                 break;
@@ -270,11 +270,11 @@ namespace Sipi {
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
-                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+                h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
 
                 while (h > ny) {
                     sf_h *= 2;
-                    h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf_h)));
+                    h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
                     reduce_h++;
                 }
 
@@ -290,21 +290,21 @@ namespace Sipi {
                 redonly = exact_match_h; // if exact_match, then reduce only
 
                 if (exact_match_h) {
-                    w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf_h)));
+                    w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_h)));
                 } else {
-                    w = static_cast<size_t>(ceil(static_cast<double>(img_w * ny) / img_h_double));
+                    w = static_cast<size_t>(ceilf(static_cast<float>(img_w * ny) / img_h_float));
                 }
 
                 break;
             }
 
             case SipiSize::PERCENTS: {
-                w = static_cast<size_t>(ceil(img_w * percent / 100.F));
-                h = static_cast<size_t>(ceil(img_h * percent / 100.F));
+                w = static_cast<size_t>(ceilf(img_w * percent / 100.F));
+                h = static_cast<size_t>(ceilf(img_h * percent / 100.F));
 
                 reduce = 0;
-                double r = 100. / percent;
-                double s = 1.0;
+                float r = 100.F / percent;
+                float s = 1.0;
 
                 while (2.0 * s <= r) {
                     s *= 2.0;
@@ -328,27 +328,27 @@ namespace Sipi {
                 int sf = 1;
                 for (int i = 0; i < reduce; i++) sf *= 2;
 
-                w = static_cast<size_t>(ceil(img_w_double / static_cast<double>(sf)));
-                h = static_cast<size_t>(ceil(img_h_double / static_cast<double>(sf)));
+                w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf)));
+                h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf)));
                 redonly = true;
                 break;
             }
 
             case SipiSize::MAXDIM: {
-                float fx = (float) nx / (float) img_w;
-                float fy = (float) ny / (float) img_h;
+                float fx = static_cast<float>(nx) / img_w_float;
+                float fy = static_cast<float>(ny) / img_h_float;
 
                 float r;
                 if (fx < fy) { // scaling has to be done by fx
                     w = nx;
-                    h = static_cast<size_t>(ceil(img_h * fx));
+                    h = static_cast<size_t>(ceilf(img_h * fx));
 
-                    r = (float) img_w / (float) w;
+                    r = img_w_float / static_cast<float>(w);
                 } else { // scaling has to be done fy
-                    w = static_cast<size_t>(ceil(img_w * fy));
+                    w = static_cast<size_t>(ceilf(img_w * fy));
                     h = ny;
 
-                    r = (float) img_h / (float) h;
+                    r = img_h_float / static_cast<float>(h);
                 }
 
                 float s = 1.0;

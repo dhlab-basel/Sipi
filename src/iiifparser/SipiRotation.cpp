@@ -48,7 +48,7 @@ namespace Sipi {
         try {
             if (str.empty()) {
                 mirror = false;
-                rotation = static_cast<float>(0.);
+                rotation = 0.F;
                 return;
             }
 
