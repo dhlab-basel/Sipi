@@ -20,6 +20,7 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string>
@@ -37,38 +38,31 @@
 
 #include "SipiError.h"
 #include "SipiRotation.h"
+#include "shttps/Parsing.h"
 
 static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
     SipiRotation::SipiRotation(std::string str) {
-        int n;
-        if (str.empty()) {
-            mirror = false;
-            rotation = 0.;
-            return;
-        }
-        if (str[0] == '!') { // with mirroring!
-            mirror = true;
-            if (str.length() > 1) {
-                n = sscanf(str.c_str(), "!%f", &rotation);
-                if (n != 1) {
-                    throw SipiError(__file__, __LINE__, "IIIF Error reading Rotation parameter  \"" + str + "\" !");
-                }
-            }
-            else {
+        try {
+            if (str.empty()) {
+                mirror = false;
                 rotation = 0.;
+                return;
             }
-        }
-        else {
-            mirror = false;
-            n = sscanf(str.c_str(), "%f", &rotation);
-            if (n != 1) {
-                throw SipiError(__file__, __LINE__, "IIIF Error reading Rotation parameter  \"" + str + "\" !");
+
+            bool mirror = str[0] == '!';
+
+            if (mirror) {
+                str.erase(0, 1);
             }
+
+            rotation = shttps::Parsing::parse_double(str);
+        } catch (shttps::Error &error) {
+            throw SipiError(__file__, __LINE__, "Could not parse IIIF rotation parameter: " + str);
         }
-    };
+    }
     //-------------------------------------------------------------------------
 
 
@@ -80,6 +74,6 @@ namespace Sipi {
         outstr << "  Mirror " << rhs.mirror;
         outstr << " | rotation = " << std::to_string(rhs.rotation);
         return outstr;
-    };
+    }
     //-------------------------------------------------------------------------
 }

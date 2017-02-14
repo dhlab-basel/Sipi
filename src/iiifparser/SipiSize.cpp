@@ -97,7 +97,7 @@ namespace Sipi {
                         throw SipiError(__file__, __LINE__, "IIIF height cannot be zero");
                     }
 
-                    size_type = SizeType::PIXELS_X;
+                    size_type = SizeType::PIXELS_Y;
                 } else if (height_str.empty()) {
                     nx = shttps::Parsing::parse_int(width_str);
 

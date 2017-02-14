@@ -475,16 +475,16 @@ namespace Sipi {
 
         size->canonical(canonical_size, canonical_len);
 
-        float angle;
+        double angle;
         bool mirror = rotation.get_rotation(angle);
 
         char canonical_rotation[canonical_len + 1];
         if (mirror || (angle != 0.0)) {
-            if ((angle - floorf(angle)) < 1.0e-6) { // it's an integer
+            if ((angle - floor(angle)) < 1.0e-6) { // it's an integer
                 if (mirror) {
-                    (void) snprintf(canonical_rotation, canonical_len, "!%ld", lroundf(angle));
+                    (void) snprintf(canonical_rotation, canonical_len, "!%ld", lround(angle));
                 } else {
-                    (void) snprintf(canonical_rotation, canonical_len, "%ld", lroundf(angle));
+                    (void) snprintf(canonical_rotation, canonical_len, "%ld", lround(angle));
                 }
             } else {
                 if (mirror) {
@@ -834,7 +834,7 @@ namespace Sipi {
         }
 
 
-        float angle;
+        double angle;
         bool mirror = rotation.get_rotation(angle);
 
         //
@@ -848,15 +848,19 @@ namespace Sipi {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
                 return;
             }
+
             if (region->getType() != SipiRegion::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have region qualifier of \"full\"");
                 return;
             }
-            float rot;
+
+            double rot;
+
             if (rotation.get_rotation(rot) || (rot != 0.0)) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have rotation qualifier of \"0\"");
                 return;
             }
+
             if ((quality_format.quality() != SipiQualityFormat::DEFAULT) ||
                 (quality_format.format() != SipiQualityFormat::PDF)) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have quality qualifier of \"default.pdf\"");

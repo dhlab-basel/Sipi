@@ -32,7 +32,7 @@ namespace Sipi {
     class SipiRotation {
     private:
         bool mirror;
-        float rotation;
+        double rotation;
     public:
         inline SipiRotation() {
             mirror = false;
@@ -41,7 +41,7 @@ namespace Sipi {
 
         SipiRotation(std::string str);
 
-        inline bool get_rotation(float &rot) {
+        inline bool get_rotation(double &rot) {
             rot = rotation;
             return mirror;
         };
