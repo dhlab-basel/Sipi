@@ -350,7 +350,7 @@ namespace shttps {
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _max_post_request = 1024*1024*20; // default is 20 MB
+        _max_post_size = 1024*1024*20; // default is 20 MB
         _content = nullptr;
         content_length = 0;
         _finished = false;
@@ -370,7 +370,7 @@ namespace shttps {
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _max_post_request = 1024*1024*20; // default is 20 MB
+        _max_post_size = 1024*1024*20; // default is 20 MB
         _content = nullptr;
         content_length = 0;
         _finished = false;

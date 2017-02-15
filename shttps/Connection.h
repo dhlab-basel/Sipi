@@ -556,7 +556,7 @@ namespace shttps {
         *
         * \param[in] sz Maximal size of a post request in bytes
         */
-        inline void max_post_site(size_t sz) { _max_post_size = sz; }
+        inline void max_post_size(size_t sz) { _max_post_size = sz; }
 
        /*!
         * Get the directory for temporary files
