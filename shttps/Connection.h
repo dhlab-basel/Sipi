@@ -313,8 +313,9 @@ namespace shttps {
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
         char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
-        size_t content_length;    //!< length of body in octets (used if not chunked transfer)
-        std::string _content_type;   //!< Content-type (mime type of content)
+        size_t content_length;      //!< length of body in octets (used if not chunked transfer)
+        size_t _max_post_size;       //!< maximum number of bytes accepted by a post request
+        std::string _content_type;  //!< Content-type (mime type of content)
         std::ofstream *cachefile;   //!< pointer to cache file
         char *outbuf;               //!< If not NULL, pointer to the output buffer (buffered output used)
         size_t outbuf_size;         //!< Actual size of output buffer
@@ -543,6 +544,19 @@ namespace shttps {
         */
         void cookies(const Cookie &cookie_p);
 
+       /*!
+        * Get the maximum size of a post request in bytes
+        *
+        * \returns Actual maximal size of  post request
+        */
+        inline size_t max_post_size(void) { return _max_post_size; }
+
+       /*!
+        * Set the maximal size of a post request
+        *
+        * \param[in] sz Maximal size of a post request in bytes
+        */
+        inline void max_post_site(size_t sz) { _max_post_size = sz; }
 
        /*!
         * Get the directory for temporary files
