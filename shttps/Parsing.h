@@ -20,41 +20,51 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __shttps_getmimetype_h
-#define __shttps_getmimetype_h
+#ifndef __shttps_parsing_h
+#define __shttps_parsing_h
 
 #include <string>
 #include <regex>
 
 namespace shttps {
 
-   /*!
-    * \brief Wrapper for libmagic mimetype guesser
-    *
-    * Implements a function which guesses the mimetype of a file
-    * using the magic number (that is the signature of the first few bytes)
-    * of a file.
-    */
-    namespace GetMimetype {
+    /*!
+     * \brief Parsing utilities.
+     */
+    namespace Parsing {
         /*!
          * Parses a string containing a MIME type and optional character set, such as the Content-Type header defined by
          * <https://tools.ietf.org/html/rfc7231#section-3.1.1>.
          * @param mimestr a string containing the MIME type.
          * @return the MIME type and optional character set.
          */
-        std::pair<std::string, std::string> parseMimetype(const std::string& mimestr);
+        std::pair<std::string, std::string> parseMimetype(const std::string &mimestr);
 
 
-       /*!
-        * Determine the mimetype of a file using the magic number
-        *
-        * \param[in] fpath Path to file to check for the mimetype
-        * \returns pair<string,string> containing the mimetype as first part
-        *          and the charset as second part. Access as val.first and val.second!
-        */
-        std::pair<std::string,std::string> getFileMimetype(const std::string& fpath);
-    };
+        /*!
+         * Determine the mimetype of a file using the magic number
+         *
+         * \param[in] fpath Path to file to check for the mimetype
+         * \returns pair<string,string> containing the mimetype as first part
+         *          and the charset as second part. Access as val.first and val.second!
+         */
+        std::pair<std::string, std::string> getFileMimetype(const std::string &fpath);
 
+        /*!
+         * Parses an integer.
+         * @param str the string to be parsed.
+         * @return the corresponding integer.
+         */
+        size_t parse_int(std::string &str);
+
+        /*!
+         * Parses a floating-point number containing only digits and an optional decimal point.
+         *
+         * @param str the string to be parsed.
+         * @return the corresponding floating-point number.
+         */
+        float parse_float(std::string &str);
+    }
 }
 
-#endif //__shttps_getmimetype_h
+#endif //__shttps_parsing_h

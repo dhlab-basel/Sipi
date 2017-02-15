@@ -318,7 +318,7 @@ add_executable(
         shttps/Connection.cpp shttps/Connection.h
         shttps/LuaServer.cpp shttps/LuaServer.h
         shttps/LuaSqlite.cpp shttps/LuaSqlite.h
-        shttps/GetMimetype.cpp shttps/GetMimetype.h
+        shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
         shttps/makeunique.h)

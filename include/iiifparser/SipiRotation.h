@@ -36,7 +36,7 @@ namespace Sipi {
     public:
         inline SipiRotation() {
             mirror = false;
-            rotation = 0.;
+            rotation = 0.F;
         }
 
         SipiRotation(std::string str);

@@ -45,7 +45,7 @@
 #include "optionparser.h"
 
 #include "jansson.h"
-#include "shttps/GetMimetype.h"
+#include "shttps/Parsing.h"
 #include "SipiConf.h"
 
 // A macro for silencing incorrect compiler warnings about unused variables.
@@ -628,20 +628,7 @@ int main(int argc, char *argv[]) {
             size = std::make_shared<Sipi::SipiSize>(reduce);
         } else if (options[SIZE]) {
             try {
-                std::stringstream ss(options[SIZE].arg);
-                std::vector<int> sizV;
-                int sizC;
-                while (ss >> sizC) {
-                    sizV.push_back(sizC);
-                    if (ss.peek() == ',') {
-                        ss.ignore();
-                    }
-                }
-                if (sizV.size() == 2) {
-                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(1));
-                } else {
-                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(0), true);
-                }
+                size = std::make_shared<Sipi::SipiSize>(options[SIZE].arg);
             }
             catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
@@ -667,7 +654,7 @@ int main(int argc, char *argv[]) {
         if (format == "jpg") {
             img.to8bps();
             if (img.getNalpha() > 0) {
-                img.removeChan(img.getNc() - 1);
+                img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
             }
         }
 

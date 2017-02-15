@@ -34,7 +34,7 @@
 //#include "formats/SipiIOOpenJ2k.h"
 #include "formats/SipiIOJpeg.h"
 #include "formats/SipiIOPng.h"
-#include "shttps/GetMimetype.h"
+#include "shttps/Parsing.h"
 
 static const char __file__[] = __FILE__;
 
@@ -208,7 +208,7 @@ namespace Sipi {
     {
         try
         {
-            std::string actual_mimetype = shttps::GetMimetype::getFileMimetype(path).first;
+            std::string actual_mimetype = shttps::Parsing::getFileMimetype(path).first;
 
             if (actual_mimetype != given_mimetype) {
                 //std::cerr << actual_mimetype << " does not equal " << given_mimetype << std::endl;
@@ -282,7 +282,7 @@ namespace Sipi {
             internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
             std::string origname = shttps::getFileName(filepath);
-            std::string mimetype = shttps::GetMimetype::getFileMimetype(filepath).first;
+            std::string mimetype = shttps::Parsing::getFileMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
             essential_metadata(emdata);
         }
@@ -305,7 +305,7 @@ namespace Sipi {
             shttps::Hash internal_hash(htype);
             internal_hash.add_data(pixels, nx * ny * nc * bps / 8);
             std::string checksum = internal_hash.hash();
-            std::string mimetype = shttps::GetMimetype::getFileMimetype(filepath).first;
+            std::string mimetype = shttps::Parsing::getFileMimetype(filepath).first;
             SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
             essential_metadata(emdata);
         }

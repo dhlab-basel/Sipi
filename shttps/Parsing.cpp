@@ -24,7 +24,7 @@
 #include <regex>
 #include <sstream>
 
-#include "GetMimetype.h"
+#include "Parsing.h"
 #include "Error.h"
 
 #include "magic.h"
@@ -33,13 +33,14 @@ static const char __file__[] = __FILE__;
 
 namespace shttps {
 
-    namespace GetMimetype {
+    namespace Parsing {
 
-        std::pair<std::string, std::string> parseMimetype(const std::string& mimestr) {
+        std::pair<std::string, std::string> parseMimetype(const std::string &mimestr) {
             try {
                 // A regex for parsing the value of an HTTP Content-Type header. In C++11, initialization of this
                 // static local variable happens once and is thread-safe.
-                static std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$", std::regex_constants::ECMAScript | std::regex_constants::icase);
+                static std::regex mime_regex("^([^;]+)(;\\s*charset=\"?([^\"]+)\"?)?$",
+                                             std::regex_constants::ECMAScript | std::regex_constants::icase);
 
                 std::smatch mime_match;
                 std::string mimetype;
@@ -55,6 +56,7 @@ namespace shttps {
                     }
                 } else {
                     std::ostringstream error_msg;
+                    error_msg << "Could not parse MIME type: " << mimestr;
                     throw Error(__file__, __LINE__, error_msg.str());
                 }
 
@@ -63,14 +65,14 @@ namespace shttps {
                 std::transform(charset.begin(), charset.end(), charset.begin(), ::tolower);
 
                 return std::make_pair(mimetype, charset);
-            } catch (std::regex_error& e) {
+            } catch (std::regex_error &e) {
                 std::ostringstream error_msg;
                 error_msg << "Regex error: " << e.what();
                 throw Error(__file__, __LINE__, error_msg.str());
             }
         }
 
-        std::pair<std::string, std::string> getFileMimetype(const std::string& fpath) {
+        std::pair<std::string, std::string> getFileMimetype(const std::string &fpath) {
             magic_t handle;
             if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
                 throw Error(__file__, __LINE__, magic_error(handle));
@@ -82,6 +84,56 @@ namespace shttps {
 
             std::string mimestr(magic_file(handle, fpath.c_str()));
             return parseMimetype(mimestr);
+        }
+
+        size_t parse_int(std::string &str) {
+            try {
+                // A regex for parsing an integer containing only digits. In C++11, initialization of this
+                // static local variable happens once and is thread-safe.
+                static std::regex int_regex("^[0-9]+$", std::regex_constants::ECMAScript);
+
+                std::smatch int_match;
+
+                if (std::regex_match(str, int_match, int_regex)) {
+                    std::stringstream sstream(int_match[0]);
+                    size_t result;
+                    sstream >> result;
+                    return result;
+                } else {
+                    std::ostringstream error_msg;
+                    error_msg << "Could not parse integer: " << str;
+                    throw Error(__file__, __LINE__, error_msg.str());
+                }
+            } catch (std::regex_error &e) {
+                std::ostringstream error_msg;
+                error_msg << "Regex error: " << e.what();
+                throw Error(__file__, __LINE__, error_msg.str());
+            }
+        }
+
+        float parse_float(std::string &str) {
+            try {
+                // A regex for parsing a floating-point number containing only digits and an optional decimal point. In C++11,
+                // initialization of this static local variable happens once and is thread-safe.
+                static std::regex float_regex("^[0-9]+(\\.[0-9]+)?$", std::regex_constants::ECMAScript);
+
+                std::smatch float_match;
+
+                if (std::regex_match(str, float_match, float_regex)) {
+                    std::stringstream sstream(float_match[0]);
+                    float result;
+                    sstream >> result;
+                    return result;
+                } else {
+                    std::ostringstream error_msg;
+                    error_msg << "Could not parse floating-point number: " << str;
+                    throw Error(__file__, __LINE__, error_msg.str());
+                }
+            } catch (std::regex_error &e) {
+                std::ostringstream error_msg;
+                error_msg << "Regex error: " << e.what();
+                throw Error(__file__, __LINE__, error_msg.str());
+            }
         }
     }
 }
