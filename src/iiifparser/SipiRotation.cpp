@@ -44,6 +44,8 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
+    SipiRotation::SipiRotation() { }
+
     SipiRotation::SipiRotation(std::string str) {
         try {
             if (str.empty()) {
