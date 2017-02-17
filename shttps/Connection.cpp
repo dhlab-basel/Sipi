@@ -350,7 +350,6 @@ namespace shttps {
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _max_post_size = 0; // ignore maximal post size
         _content = nullptr;
         content_length = 0;
         _finished = false;
@@ -370,7 +369,6 @@ namespace shttps {
         _keep_alive_timeout = -1;
         _chunked_transfer_in = false;
         _chunked_transfer_out = false;
-        _max_post_size = 0; // ignore maximal post size
         _content = nullptr;
         content_length = 0;
         _finished = false;
@@ -477,7 +475,7 @@ namespace shttps {
                     char *bodybuf = nullptr;
                     if (_chunked_transfer_in) {
                         char *chunk_buf;
-                        ChunkReader ckrd(ins, _max_post_size);
+                        ChunkReader ckrd(ins, _server->max_post_size());
                         content_length = ckrd.readAll(&chunk_buf);
                         if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
@@ -487,7 +485,7 @@ namespace shttps {
                     }
                     else {
                         if (content_length > 0) {
-                            if ((_max_post_size > 0) && (content_length > _max_post_size)) {
+                            if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
                                 throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                             }
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
@@ -529,13 +527,13 @@ namespace shttps {
                     // at this location we have determined the boundary string
                     //
                     string line;
-                    ChunkReader ckrd(ins, _max_post_size); // if we need it, we have it...
+                    ChunkReader ckrd(ins, _server->max_post_size()); // if we need it, we have it...
 
                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
                     if (ins->fail() || ins->eof()) {
                         throw -1;
                     }
-                    if ((_max_post_size > 0) && (n > _max_post_size)) {
+                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                     }
 
@@ -551,7 +549,7 @@ namespace shttps {
                             if (ins->fail() || ins->eof()) {
                                 throw -1;
                             }
-                            if ((_max_post_size > 0) && (n > _max_post_size)) {
+                            if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                 throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                             }
                             while (!line.empty()) {
@@ -599,11 +597,10 @@ namespace shttps {
                                     encoding = value;
                                 }
                                 n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-std::cerr << " >" << line << "< " << std::endl;
                                 if (ins->fail() || ins->eof()) {
                                     throw -1;
                                 }
-                                if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                             } // while
@@ -613,7 +610,7 @@ std::cerr << " >" << line << "< " << std::endl;
                                 if (ins->fail() || ins->eof()) {
                                     throw -1;
                                 }
-                                if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                                 while ((line != boundary) && (line != lastboundary)) {
@@ -622,7 +619,7 @@ std::cerr << " >" << line << "< " << std::endl;
                                     if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
-                                    if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                     }
                                 }
@@ -667,12 +664,11 @@ std::cerr << " >" << line << "< " << std::endl;
                                 //
                                 string nlboundary = "\r\n" + boundary;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
-std::cerr << (char) inbyte;
                                     if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
                                     ++n;
-                                    if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                     }
                                     if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
@@ -708,7 +704,7 @@ std::cerr << (char) inbyte;
                                     throw -1;
                                 }
                                 ++n;
-                                if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                                 if (inbyte == '-') { // we have a last boundary!
@@ -726,7 +722,7 @@ std::cerr << (char) inbyte;
                                     throw -1;
                                 }
                                 ++n;
-                                if ((_max_post_size > 0) && (n > _max_post_size)) {
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                                 continue; // break loop;
@@ -736,7 +732,7 @@ std::cerr << (char) inbyte;
                         if (ins->fail() || ins->eof()) {
                             throw -1;
                         }
-                        if ((_max_post_size > 0) && (n > _max_post_size)) {
+                        if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
                     }
@@ -748,7 +744,7 @@ std::cerr << (char) inbyte;
                     if (ins->fail() || ins->eof()) {
                         throw -1;
                     }
-                    if ((_max_post_size > 0) && (n > _max_post_size)) {
+                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                     }
                     content_length = 0;
@@ -760,7 +756,7 @@ std::cerr << (char) inbyte;
                     _content_type = content_type_opts[0];
                     if (_chunked_transfer_in) {
                         char *tmp;
-                        ChunkReader ckrd(ins, _max_post_size);
+                        ChunkReader ckrd(ins, _server->max_post_size());
                         content_length = ckrd.readAll(&tmp);
                         if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
@@ -770,7 +766,7 @@ std::cerr << (char) inbyte;
                         _content[content_length] = '\0';
                     }
                     else if (content_length > 0) {
-                        if ((_max_post_size > 0) && (content_length > _max_post_size)) {
+                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
                         if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
@@ -806,7 +802,7 @@ std::cerr << (char) inbyte;
                     _content_type = content_type_opts[0];
                     if (_chunked_transfer_in) {
                         char *tmp;
-                        ChunkReader ckrd(ins, _max_post_size);
+                        ChunkReader ckrd(ins, _server->max_post_size());
                         content_length = ckrd.readAll(&tmp);
                         if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
@@ -816,7 +812,7 @@ std::cerr << (char) inbyte;
                         _content[content_length] = '\0';
                     }
                     else if (content_length > 0) {
-                        if ((_max_post_size > 0) && (content_length > _max_post_size)) {
+                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
                         _content = (char *) malloc(content_length + 1);

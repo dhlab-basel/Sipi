@@ -120,7 +120,7 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "cache_size"); // table1 - "index_L1"
-    lua_pushstring(L, conf->getCacheSize().c_str());
+    lua_pushinteger(L, conf->getCacheSize());
     lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "cache_hysteresis"); // table1 - "index_L1"
@@ -141,6 +141,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
 
     lua_pushstring(L, "n_threads"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getNThreads());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "max_post_size"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getMaxPostSize());
     lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "tmpdir"); // table1 - "index_L1"
@@ -441,19 +445,7 @@ int main(int argc, char *argv[]) {
             std::string emptystr;
             std::string cachedir = sipiConf.getCacheDir();
             if (!cachedir.empty()) {
-                std::string cachesize_str = sipiConf.getCacheSize();
-                long long cachesize = 0;
-                if (!cachesize_str.empty()) {
-                    size_t l = cachesize_str.length();
-                    char c = cachesize_str[l - 1];
-                    if (c == 'M') {
-                        cachesize = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024;
-                    } else if (c == 'G') {
-                        cachesize = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024 * 1024;
-                    } else {
-                        cachesize = stoll(cachesize_str);
-                    }
-                }
+                size_t cachesize = sipiConf.getCacheSize();
                 int nfiles = sipiConf.getCacheNFiles();
                 float hysteresis = sipiConf.getCacheHysteresis();
                 server.cache(cachedir, cachesize, nfiles, hysteresis);

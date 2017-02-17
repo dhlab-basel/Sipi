@@ -1127,8 +1127,7 @@ namespace shttps {
         if (ins->eof() || os->eof()) return CLOSE;
 
         try {
-std::cerr << "Connection: _max_post_size=" << _max_post_size << std::endl;
-            Connection conn(this, ins, os, _tmpdir, _max_post_size);
+            Connection conn(this, ins, os, _tmpdir);
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
@@ -1138,6 +1137,7 @@ std::cerr << "Connection: _max_post_size=" << _max_post_size << std::endl;
             conn.peer_ip(peer_ip);
             conn.peer_port(peer_port);
             conn.secure(secure);
+
 
             if (conn.resetConnection()) {
                 if (conn.keepAlive()) {
@@ -1177,13 +1177,12 @@ std::cerr << "Connection: _max_post_size=" << _max_post_size << std::endl;
             }
         }
         catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-        syslog(LOG_DEBUG, "Socket connection: timeout or socket closed from main");
+            syslog(LOG_DEBUG, "Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
         catch(Error &err) {
+            syslog(LOG_WARNING, "Internal server error: %s", err.to_string().c_str());
             try {
-std::cerr << err << std::endl;
-                syslog(LOG_DEBUG, "Internal server error: %s", err.to_string().c_str());
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
                 std::stringstream ss;

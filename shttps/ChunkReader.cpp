@@ -58,7 +58,7 @@ namespace shttps {
     size_t ChunkReader::read_chunk(istream &ins, char **buf, size_t offs)
     {
         string line;
-        (void) safeGetline(ins, line); // read empty line of last chunk...
+        (void) safeGetline(ins, line); // read chunk size
         if (ins.fail() || ins.eof()) {
             throw -1;
         }
@@ -69,6 +69,7 @@ namespace shttps {
         catch(const std::invalid_argument& ia) {
             throw Error(__file__, __LINE__, ia.what());
         }
+
         //
         // Check for post_maxsize
         //
@@ -93,7 +94,7 @@ namespace shttps {
             throw -1;
         }
         (*buf)[offs + n] = '\0';
-        (void) safeGetline(ins, line); // read empty line
+        (void) safeGetline(ins, line); // read "\r\n" at end of chunk...
         if (ins.fail() || ins.eof()) {
             throw -1;
         }
@@ -128,8 +129,7 @@ namespace shttps {
         for(;;) {
             if (chunk_pos >= chunk_size) {
                 string line;
-                if (chunk_pos > 0) (void) safeGetline(*ins, line); // read "\r\n" at end of last chunk...
-                (void) safeGetline(*ins, line);
+                (void) safeGetline(*ins, line); // read chunk size
                 if (ins->fail() || ins->eof()) {
                     throw -1;
                 }
@@ -161,6 +161,13 @@ namespace shttps {
             std::streambuf* sb = ins->rdbuf();
             int c = sb->sbumpc();
             chunk_pos++;
+            if (chunk_pos >= chunk_size) {
+                string line;
+                (void) safeGetline(*ins, line); // read "\r\n" at end of  chunk...
+                if (ins->fail() || ins->eof()) {
+                    throw -1;
+                }
+            }
             n++;
             switch (c) {
                 case '\n':
@@ -169,7 +176,13 @@ namespace shttps {
                     if(sb->sgetc() == '\n') {
                         sb->sbumpc();
                         chunk_pos++;
-std::cerr << "chunk_size=" << chunk_size << " chunk_pos=" << chunk_pos << std::endl;
+                        if (chunk_pos >= chunk_size) {
+                            string line;
+                            (void) safeGetline(*ins, line); // read "\r\n" at end of  chunk...
+                            if (ins->fail() || ins->eof()) {
+                                throw -1;
+                            }
+                        }
                         n++;
                     }
                     return n;
@@ -189,7 +202,6 @@ std::cerr << "chunk_size=" << chunk_size << " chunk_pos=" << chunk_pos << std::e
     {
         if (chunk_pos >= chunk_size) {
             string line;
-            if (chunk_pos > 0) (void) safeGetline(*ins, line); // read "\r\n" at end of last chunk...
             (void) safeGetline(*ins, line); // read the size of the new chunk
             if (ins->fail() || ins->eof()) {
                 throw -1;
@@ -221,6 +233,13 @@ std::cerr << "chunk_size=" << chunk_size << " chunk_pos=" << chunk_pos << std::e
         std::streambuf* sb = ins->rdbuf();
         int c = sb->sbumpc();
         chunk_pos++;
+        if (chunk_pos >= chunk_size) {
+            string line;
+            (void) safeGetline(*ins, line); // read "\r\n" at end of chunk...
+            if (ins->fail() || ins->eof()) {
+                throw -1;
+            }
+        }
         return c;
     }
     //=========================================================================
