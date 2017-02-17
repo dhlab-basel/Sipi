@@ -474,7 +474,6 @@ namespace shttps {
                 _method = POST;
                 vector <string> content_type_opts = process_header_value(header_in["content-type"]);
                 if (content_type_opts[0] == "application/x-www-form-urlencoded") {
-std::cerr << "##" << __LINE__ << std::endl;
                     char *bodybuf = nullptr;
                     if (_chunked_transfer_in) {
                         char *chunk_buf;
@@ -510,7 +509,6 @@ std::cerr << "##" << __LINE__ << std::endl;
                     content_length = 0;
                 }
                 else if (content_type_opts[0] == "multipart/form-data") {
-std::cerr << "##" << __LINE__ << std::endl;
                     string boundary;
                     for (int i = 1; i < content_type_opts.size(); ++i) {
                         pair <string, string> p = strsplit(content_type_opts[i], '=');
@@ -533,11 +531,9 @@ std::cerr << "##" << __LINE__ << std::endl;
 
                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
                     if (ins->fail() || ins->eof()) {
-std::cerr << "##" << __LINE__ << std::endl;
                         throw -1;
                     }
                     while (line != lastboundary) {
-std::cerr << "##" << __LINE__ << std::endl;
                         if (line == boundary) { // we have a boundary, thus we start a new field
                             string fieldname;
                             string fieldvalue;
@@ -598,30 +594,24 @@ std::cerr << "##" << __LINE__ << std::endl;
                                     throw -1;
                                 }
                             } // while
-std::cerr << "##" << __LINE__ << std::endl;
                             if (filename.empty()) {
-std::cerr << "##" << __LINE__ << std::endl;
                                 // we read a normal value
                                 n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
                                 if (ins->fail() || ins->eof()) {
-std::cerr << "##" << __LINE__ << std::endl;
                                     throw -1;
                                 }
                                 while ((line != boundary) && (line != lastboundary)) {
                                     fieldvalue += line;
                                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
                                     if (ins->fail() || ins->eof()) {
-std::cerr << "##" << __LINE__ << std::endl;
                                         throw -1;
                                     }
                                 }
                                 post_params[fieldname] = fieldvalue;
-std::cerr << "##" << __LINE__ << std::endl;
 
                                 continue;
                             }
                             else {
-std::cerr << "##" << __LINE__ << std::endl;
                                 int inbyte;
                                 size_t cnt = 0;
                                 size_t fsize = 0;
@@ -633,10 +623,8 @@ std::cerr << "##" << __LINE__ << std::endl;
                                 if (_tmpdir.empty()) {
                                     throw Error(__file__, __LINE__, "_tmpdir is empty");
                                 }
-std::cerr << "##" << __LINE__ << std::endl;
 
                                 tmpname = _tmpdir + "/sipi_XXXXXXXX";
-std::cerr << "##" << __LINE__ << " " << tmpname << std::endl;
 
                                 auto writable = make_unique<char[]>(tmpname.size() + 1);
                                 std::copy(tmpname.begin(), tmpname.end(), writable.get());
@@ -647,31 +635,23 @@ std::cerr << "##" << __LINE__ << " " << tmpname << std::endl;
                                     throw Error(__file__, __LINE__, "Could not create temporary filename!");
                                 }
 
-std::cerr << "##" << __LINE__ << std::endl;
-
                                 tmpname = string(writable.get());
                                 close(fd); // here we close the file created by mkstemp
-std::cerr << "##" << __LINE__ << std::endl;
 
                                 ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);
                                 if (outf.fail()) {
-std::cerr << "##" << __LINE__ << std::endl;
                                     throw Error(__file__, __LINE__, "Could not open temporary file!");
                                 }
-std::cerr << "##" << __LINE__ << std::endl;
+
                                 //
                                 // the boundary string starts on a new line which is separate by "\r\n"
                                 //
                                 string nlboundary = "\r\n" + boundary;
-std::cerr << "##" << __LINE__ << std::endl;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
-std::cerr << "##" << __LINE__ << std::endl;
                                     if (ins->fail() || ins->eof()) {
-std::cerr << "##" << __LINE__ << std::endl;
                                         throw -1;
                                     }
                                     if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
-std::cerr << "##" << __LINE__ << std::endl;
                                         ++cnt;
                                         if (cnt == nlboundary.length()) {
                                             // OK, we have read the whole file...
@@ -679,22 +659,22 @@ std::cerr << "##" << __LINE__ << std::endl;
                                         }
                                     }
                                     else if (cnt > 0) { // not yet the boundary
-std::cerr << "##" << __LINE__ << std::endl;
                                         for (int i = 0; i < cnt; i++) {
                                             outf.put(nlboundary[i]);
+                                            if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
                                             ++fsize;
                                         }
                                         cnt = 0;
                                         outf.put((char) inbyte);
+                                        if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
                                         ++fsize;
                                     }
                                     else {
-std::cerr << "##" << __LINE__ << std::endl;
                                         outf.put((char) inbyte);
+                                        if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
                                         ++fsize;
                                     }
                                 }
-std::cerr << "##" << __LINE__ << std::endl;
 
                                 outf.close();
                                 UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
@@ -725,7 +705,6 @@ std::cerr << "##" << __LINE__ << std::endl;
                             throw -1;
                         }
                     }
-std::cerr << "##" << __LINE__ << std::endl;
 
                     //
                     // now we get the last, empty line...
@@ -735,7 +714,6 @@ std::cerr << "##" << __LINE__ << std::endl;
                         throw -1;
                     }
                     content_length = 0;
-std::cerr << "##" << __LINE__ << std::endl;
                 }
                 else if ((content_type_opts[0] == "text/plain") ||
                          (content_type_opts[0] == "application/json") ||

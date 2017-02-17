@@ -159,14 +159,9 @@ namespace shttps {
 
     int ChunkReader::getc(void)
     {
+        std::cerr << "chunk_pos=" << chunk_pos << " chunk_size=" << chunk_size << std::endl;
         if (chunk_pos >= chunk_size) {
             string line;
-            if (chunk_size > 0) {
-                (void) safeGetline(*ins, line); // read the "\r\n" which terminates the previous chunk
-                if (ins->fail() || ins->eof()) {
-                    throw -1;
-                }
-            }
             (void) safeGetline(*ins, line); // read the size of the new chunk
             if (ins->fail() || ins->eof()) {
                 throw -1;
@@ -190,12 +185,9 @@ namespace shttps {
         std::streambuf* sb = ins->rdbuf();
         int c = sb->sbumpc();
         chunk_pos++;
-
         return c;
     }
     //=========================================================================
-
-
 
 
 }
