@@ -46,13 +46,19 @@ namespace shttps {
         std::istream *ins;
         size_t chunk_size;
         size_t chunk_pos;
+        size_t post_maxsize;
+
+        size_t read_chunk(std::istream &ins, char **buf, size_t offs = 0);
     public:
        /*!
-        *  Constructor for class used for reading chunks from a HTTP connection that is chunked
+        * Constructor for class used for reading chunks from a HTTP connection that is chunked
         *
-        *  \param[in] ins_p Input stream (e.g. socket stream of HTTP connection)
+        * \param[in] ins_p Input stream (e.g. socket stream of HTTP connection)
+        * \param[in] maxisze_p Maximal total size the chunk reader is allowed to read.
+        *            If the chunk or total data is bigger, an shttps::Error is thrown!
+        *            IF post_maxsize_p is 0 (default), there is no limit.
         */
-        ChunkReader(std::istream *ins_p);
+        ChunkReader(std::istream *ins_p, size_t post_maxsize_p = 0);
 
        /*!
         * Read all chunks and return the data in the buffer

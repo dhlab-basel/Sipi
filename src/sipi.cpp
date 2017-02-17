@@ -425,7 +425,7 @@ int main(int argc, char *argv[]) {
 
             // set tmpdir for uploads (defined in sipi.config.lua)
             server.tmpdir(sipiConf.getTmpDir());
-
+            server.max_post_size(sipiConf.getMaxPostSize());
             server.scriptdir(
                     sipiConf.getScriptDir()); // set the directory where the Lua scripts are found for the "Lua"-routes
             server.luaRoutes(sipiConf.getRoutes());

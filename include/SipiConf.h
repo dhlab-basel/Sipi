@@ -56,6 +56,7 @@ namespace Sipi {
         std::string thumb_size;
         int cache_n_files;
         int n_threads;
+        size_t max_post_size;
         std::string tmp_dir;
         std::string scriptdir;
         std::vector<shttps::LuaRoute> routes;
@@ -110,6 +111,8 @@ namespace Sipi {
         inline int getCacheNFiles(void) { return cache_n_files; }
 
         inline int getNThreads(void) { return n_threads; }
+
+        inline int getMaxPostSize(void) { return max_post_size; }
 
         inline std::string getTmpDir(void) { return tmp_dir; }
 

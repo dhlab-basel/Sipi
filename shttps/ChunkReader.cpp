@@ -49,7 +49,13 @@ using namespace std;
 
 namespace shttps {
 
-    static size_t read_chunk(istream &ins, char **buf, size_t offs = 0)
+    ChunkReader::ChunkReader(std::istream *ins_p, size_t post_maxsize_p) : ins(ins_p), post_maxsize(post_maxsize_p) {
+        chunk_size = 0;
+        chunk_pos = 0;
+    };
+    //=========================================================================
+
+    size_t ChunkReader::read_chunk(istream &ins, char **buf, size_t offs)
     {
         string line;
         (void) safeGetline(ins, line); // read empty line
@@ -62,6 +68,14 @@ namespace shttps {
         }
         catch(const std::invalid_argument& ia) {
             throw Error(__file__, __LINE__, ia.what());
+        }
+        //
+        // Check for post_maxsize
+        //
+        if ((post_maxsize > 0) && (n > post_maxsize)) {
+            stringstream ss;
+            ss << "Chunksize (" << n << ") to big (maxsize=" << post_maxsize << ")";
+            throw Error(__file__, __LINE__, ss.str());
         }
         if (n == 0) return 0;
         if (*buf == nullptr) {
@@ -88,17 +102,19 @@ namespace shttps {
     //=========================================================================
 
 
-    ChunkReader::ChunkReader(std::istream *ins_p) : ins(ins_p) {
-        chunk_size = 0;
-        chunk_pos = 0;
-    };
-    //=========================================================================
-
     size_t ChunkReader::readAll(char **buf) {
         size_t n, nbytes = 0;
         *buf = nullptr;
         while ((n = read_chunk(*ins, buf, nbytes)) > 0) {
             nbytes += n;
+            //
+            // check for post_maxsize
+            //
+            if ((post_maxsize > 0) && (nbytes > post_maxsize)) {
+                stringstream ss;
+                ss << "Chunksize (" << nbytes << ") to big (maxsize=" << post_maxsize << ")";
+                throw Error(__file__, __LINE__, ss.str());
+            }
         }
         return nbytes;
     }
@@ -123,6 +139,14 @@ namespace shttps {
                 }
                 catch(const std::invalid_argument& ia) {
                     throw Error(__file__, __LINE__, ia.what());
+                }
+                //
+                // check for post_maxsize
+                //
+                if ((post_maxsize > 0) && (chunk_size > post_maxsize)) {
+                    stringstream ss;
+                    ss << "Chunksize (" << chunk_size << ") to big (maxsize=" << post_maxsize << ")";
+                    throw Error(__file__, __LINE__, ss.str());
                 }
                 if (chunk_size == 0) {
                     (void) safeGetline(*ins, line); // get last "\r\n"....
@@ -171,6 +195,14 @@ namespace shttps {
             }
             catch(const std::invalid_argument& ia) {
                 throw Error(__file__, __LINE__, ia.what());
+            }
+            //
+            // check for post_maxsize
+            //
+            if ((post_maxsize > 0) && (chunk_size > post_maxsize)) {
+                stringstream ss;
+                ss << "Chunksize (" << chunk_size << ") to big (maxsize=" << post_maxsize << ")";
+                throw Error(__file__, __LINE__, ss.str());
             }
             if (chunk_size == 0) {
                 (void) safeGetline(*ins, line); // get last "\r\n"....

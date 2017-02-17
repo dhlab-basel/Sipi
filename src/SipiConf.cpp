@@ -45,6 +45,7 @@ namespace Sipi {
             thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
             cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);
             n_threads = luacfg.configInteger("sipi", "nthreads", 2*std::thread::hardware_concurrency());
+            max_post_size = luacfg.configInteger("sipi", "max_post_size", 0);
             tmp_dir = luacfg.configString("sipi", "tmpdir", "/tmp");
             scriptdir = luacfg.configString("sipi", "scriptdir", "./scripts");
             jwt_secret = luacfg.configString("sipi", "jwt_secret", "");
