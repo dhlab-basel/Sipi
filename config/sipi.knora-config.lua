@@ -49,7 +49,7 @@ sipi = {
     -- Maximal size of a post request
     --
     -- max_post_size = 300*1024*1024,
-    max_post_size = 300,
+    -- max_post_size = 300,
 
     --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
@@ -76,7 +76,7 @@ sipi = {
     cachedir = './cache',
 
     --
-    -- maxcimal size of the cache
+    -- maximal size of the cache
     --
     cachesize = '100M',
 

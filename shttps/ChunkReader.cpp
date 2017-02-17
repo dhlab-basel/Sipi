@@ -58,7 +58,7 @@ namespace shttps {
     size_t ChunkReader::read_chunk(istream &ins, char **buf, size_t offs)
     {
         string line;
-        (void) safeGetline(ins, line); // read empty line
+        (void) safeGetline(ins, line); // read empty line of last chunk...
         if (ins.fail() || ins.eof()) {
             throw -1;
         }
@@ -124,12 +124,11 @@ namespace shttps {
     {
         t.clear();
 
-        std::istream::sentry se(*ins, true);
-        std::streambuf* sb = ins->rdbuf();
         size_t n = 0;
         for(;;) {
             if (chunk_pos >= chunk_size) {
                 string line;
+                if (chunk_pos > 0) (void) safeGetline(*ins, line); // read "\r\n" at end of last chunk...
                 (void) safeGetline(*ins, line);
                 if (ins->fail() || ins->eof()) {
                     throw -1;
@@ -157,6 +156,9 @@ namespace shttps {
                 }
                 chunk_pos = 0;
             }
+
+            std::istream::sentry se(*ins, true);
+            std::streambuf* sb = ins->rdbuf();
             int c = sb->sbumpc();
             chunk_pos++;
             n++;
@@ -166,6 +168,8 @@ namespace shttps {
                 case '\r':
                     if(sb->sgetc() == '\n') {
                         sb->sbumpc();
+                        chunk_pos++;
+std::cerr << "chunk_size=" << chunk_size << " chunk_pos=" << chunk_pos << std::endl;
                         n++;
                     }
                     return n;
@@ -183,9 +187,9 @@ namespace shttps {
 
     int ChunkReader::getc(void)
     {
-        std::cerr << "chunk_pos=" << chunk_pos << " chunk_size=" << chunk_size << std::endl;
         if (chunk_pos >= chunk_size) {
             string line;
+            if (chunk_pos > 0) (void) safeGetline(*ins, line); // read "\r\n" at end of last chunk...
             (void) safeGetline(*ins, line); // read the size of the new chunk
             if (ins->fail() || ins->eof()) {
                 throw -1;
@@ -194,7 +198,7 @@ namespace shttps {
                 chunk_size = stoul(line, 0, 16);
             }
             catch(const std::invalid_argument& ia) {
-                throw Error(__file__, __LINE__, ia.what());
+                throw Error(__file__, __LINE__, ia.what() + line);
             }
             //
             // check for post_maxsize

@@ -1127,7 +1127,8 @@ namespace shttps {
         if (ins->eof() || os->eof()) return CLOSE;
 
         try {
-            Connection conn(this, ins, os, _tmpdir);
+std::cerr << "Connection: _max_post_size=" << _max_post_size << std::endl;
+            Connection conn(this, ins, os, _tmpdir, _max_post_size);
 
             if (keep_alive <= 0) {
                 conn.keepAlive(false);
@@ -1181,6 +1182,7 @@ namespace shttps {
         }
         catch(Error &err) {
             try {
+std::cerr << err << std::endl;
                 syslog(LOG_DEBUG, "Internal server error: %s", err.to_string().c_str());
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";

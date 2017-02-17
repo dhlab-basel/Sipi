@@ -599,6 +599,7 @@ namespace shttps {
                                     encoding = value;
                                 }
                                 n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+std::cerr << " >" << line << "< " << std::endl;
                                 if (ins->fail() || ins->eof()) {
                                     throw -1;
                                 }
@@ -666,6 +667,7 @@ namespace shttps {
                                 //
                                 string nlboundary = "\r\n" + boundary;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
+std::cerr << (char) inbyte;
                                     if (ins->fail() || ins->eof()) {
                                         throw -1;
                                     }
