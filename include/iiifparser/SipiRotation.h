@@ -31,13 +31,10 @@ namespace Sipi {
 //
     class SipiRotation {
     private:
-        bool mirror;
-        float rotation;
+        bool mirror = false;
+        float rotation = 0.F;
     public:
-        inline SipiRotation() {
-            mirror = false;
-            rotation = 0.F;
-        }
+        SipiRotation();
 
         SipiRotation(std::string str);
 
