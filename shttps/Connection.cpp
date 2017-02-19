@@ -55,6 +55,8 @@ using namespace std;
 
 namespace shttps {
 
+    const size_t max_headerline_len = 65535;
+
     // trim from start
     static inline std::string &ltrim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -127,16 +129,14 @@ namespace shttps {
     //=========================================================================
 
 
-    size_t safeGetline(std::istream &is, std::string& t, bool debug)
+    size_t safeGetline(std::istream &is, std::string& t, size_t max_n)
     {
         t.clear();
 
-        if (debug) cerr << "++++ safeGetline ++++" << endl;
         size_t n = 0;
         for(;;) {
             int c;
             c = is.get();
-            if (debug && (c != EOF)) cerr << "<-- \"" << (char) c << "\"" << endl;
             switch (c) {
                 case '\n':
                     n++;
@@ -154,9 +154,10 @@ namespace shttps {
                     n++;
                     t += (char) c;
             }
+            if ((max_n > 0) && (n >= max_n)) {
+                throw Error(__file__, __LINE__, "Input line too long!");
+            }
         }
-        if (debug) cerr << "---- safeGetline ----" << endl;
-
     }
     //=========================================================================
 
@@ -272,7 +273,7 @@ namespace shttps {
         bool eoh = false; //end of header reached
         string line;
         while (!eoh && !ins->eof() && !ins->fail()) {
-            (void) safeGetline(*ins, line);
+            (void) safeGetline(*ins, line, max_headerline_len);
             if (line.empty() || ins->fail()) {
                 eoh = true;
             } else {
@@ -387,11 +388,11 @@ namespace shttps {
         }
 
         string line;
-        if ((safeGetline(*ins, line) == 0) || line.empty() ||ins->fail() || ins->eof()) {
+        if ((safeGetline(*ins, line, max_headerline_len) == 0) || line.empty() ||ins->fail() || ins->eof()) {
             //
             // we got either a timeout or a socket close (for shutdown of server)
             //
-            throw -1;
+            throw INPUT_READ_FAIL;
         }
 
         //
@@ -417,7 +418,7 @@ namespace shttps {
             process_header();
 
             if (ins->fail() || ins->eof()) {
-                throw -1;
+                throw INPUT_READ_FAIL;
             }
 
             //
@@ -478,6 +479,7 @@ namespace shttps {
                         ChunkReader ckrd(ins, _server->max_post_size());
                         content_length = ckrd.readAll(&chunk_buf);
                         if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                            free(chunk_buf);
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
                         }
                         memcpy(bodybuf, chunk_buf, content_length);
@@ -495,7 +497,7 @@ namespace shttps {
                             if (ins->fail() || ins->eof()) {
                                 free(bodybuf);
                                 bodybuf = nullptr;
-                                throw -1;
+                                throw INPUT_READ_FAIL;
                             }
                         }
                     }
@@ -529,9 +531,9 @@ namespace shttps {
                     string line;
                     ChunkReader ckrd(ins, _server->max_post_size()); // if we need it, we have it...
 
-                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size());
                     if (ins->fail() || ins->eof()) {
-                        throw -1;
+                        throw INPUT_READ_FAIL;
                     }
                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -545,9 +547,9 @@ namespace shttps {
                             string tmpname;
                             string mimetype;
                             string encoding;
-                            n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                            n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                             if (ins->fail() || ins->eof()) {
-                                throw -1;
+                                throw INPUT_READ_FAIL;
                             }
                             if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                 throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -596,9 +598,9 @@ namespace shttps {
                                 else if (name == "content-transfer-encoding") {
                                     encoding = value;
                                 }
-                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                                 if (ins->fail() || ins->eof()) {
-                                    throw -1;
+                                    throw INPUT_READ_FAIL;
                                 }
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -606,18 +608,18 @@ namespace shttps {
                             } // while
                             if (filename.empty()) {
                                 // we read a normal value
-                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                                 if (ins->fail() || ins->eof()) {
-                                    throw -1;
+                                    throw INPUT_READ_FAIL;
                                 }
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                                 while ((line != boundary) && (line != lastboundary)) {
                                     fieldvalue += line;
-                                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                                     if (ins->fail() || ins->eof()) {
-                                        throw -1;
+                                        throw INPUT_READ_FAIL;
                                     }
                                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -665,7 +667,7 @@ namespace shttps {
                                 string nlboundary = "\r\n" + boundary;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
                                     if (ins->fail() || ins->eof()) {
-                                        throw -1;
+                                        throw INPUT_READ_FAIL;
                                     }
                                     ++n;
                                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
@@ -701,7 +703,7 @@ namespace shttps {
                                 _uploads.push_back(uf);
                                 inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '-' or '\r'
                                 if (ins->fail() || ins->eof()) {
-                                    throw -1;
+                                    throw INPUT_READ_FAIL;
                                 }
                                 ++n;
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
@@ -710,7 +712,7 @@ namespace shttps {
                                 if (inbyte == '-') { // we have a last boundary!
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
                                     if (ins->fail() || ins->eof()) {
-                                        throw -1;
+                                        throw INPUT_READ_FAIL;
                                     }
                                     line = lastboundary;
                                 }
@@ -719,7 +721,7 @@ namespace shttps {
                                 }
                                 inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
                                 if (ins->fail() || ins->eof()) {
-                                    throw -1;
+                                    throw INPUT_READ_FAIL;
                                 }
                                 ++n;
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
@@ -728,9 +730,9 @@ namespace shttps {
                                 continue; // break loop;
                             }
                         }
-                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                         if (ins->fail() || ins->eof()) {
-                            throw -1;
+                            throw INPUT_READ_FAIL;
                         }
                         if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -740,9 +742,9 @@ namespace shttps {
                     //
                     // now we get the last, empty line...
                     //
-                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                     if (ins->fail() || ins->eof()) {
-                        throw -1;
+                        throw INPUT_READ_FAIL;
                     }
                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
@@ -776,7 +778,7 @@ namespace shttps {
                         if (ins->fail() || ins->eof()) {
                             free(_content);
                             _content = nullptr;
-                            throw -1;
+                            throw INPUT_READ_FAIL;
                         }
                         _content[content_length] = '\0';
                     }
@@ -823,7 +825,7 @@ namespace shttps {
                         if (ins->fail() || ins->eof()) {
                             free(_content);
                             _content = nullptr;
-                            throw -1;
+                            throw INPUT_READ_FAIL;
                         }
                         _content[content_length] = '\0';
 
@@ -865,7 +867,7 @@ namespace shttps {
         try {
             finalize();
         }
-        catch (int i) {
+        catch (InputFailure iofail) {
             // do nothing....
         }
         if (_content != nullptr) {
@@ -1127,7 +1129,7 @@ namespace shttps {
             send_header(); // sends content length if not buffer nor chunked
         }
         os->write((char *) buffer, n);
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         if (cachefile != nullptr) cachefile->write((char *) buffer, n);
     }
     //=============================================================================
@@ -1154,14 +1156,14 @@ namespace shttps {
                     //
                     send_header(); // sends content length if not buffer nor chunked
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     //
@@ -1169,10 +1171,10 @@ namespace shttps {
                     //
                     send_header(n); // sends content length if not buffer nor chunked
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     _finished = true; // no more data can be sent
                }
             }
@@ -1182,14 +1184,14 @@ namespace shttps {
                     // chunked transfer -> send the chunk
                     //
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     //
@@ -1226,9 +1228,9 @@ namespace shttps {
                 // we use the buffer -> send buffer as chunk
                 //
                 *os << std::hex << outbuf_nbytes << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 outbuf_nbytes = 0;
             }
@@ -1237,15 +1239,15 @@ namespace shttps {
                 // we have no buffer, send the data provided as parameters
                 //
                 *os << std::hex << n << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             *os << "\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         else {
             //
@@ -1263,7 +1265,7 @@ namespace shttps {
                     send_header(); // sends content length if not buffer nor chunked
                 }
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             else {
@@ -1277,12 +1279,12 @@ namespace shttps {
                     send_header(n); // sends content length if not buffer nor chunked
                 }
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                 outbuf_nbytes = 0;
             }
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             _finished = true; // no more data can be sent!
         }
     }
@@ -1356,18 +1358,18 @@ namespace shttps {
                 // send data here...
                 if (_chunked_transfer_out) {
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write(buf, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     os->write(buf, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             if (!feof(infile)) {
                 fclose(infile);
@@ -1391,28 +1393,28 @@ namespace shttps {
             if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
             if (_chunked_transfer_out) {
                 *os << std::hex << outbuf_nbytes << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 *os << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else {
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 _finished = true;
             }
             outbuf_nbytes = 0;
         }
         else {
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             if (!_chunked_transfer_out) {
                 _finished = true;
             }
@@ -1472,35 +1474,35 @@ namespace shttps {
             throw Error(__file__, __LINE__, "Header already sent!");
         }
         *os << "HTTP/1.1 " << to_string(status_code) << " " << status_string << "\r\n";
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
 
         for (auto const &iterator : header_out) {
             *os << iterator.first << ": " << iterator.second << "\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
 
         if (_chunked_transfer_out) { // no content length, please!!!
             *os << "\r\n"; //we have to add only one more "\r\n" in this case
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         else {
             if ((outbuf != nullptr) && (outbuf_nbytes > 0)) {
                 *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else if (n > 0) {
                 *os << "Content-Length: " << n << "\r\n\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else {
                 *os << "Content-Length: " << n << "\r\n\r\n";
                 //*os << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
         }
 
         os->flush();
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
 
         header_sent = true;
     }
@@ -1511,9 +1513,9 @@ namespace shttps {
     {
         if (_chunked_transfer_out && !_finished) {
             *os << "0\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             os->flush(); // last (empty) chunk
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         _finished = true;
     }

@@ -58,7 +58,7 @@ namespace shttps {
     size_t ChunkReader::read_chunk(istream &ins, char **buf, size_t offs)
     {
         string line;
-        (void) safeGetline(ins, line); // read chunk size
+        (void) safeGetline(ins, line, max_headerline_len); // read chunk size
         if (ins.fail() || ins.eof()) {
             throw -1;
         }
@@ -94,7 +94,7 @@ namespace shttps {
             throw -1;
         }
         (*buf)[offs + n] = '\0';
-        (void) safeGetline(ins, line); // read "\r\n" at end of chunk...
+        (void) safeGetline(ins, line, max_headerline_len); // read "\r\n" at end of chunk...
         if (ins.fail() || ins.eof()) {
             throw -1;
         }
@@ -129,7 +129,7 @@ namespace shttps {
         for(;;) {
             if (chunk_pos >= chunk_size) {
                 string line;
-                (void) safeGetline(*ins, line); // read chunk size
+                (void) safeGetline(*ins, line, max_headerline_len); // read chunk size
                 if (ins->fail() || ins->eof()) {
                     throw -1;
                 }
@@ -148,7 +148,7 @@ namespace shttps {
                     throw Error(__file__, __LINE__, ss.str());
                 }
                 if (chunk_size == 0) {
-                    (void) safeGetline(*ins, line); // get last "\r\n"....
+                    (void) safeGetline(*ins, line, max_headerline_len); // get last "\r\n"....
                     if (ins->fail() || ins->eof()) {
                         throw -1;
                     }
@@ -163,7 +163,7 @@ namespace shttps {
             chunk_pos++;
             if (chunk_pos >= chunk_size) {
                 string line;
-                (void) safeGetline(*ins, line); // read "\r\n" at end of  chunk...
+                (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of  chunk...
                 if (ins->fail() || ins->eof()) {
                     throw -1;
                 }
@@ -178,7 +178,7 @@ namespace shttps {
                         chunk_pos++;
                         if (chunk_pos >= chunk_size) {
                             string line;
-                            (void) safeGetline(*ins, line); // read "\r\n" at end of  chunk...
+                            (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of  chunk...
                             if (ins->fail() || ins->eof()) {
                                 throw -1;
                             }
@@ -202,7 +202,7 @@ namespace shttps {
     {
         if (chunk_pos >= chunk_size) {
             string line;
-            (void) safeGetline(*ins, line); // read the size of the new chunk
+            (void) safeGetline(*ins, line, max_headerline_len); // read the size of the new chunk
             if (ins->fail() || ins->eof()) {
                 throw -1;
             }
@@ -221,7 +221,7 @@ namespace shttps {
                 throw Error(__file__, __LINE__, ss.str());
             }
             if (chunk_size == 0) {
-                (void) safeGetline(*ins, line); // get last "\r\n"....
+                (void) safeGetline(*ins, line, max_headerline_len); // get last "\r\n"....
                 if (ins->fail() || ins->eof()) {
                     throw -1;
                 }
@@ -235,7 +235,7 @@ namespace shttps {
         chunk_pos++;
         if (chunk_pos >= chunk_size) {
             string line;
-            (void) safeGetline(*ins, line); // read "\r\n" at end of chunk...
+            (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of chunk...
             if (ins->fail() || ins->eof()) {
                 throw -1;
             }

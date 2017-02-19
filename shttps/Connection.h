@@ -37,6 +37,10 @@
 
 namespace shttps {
 
+    extern const size_t max_headerline_len;
+
+    typedef enum { INPUT_READ_FAIL = -1, OUTPUT_WRITE_FAIL = -2 } InputFailure;
+
     class Server;
 
    /*!
@@ -58,7 +62,7 @@ namespace shttps {
     *
     * \returns Number of bytes read
     */
-    extern size_t safeGetline(std::istream& is, std::string& t, bool debug = false);
+    extern size_t safeGetline(std::istream& is, std::string& t, size_t max_n = 0);
 
    /*!
     * Function to parse the options of a HTTP header line
