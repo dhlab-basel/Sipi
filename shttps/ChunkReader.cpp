@@ -60,7 +60,7 @@ namespace shttps {
         string line;
         (void) safeGetline(ins, line, max_headerline_len); // read chunk size
         if (ins.fail() || ins.eof()) {
-            throw -1;
+            throw INPUT_READ_FAIL;
         }
         size_t n;
         try {
@@ -96,7 +96,7 @@ namespace shttps {
         (*buf)[offs + n] = '\0';
         (void) safeGetline(ins, line, max_headerline_len); // read "\r\n" at end of chunk...
         if (ins.fail() || ins.eof()) {
-            throw -1;
+            throw INPUT_READ_FAIL;
         }
         return n;
     }
@@ -131,7 +131,7 @@ namespace shttps {
                 string line;
                 (void) safeGetline(*ins, line, max_headerline_len); // read chunk size
                 if (ins->fail() || ins->eof()) {
-                    throw -1;
+                    throw INPUT_READ_FAIL;
                 }
                 try {
                     chunk_size = stoul(line, 0, 16);
@@ -150,7 +150,7 @@ namespace shttps {
                 if (chunk_size == 0) {
                     (void) safeGetline(*ins, line, max_headerline_len); // get last "\r\n"....
                     if (ins->fail() || ins->eof()) {
-                        throw -1;
+                        throw INPUT_READ_FAIL;
                     }
                     return n;
                 }
@@ -165,7 +165,7 @@ namespace shttps {
                 string line;
                 (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of  chunk...
                 if (ins->fail() || ins->eof()) {
-                    throw -1;
+                    throw INPUT_READ_FAIL;
                 }
             }
             n++;
@@ -180,7 +180,7 @@ namespace shttps {
                             string line;
                             (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of  chunk...
                             if (ins->fail() || ins->eof()) {
-                                throw -1;
+                                throw INPUT_READ_FAIL;
                             }
                         }
                         n++;
@@ -204,7 +204,7 @@ namespace shttps {
             string line;
             (void) safeGetline(*ins, line, max_headerline_len); // read the size of the new chunk
             if (ins->fail() || ins->eof()) {
-                throw -1;
+                throw INPUT_READ_FAIL;
             }
             try {
                 chunk_size = stoul(line, 0, 16);
@@ -223,7 +223,7 @@ namespace shttps {
             if (chunk_size == 0) {
                 (void) safeGetline(*ins, line, max_headerline_len); // get last "\r\n"....
                 if (ins->fail() || ins->eof()) {
-                    throw -1;
+                    throw INPUT_READ_FAIL;
                 }
                 return EOF;
             }
@@ -237,7 +237,7 @@ namespace shttps {
             string line;
             (void) safeGetline(*ins, line, max_headerline_len); // read "\r\n" at end of chunk...
             if (ins->fail() || ins->eof()) {
-                throw -1;
+                throw INPUT_READ_FAIL;
             }
         }
         return c;
