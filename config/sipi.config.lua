@@ -26,6 +26,8 @@ sipi = {
     --
     -- userid = '_www',
 
+    hostname = 'localhost',
+    
     --
     -- port number the server is listening to
     --

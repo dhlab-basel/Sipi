@@ -304,7 +304,7 @@ namespace shttps {
                     }
                 }
                 else if (name == "content-length") {
-                    content_length = static_cast<size_t>(stoi(value));
+                    content_length = static_cast<size_t>(stoll(value));
                 }
                 else if (name == "transfer-encoding") {
                     if (value == "chunked") {
@@ -512,6 +512,9 @@ namespace shttps {
                     content_length = 0;
                 }
                 else if (content_type_opts[0] == "multipart/form-data") {
+                    if ((!_chunked_transfer_in) && (_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Upload bigger than max_post_size");
+                    }
                     string boundary;
                     for (int i = 1; i < content_type_opts.size(); ++i) {
                         pair <string, string> p = strsplit(content_type_opts[i], '=');
