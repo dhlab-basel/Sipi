@@ -28,7 +28,7 @@ if not success then
 end
 
 --
--- check if tmporary directory is available, if not, create it
+-- check if temporary directory is available, if not, create it
 --
 local tmpdir = config.imgroot .. '/tmp/'
 local success, exists = server.fs.exists(tmpdir)
