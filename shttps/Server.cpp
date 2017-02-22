@@ -658,11 +658,11 @@ namespace shttps {
         }
 #endif
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
-            syslog(LOG_WARNING, "Error shutting down socket at [%s: %d]: %m", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: shutting down socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
         }
 
         if (close(tdata->sock) == -1) {
-            syslog(LOG_WARNING, "Error closing socket at [%s: %d]: %m", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: closing socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
         }
 
         return 0;

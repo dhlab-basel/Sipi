@@ -713,16 +713,23 @@ namespace shttps {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                                 if (inbyte == '-') { // we have a last boundary!
+std::cerr << "A) -" << std::endl;
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
                                     }
                                     line = lastboundary;
+std::cerr << "A) lastboundary" << std::endl;
                                 }
                                 else {
                                     line = boundary;
                                 }
-                                inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
+                                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                // put into "if (inbyte != "\n") {"
+                                //
+std::cerr << "#" << __LINE__ << " " << inbyte << std::endl;
+                                inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\r';
+std::cerr << "#" << __LINE__ << " " << inbyte << std::endl;
                                 if (ins->fail() || ins->eof()) {
                                     throw INPUT_READ_FAIL;
                                 }
@@ -730,10 +737,28 @@ namespace shttps {
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
+
+                                inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
+std::cerr << "#" << __LINE__ << " " << inbyte << std::endl;
+                                if (ins->fail() || ins->eof()) {
+std::cerr << "#" << __LINE__ << " throw INPUT_READ_FAIL" << std::endl;
+                                    throw INPUT_READ_FAIL;
+                                }
+std::cerr << "AFTER------" << std::endl;
+                                ++n;
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+std::cerr << "#" << __LINE__ << " throw Content bigger..." << std::endl;
+                                    throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                                }
+std::cerr << "CONTINUE-1: " << lastboundary << std::endl;
+std::cerr << "CONTINUE-2: " << line << std::endl;
+
                                 continue; // break loop;
                             }
                         }
+std::cerr << "#" << __LINE__ << ";;;;" << std::endl;
                         n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
+std::cerr << "#" << __LINE__ << " \"" << line << "\"" << std::endl;
                         if (ins->fail() || ins->eof()) {
                             throw INPUT_READ_FAIL;
                         }
@@ -741,14 +766,17 @@ namespace shttps {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
                     }
+std::cerr << "#" << __LINE__ << " XXXXXX" << std::endl;
 
                     //
                     // now we get the last, empty line...
                     //
                     n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                     if (ins->fail() || ins->eof()) {
+std::cerr << "#" << __LINE__ << " throw INPUT_READ_FAIL" << std::endl;
                         throw INPUT_READ_FAIL;
                     }
+std::cerr << "#" << __LINE__ << " YYYYY \"" << line << "\"" << std::endl;
                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                     }
