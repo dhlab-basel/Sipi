@@ -34,15 +34,17 @@ git checkout gh-pages
 
 git rm -rf ../documentation
 
+mkdir ../documentation
+
 mv $TMP_HTML/manual/* ../documentation
 
 # Commit the changes to the gh-pages branch, and push to origin.
 
 git add ../documentation/
-#git commit -m "Update gh-pages."
-#git push origin gh-pages
+git commit -m "Update gh-pages."
+git push origin gh-pages
 
 # Switch back to the develop branch, and remove the leftover documentation directory.
 
-#git checkout develop
-#rm -rf ../documentation
+git checkout develop
+rm -rf ../documentation
