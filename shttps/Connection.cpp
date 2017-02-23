@@ -592,8 +592,6 @@ std::cerr << "LINE=" << line << std::endl;
                                             // filename is inside quotes, remove them
                                             filename = filename.substr(1, filename.size() - 2);
                                         }
-
-                                        mimetype = "text/plain";
                                     }
                                 }
                                 else if (name == "content-type") {
