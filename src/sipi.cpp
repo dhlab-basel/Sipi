@@ -45,7 +45,7 @@
 #include "optionparser.h"
 
 #include "jansson.h"
-#include "shttps/GetMimetype.h"
+#include "shttps/Parsing.h"
 #include "SipiConf.h"
 
 // A macro for silencing incorrect compiler warnings about unused variables.
@@ -86,6 +86,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     Sipi::SipiConf *conf = (Sipi::SipiConf *) user_data;
 
     lua_createtable(L, 0, 14); // table1
+
+    lua_pushstring(L, "hostname"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getHostname().c_str());
+    lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "port"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getPort());
@@ -624,20 +628,7 @@ int main(int argc, char *argv[]) {
             size = std::make_shared<Sipi::SipiSize>(reduce);
         } else if (options[SIZE]) {
             try {
-                std::stringstream ss(options[SIZE].arg);
-                std::vector<int> sizV;
-                int sizC;
-                while (ss >> sizC) {
-                    sizV.push_back(sizC);
-                    if (ss.peek() == ',') {
-                        ss.ignore();
-                    }
-                }
-                if (sizV.size() == 2) {
-                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(1));
-                } else {
-                    size = std::make_shared<Sipi::SipiSize>(sizV.at(0), sizV.at(0), true);
-                }
+                size = std::make_shared<Sipi::SipiSize>(options[SIZE].arg);
             }
             catch (std::exception &e) {
                 std::cout << "##" << __LINE__ << std::endl;
@@ -663,7 +654,7 @@ int main(int argc, char *argv[]) {
         if (format == "jpg") {
             img.to8bps();
             if (img.getNalpha() > 0) {
-                img.removeChan(img.getNc() - 1);
+                img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
             }
         }
 

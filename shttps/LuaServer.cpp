@@ -47,7 +47,7 @@
 #include "ChunkReader.h"
 
 #include "sole.hpp"
-#include "GetMimetype.h"
+#include "Parsing.h"
 
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -2085,7 +2085,7 @@ namespace shttps {
         lua_pop(L, top);
 
         try {
-            std::pair<std::string, std::string> mimetype = GetMimetype::parseMimetype(mimestr); // returns a pair of strings: mimetype and charset
+            std::pair<std::string, std::string> mimetype = Parsing::parseMimetype(mimestr); // returns a pair of strings: mimetype and charset
             return return_mimetype_to_lua(L, mimetype);
         }
         catch (Error &err) {
@@ -2123,7 +2123,7 @@ namespace shttps {
         lua_pop(L, top);
 
         try {
-            std::pair<std::string, std::string> mimetype = GetMimetype::getFileMimetype(path); // returns a pair of strings: mimetype and charset
+            std::pair<std::string, std::string> mimetype = Parsing::getFileMimetype(path); // returns a pair of strings: mimetype and charset
             return return_mimetype_to_lua(L, mimetype);
         }
         catch (Error &err) {

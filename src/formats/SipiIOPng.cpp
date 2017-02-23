@@ -19,7 +19,8 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- */#include <assert.h>
+ */
+#include <assert.h>
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -77,7 +78,7 @@ namespace Sipi {
         }
         else {
             png_text *tmpptr = new png_text[num_text_len + 16];
-            for (int i = 0; i < num_text_len; i++) tmpptr[i] = text_ptr[i];
+            for (unsigned int i = 0; i < num_text_len; i++) tmpptr[i] = text_ptr[i];
             delete[] text_ptr;
             text_ptr = tmpptr;
             return &(text_ptr[num_text++]);
@@ -229,7 +230,7 @@ namespace Sipi {
 
         uint8 *buffer = new uint8[img->ny*sll];
         png_bytep *row_pointers = new png_bytep[img->ny];
-        for (int i = 0; i < img->ny; i++) {
+        for (size_t i = 0; i < img->ny; i++) {
             row_pointers[i] = (buffer + i*sll);
         }
 
@@ -256,7 +257,8 @@ namespace Sipi {
         // resize/Scale the image if necessary
         //
         if (size != nullptr) {
-            int nnx, nny, reduce;
+            size_t nnx, nny;
+            int reduce;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
@@ -275,7 +277,7 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    bool SipiIOPng::getDim(std::string filepath, int &width, int &height) {
+    bool SipiIOPng::getDim(std::string filepath, size_t &width, size_t &height) {
         FILE *infile;
         unsigned char header[8];
 
@@ -473,12 +475,12 @@ namespace Sipi {
 
         png_bytep *row_pointers = (png_bytep *) png_malloc (png_ptr, img->ny * sizeof (png_byte *));
         if (img->bps == 8) {
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 row_pointers[i] = (img->pixels + i*img->nx*img->nc);
             }
         }
         else if (img->bps == 16) {
-            for (int i = 0; i < img->ny; i++) {
+            for (size_t i = 0; i < img->ny; i++) {
                 row_pointers[i] = (img->pixels + 2*i*img->nx*img->nc);
             }
         }

@@ -72,7 +72,7 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-    SipiRegion::CoordType SipiRegion::crop_coords(int nx, int ny, int &p_x, int &p_y, int &p_w, int &p_h) {
+    SipiRegion::CoordType SipiRegion::crop_coords(size_t nx, size_t ny, int &p_x, int &p_y, size_t &p_w, size_t &p_h) {
         switch (coord_type) {
             case COORDS: {
                 x = floor(rx + 0.5);
@@ -157,7 +157,7 @@ namespace Sipi {
             }
             case COORDS:
             case PERCENTS: {
-                (void) snprintf(buf, buflen, "%d,%d,%d,%d", x, y, w, h);
+                (void) snprintf(buf, buflen, "%d,%d,%ld,%ld", x, y, w, h);
                 break;
             }
         }

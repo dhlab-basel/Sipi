@@ -138,7 +138,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
-        preview_path = "http://localhost:1024/thumbs/" .. tmpname .. "_THUMB.jpg" .. "/full/full/0/default.jpg",
+        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. tmpname .. "_THUMB.jpg" .. "/full/full/0/default.jpg",
         filename = tmpname, -- make this a IIIF URL
         original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,

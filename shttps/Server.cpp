@@ -54,7 +54,7 @@
 #include "SockStream.h"
 #include "Server.h"
 #include "LuaServer.h"
-#include "GetMimetype.h"
+#include "Parsing.h"
 #include "makeunique.h"
 
 static const char __file__[] = __FILE__;
@@ -314,7 +314,7 @@ namespace shttps {
             return;
         }
 
-        std::pair<std::string, std::string> mime = GetMimetype::getFileMimetype(infile);
+        std::pair<std::string, std::string> mime = Parsing::getFileMimetype(infile);
 
         size_t extpos = uri.find_last_of('.');
         std::string extension;
