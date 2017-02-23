@@ -35,6 +35,8 @@ make html
 
 You will then find the manual under `manual/_build/html`.
 
+You will find the online docs here: <http://dhlab-basel.github.io/Sipi>.
+
 # Contact Information
 
 Lukas Rosenthaler `<lukas.rosenthaler@unibas.ch>`
