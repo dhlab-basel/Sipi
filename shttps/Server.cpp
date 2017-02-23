@@ -126,7 +126,7 @@ namespace shttps {
         try {
             conn << "No handler available" << Connection::flush_data;
         }
-        catch (int i) {
+        catch (InputFailure iofail) {
             return;
         }
         syslog(LOG_WARNING, "No handler available! Host: %s Uri: %s", conn.host().c_str(), conn.uri().c_str());
@@ -228,7 +228,7 @@ namespace shttps {
                             conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
                         }
-                        catch (int i) {
+                        catch (InputFailure iofail) {
                             return;
                         }
                         syslog(LOG_ERR, "ScriptHandler: error executing lua chunk: %s", err.to_string().c_str());
@@ -247,7 +247,7 @@ namespace shttps {
                 syslog(LOG_ERR, "ScriptHandler: error executing script, unknown extension: %s", extension.c_str());
             }
         }
-        catch (int i) {
+        catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit
         }
         catch (Error &err) {
@@ -257,7 +257,7 @@ namespace shttps {
                 conn << err;
                 conn.flush();
             }
-            catch (int i) {
+            catch (InputFailure iofail) {
                 return;
             }
             syslog(LOG_ERR, "FileHandler: internal error: %s", err.to_string().c_str());
@@ -404,10 +404,7 @@ namespace shttps {
                             conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
                         }
-                        catch (int i) {
-                            syslog(LOG_ERR, "FileHandler: error executing lua chunk!");
-                            return;
-                        }
+                        catch (InputFailure iofail) { }
                         syslog(LOG_ERR, "FileHandler: error executing lua chunk: %s", err.to_string().c_str());
                         return;
                     }
@@ -421,7 +418,7 @@ namespace shttps {
                 conn.sendFile(infile);
             }
         }
-        catch (int i) {
+        catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit
         }
         catch (Error &err) {
@@ -431,10 +428,7 @@ namespace shttps {
                 conn << err;
                 conn.flush();
             }
-            catch (int i) {
-                syslog(LOG_ERR, "FileHandler: error executing lua chunk!");
-                return;
-            }
+            catch (InputFailure iofail) { }
             syslog(LOG_ERR, "FileHandler: internal error: %s", err.to_string().c_str());
             return;
         }
@@ -664,11 +658,11 @@ namespace shttps {
         }
 #endif
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
-            syslog(LOG_WARNING, "Error shutting down socket at [%s: %d]: %m", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: shutting down socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
         }
 
         if (close(tdata->sock) == -1) {
-            syslog(LOG_WARNING, "Error closing socket at [%s: %d]: %m", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: closing socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
         }
 
         return 0;
@@ -1138,6 +1132,7 @@ namespace shttps {
             conn.peer_port(peer_port);
             conn.secure(secure);
 
+
             if (conn.resetConnection()) {
                 if (conn.keepAlive()) {
                     return CONTINUE;
@@ -1160,7 +1155,7 @@ namespace shttps {
             try {
                 RequestHandler handler = getHandler(conn, &hd);
                 handler(conn, luaserver, _user_data, hd);
-            } catch (int i) {
+            } catch (InputFailure iofail) {
                 syslog(LOG_ERR, "Possibly socket closed by peer");
                 return CLOSE; // or CLOSE ??
             }
@@ -1175,20 +1170,20 @@ namespace shttps {
                 return CLOSE;
             }
         }
-        catch (int i) { // "error" is thrown, if the socket was closed from the main thread...
-        syslog(LOG_DEBUG, "Socket connection: timeout or socket closed from main");
+        catch (InputFailure iofail) { // "error" is thrown, if the socket was closed from the main thread...
+            syslog(LOG_DEBUG, "Socket connection: timeout or socket closed from main");
             return CLOSE;
         }
         catch(Error &err) {
+            syslog(LOG_WARNING, "Internal server error: %s", err.to_string().c_str());
             try {
-                syslog(LOG_DEBUG, "Internal server error: %s", err.to_string().c_str());
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
                 std::stringstream ss;
                 ss << err;
                 *os << "Content-Length: " << ss.str().length() << "\r\n\r\n";
                 *os << ss.str();
-            } catch (int i) {
+            } catch (InputFailure iofail) {
                 syslog(LOG_DEBUG, "Possibly socket closed by peer");
             }
             return CLOSE;

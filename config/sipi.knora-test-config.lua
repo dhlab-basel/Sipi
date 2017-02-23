@@ -29,6 +29,8 @@ sipi = {
     --
     -- userid = '_www',
 
+    hostname = 'localhost',
+
     --
     -- port number the server is listening to
     --
@@ -40,6 +42,11 @@ sipi = {
     keep_alive = 5,
 
     --
+    -- Maximal size of a post request
+    --
+    max_post_size = '30M',
+
+  --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
     -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
     -- or <imgroot>/<imageid> (prefix_as_path = FALSE). Please note that "prefix" and "imageid" are
@@ -130,10 +137,9 @@ sipi = {
     logfile = "sipi.log",
 
     --
-    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
-    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "TRACE",
+    loglevel = "DEBUG",
 }
 
 --

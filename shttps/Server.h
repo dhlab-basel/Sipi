@@ -222,6 +222,7 @@ public:
         std::string _initscript;
         std::vector<shttps::LuaRoute> _lua_routes; //!< This vector holds the routes that are served by lua scripts
         std::vector<GlobalFunc> lua_globals;
+        size_t _max_post_size;
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
         std::string _logfilename;
@@ -354,6 +355,20 @@ public:
          * \param[in] path to directory without trailing '/'
          */
         inline void scriptdir(const std::string &scriptdir_p) { _scriptdir = scriptdir_p; }
+
+        /*!
+         * Get the maximum size of a post request in bytes
+         *
+         * \returns Actual maximal size of  post request
+         */
+         inline size_t max_post_size(void) { return _max_post_size; }
+
+        /*!
+         * Set the maximal size of a post request
+         *
+         * \param[in] sz Maximal size of a post request in bytes
+         */
+         inline void max_post_size(size_t sz) { _max_post_size = sz; }
 
         /*!
         * Returns the routes defined for being handletd by Lua scripts

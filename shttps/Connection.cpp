@@ -55,6 +55,8 @@ using namespace std;
 
 namespace shttps {
 
+    const size_t max_headerline_len = 65535;
+
     // trim from start
     static inline std::string &ltrim(std::string &s) {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
@@ -127,16 +129,14 @@ namespace shttps {
     //=========================================================================
 
 
-    size_t safeGetline(std::istream &is, std::string& t, bool debug)
+    size_t safeGetline(std::istream &is, std::string& t, size_t max_n)
     {
         t.clear();
 
-        if (debug) cerr << "++++ safeGetline ++++" << endl;
         size_t n = 0;
         for(;;) {
             int c;
             c = is.get();
-            if (debug && (c != EOF)) cerr << "<-- \"" << (char) c << "\"" << endl;
             switch (c) {
                 case '\n':
                     n++;
@@ -154,9 +154,10 @@ namespace shttps {
                     n++;
                     t += (char) c;
             }
+            if ((max_n > 0) && (n >= max_n)) {
+                throw Error(__file__, __LINE__, "Input line too long!");
+            }
         }
-        if (debug) cerr << "---- safeGetline ----" << endl;
-
     }
     //=========================================================================
 
@@ -272,7 +273,7 @@ namespace shttps {
         bool eoh = false; //end of header reached
         string line;
         while (!eoh && !ins->eof() && !ins->fail()) {
-            (void) safeGetline(*ins, line);
+            (void) safeGetline(*ins, line, max_headerline_len);
             if (line.empty() || ins->fail()) {
                 eoh = true;
             } else {
@@ -303,7 +304,7 @@ namespace shttps {
                     }
                 }
                 else if (name == "content-length") {
-                    content_length = static_cast<size_t>(stoi(value));
+                    content_length = static_cast<size_t>(stoll(value));
                 }
                 else if (name == "transfer-encoding") {
                     if (value == "chunked") {
@@ -387,11 +388,11 @@ namespace shttps {
         }
 
         string line;
-        if ((safeGetline(*ins, line) == 0) || line.empty() ||ins->fail() || ins->eof()) {
+        if ((safeGetline(*ins, line, max_headerline_len) == 0) || line.empty() ||ins->fail() || ins->eof()) {
             //
             // we got either a timeout or a socket close (for shutdown of server)
             //
-            throw -1;
+            throw INPUT_READ_FAIL;
         }
 
         //
@@ -417,7 +418,7 @@ namespace shttps {
             process_header();
 
             if (ins->fail() || ins->eof()) {
-                throw -1;
+                throw INPUT_READ_FAIL;
             }
 
             //
@@ -459,7 +460,6 @@ namespace shttps {
 
                 }
                 else {
-
                     _method = OPTIONS;
                 }
             }
@@ -471,21 +471,25 @@ namespace shttps {
             }
             else if (method_in == "POST") {
                 _method = POST;
-                if (content_length > 0) {
-                    vector <string> content_type_opts = process_header_value(header_in["content-type"]);
-                    if (content_type_opts[0] == "application/x-www-form-urlencoded") {
-                        char *bodybuf = nullptr;
-                        if (_chunked_transfer_in) {
-                            char *chunk_buf;
-                            ChunkReader ckrd(ins);
-                            content_length = ckrd.readAll(&chunk_buf);
-                            if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
-                                throw Error(__file__, __LINE__, "malloc failed!", errno);
-                            }
-                            memcpy(_content, chunk_buf, content_length);
+                vector <string> content_type_opts = process_header_value(header_in["content-type"]);
+                if (content_type_opts[0] == "application/x-www-form-urlencoded") {
+                    char *bodybuf = nullptr;
+                    if (_chunked_transfer_in) {
+                        char *chunk_buf;
+                        ChunkReader ckrd(ins, _server->max_post_size());
+                        content_length = ckrd.readAll(&chunk_buf);
+                        if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             free(chunk_buf);
+                            throw Error(__file__, __LINE__, "malloc failed!", errno);
                         }
-                        else {
+                        memcpy(bodybuf, chunk_buf, content_length);
+                        free(chunk_buf);
+                    }
+                    else {
+                        if (content_length > 0) {
+                            if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                                throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                            }
                             if ((bodybuf = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                                 throw Error(__file__, __LINE__, "malloc failed!", errno);
                             }
@@ -493,248 +497,289 @@ namespace shttps {
                             if (ins->fail() || ins->eof()) {
                                 free(bodybuf);
                                 bodybuf = nullptr;
-                                throw -1;
+                                throw INPUT_READ_FAIL;
                             }
                         }
+                    }
+                    if (bodybuf != nullptr) {
                         bodybuf[content_length] = '\0';
                         string body = bodybuf;
                         post_params = parse_query_string(body, true);
                         request_params.insert(post_params.begin(), post_params.end());
 
                         free(bodybuf);
-                        content_length = 0;
                     }
-                    else if (content_type_opts[0] == "multipart/form-data") {
-                        string boundary;
-                        for (int i = 1; i < content_type_opts.size(); ++i) {
-                            pair <string, string> p = strsplit(content_type_opts[i], '=');
-                            if (p.first == "boundary") {
-                                boundary = string("--") + p.second;
+                    content_length = 0;
+                }
+                else if (content_type_opts[0] == "multipart/form-data") {
+                    if ((!_chunked_transfer_in) && (_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Upload bigger than max_post_size");
+                    }
+                    string boundary;
+                    for (int i = 1; i < content_type_opts.size(); ++i) {
+                        pair <string, string> p = strsplit(content_type_opts[i], '=');
+                        if (p.first == "boundary") {
+                            boundary = string("--") + p.second;
+                        }
+                    }
+                    if (boundary.empty()) {
+                        throw Error(__file__, __LINE__, "boundary header missing in multipart/form-data!");
+                    }
+                    string lastboundary = boundary + "--";
+
+                    size_t n = 0;
+                    //
+                    // at this location we have determined the boundary string
+                    //
+                    string line;
+                    ChunkReader ckrd(ins, _server->max_post_size()); // if we need it, we have it...
+
+                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size());
+                    if (ins->fail() || ins->eof()) {
+                        throw INPUT_READ_FAIL;
+                    }
+                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                    }
+
+                    while (line != lastboundary) {
+                        if (line == boundary) { // we have a boundary, thus we start a new field
+                            string fieldname;
+                            string fieldvalue;
+                            string filename;
+                            string tmpname;
+                            string mimetype;
+                            string encoding;
+                            n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
+                            if (ins->fail() || ins->eof()) {
+                                throw INPUT_READ_FAIL;
                             }
-                        }
-                        if (boundary.empty()) {
-                            throw Error(__file__, __LINE__, "boundary header missing in multipart/form-data!");
-                        }
-                        string lastboundary = boundary + "--";
+                            if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                            }
+                            while (!line.empty()) {
+                                size_t pos = line.find(':');
+                                string name = line.substr(0, pos);
+                                name = trim(name);
+                                asciitolower(name);
+                                string value = line.substr(pos + 1);
+                                value = trim(value);
+                                if (name == "content-disposition") {
+                                    unordered_map <string, string> opts = parse_header_options(value, true);
+                                    unordered_map<string, string>::iterator it;
+                                    for (it = opts.begin(); it != opts.end(); it++) {
+                                        //cerr << "OPTS: " << it->first << "=" << it->second << endl;
+                                        //How do I access each element without knowing any of its string-int values?
+                                    }
+                                    if (opts.count("form-data") == 0) {
+                                        // something is wrong!
+                                        //cerr << __file__ << " #" << __LINE__ << endl;
+                                        //cerr << "LINE=" << line << endl;
+                                    }
+                                    if (opts.count("name") == 0) {
+                                        // something wrong
+                                        //cerr << __file__ << " #" << __LINE__ << endl;
+                                        //cerr << "LINE=" << line << endl;
+                                        //cerr << "VALUE=" << value << endl;
+                                    }
+                                    fieldname = opts["name"];
+                                    if (opts.count("filename") == 1) {
+                                        // we have an upload of a file ...
+                                        filename = opts["filename"];
 
-                        size_t n = 0;
-                        //
-                        // at this location we have determined the boundary string
-                        //
-
-                        string line;
-                        ChunkReader ckrd(ins); // if we need it, we have it...
-
-                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                        if (ins->fail() || ins->eof()) {
-                            throw -1;
-                        }
-                        while (line != lastboundary) {
-                            if (line == boundary) { // we have a boundary, thus we start a new field
-                                string fieldname;
-                                string fieldvalue;
-                                string filename;
-                                string tmpname;
-                                string mimetype;
-                                string encoding;
-                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+                                        if (filename[0] == '"' && filename[filename.size() - 1] == '"') {
+                                            // filename is inside quotes, remove them
+                                            filename = filename.substr(1, filename.size() - 2);
+                                        }
+                                    }
+                                }
+                                else if (name == "content-type") {
+                                    mimetype = value;
+                                }
+                                else if (name == "content-transfer-encoding") {
+                                    encoding = value;
+                                }
+                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                                 if (ins->fail() || ins->eof()) {
-                                    throw -1;
+                                    throw INPUT_READ_FAIL;
                                 }
-                                while (!line.empty()) {
-                                    size_t pos = line.find(':');
-                                    string name = line.substr(0, pos);
-                                    name = trim(name);
-                                    asciitolower(name);
-                                    string value = line.substr(pos + 1);
-                                    value = trim(value);
-                                    if (name == "content-disposition") {
-                                        unordered_map <string, string> opts = parse_header_options(value, true);
-                                        unordered_map<string, string>::iterator it;
-                                        for (it = opts.begin(); it != opts.end(); it++) {
-                                            //cerr << "OPTS: " << it->first << "=" << it->second << endl;
-                                            //How do I access each element without knowing any of its string-int values?
-                                        }
-                                        if (opts.count("form-data") == 0) {
-                                            // something is wrong!
-                                            //cerr << __file__ << " #" << __LINE__ << endl;
-                                            //cerr << "LINE=" << line << endl;
-                                        }
-                                        if (opts.count("name") == 0) {
-                                            // something wrong
-                                            //cerr << __file__ << " #" << __LINE__ << endl;
-                                            //cerr << "LINE=" << line << endl;
-                                            //cerr << "VALUE=" << value << endl;
-                                        }
-                                        fieldname = opts["name"];
-                                        if (opts.count("filename") == 1) {
-                                            // we have an upload of a file ...
-                                            filename = opts["filename"];
-
-                                            if (filename[0] == '"' && filename[filename.size() - 1] == '"') {
-                                                // filename is inside quotes, remove them
-                                                filename = filename.substr(1, filename.size() - 2);
-                                            }
-
-                                            mimetype = "text/plain";
-                                        }
-                                    }
-                                    else if (name == "content-type") {
-                                        mimetype = value;
-                                    }
-                                    else if (name == "content-transfer-encoding") {
-                                        encoding = value;
-                                    }
-                                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                    if (ins->fail() || ins->eof()) {
-                                        throw -1;
-                                    }
-                                } // while
-                                if (filename.empty()) {
-                                    // we read a normal value
-                                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                    if (ins->fail() || ins->eof()) {
-                                        throw -1;
-                                    }
-                                    while ((line != boundary) && (line != lastboundary)) {
-                                        fieldvalue += line;
-                                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                                        if (ins->fail() || ins->eof()) {
-                                            throw -1;
-                                        }
-                                    }
-                                    post_params[fieldname] = fieldvalue;
-                                    continue;
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                    throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
-                                else {
-                                    int inbyte;
-                                    size_t cnt = 0;
-                                    size_t fsize = 0;
-
-                                    //
-                                    // create a unique temporary filename
-                                    //
-
-                                    if (_tmpdir.empty()) {
-                                        throw Error(__file__, __LINE__, "_tmpdir is empty");
+                            } // while
+                            if (filename.empty()) {
+                                // we read a normal value
+                                n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
+                                if (ins->fail() || ins->eof()) {
+                                    throw INPUT_READ_FAIL;
+                                }
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                    throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                                }
+                                while ((line != boundary) && (line != lastboundary)) {
+                                    fieldvalue += line;
+                                    n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
+                                    if (ins->fail() || ins->eof()) {
+                                        throw INPUT_READ_FAIL;
                                     }
-
-                                    tmpname = _tmpdir + "/sipi_XXXXXXXX";
-                                    auto writable = make_unique<char[]>(tmpname.size() + 1);
-                                    std::copy(tmpname.begin(), tmpname.end(), writable.get());
-                                    (writable.get())[tmpname.size()] = '\0'; // don't forget the terminating 0
-                                    int fd = mkstemp(writable.get());
-
-                                    if (fd == -1) {
-                                        throw Error(__file__, __LINE__, "Could not create temporary filename!");
+                                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                     }
+                                }
+                                post_params[fieldname] = fieldvalue;
 
-                                    tmpname = string(writable.get());
-                                    close(fd); // here we close the file created by mkstemp
+                                continue;
+                            }
+                            else {
+                                int inbyte;
+                                size_t cnt = 0;
+                                size_t fsize = 0;
 
-                                    ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);
-                                    if (outf.fail()) {
-                                        throw Error(__file__, __LINE__, "Could not open temporary file!");
+                                //
+                                // create a unique temporary filename
+                                //
+
+                                if (_tmpdir.empty()) {
+                                    throw Error(__file__, __LINE__, "_tmpdir is empty");
+                                }
+
+                                tmpname = _tmpdir + "/sipi_XXXXXXXX";
+
+                                auto writable = make_unique<char[]>(tmpname.size() + 1);
+                                std::copy(tmpname.begin(), tmpname.end(), writable.get());
+                                (writable.get())[tmpname.size()] = '\0'; // don't forget the terminating 0
+                                int fd = mkstemp(writable.get());
+
+                                if (fd == -1) {
+                                    throw Error(__file__, __LINE__, "Could not create temporary filename!");
+                                }
+
+                                tmpname = string(writable.get());
+                                close(fd); // here we close the file created by mkstemp
+
+                                ofstream outf(tmpname, ofstream::out | ofstream::trunc | ofstream::binary);
+                                if (outf.fail()) {
+                                    throw Error(__file__, __LINE__, "Could not open temporary file!");
+                                }
+
+                                //
+                                // the boundary string starts on a new line which is separate by "\r\n"
+                                //
+                                string nlboundary = "\r\n" + boundary;
+
+                                while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
+                                    if (ins->fail() || ins->eof()) {
+                                        throw INPUT_READ_FAIL;
                                     }
-                                    //
-                                    // the boundary string starts on a new line which is separate by "\r\n"
-                                    //
-                                    string nlboundary = "\r\n" + boundary;
-                                    while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
-                                        if (ins->fail() || ins->eof()) {
-                                            throw -1;
+                                    ++n;
+                                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                                    }
+                                    if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
+                                        ++cnt;
+                                        if (cnt == nlboundary.length()) {
+                                            // OK, we have read the whole file...
+                                            break; // break enclosing while loop
                                         }
-                                        if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
-                                            ++cnt;
-                                            if (cnt == nlboundary.length()) {
-                                                // OK, we have read the whole file...
-                                                break; // break enclosing while loop
-                                            }
-                                        }
-                                        else if (cnt > 0) { // not yet the boundary
-                                            for (int i = 0; i < cnt; i++) {
-                                                outf.put(nlboundary[i]);
-                                                ++fsize;
-                                            }
-                                            cnt = 0;
-                                            outf.put((char) inbyte);
+                                    }
+                                    else if (cnt > 0) { // not yet the boundary
+                                        for (int i = 0; i < cnt; i++) {
+                                            outf.put(nlboundary[i]);
+                                            if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
                                             ++fsize;
                                         }
-                                        else {
-                                            outf.put((char) inbyte);
-                                            ++fsize;
-                                        }
-                                    }
-                                    outf.close();
-                                    UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
-                                    _uploads.push_back(uf);
-                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '-' or '\r'
-                                    if (ins->fail() || ins->eof()) {
-                                        throw -1;
-                                    }
-                                    if (inbyte == '-') { // we have a last boundary!
-                                        inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
-                                        if (ins->fail() || ins->eof()) {
-                                            throw -1;
-                                        }
-                                        line = lastboundary;
+                                        cnt = 0;
+                                        outf.put((char) inbyte);
+                                        if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
+                                        ++fsize;
                                     }
                                     else {
-                                        line = boundary;
+                                        outf.put((char) inbyte);
+                                        if (!outf.good()) throw Error(__file__, __LINE__, "Could not write to output file!");
+                                        ++fsize;
                                     }
-                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
+                                }
+                                outf.close();
+                                UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
+                                _uploads.push_back(uf);
+
+                                //
+                                // if it's an inside boundary, we read the terminating "\r\n", if it's
+                                // the last boundary, we read the "--" at the end (the last boundary is
+                                // *not* followed by a "\r\n"!)
+                                //
+                                inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '-' or '\r'
+                                if (ins->fail() || ins->eof()) {
+                                    throw INPUT_READ_FAIL;
+                                }
+                                ++n;
+                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                    throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                                }
+
+                                if (inbyte == '-') { // we have a last boundary!
+                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
                                     if (ins->fail() || ins->eof()) {
-                                        throw -1;
+                                        throw INPUT_READ_FAIL;
                                     }
-                                    continue; // break loop;
+                                    line = lastboundary;
+                                }
+                                else {
+                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // \n'
+                                    if (ins->fail() || ins->eof()) {
+                                        throw INPUT_READ_FAIL;
+                                    }
+                                    line = boundary;
                                 }
                             }
-                            n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
-                            if (ins->fail() || ins->eof()) {
-                                throw -1;
-                            }
+                            continue; // break loop;
                         }
-                        //
-                        // now we get the last, empty line...
-                        //
-                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line);
+
+                        n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                         if (ins->fail() || ins->eof()) {
-                            throw -1;
+                            throw INPUT_READ_FAIL;
                         }
-                        content_length = 0;
-                    }
-                    else if ((content_type_opts[0] == "text/plain") ||
-                             (content_type_opts[0] == "application/json") ||
-                             (content_type_opts[0] == "application/ld+json") ||
-                             (content_type_opts[0] == "application/xml")) {
-                        _content_type = content_type_opts[0];
-                        if (_chunked_transfer_in) {
-                            char *tmp;
-                            ChunkReader ckrd(ins);
-                            content_length = ckrd.readAll(&tmp);
-                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
-                                throw Error(__file__, __LINE__, "malloc failed!", errno);
-                            }
-                            memcpy(_content, tmp, content_length);
-                            free(tmp);
-                            _content[content_length] = '\0';
-                        }
-                        else if (content_length > 0) {
-                            if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
-                                throw Error(__file__, __LINE__, "malloc failed!", errno);
-                            }
-                            ins->read(_content, content_length);
-                            if (ins->fail() || ins->eof()) {
-                                free(_content);
-                                _content = nullptr;
-                                throw -1;
-                            }
-                            _content[content_length] = '\0';
+                        if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                            throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
                     }
-                    else {
-                        throw Error(__file__, __LINE__, "Content type not supported!");
+
+                    content_length = 0;
+                }
+                else if ((content_type_opts[0] == "text/plain") ||
+                         (content_type_opts[0] == "application/json") ||
+                         (content_type_opts[0] == "application/ld+json") ||
+                         (content_type_opts[0] == "application/xml")) {
+                    _content_type = content_type_opts[0];
+                    if (_chunked_transfer_in) {
+                        char *tmp;
+                        ChunkReader ckrd(ins, _server->max_post_size());
+                        content_length = ckrd.readAll(&tmp);
+                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                            throw Error(__file__, __LINE__, "malloc failed!", errno);
+                        }
+                        memcpy(_content, tmp, content_length);
+                        free(tmp);
+                        _content[content_length] = '\0';
                     }
+                    else if (content_length > 0) {
+                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                            throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                        }
+                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                            throw Error(__file__, __LINE__, "malloc failed!", errno);
+                        }
+                        ins->read(_content, content_length);
+                        if (ins->fail() || ins->eof()) {
+                            free(_content);
+                            _content = nullptr;
+                            throw INPUT_READ_FAIL;
+                        }
+                        _content[content_length] = '\0';
+                    }
+                }
+                else {
+                    throw Error(__file__, __LINE__, "Content type not supported!");
                 }
             }
             else if ((method_in == "PUT") || (method_in == "DELETE")) {
@@ -754,7 +799,7 @@ namespace shttps {
                     _content_type = content_type_opts[0];
                     if (_chunked_transfer_in) {
                         char *tmp;
-                        ChunkReader ckrd(ins);
+                        ChunkReader ckrd(ins, _server->max_post_size());
                         content_length = ckrd.readAll(&tmp);
                         if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
@@ -764,7 +809,9 @@ namespace shttps {
                         _content[content_length] = '\0';
                     }
                     else if (content_length > 0) {
-
+                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                            throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                        }
                         _content = (char *) malloc(content_length + 1);
                         if (_content == nullptr) {
                             throw Error(__file__, __LINE__, "malloc failed!", errno);
@@ -773,16 +820,14 @@ namespace shttps {
                         if (ins->fail() || ins->eof()) {
                             free(_content);
                             _content = nullptr;
-                            throw -1;
+                            throw INPUT_READ_FAIL;
                         }
                         _content[content_length] = '\0';
-
                     }
                 }
                 else {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
-
             }
             else if (method_in == "TRACE") {
                     _method = TRACE;
@@ -815,7 +860,7 @@ namespace shttps {
         try {
             finalize();
         }
-        catch (int i) {
+        catch (InputFailure iofail) {
             // do nothing....
         }
         if (_content != nullptr) {
@@ -1077,7 +1122,7 @@ namespace shttps {
             send_header(); // sends content length if not buffer nor chunked
         }
         os->write((char *) buffer, n);
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         if (cachefile != nullptr) cachefile->write((char *) buffer, n);
     }
     //=============================================================================
@@ -1104,14 +1149,14 @@ namespace shttps {
                     //
                     send_header(); // sends content length if not buffer nor chunked
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     //
@@ -1119,10 +1164,10 @@ namespace shttps {
                     //
                     send_header(n); // sends content length if not buffer nor chunked
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     _finished = true; // no more data can be sent
                }
             }
@@ -1132,14 +1177,14 @@ namespace shttps {
                     // chunked transfer -> send the chunk
                     //
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write((char *) buffer, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->flush();
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     //
@@ -1176,9 +1221,9 @@ namespace shttps {
                 // we use the buffer -> send buffer as chunk
                 //
                 *os << std::hex << outbuf_nbytes << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 outbuf_nbytes = 0;
             }
@@ -1187,15 +1232,15 @@ namespace shttps {
                 // we have no buffer, send the data provided as parameters
                 //
                 *os << std::hex << n << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             *os << "\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         else {
             //
@@ -1213,7 +1258,7 @@ namespace shttps {
                     send_header(); // sends content length if not buffer nor chunked
                 }
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
             }
             else {
@@ -1227,12 +1272,12 @@ namespace shttps {
                     send_header(n); // sends content length if not buffer nor chunked
                 }
                 os->write((char *) buffer, n);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
                 outbuf_nbytes = 0;
             }
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             _finished = true; // no more data can be sent!
         }
     }
@@ -1306,18 +1351,18 @@ namespace shttps {
                 // send data here...
                 if (_chunked_transfer_out) {
                     *os << std::hex << n << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     os->write(buf, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                     *os << "\r\n";
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 else {
                     os->write(buf, n);
-                    if (os->eof() || os->fail()) throw -1;
+                    if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 }
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             if (!feof(infile)) {
                 fclose(infile);
@@ -1341,28 +1386,28 @@ namespace shttps {
             if (_finished) throw Error(__file__, __LINE__, "Sending data already terminated!");
             if (_chunked_transfer_out) {
                 *os << std::hex << outbuf_nbytes << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 *os << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else {
                 os->write((char *) outbuf, outbuf_nbytes);
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) outbuf, outbuf_nbytes);
                 os->flush();
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 _finished = true;
             }
             outbuf_nbytes = 0;
         }
         else {
             os->flush();
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             if (!_chunked_transfer_out) {
                 _finished = true;
             }
@@ -1422,35 +1467,35 @@ namespace shttps {
             throw Error(__file__, __LINE__, "Header already sent!");
         }
         *os << "HTTP/1.1 " << to_string(status_code) << " " << status_string << "\r\n";
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
 
         for (auto const &iterator : header_out) {
             *os << iterator.first << ": " << iterator.second << "\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
 
         if (_chunked_transfer_out) { // no content length, please!!!
             *os << "\r\n"; //we have to add only one more "\r\n" in this case
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         else {
             if ((outbuf != nullptr) && (outbuf_nbytes > 0)) {
                 *os << "Content-Length: " << outbuf_nbytes << "\r\n\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else if (n > 0) {
                 *os << "Content-Length: " << n << "\r\n\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
             else {
                 *os << "Content-Length: " << n << "\r\n\r\n";
                 //*os << "\r\n";
-                if (os->eof() || os->fail()) throw -1;
+                if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             }
         }
 
         os->flush();
-        if (os->eof() || os->fail()) throw -1;
+        if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
 
         header_sent = true;
     }
@@ -1461,9 +1506,9 @@ namespace shttps {
     {
         if (_chunked_transfer_out && !_finished) {
             *os << "0\r\n\r\n";
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
             os->flush(); // last (empty) chunk
-            if (os->eof() || os->fail()) throw -1;
+            if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
         _finished = true;
     }

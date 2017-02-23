@@ -37,6 +37,10 @@
 
 namespace shttps {
 
+    extern const size_t max_headerline_len;
+
+    typedef enum { INPUT_READ_FAIL = -1, OUTPUT_WRITE_FAIL = -2 } InputFailure;
+
     class Server;
 
    /*!
@@ -58,7 +62,7 @@ namespace shttps {
     *
     * \returns Number of bytes read
     */
-    extern size_t safeGetline(std::istream& is, std::string& t, bool debug = false);
+    extern size_t safeGetline(std::istream& is, std::string& t, size_t max_n = 0);
 
    /*!
     * Function to parse the options of a HTTP header line
@@ -313,8 +317,8 @@ namespace shttps {
         bool _chunked_transfer_out; //!< output data is sent in chunks
         bool _finished;             //!< Transfer of response data finished
         char *_content;             //!< Content if content-type is "text/plain", "application/json" etc.
-        size_t content_length;    //!< length of body in octets (used if not chunked transfer)
-        std::string _content_type;   //!< Content-type (mime type of content)
+        size_t content_length;      //!< length of body in octets (used if not chunked transfer)
+        std::string _content_type;  //!< Content-type (mime type of content)
         std::ofstream *cachefile;   //!< pointer to cache file
         char *outbuf;               //!< If not NULL, pointer to the output buffer (buffered output used)
         size_t outbuf_size;         //!< Actual size of output buffer
@@ -542,7 +546,6 @@ namespace shttps {
         * \param[in] cookie_p An instance of the cookie data
         */
         void cookies(const Cookie &cookie_p);
-
 
        /*!
         * Get the directory for temporary files

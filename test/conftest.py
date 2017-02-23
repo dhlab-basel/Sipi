@@ -33,6 +33,7 @@ import filecmp
 import shutil
 import psutil
 
+
 @pytest.fixture(scope="session")
 def manager():
     """Returns a SipiTestManager. Automatically starts Sipi and nginx before tests are run, and stops them afterwards."""
@@ -131,7 +132,6 @@ class SipiTestManager:
                 self.sipi_took_too_long = True
 
         if self.sipi_took_too_long:
-            self.write_sipi_log()
             raise SipiTestError("Sipi didn't start after {} seconds (wrote {})".format(self.sipi_start_wait, self.sipi_log_file))
 
     def stop_sipi(self):
@@ -141,6 +141,8 @@ class SipiTestManager:
             self.sipi_process.send_signal(signal.SIGTERM)
             self.sipi_process.wait(timeout=self.sipi_stop_wait)
             self.sipi_process = None
+
+        self.write_sipi_log()
 
     def sipi_is_running(self):
         """Returns True if Sipi is running."""
@@ -228,7 +230,6 @@ class SipiTestManager:
         if filecmp.cmp(downloaded_file_path, expected_file_path):
             os.remove(downloaded_file_path)
         else:
-            self.write_sipi_log()
             raise SipiTestError("Downloaded file {} is different from expected file {} (wrote {})".format(downloaded_file_path, expected_file_path, self.sipi_log_file))
 
     def expect_status_code(self, url_path, status_code, headers=None):
@@ -287,10 +288,26 @@ class SipiTestManager:
         total_mean_absolute_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
 
         if compare_process.returncode != 0 or total_mean_absolute_error != "0.0":
-            self.write_sipi_log()
             raise SipiTestError("Downloaded image {} is different from expected image {} (wrote {}):\n{}".format(downloaded_file_path, expected_file_path, self.sipi_log_file, compare_process.stdout))
 
         os.remove(downloaded_file_path)
+
+    def post_file(self, url_path, filename, mime_type, headers=None):
+        """
+            Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
+
+            url_path: a path that will be appended to the Sipi base URL to make the request.
+            filename: the name of a file in the test data directory, which will be uploaded.
+            headers: an optional dictionary of request headers.
+        """
+
+        file_path = os.path.join(self.data_dir, filename)
+        sipi_url = self.make_sipi_url(url_path)
+
+        with open(file_path, "rb") as file_obj:
+            files = { "file": (filename, file_obj, mime_type) }
+            response = requests.post(sipi_url, files=files, headers=headers)
+            return response.json()
 
     def write_sipi_log(self):
         """Writes Sipi's output to a log file."""
@@ -308,7 +325,6 @@ class SipiTestManager:
             universal_newlines = True)
 
         if validator_process.returncode != 0:
-            self.write_sipi_log()
             raise SipiTestError("IIIF validation failed (wrote {}):\n{}".format(self.sipi_log_file, validator_process.stdout))
 
 
