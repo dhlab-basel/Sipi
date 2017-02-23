@@ -543,7 +543,6 @@ namespace shttps {
                     }
 
                     while (line != lastboundary) {
-std::cerr << "*****************" << std::endl;
                         if (line == boundary) { // we have a boundary, thus we start a new field
                             string fieldname;
                             string fieldvalue;
@@ -559,6 +558,7 @@ std::cerr << "*****************" << std::endl;
                                 throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                             }
                             while (!line.empty()) {
+std::cerr << "LINE=" << line << std::endl;
                                 size_t pos = line.find(':');
                                 string name = line.substr(0, pos);
                                 name = trim(name);
@@ -610,6 +610,7 @@ std::cerr << "*****************" << std::endl;
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
                             } // while
+std::cerr << "File: " << filename << " mimetype: " << mimetype << std::endl;
                             if (filename.empty()) {
                                 // we read a normal value
                                 n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
@@ -669,6 +670,7 @@ std::cerr << "*****************" << std::endl;
                                 // the boundary string starts on a new line which is separate by "\r\n"
                                 //
                                 string nlboundary = "\r\n" + boundary;
+std::cerr << "nlboundary=" << nlboundary << std::endl;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
@@ -679,8 +681,10 @@ std::cerr << "*****************" << std::endl;
                                     }
                                     if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
                                         ++cnt;
+                                        std::cerr << (char) inbyte;
                                         if (cnt == nlboundary.length()) {
                                             // OK, we have read the whole file...
+std::cerr << "GAGAGAGAGAGAGAGGAG" << std::endl;
                                             break; // break enclosing while loop
                                         }
                                     }
@@ -706,6 +710,11 @@ std::cerr << "*****************" << std::endl;
                                 UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
                                 _uploads.push_back(uf);
 
+                                //
+                                // if it's an inside boundary, we read the terminating "\r\n", if it's
+                                // the last boundary, we read the "--" at the end (the last boundary is
+                                // *not* followed by a "\r\n"!)
+                                //
                                 inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '-' or '\r'
                                 if (ins->fail() || ins->eof()) {
                                     throw INPUT_READ_FAIL;
@@ -724,8 +733,8 @@ std::cerr << "*****************" << std::endl;
                                 }
                                 else {
                                     line = boundary;
-                                }
-/*
+//                                }
+
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\r';
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
@@ -734,20 +743,21 @@ std::cerr << "*****************" << std::endl;
                                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                     }
-                                inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
-                                if (ins->fail() || ins->eof()) {
-                                    throw INPUT_READ_FAIL;
+                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\n';
+                                    if (ins->fail() || ins->eof()) {
+                                        throw INPUT_READ_FAIL;
+                                    }
+                                    ++n;
+                                    if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
+                                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                                    }
                                 }
-                                ++n;
-                                if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
-                                    throw Error(__file__, __LINE__, "Content bigger than max_post_size");
-                                }
-*/
 
                             }
                             continue; // break loop;
                         }
 
+std::cerr << __LINE__ << std::endl;
                         n += _chunked_transfer_in ? ckrd.getline(line) : safeGetline(*ins, line, _server->max_post_size() - n);
                         if (ins->fail() || ins->eof()) {
                             throw INPUT_READ_FAIL;
@@ -755,8 +765,10 @@ std::cerr << "*****************" << std::endl;
                         if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                             throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                         }
+std::cerr << __LINE__ << std::endl;
                     }
 
+/*
                     //
                     // now we get the last, empty line...
                     //
@@ -767,7 +779,10 @@ std::cerr << "*****************" << std::endl;
                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                     }
+*/
                     content_length = 0;
+std::cerr << "Finished::: *****************" << std::endl;
+
                 }
                 else if ((content_type_opts[0] == "text/plain") ||
                          (content_type_opts[0] == "application/json") ||
