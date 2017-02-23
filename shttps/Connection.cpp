@@ -670,7 +670,8 @@ std::cerr << "File: " << filename << " mimetype: " << mimetype << std::endl;
                                 // the boundary string starts on a new line which is separate by "\r\n"
                                 //
                                 string nlboundary = "\r\n" + boundary;
-std::cerr << "nlboundary=" << nlboundary << std::endl;
+
+std::cerr << "Start writing file data..." << std::endl;
                                 while ((inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get()) != EOF) {
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
@@ -684,7 +685,7 @@ std::cerr << "nlboundary=" << nlboundary << std::endl;
                                         std::cerr << (char) inbyte;
                                         if (cnt == nlboundary.length()) {
                                             // OK, we have read the whole file...
-std::cerr << "GAGAGAGAGAGAGAGGAG" << std::endl;
+std::cerr << "Boundary found!" << std::endl;
                                             break; // break enclosing while loop
                                         }
                                     }
@@ -705,7 +706,7 @@ std::cerr << "GAGAGAGAGAGAGAGGAG" << std::endl;
                                         ++fsize;
                                     }
                                 }
-
+std::cerr << "Finalizing file " << filename << " " << tmpname << std::endl;
                                 outf.close();
                                 UploadedFile uf = {fieldname, filename, tmpname, mimetype, fsize};
                                 _uploads.push_back(uf);
@@ -719,22 +720,29 @@ std::cerr << "GAGAGAGAGAGAGAGGAG" << std::endl;
                                 if (ins->fail() || ins->eof()) {
                                     throw INPUT_READ_FAIL;
                                 }
+std::cerr << "End 1 of boundary: " << inbyte << std::endl;
                                 ++n;
                                 if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                     throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                 }
 
                                 if (inbyte == '-') { // we have a last boundary!
-                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-' or '\n'
+                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // second '-'
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
                                     }
                                     line = lastboundary;
                                 }
                                 else {
+                                    inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // \n'
+                                    if (ins->fail() || ins->eof()) {
+                                        throw INPUT_READ_FAIL;
+                                    }
                                     line = boundary;
-//                                }
+                                }
+std::cerr << "End 2 of boundary: " << inbyte << std::endl;
 
+/*
                                     inbyte = _chunked_transfer_in ? ckrd.getc() : ins->get(); // get '\r';
                                     if (ins->fail() || ins->eof()) {
                                         throw INPUT_READ_FAIL;
@@ -751,7 +759,7 @@ std::cerr << "GAGAGAGAGAGAGAGGAG" << std::endl;
                                     if ((_server->max_post_size() > 0) && (n > _server->max_post_size())) {
                                         throw Error(__file__, __LINE__, "Content bigger than max_post_size");
                                     }
-                                }
+*/
 
                             }
                             continue; // break loop;
