@@ -40,9 +40,9 @@
 #include "jpeglib.h"
 #include "jerror.h"
 
-#define ICC_MARKER  (JPEG_APP0 + 2)	/* JPEG marker code for ICC */
-#define ICC_OVERHEAD_LEN  14		/* size of non-profile data in APP2 */
-#define MAX_BYTES_IN_MARKER  65533	/* maximum data len of a JPEG marker */
+#define ICC_MARKER  (JPEG_APP0 + 2)    /* JPEG marker code for ICC */
+#define ICC_OVERHEAD_LEN  14        /* size of non-profile data in APP2 */
+#define MAX_BYTES_IN_MARKER  65533    /* maximum data len of a JPEG marker */
 
 
 static const char __file__[] = __FILE__;
@@ -57,8 +57,10 @@ namespace Sipi {
     class JpegError : public std::runtime_error {
     public:
         inline JpegError() : std::runtime_error("!! JPEG_ERROR !!") {}
+
         inline JpegError(const char *msg) : std::runtime_error(msg) {}
-        inline const char* what() const noexcept {
+
+        inline const char *what() const noexcept {
             return std::runtime_error::what();
         }
     };
@@ -74,7 +76,7 @@ namespace Sipi {
     /*!
      * Function which initializes the structures for managing the IO
      */
-    static void init_file_destination (j_compress_ptr cinfo) {
+    static void init_file_destination(j_compress_ptr cinfo) {
         FileBuffer *file_buffer = (FileBuffer *) cinfo->client_data;
         cinfo->dest->free_in_buffer = file_buffer->buflen;
         cinfo->dest->next_output_byte = file_buffer->buffer;
@@ -84,7 +86,7 @@ namespace Sipi {
     /*!
      * Function empty the libjeg buffer and write the data to the socket
      */
-    static boolean empty_file_buffer (j_compress_ptr cinfo) {
+    static boolean empty_file_buffer(j_compress_ptr cinfo) {
         FileBuffer *file_buffer = (FileBuffer *) cinfo->client_data;
         size_t n = file_buffer->buflen;
         size_t nn = 0;
@@ -94,8 +96,7 @@ namespace Sipi {
                 throw JpegError("Couldn't write to file!");
                 //throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
                 //return false; // and create an error message!!
-            }
-            else {
+            } else {
                 n -= tmp_n;
                 nn += tmp_n;
             }
@@ -111,7 +112,7 @@ namespace Sipi {
     /*!
      * Finish writing data
      */
-    static void term_file_destination (j_compress_ptr cinfo) {
+    static void term_file_destination(j_compress_ptr cinfo) {
         FileBuffer *file_buffer = (FileBuffer *) cinfo->client_data;
         size_t n = cinfo->dest->next_output_byte - file_buffer->buffer;
         size_t nn = 0;
@@ -119,14 +120,13 @@ namespace Sipi {
             auto tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
             if (tmp_n < 0) {
                 throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
-            }
-            else {
+            } else {
                 n -= tmp_n;
                 nn += tmp_n;
             }
         } while (n > 0);
 
-        delete [] file_buffer->buffer;
+        delete[] file_buffer->buffer;
         delete file_buffer;
         cinfo->client_data = nullptr;
 
@@ -138,24 +138,23 @@ namespace Sipi {
     /*!
      * This function is used to setup the I/O destination to the HTTP socket
      */
-    static void jpeg_file_dest(struct jpeg_compress_struct *cinfo, int file_id, size_t buflen = 64*1024)
-    {
-      struct jpeg_destination_mgr *destmgr;
-      FileBuffer *file_buffer;
-      cinfo->client_data = new FileBuffer;
-      file_buffer = (FileBuffer *) cinfo->client_data;
+    static void jpeg_file_dest(struct jpeg_compress_struct *cinfo, int file_id, size_t buflen = 64 * 1024) {
+        struct jpeg_destination_mgr *destmgr;
+        FileBuffer *file_buffer;
+        cinfo->client_data = new FileBuffer;
+        file_buffer = (FileBuffer *) cinfo->client_data;
 
-      file_buffer->buffer = new JOCTET[buflen]; //(JOCTET *) malloc(buflen*sizeof(JOCTET));
-      file_buffer->buflen = buflen;
-      file_buffer->file_id = file_id;
+        file_buffer->buffer = new JOCTET[buflen]; //(JOCTET *) malloc(buflen*sizeof(JOCTET));
+        file_buffer->buflen = buflen;
+        file_buffer->file_id = file_id;
 
-      destmgr = (struct jpeg_destination_mgr *) malloc(sizeof(struct jpeg_destination_mgr));
+        destmgr = (struct jpeg_destination_mgr *) malloc(sizeof(struct jpeg_destination_mgr));
 
-      destmgr->init_destination = init_file_destination;
-      destmgr->empty_output_buffer = empty_file_buffer;
-      destmgr->term_destination = term_file_destination;
+        destmgr->init_destination = init_file_destination;
+        destmgr->empty_output_buffer = empty_file_buffer;
+        destmgr->term_destination = term_file_destination;
 
-      cinfo->dest = destmgr;
+        cinfo->dest = destmgr;
     }
     //=============================================================================
 
@@ -217,7 +216,7 @@ namespace Sipi {
     }
     //=============================================================================
 
-    static void jpeg_file_src(struct jpeg_decompress_struct *cinfo, int file_id, size_t buflen = 64*1024) {
+    static void jpeg_file_src(struct jpeg_decompress_struct *cinfo, int file_id, size_t buflen = 64 * 1024) {
         struct jpeg_source_mgr *srcmgr;
         FileBuffer *file_buffer;
         cinfo->client_data = new FileBuffer;
@@ -245,13 +244,13 @@ namespace Sipi {
     typedef struct _HtmlBuffer {
         JOCTET *buffer; //!< Buffer for holding data to be written out
         size_t buflen;  //!< length of the buffer
-        shttps::Connection* conobj; //!< Pointer to the connection objects
+        shttps::Connection *conobj; //!< Pointer to the connection objects
     } HtmlBuffer;
 
     /*!
      * Function which initializes the structures for managing the IO
      */
-    static void init_html_destination (j_compress_ptr cinfo) {
+    static void init_html_destination(j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
         cinfo->dest->free_in_buffer = html_buffer->buflen;
         cinfo->dest->next_output_byte = html_buffer->buffer;
@@ -261,12 +260,11 @@ namespace Sipi {
     /*!
      * Function empty the libjeg buffer and write the data to the socket
      */
-    static boolean empty_html_buffer (j_compress_ptr cinfo) {
+    static boolean empty_html_buffer(j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
         try {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
-        }
-        catch (int i) { // an error occurred (possibly a broken pipe)
+        } catch (int i) { // an error occurred (possibly a broken pipe)
             throw JpegError("Couldn't write to HTTP socket");
             //return false;
         }
@@ -280,13 +278,12 @@ namespace Sipi {
     /*!
      * Finish writing data
      */
-    static void term_html_destination (j_compress_ptr cinfo) {
+    static void term_html_destination(j_compress_ptr cinfo) {
         HtmlBuffer *html_buffer = (HtmlBuffer *) cinfo->client_data;
         size_t nbytes = cinfo->dest->next_output_byte - html_buffer->buffer;
         try {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, nbytes);
-        }
-        catch (int i) { // an error occured in sending the data (broken pipe?)
+        } catch (int i) { // an error occured in sending the data (broken pipe?)
             // do nothing...
         }
 
@@ -302,13 +299,14 @@ namespace Sipi {
     /*!
      * This function is used to setup the I/O destination to the HTTP socket
      */
-    static void jpeg_html_dest(struct jpeg_compress_struct *cinfo, shttps::Connection* conobj, size_t buflen = 64*1024) {
+    static void
+    jpeg_html_dest(struct jpeg_compress_struct *cinfo, shttps::Connection *conobj, size_t buflen = 64 * 1024) {
         struct jpeg_destination_mgr *destmgr;
         HtmlBuffer *html_buffer;
         cinfo->client_data = malloc(sizeof(HtmlBuffer));
         html_buffer = (HtmlBuffer *) cinfo->client_data;
 
-        html_buffer->buffer = (JOCTET *) malloc(buflen*sizeof(JOCTET));
+        html_buffer->buffer = (JOCTET *) malloc(buflen * sizeof(JOCTET));
         html_buffer->buflen = buflen;
         html_buffer->conobj = conobj;
 
@@ -344,7 +342,7 @@ namespace Sipi {
 
             //
             // tag-ID processing
-            id = ((unsigned char)*(ptr + 0) << 8) | (unsigned char)*(ptr + 1); // ID
+            id = ((unsigned char) *(ptr + 0) << 8) | (unsigned char) *(ptr + 1); // ID
             ptr += 2; // ID
 
             //
@@ -358,11 +356,12 @@ namespace Sipi {
 
             //
             // data processing
-            datalen = ((unsigned char)*ptr << 24) | ((unsigned char)*(ptr + 1) << 16) | ((unsigned char)*(ptr + 2) << 8) | (unsigned char)*(ptr + 3);
+            datalen = ((unsigned char) *ptr << 24) | ((unsigned char) *(ptr + 1) << 16) |
+                      ((unsigned char) *(ptr + 2) << 8) | (unsigned char) *(ptr + 3);
 
             ptr += 4;
 
-            switch(id) {
+            switch (id) {
                 case 0x0404: { // IPTC data
                     //cerr << ">>> Photoshop: IPTC" << endl;
                     if (img->iptc == nullptr) img->iptc = std::make_shared<SipiIptc>((unsigned char *) ptr, datalen);
@@ -388,7 +387,7 @@ namespace Sipi {
                 }
                 default: {
                     // URL
-                    char *str = (char *) calloc(1, (datalen + 1)*sizeof(char));
+                    char *str = (char *) calloc(1, (datalen + 1) * sizeof(char));
                     memcpy(str, ptr, datalen);
                     str[datalen] = '\0';
                     //fprintf(stderr, "XXX=%s\n", str);
@@ -407,23 +406,23 @@ namespace Sipi {
     * This function is used to catch libjpeg errors which otherwise would
     * result in a call exit()
     */
-    static void jpegErrorExit ( j_common_ptr cinfo )
-    {
+    static void jpegErrorExit(j_common_ptr cinfo) {
         char jpegLastErrorMsg[JMSG_LENGTH_MAX];
         /* Create the message */
-        ( *( cinfo->err->format_message ) ) ( cinfo, jpegLastErrorMsg );
+        (*(cinfo->err->format_message))(cinfo, jpegLastErrorMsg);
         /* Jump to the setjmp point */
         throw JpegError(jpegLastErrorMsg);
     }
     //=============================================================================
 
 
-    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
+    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+                          std::shared_ptr<SipiSize> size, bool force_bps_8) {
         int infile;
         //
         // open the input file
         //
-        if ((infile = ::open (filepath.c_str(), O_RDONLY)) == -1) {
+        if ((infile = ::open(filepath.c_str(), O_RDONLY)) == -1) {
             return false;
         }
         // workaround for bug #0011: jpeglib crashes the app when the file is not a jpeg file
@@ -433,7 +432,7 @@ namespace Sipi {
             return false;
         }
         if ((magic[0] != 0xff) || (magic[1] != 0xd8)) {
-            close (infile);
+            close(infile);
             return false; // it's not a JPEG file!
         }
         // move infile position back to the beginning of the file
@@ -469,8 +468,7 @@ namespace Sipi {
             for (int i = 0; i < 16; i++) {
                 jpeg_save_markers(&cinfo, JPEG_APP0 + i, 0xffff);
             }
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
             throw SipiError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
@@ -480,10 +478,9 @@ namespace Sipi {
         // now we read the header
         //
         int res;
-        try  {
-            res = jpeg_read_header (&cinfo, TRUE);
-        }
-        catch (JpegError &jpgerr) {
+        try {
+            res = jpeg_read_header(&cinfo, TRUE);
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
@@ -506,8 +503,7 @@ namespace Sipi {
                 std::string emdatastr((char *) marker->data, marker->data_length);
                 SipiEssentials se(emdatastr);
                 img->essential_metadata(se);
-            }
-            else if (marker->marker == JPEG_APP0+1) { // EXIF, XMP MARKER....
+            } else if (marker->marker == JPEG_APP0 + 1) { // EXIF, XMP MARKER....
                 //
                 // first we try to find the exif part
                 //
@@ -519,10 +515,12 @@ namespace Sipi {
                 //
                 // first we try to find the xmp part: TODO: reading XMP which spans multiple segments. See ExtendedXMP !!!
                 //
-                pos = (unsigned char *) memmem(marker->data, marker->data_length, "http://ns.adobe.com/xap/1.0/\000", 29);
+                pos = (unsigned char *) memmem(marker->data, marker->data_length, "http://ns.adobe.com/xap/1.0/\000",
+                                               29);
                 if (pos != nullptr) {
                     try {
-                        char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n', '\0'};
+                        char start[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'b', 'e', 'g', 'i', 'n',
+                                        '\0'};
                         char end[] = {'<', '?', 'x', 'p', 'a', 'c', 'k', 'e', 't', ' ', 'e', 'n', 'd', '\0'};
 
                         char *s;
@@ -575,13 +573,11 @@ namespace Sipi {
                         xmpstr = xmpstr.substr(0, npos + 12);
 
                         img->xmp = std::make_shared<SipiXmp>(xmpstr);
-                    }
-                    catch (SipiError &err) {
+                    } catch (SipiError &err) {
                         std::cerr << "Failed to parse XMP..." << std::endl;
                     }
                 }
-            }
-            else if (marker->marker == JPEG_APP0+2) { // ICC MARKER.... may span multiple marker segments
+            } else if (marker->marker == JPEG_APP0 + 2) { // ICC MARKER.... may span multiple marker segments
                 //
                 // first we try to find the exif part
                 //
@@ -589,16 +585,14 @@ namespace Sipi {
                 if (pos != nullptr) {
                     auto len = marker->data_length - (pos - (unsigned char *) marker->data) - 14;
                     icc_buffer = (unsigned char *) realloc(icc_buffer, icc_buffer_len + len);
-                    Sipi::memcpy (icc_buffer + icc_buffer_len, pos + 14, (size_t) len);
+                    Sipi::memcpy(icc_buffer + icc_buffer_len, pos + 14, (size_t) len);
                     icc_buffer_len += len;
                 }
-            }
-            else if (marker->marker == JPEG_APP0+13) { // PHOTOSHOP MARKER....
+            } else if (marker->marker == JPEG_APP0 + 13) { // PHOTOSHOP MARKER....
                 if (strncmp("Photoshop 3.0", (char *) marker->data, 14) == 0) {
                     parse_photoshop(img, (char *) marker->data + 14, (int) marker->data_length - 14);
                 }
-            }
-            else {
+            } else {
                 //fprintf(stderr, "4) MARKER= %d, %d Bytes, ==> %s\n\n", marker->marker - JPEG_APP0, marker->data_length, marker->data);
             }
             marker = marker->next;
@@ -609,8 +603,7 @@ namespace Sipi {
 
         try {
             jpeg_start_decompress(&cinfo);
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
@@ -648,9 +641,9 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace!");
             }
         }
-        int sll = cinfo.output_components*cinfo.output_width*sizeof (uint8);
+        int sll = cinfo.output_components * cinfo.output_width * sizeof(uint8);
 
-        img->pixels = new byte[img->ny*sll];
+        img->pixels = new byte[img->ny * sll];
 
         try {
             linbuf = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, sll, 1);
@@ -658,24 +651,21 @@ namespace Sipi {
                 jpeg_read_scanlines(&cinfo, linbuf, 1);
                 memcpy(&(img->pixels[i * sll]), linbuf[0], (size_t) sll);
             }
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_decompress(&cinfo);
             close(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         try {
             jpeg_finish_decompress(&cinfo);
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             close(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
 
         try {
             jpeg_destroy_decompress(&cinfo);
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             close(infile);
             inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
@@ -707,8 +697,8 @@ namespace Sipi {
     //============================================================================
 
 
-#   define readbyte(a,b) do if(((a)=getc((b))) == EOF) return 0; while (0)
-#   define readword(a,b) do { int cc_=0,dd_=0; \
+#   define readbyte(a, b) do if(((a)=getc((b))) == EOF) return 0; while (0)
+#   define readword(a, b) do { int cc_=0,dd_=0; \
                               if((cc_=getc((b))) == EOF \
                               || (dd_=getc((b))) == EOF) return 0; \
                               (a) = (cc_<<8) + (dd_); \
@@ -721,19 +711,19 @@ namespace Sipi {
         //
         // open the input file
         //
-        if ((infile = fopen (filepath.c_str(), "rb")) == nullptr) {
+        if ((infile = fopen(filepath.c_str(), "rb")) == nullptr) {
             // inlock.unlock();
             return false;
         }
 
         int marker = 0;
         int dummy = 0;
-        if ( getc(infile) != 0xFF || getc(infile) != 0xD8 ) {
-            fclose (infile);
+        if (getc(infile) != 0xFF || getc(infile) != 0xD8) {
+            fclose(infile);
             return false; // wrong magic number
         }
         for (;;) {
-            int discarded_bytes=0;
+            int discarded_bytes = 0;
             readbyte(marker, infile);
             while (marker != 0xFF) {
                 discarded_bytes++;
@@ -742,7 +732,7 @@ namespace Sipi {
             do readbyte(marker, infile); while (marker == 0xFF);
 
             if (discarded_bytes != 0) {
-                fclose (infile);
+                fclose(infile);
                 return false;
             }
 
@@ -760,7 +750,7 @@ namespace Sipi {
                 case 0xCD:
                 case 0xCE:
                 case 0xCF: {
-                    readword(dummy, infile);	/* usual parameter length count */
+                    readword(dummy, infile);    /* usual parameter length count */
                     readbyte(dummy, infile);
                     unsigned int tmp_height;
                     readword(tmp_height, infile);
@@ -769,18 +759,18 @@ namespace Sipi {
                     readword(tmp_width, infile);
                     width = tmp_width;
                     readbyte(dummy, infile);
-                    fclose (infile);
+                    fclose(infile);
                     return true;
                 }
                 case 0xDA:
                 case 0xD9:
-                    fclose (infile);
+                    fclose(infile);
                     return false;
                 default: {
                     int length;
-                    readword(length,infile);
+                    readword(length, infile);
                     if (length < 2) {
-                        fclose (infile);
+                        fclose(infile);
                         return false;
                     }
                     length -= 2;
@@ -789,7 +779,7 @@ namespace Sipi {
                         length--;
                     }
                 }
-                break;
+                    break;
             }
         }
     }
@@ -803,61 +793,71 @@ namespace Sipi {
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
 
-        cinfo.err = jpeg_std_error( &jerr);
+        cinfo.err = jpeg_std_error(&jerr);
         jerr.error_exit = jpegErrorExit;
 
-        int outfile = -1;		/* target file */
-        JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
-        int row_stride;		/* physical row width in image buffer */
+        int outfile = -1;        /* target file */
+        JSAMPROW row_pointer[1];    /* pointer to JSAMPLE row[s] */
+        int row_stride;        /* physical row width in image buffer */
 
         try {
             jpeg_create_compress(&cinfo);
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
         if (filepath == "HTTP") { // we are transmitting the data through the webserver
             shttps::Connection *conobj = img->connection();
             jpeg_html_dest(&cinfo, conobj);
-        }
-        else {
+        } else {
             if (filepath == "stdout:") {
                 jpeg_stdio_dest(&cinfo, stdout);
-            }
-            else {
-                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1) {
+            } else {
+                if ((outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) ==
+                    -1) {
                     throw SipiImageError(__file__, __LINE__, "Cannot open file \"" + filepath + "\"!");
                 }
                 jpeg_file_dest(&cinfo, outfile);
             }
         }
 
-        cinfo.image_width = (int) img->nx; 	/* image width and height, in pixels */
+        cinfo.image_width = (int) img->nx;    /* image width and height, in pixels */
         cinfo.image_height = (int) img->ny;
-        cinfo.input_components = (int) img->nc;		/* # of color components per pixel */
+        cinfo.input_components = (int) img->nc;        /* # of color components per pixel */
         switch (img->photo) {
             case MINISWHITE:
             case MINISBLACK: {
-                if (img->nc != 1) throw SipiImageError(__file__, __LINE__, "Num of components not 1 (nc = " + std::to_string(img->nc) + ")!");
+                if (img->nc != 1) {
+                    throw SipiImageError(__file__, __LINE__,
+                                         "Num of components not 1 (nc = " + std::to_string(img->nc) + ")!");
+                }
                 cinfo.in_color_space = JCS_GRAYSCALE;
                 cinfo.jpeg_color_space = JCS_GRAYSCALE;
                 break;
             }
             case RGB: {
-                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                if (img->nc != 3) {
+                    throw SipiImageError(__file__, __LINE__,
+                                         "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                }
                 cinfo.in_color_space = JCS_RGB;
                 cinfo.jpeg_color_space = JCS_RGB;
                 break;
             }
             case SEPARATED: {
-                if (img->nc != 4) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                if (img->nc != 4) {
+                    throw SipiImageError(__file__, __LINE__,
+                                         "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                }
                 cinfo.in_color_space = JCS_CMYK;
                 cinfo.jpeg_color_space = JCS_CMYK;
                 break;
             }
             case YCBCR: {
-                if (img->nc != 3) throw SipiImageError(__file__, __LINE__, "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                if (img->nc != 3) {
+                    throw SipiImageError(__file__, __LINE__,
+                                         "Num of components not 3 (nc = " + std::to_string(img->nc) + ")!");
+                }
                 cinfo.in_color_space = JCS_YCbCr;
                 cinfo.jpeg_color_space = JCS_YCbCr;
                 break;
@@ -876,9 +876,8 @@ namespace Sipi {
 
             jpeg_simple_progression(&cinfo);
             jpeg_start_compress(&cinfo, TRUE);
-        }
-        catch (JpegError &jpgerr) {
-            jpeg_finish_compress (&cinfo);
+        } catch (JpegError &jpgerr) {
+            jpeg_finish_compress(&cinfo);
             jpeg_destroy_compress(&cinfo);
             if (outfile != -1) close(outfile);
             //outlock.unlock();
@@ -903,19 +902,17 @@ namespace Sipi {
                 auto exifchunk = shttps::make_unique<unsigned char[]>(len + start_l);
                 Sipi::memcpy(exifchunk.get(), start, (size_t) start_l);
                 Sipi::memcpy(exifchunk.get() + start_l, buf, (size_t) len);
-                delete [] buf;
+                delete[] buf;
 
                 try {
                     jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) exifchunk.get(), start_l + len);
-                }
-                catch (JpegError &jpgerr) {
-                    jpeg_finish_compress (&cinfo);
+                } catch (JpegError &jpgerr) {
+                    jpeg_finish_compress(&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
                     throw SipiImageError(__file__, __LINE__, jpgerr.what());
                 }
-            }
-            else {
+            } else {
                 // std::cerr << "exif to big" << std::endl;
             }
         }
@@ -925,8 +922,7 @@ namespace Sipi {
             const char *buf;
             try {
                 buf = img->xmp->xmpBytes(len);
-            }
-            catch (SipiError &err) {
+            } catch (SipiError &err) {
                 std::cerr << err << std::endl;
             }
             if (len <= 65535) {
@@ -935,18 +931,16 @@ namespace Sipi {
                 auto xmpchunk = shttps::make_unique<char[]>(len + start_l);
                 Sipi::memcpy(xmpchunk.get(), start, (size_t) start_l);
                 Sipi::memcpy(xmpchunk.get() + start_l, buf, (size_t) len);
-                delete [] buf;
+                delete[] buf;
                 try {
                     jpeg_write_marker(&cinfo, JPEG_APP0 + 1, (JOCTET *) xmpchunk.get(), start_l + len);
-                }
-                catch (JpegError &jpgerr) {
-                    jpeg_finish_compress (&cinfo);
+                } catch (JpegError &jpgerr) {
+                    jpeg_finish_compress(&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
                     throw SipiImageError(__file__, __LINE__, jpgerr.what());
                 }
-            }
-            else {
+            } else {
                 // std::cerr << "xml to big" << std::endl;
             }
         }
@@ -956,11 +950,11 @@ namespace Sipi {
             const unsigned char *buf;
             try {
                 buf = img->icc->iccBytes(len);
-            }
-            catch (SipiError &err) {
+            } catch (SipiError &err) {
                 std::cerr << err << std::endl;
             }
-            unsigned char start[14] = {0x49, 0x43, 0x43, 0x5F, 0x50, 0x52, 0x4F, 0x46, 0x49, 0x4C, 0x45, 0x0}; //"ICC_PROFILE\000";
+            unsigned char start[14] = {0x49, 0x43, 0x43, 0x5F, 0x50, 0x52, 0x4F, 0x46, 0x49, 0x4C, 0x45,
+                                       0x0}; //"ICC_PROFILE\000";
             size_t start_l = 14;
             unsigned int n = len / (65533 - start_l + 1) + 1;
 
@@ -977,10 +971,9 @@ namespace Sipi {
                 Sipi::memcpy(iccchunk.get() + start_l, buf + n_written, (size_t) n_nextwrite);
                 try {
                     jpeg_write_marker(&cinfo, ICC_MARKER, iccchunk.get(), n_nextwrite + start_l);
-                }
-                catch (JpegError &jpgerr) {
-                    delete [] buf;
-                    jpeg_finish_compress (&cinfo);
+                } catch (JpegError &jpgerr) {
+                    delete[] buf;
+                    jpeg_finish_compress(&cinfo);
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
                     throw SipiImageError(__file__, __LINE__, jpgerr.what());
@@ -989,7 +982,7 @@ namespace Sipi {
                 n_towrite -= n_nextwrite;
                 n_written += n_nextwrite;
             }
-            delete [] buf;
+            delete[] buf;
             if (n_towrite != 0) {
                 std::cerr << "Hoppla!" << std::endl;
             }
@@ -1012,18 +1005,16 @@ namespace Sipi {
                 Sipi::memcpy(iptcchunk.get() + start_l, siz, (size_t) 4);
                 Sipi::memcpy(iptcchunk.get() + start_l + 4, buf, (size_t) len);
 
-                delete [] buf;
+                delete[] buf;
                 try {
                     jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk.get(), start_l + len);
-                }
-                catch (JpegError &jpgerr) {
+                } catch (JpegError &jpgerr) {
                     jpeg_destroy_compress(&cinfo);
                     if (outfile != -1) close(outfile);
                     throw SipiImageError(__file__, __LINE__, jpgerr.what());
                 }
             }
-        }
-        else {
+        } else {
             // std::cerr << "iptc to big" << std::endl;
         }
 
@@ -1036,15 +1027,14 @@ namespace Sipi {
                 strncpy(sipi_buf, esstr.c_str(), 512);
                 sipi_buf[512] = '\0';
                 jpeg_write_marker(&cinfo, JPEG_COM, (JOCTET *) sipi_buf, len);
-            }
-            catch (JpegError &jpgerr) {
+            } catch (JpegError &jpgerr) {
                 jpeg_destroy_compress(&cinfo);
                 if (outfile != -1) close(outfile);
                 throw SipiImageError(__file__, __LINE__, jpgerr.what());
             }
         }
 
-        row_stride = img->nx * img->nc;	/* JSAMPLEs per row in image_buffer */
+        row_stride = img->nx * img->nc;    /* JSAMPLEs per row in image_buffer */
 
         try {
             while (cinfo.next_scanline < cinfo.image_height) {
@@ -1054,8 +1044,7 @@ namespace Sipi {
                 row_pointer[0] = &img->pixels[cinfo.next_scanline * row_stride];
                 (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
             }
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != -1) close(outfile);
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
@@ -1063,8 +1052,7 @@ namespace Sipi {
 
         try {
             jpeg_finish_compress(&cinfo);
-        }
-        catch (JpegError &jpgerr) {
+        } catch (JpegError &jpgerr) {
             jpeg_destroy_compress(&cinfo);
             if (outfile != -1) close(outfile);
             throw SipiImageError(__file__, __LINE__, jpgerr.what());

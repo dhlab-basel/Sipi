@@ -32,17 +32,15 @@
 #include <iostream>
 
 
- namespace shttps {
+namespace shttps {
 
-    template <typename Enumeration>
-    inline auto as_integer(Enumeration const value)
-        -> typename std::underlying_type<Enumeration>::type
-    {
+    template<typename Enumeration>
+    inline auto as_integer(Enumeration const value) -> typename std::underlying_type<Enumeration>::type {
         return static_cast<typename std::underlying_type<Enumeration>::type>(value);
     }
     //-------------------------------------------------------------------------
 
-    template <class OutIt>
+    template<class OutIt>
     void explode(std::string const &input, char sep, OutIt output) {
         std::istringstream buffer(input);
         std::string temp;
@@ -54,13 +52,15 @@
     //-------------------------------------------------------------------------
 
 
-    inline std::string getFileName(const std::string& s) {
-       char sep = '/';
-       size_t i = s.rfind(sep, s.length());
-       if (i != std::string::npos) {
-          return(s.substr(i+1, s.length() - i));
-       }
-       return(s);
+    inline std::string getFileName(const std::string &s) {
+        char sep = '/';
+        size_t i = s.rfind(sep, s.length());
+
+        if (i != std::string::npos) {
+            return s.substr(i + 1, s.length() - i);
+        } else {
+            return s;
+        }
     }
 }
 

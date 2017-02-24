@@ -100,7 +100,7 @@ namespace shttps {
         size_t n;
         while ((n = ::read(fptr, buf.get(), buflen)) > 0) {
             if (n == -1) {
-                ::close (fptr);
+                ::close(fptr);
                 return false;
             }
             if (!EVP_DigestUpdate(context, buf.get(), n)) {
@@ -113,7 +113,7 @@ namespace shttps {
     }
     //==========================================================================
 
-    istream &operator>> (istream  &input, Hash &h) {
+    istream &operator>>(istream &input, Hash &h) {
         char buffer[4096];
         int i = 0;
         while (input.good() && (i < 4096)) {

@@ -54,24 +54,23 @@ static const char __file__[] = __FILE__;
 namespace Sipi {
 
     static void error_callback(const char *msg, void *client_data) {
-        (void)client_data;
+        (void) client_data;
         fprintf(stdout, "[ERROR] %s", msg);
     }
 
     static void warning_callback(const char *msg, void *client_data) {
-        (void)client_data;
+        (void) client_data;
         fprintf(stdout, "[WARNING] %s", msg);
     }
 
     static void info_callback(const char *msg, void *client_data) {
-        (void)client_data;
+        (void) client_data;
         fprintf(stdout, "[INFO] %s", msg);
     }
 
 
-
-    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size)
-    {
+    bool SipiIOOpenJ2k::read(SipiImage *img, string filepath, std::shared_ptr <SipiRegion> region,
+                             std::shared_ptr <SipiSize> size) {
         auto logger = Logger::getLogger(shttps::loggername);
         FILE *reader;
 
@@ -82,22 +81,23 @@ namespace Sipi {
 
         if ((reader = fopen(filepath.c_str(), "rb")) == nullptr) {
             throw SipiError(__file__, __LINE__, "Couldn't open input file!", errno);
-        };
+        }
+
         unsigned char buf[12];
 
         memset(buf, 0, 12);
         ssize_t n = fread(buf, 1, 12, reader);
         fclose(reader);
+
         if (n != 12) {
             throw SipiError(__file__, __LINE__, "Couldn't determine filetype!");
         }
+
         if (memcmp(buf, JP2_RFC3745_MAGIC, 12) == 0 || memcmp(buf, JP2_MAGIC, 4) == 0) {
             parameters.decod_format = JP2_CFMT;
-        }
-        else if (memcmp(buf, J2K_CODESTREAM_MAGIC, 4) == 0) {
+        } else if (memcmp(buf, J2K_CODESTREAM_MAGIC, 4) == 0) {
             parameters.decod_format = J2K_CFMT;
-        }
-        else {
+        } else {
             throw SipiError(__file__, __LINE__, "J2K magic not supported!");
         }
 
@@ -105,12 +105,14 @@ namespace Sipi {
         // first we open a file stream
         //
         opj_stream_t *l_stream;
+
         if (!(l_stream = opj_stream_create_default_file_stream(filepath.c_str(), true))) {
             throw SipiError(__file__, __LINE__, "OpenJPEG2000: Could not create file stream...!");
         }
 
-        opj_codec_t* l_codec;
-        switch(parameters.decod_format) {
+        opj_codec_t *l_codec;
+
+        switch (parameters.decod_format) {
             case J2K_CFMT:    /* JPEG-2000 codestream */
             {
                 /* Get a decoder handle */
@@ -136,25 +138,27 @@ namespace Sipi {
         }
 
         /* catch events using our callbacks and give a local context */
-        opj_set_info_handler(l_codec, info_callback,00);
-        opj_set_warning_handler(l_codec, warning_callback,00);
-        opj_set_error_handler(l_codec, error_callback,00);
+        opj_set_info_handler(l_codec, info_callback, 00);
+        opj_set_warning_handler(l_codec, warning_callback, 00);
+        opj_set_error_handler(l_codec, error_callback, 00);
 
         /* Setup the decoder decoding parameters using user parameters */
-        if ( !opj_setup_decoder(l_codec, &parameters) ){
+        if (!opj_setup_decoder(l_codec, &parameters)) {
             opj_stream_destroy(l_stream);
             opj_destroy_codec(l_codec);
             throw SipiError(__file__, __LINE__, "OpenJPEG2000: failed to setup the decoder!");
         }
 
         opj_image_t *image = nullptr;
+
         /* Read the main header of the codestream and if necessary the JP2 boxes*/
-        if(! opj_read_header(l_stream, l_codec, &image)){
+        if (!opj_read_header(l_stream, l_codec, &image)) {
             opj_stream_destroy(l_stream);
             opj_destroy_codec(l_codec);
             opj_image_destroy(image);
             throw SipiError(__file__, __LINE__, "OpenJPEG2000: failed to read the header!");
         }
+
         int __nx, __ny;
         __nx = image->x1;
         __ny = image->y1;
@@ -174,8 +178,7 @@ namespace Sipi {
             try {
                 region->crop_coords(__nx, __ny, x, y, nx, ny);
                 do_roi = true;
-            }
-            catch (Sipi::SipiError &err) {
+            } catch (Sipi::SipiError &err) {
                 opj_stream_destroy(l_stream);
                 opj_destroy_codec(l_codec);
                 opj_image_destroy(image);
@@ -190,7 +193,7 @@ namespace Sipi {
         }
 
         parameters.cp_reduce = 5;
-        opj_setup_decoder(l_codec, &parameters );
+        opj_setup_decoder(l_codec, &parameters);
 
         if (!(opj_decode(l_codec, l_stream, image) && opj_end_decompress(l_codec, l_stream))) {
             opj_destroy_codec(l_codec);
@@ -205,20 +208,17 @@ namespace Sipi {
         cerr << "image.y1: " << image->y1 << endl;
         cerr << "image.numcomps: " << image->numcomps << endl;
 
-
         exit(0);
     }
     //=============================================================================
 
-    bool SipiIOOpenJ2k::getDim(std::string filepath, int &width, int &height)
-    {
+    bool SipiIOOpenJ2k::getDim(std::string filepath, int &width, int &height) {
         auto logger = Logger::getLogger(shttps::loggername);
 
     }
     //=============================================================================
 
-    void SipiIOOpenJ2k::write(SipiImage *img, string filepath, int quality)
-    {
+    void SipiIOOpenJ2k::write(SipiImage *img, string filepath, int quality) {
         auto logger = Logger::getLogger(shttps::loggername);
 
     }

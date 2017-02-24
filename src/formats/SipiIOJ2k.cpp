@@ -65,26 +65,30 @@ namespace Sipi {
     // Here we are implementing a subclass of kdu_core::kdu_compressed_target
     // in order to write directly to the HTTP server connection
     //
-    class J2kHttpStream: public kdu_core::kdu_compressed_target {
+    class J2kHttpStream : public kdu_core::kdu_compressed_target {
     private:
         shttps::Connection *conobj;
     public:
         J2kHttpStream(shttps::Connection *conobj_p);
+
         ~J2kHttpStream();
+
         inline int get_capabilities() { return KDU_TARGET_CAP_SEQUENTIAL; };
+
         inline bool start_rewrite(kdu_long backtrack) { return false; };
+
         inline bool end_rewrite() { return false; };
-        bool write( const kdu_byte * buf, int num_bytes);
-        inline void set_target_size( kdu_long num_bytes) {}; // we just ignore it
+
+        bool write(const kdu_byte *buf, int num_bytes);
+
+        inline void set_target_size(kdu_long num_bytes) {}; // we just ignore it
     };
     //-------------------------------------------------------------------------
 
     //-------------------------------------------------------------------------
     // Constructor which takes the HTTP server connection as parameter
     //........................................................................
-    J2kHttpStream::J2kHttpStream(shttps::Connection *conobj_p)
-        : kdu_core::kdu_compressed_target()
-    {
+    J2kHttpStream::J2kHttpStream(shttps::Connection *conobj_p) : kdu_core::kdu_compressed_target() {
         conobj = conobj_p;
     };
     //-------------------------------------------------------------------------
@@ -102,21 +106,22 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Write the data to the HTTP server connection
     //........................................................................
-    bool J2kHttpStream::write( const kdu_byte * buf, int num_bytes)
-    {
+    bool J2kHttpStream::write(const kdu_byte *buf, int num_bytes) {
         try {
             conobj->sendAndFlush(buf, num_bytes);
-        }
-        catch (int i) {
+        } catch (int i) {
             return false;
         }
         return true;
     };
     //-------------------------------------------------------------------------
 
-    static kdu_core::kdu_byte xmp_uuid[]    = {0xBE, 0x7A, 0xCF, 0xCB, 0x97, 0xA9, 0x42, 0xE8, 0x9C, 0x71, 0x99, 0x94, 0x91, 0xE3, 0xAF, 0xAC};
-    static kdu_core::kdu_byte iptc_uuid[]   = {0x33, 0xc7, 0xa4, 0xd2, 0xb8, 0x1d, 0x47, 0x23, 0xa0, 0xba, 0xf1, 0xa3, 0xe0, 0x97, 0xad, 0x38};
-    static kdu_core::kdu_byte exif_uuid[]   = {'J', 'p', 'g', 'T', 'i', 'f', 'f', 'E', 'x', 'i', 'f', '-', '>', 'J', 'P', '2'};
+    static kdu_core::kdu_byte xmp_uuid[] = {0xBE, 0x7A, 0xCF, 0xCB, 0x97, 0xA9, 0x42, 0xE8, 0x9C, 0x71, 0x99, 0x94,
+                                            0x91, 0xE3, 0xAF, 0xAC};
+    static kdu_core::kdu_byte iptc_uuid[] = {0x33, 0xc7, 0xa4, 0xd2, 0xb8, 0x1d, 0x47, 0x23, 0xa0, 0xba, 0xf1, 0xa3,
+                                             0xe0, 0x97, 0xad, 0x38};
+    static kdu_core::kdu_byte exif_uuid[] = {'J', 'p', 'g', 'T', 'i', 'f', 'f', 'E', 'x', 'i', 'f', '-', '>', 'J', 'P',
+                                             '2'};
     //static kdu_core::kdu_byte geojp2_uuid[] = {0xB1, 0x4B, 0xF8, 0xBD, 0x08, 0x3D, 0x4B, 0x43, 0xA5, 0xAE, 0x8C, 0xD7, 0xD5, 0xA6, 0xCE, 0x03};
     //static kdu_core::kdu_byte world_uuid[] = {0x96, 0xa9, 0xf1, 0xf1, 0xdc, 0x98, 0x40, 0x2d, 0xa7, 0xae, 0xd6, 0x8e, 0x34, 0x45, 0x18, 0x09};
 
@@ -130,8 +135,11 @@ namespace Sipi {
         std::string msg;
     public:
         KduSipiWarning() : kdu_message() { msg = "KAKADU-WARNING: "; }
-        KduSipiWarning(const char * lead_in) : kdu_message(), msg(lead_in) {}
-        void put_text( const char * str) { msg += str; }
+
+        KduSipiWarning(const char *lead_in) : kdu_message(), msg(lead_in) {}
+
+        void put_text(const char *str) { msg += str; }
+
         void flush(bool end_of_message = false) {
             if (end_of_message) {
                 syslog(LOG_WARNING, "%s", msg.c_str());
@@ -149,8 +157,11 @@ namespace Sipi {
         std::string msg;
     public:
         KduSipiError() : kdu_message() { msg = "KAKADU-ERROR: "; }
-        KduSipiError(const char * lead_in) : kdu_message(), msg(lead_in) {}
-        void put_text( const char * str) { msg += str; }
+
+        KduSipiError(const char *lead_in) : kdu_message(), msg(lead_in) {}
+
+        void put_text(const char *str) { msg += str; }
+
         void flush(bool end_of_message = false) {
             if (end_of_message) {
                 syslog(LOG_ERR, "%s", msg.c_str());
@@ -166,14 +177,15 @@ namespace Sipi {
     static bool is_jpx(const char *fname) {
         int inf;
         int retval = 0;
-        if ((inf = open(fname, O_RDONLY)) !=-1) {
+        if ((inf = open(fname, O_RDONLY)) != -1) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
-            char sig1[] = {'\xff', '\x4f', '\xff',  '\x51'};
-            char sig2[] = {'\x00', '\x00', '\x00', '\x0C', '\x6A', '\x50', '\x20', '\x20', '\x0D', '\x0A', '\x87', '\x0A'};
+            char sig1[] = {'\xff', '\x4f', '\xff', '\x51'};
+            char sig2[] = {'\x00', '\x00', '\x00', '\x0C', '\x6A', '\x50', '\x20', '\x20', '\x0D', '\x0A', '\x87',
+                           '\x0A'};
             auto n = read(inf, testbuf, 48);
-            if ((n >= 47) && (memcmp(sig0, testbuf + 45, 2) == 0)) retval = 1;
-            else if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) retval = 1;
+            if ((n >= 47) && (memcmp(sig0, testbuf + 45, 2) == 0)) { retval = 1; }
+            else if ((n >= 4) && (memcmp(sig1, testbuf, 4) == 0)) { retval = 1; }
             else if ((n >= 12) && (memcmp(sig2, testbuf, 12) == 0)) retval = 1;
         }
         close(inf);
@@ -182,7 +194,8 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size, bool force_bps_8) {
+    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+                         std::shared_ptr<SipiSize> size, bool force_bps_8) {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
@@ -207,12 +220,12 @@ namespace Sipi {
 
         jp2_ultimate_src.open(filepath.c_str());
 
-        if (jpx_in.open(&jp2_ultimate_src, true) < 0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
+        if (jpx_in.open(&jp2_ultimate_src, true) <
+            0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
             jp2_ultimate_src.close();
             file_in.open(filepath.c_str());
             input = &file_in;
-        }
-        else {
+        } else {
             jp2_input_box box;
             if (box.open(&jp2_ultimate_src)) {
                 do {
@@ -224,37 +237,33 @@ namespace Sipi {
                             auto xmp_buf = shttps::make_unique<char[]>(xmp_len);
                             box.read((kdu_byte *) xmp_buf.get(), xmp_len);
                             try {
-                                img->xmp = std::make_shared<SipiXmp>(xmp_buf.get(), xmp_len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
-                            }
-                            catch(SipiError &err) {
+                                img->xmp = std::make_shared<SipiXmp>(xmp_buf.get(),
+                                                                     xmp_len); // ToDo: Problem with thread safety!!!!!!!!!!!!!!
+                            } catch (SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                        }
-                        else if (memcmp(buf, iptc_uuid, 16) == 0) {
+                        } else if (memcmp(buf, iptc_uuid, 16) == 0) {
                             auto iptc_len = box.get_remaining_bytes();
                             auto iptc_buf = shttps::make_unique<unsigned char[]>(iptc_len);
                             box.read(iptc_buf.get(), iptc_len);
                             try {
                                 img->iptc = std::make_shared<SipiIptc>(iptc_buf.get(), iptc_len);
-                            }
-                            catch(SipiError &err) {
+                            } catch (SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
-                        }
-                        else if (memcmp(buf, exif_uuid, 16) == 0) {
+                        } else if (memcmp(buf, exif_uuid, 16) == 0) {
                             auto exif_len = box.get_remaining_bytes();
                             auto exif_buf = shttps::make_unique<unsigned char[]>(exif_len);
                             box.read(exif_buf.get(), exif_len);
                             try {
                                 img->exif = std::make_shared<SipiExif>(exif_buf.get(), exif_len);
-                            }
-                            catch(SipiError &err) {
+                            } catch (SipiError &err) {
                                 syslog(LOG_ERR, "%s", err.to_string().c_str());
                             }
                         }
                     }
                     box.close();
-                } while(box.open_next());
+                } while (box.open_next());
             }
 
 
@@ -302,8 +311,7 @@ namespace Sipi {
                 roi.size.x = sx;
                 roi.size.y = sy;
                 do_roi = true;
-            }
-            catch (Sipi::SipiError &err) {
+            } catch (Sipi::SipiError &err) {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
@@ -320,8 +328,7 @@ namespace Sipi {
         if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
             if (do_roi) {
                 size->get_size(roi.size.x, roi.size.y, nnx, nny, reduce, redonly);
-            }
-            else {
+            } else {
                 size->get_size(__nx, __ny, nnx, nny, reduce, redonly);
             }
         }
@@ -375,7 +382,7 @@ namespace Sipi {
                     case kdu_supp::JP2_YCbCr2_SPACE:
                     case kdu_supp::JP2_YCbCr3_SPACE: {
                         float whitepoint[] = {0.3127, 0.3290};
-                        float primaries[] = {0.630,0.340, 0.310,0.595, 0.155,0.070};
+                        float primaries[] = {0.630, 0.340, 0.310, 0.595, 0.155, 0.070};
                         img->photo = YCBCR;
                         img->icc = std::make_shared<SipiIcc>(whitepoint, primaries);
                         break;
@@ -425,12 +432,13 @@ namespace Sipi {
         //
         kdu_supp::kdu_stripe_decompressor decompressor;
         decompressor.start(codestream);
-        int stripe_heights[4] = {dims.size.y, dims.size.y, dims.size.y, dims.size.y}; // enough for alpha channel (4 components)
+        int stripe_heights[4] = {dims.size.y, dims.size.y, dims.size.y,
+                                 dims.size.y}; // enough for alpha channel (4 components)
 
         if (force_bps_8) img->bps = 8; // forces kakadu to convert to 8 bit!
         switch (img->bps) {
             case 8: {
-                kdu_core::kdu_byte *buffer8 = new kdu_core::kdu_byte[(int) dims.area()*img->nc];
+                kdu_core::kdu_byte *buffer8 = new kdu_core::kdu_byte[(int) dims.area() * img->nc];
                 decompressor.pull_stripe(buffer8, stripe_heights);
                 img->pixels = (byte *) buffer8;
                 break;
@@ -438,7 +446,7 @@ namespace Sipi {
             case 16: {
                 bool *get_signed = new bool[img->nc];
                 for (size_t i = 0; i < img->nc; i++) get_signed[i] = FALSE;
-                kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area()*img->nc];
+                kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
                 decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
                 img->pixels = (byte *) buffer16;
                 break;
@@ -478,12 +486,12 @@ namespace Sipi {
 
         jp2_ultimate_src.open(filepath.c_str());
 
-        if (jpx_in.open(&jp2_ultimate_src, true) < 0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
+        if (jpx_in.open(&jp2_ultimate_src, true) <
+            0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
             jp2_ultimate_src.close();
             file_in.open(filepath.c_str());
             input = &file_in;
-        }
-        else {
+        } else {
             int stream_id = 0;
             jpx_stream = jpx_in.access_codestream(stream_id);
             input = jpx_stream.open_stream();
@@ -563,7 +571,7 @@ namespace Sipi {
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
-        	kdu_codestream codestream;
+            kdu_codestream codestream;
 
             kdu_compressed_target *output = nullptr;
             jp2_family_tgt jp2_ultimate_tgt;
@@ -581,8 +589,7 @@ namespace Sipi {
                 shttps::Connection *conobj = img->connection();
                 http = new J2kHttpStream(conobj);
                 jp2_ultimate_tgt.open(http);
-            }
-            else {
+            } else {
                 jp2_ultimate_tgt.open(filepath.c_str());
             }
             jpx_out.open(&jp2_ultimate_tgt);
@@ -675,8 +682,7 @@ namespace Sipi {
                     }
                 }
 
-            }
-            else {
+            } else {
                 switch (img->nc - img->es.size()) {
                     case 1: {
                         jp2_family_colour.init(JP2_sLUM_SPACE);
@@ -731,7 +737,7 @@ namespace Sipi {
             kdu_thread_env env, *env_ref = nullptr;
             if (num_threads > 0) {
                 env.create();
-                for (int nt=1; nt < num_threads; nt++) {
+                for (int nt = 1; nt < num_threads; nt++) {
                     if (!env.add_thread()) num_threads = nt; // Unable to create all the threads requested
                 }
                 env_ref = &env;
@@ -760,12 +766,10 @@ namespace Sipi {
                     is_signed[i] = false;
                 }
                 compressor.push_stripe(buf, stripe_heights, nullptr, nullptr, nullptr, precisions, is_signed);
-            }
-            else if (img->bps == 8){
+            } else if (img->bps == 8) {
                 kdu_byte *buf = (kdu_byte *) img->pixels;
                 compressor.push_stripe(buf, stripe_heights);
-            }
-        	else {
+            } else {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
             compressor.finish();
@@ -778,15 +782,14 @@ namespace Sipi {
                 jp2_ultimate_tgt.close();
             }
 
-            delete [] stripe_heights;
+            delete[] stripe_heights;
             if (img->bps == 16) {
-                delete [] precisions;
-                delete [] is_signed;
+                delete[] precisions;
+                delete[] is_signed;
             }
 
             delete http;
-        }
-        catch (kdu_exception e) {
+        } catch (kdu_exception e) {
             throw SipiImageError(__file__, __LINE__, "Problem writing a JPEG2000 image!");
         }
         return;

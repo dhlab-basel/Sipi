@@ -32,99 +32,97 @@
 #include <map>
 //#include <Magick++.h>
 
-#include "SipiParam.h"
-
 
 namespace Sipi {
 
+    /*!
+     * \class SipiCmdParams
+     * \author Lukas Rosenthaler and peter Fornaro
+     * \version 0.1
+     *
+     * This class performs the actual parsing of the commandline. First, all parameters and associated
+     * values are parsed. A parameter consists of a SipiParam instance. On the commandline, the parameter is
+     * given by a leading "-" and the name of the parameter followed by the value(s), each separated by blanks.
+     * After processing all parameters, the remaining commandline arguments are considered to be filenames that
+     * can be retrieved using the getName member method. Retrieving more filenames than given on the commandline
+     * will throw an exception.
+     *
+     * An Example:
+     * \verbatim
+     SipiCmdParams params (argc, argv, "An adaptive median filter which uses the local variance for steering.");
+     params.addParam (new SipiParam ("size", "Size of neigbourhood", 1, 5, 1, 2));
+     params.addParam (new SipiParam ("noise", "Estimated noise level", 0, 65535, 1, 5000));
+     params.addParam (new SipiParam ("var", "Method to be used to calculate variance", "classic:diffmed", 1, "classic"));
+     params.addParam (new SipiParam ("smooth", "Method to be used for smoothing", "median:mean", 1, "median"));
+     params.parseArgv (withRoi | withThreads);
+     ...
+     SipiImage inimg (infname);
+     int nh_size_2 = (params["size"])[0].getValue (nh_size_2);
+     float noise = (params["noise"])[0].getValue (noise);
+     \endverbatim
+     */
+    class SipiCmdParams {
+    private:
+        struct ltstr {
+            /**
+             * Function used for associative container \<list\>
+             */
+            bool operator()(const std::string &s1, const std::string &s2) const { return s1 < s2; };
+        };
 
- /*!
-  * \class SipiCmdParams
-  * \author Lukas Rosenthaler and peter Fornaro
-  * \version 0.1
-  *
-  * This class performs the actual parsing of the commandline. First, all parameters and associated
-  * values are parsed. A parameter consists of a SipiParam instance. On the commandline, the parameter is
-  * given by a leading "-" and the name of the parameter followed by the value(s), each separated by blanks.
-  * After processing all parameters, the remaining commandline arguments are considered to be filenames that
-  * can be retrieved using the getName member method. Retrieving more filenames than given on the commandline
-  * will throw an exception.
-  *
-  * An Example:
-  * \verbatim
-  SipiCmdParams params (argc, argv, "An adaptive median filter which uses the local variance for steering.");
-  params.addParam (new SipiParam ("size", "Size of neigbourhood", 1, 5, 1, 2));
-  params.addParam (new SipiParam ("noise", "Estimated noise level", 0, 65535, 1, 5000));
-  params.addParam (new SipiParam ("var", "Method to be used to calculate variance", "classic:diffmed", 1, "classic"));
-  params.addParam (new SipiParam ("smooth", "Method to be used for smoothing", "median:mean", 1, "median"));
-  params.parseArgv (withRoi | withThreads);
-  ...
-  SipiImage inimg (infname);
-  int nh_size_2 = (params["size"])[0].getValue (nh_size_2);
-  float noise = (params["noise"])[0].getValue (noise);
-  \endverbatim
-  */
-  class SipiCmdParams {
-  private:
-      struct ltstr
-      {
-       /**
-        * Function used for associative container \<list\>
-        */
-        bool operator()(const std::string &s1, const std::string &s2) const { return s1 < s2; };
-      };
-    std::string info;
-    std::vector<std::string> argv;
-    std::map<const std::string, SipiParam *, ltstr> params;
-    std::vector<std::string>::iterator fnames;
-    void print_usage(void);
-  public:
-   /*!
-    * Constructor which takes the command line arguments and an additional description
-    *
-    * \param[in] argc Number of commandline arguments (from main(argc, argv))
-    * \param[in] argv Array with commandline arguments
-    * \param[in] infostr Brief description of programm (optional)
-    */
-    SipiCmdParams (int argc, char *argv[], const char *infostr = NULL);
+        std::string info;
+        std::vector <std::string> argv;
+        std::map<const std::string, SipiParam *, ltstr> params;
+        std::vector<std::string>::iterator fnames;
+        void print_usage(void);
 
-   /*!
-    * Destructor
-    */
-    ~SipiCmdParams (void);
+    public:
+        /*!
+         * Constructor which takes the command line arguments and an additional description
+         *
+         * \param[in] argc Number of commandline arguments (from main(argc, argv))
+         * \param[in] argv Array with commandline arguments
+         * \param[in] infostr Brief description of programm (optional)
+         */
+        SipiCmdParams(int argc, char *argv[], const char *infostr = NULL);
 
-   /*!
-    * Parsing the commandline arguments
-    * \param[in] flags Add default cmdline arguments (logical "or"
-    * of "withRoi" and "withThreads". Default = 0
-    */
-    void parseArgv (int flags = 0);
+        /*!
+         * Destructor
+         */
+        ~SipiCmdParams(void);
 
-   /*!
-    * Add a new parameter
-    * \param[in] p Pointer to SipiParam object
-    */
-    void addParam (SipiParam *p);
+        /*!
+         * Parsing the commandline arguments
+         * \param[in] flags Add default cmdline arguments (logical "or"
+         * of "withRoi" and "withThreads". Default = 0
+         */
+        void parseArgv(int flags = 0);
 
-   /*!
-    * Get a file name from the commandline
-    * \return String object with the filename
-    */
-    std::string getName (void);
+        /*!
+         * Add a new parameter
+         * \param[in] p Pointer to SipiParam object
+         */
+        void addParam(SipiParam *p);
 
-   /*!
-    * Number of remaining file names in commandline
-    * \return Number of filename arguments
-    */
-    inline int numOfNames (void) { return argv.size(); };
+        /*!
+         * Get a file name from the commandline
+         * \return String object with the filename
+         */
+        std::string getName(void);
 
-   /*!
-    * Index operator overload
-    * \param[in] name Name of parameter to return
-    * \return Reference to ParamValue instance
-    */
-    SipiParam &operator[] (const std::string &name);
-  };
+        /*!
+         * Number of remaining file names in commandline
+         * \return Number of filename arguments
+         */
+        inline int numOfNames(void) { return argv.size(); };
+
+        /*!
+         * Index operator overload
+         * \param[in] name Name of parameter to return
+         * \return Reference to ParamValue instance
+         */
+        SipiParam &operator[](const std::string &name);
+    };
 
 }
 

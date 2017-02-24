@@ -33,6 +33,7 @@ namespace Sipi {
     private:
         bool mirror = false;
         float rotation = 0.F;
+
     public:
         SipiRotation();
 

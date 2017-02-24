@@ -37,30 +37,26 @@
 namespace shttps {
 
     typedef enum {
-        none = 0,
-        md5 = 1,
-        sha1 = 2,
-        sha256 = 3,
-        sha384 = 4,
-        sha512 = 5
+        none = 0, md5 = 1, sha1 = 2, sha256 = 3, sha384 = 4, sha512 = 5
     } HashType;
 
-   /*!
-    * \brief Hash class which implements a variety of checksum schemes
-    * \author Lukas Rosenthaler
-    * \version 1.0
-    * \date 2016-11-11
-    */
+    /*!
+     * \brief Hash class which implements a variety of checksum schemes
+     * \author Lukas Rosenthaler
+     * \version 1.0
+     * \date 2016-11-11
+     */
     class Hash {
     private:
-        EVP_MD_CTX* context;
+        EVP_MD_CTX *context;
+
     public:
         /*!
         * Constructor of a Hash instance
         *
         * \param[in] type Hash/checksum method to use (see HashType)
         */
-        Hash (HashType type);
+        Hash(HashType type);
 
         /*!
         * Destructor which cleans up everything
@@ -87,7 +83,7 @@ namespace shttps {
         *
         * \returns true in case of success, false if the data couln't be processed
         */
-        bool hash_of_file(const std::string &path, size_t buflen = 16*1024);
+        bool hash_of_file(const std::string &path, size_t buflen = 16 * 1024);
 
         /*!
         * Adds data to the has from a input stream. It reads the stream until
@@ -101,7 +97,7 @@ namespace shttps {
         * std::string checksum = h.hash();
         * \endcode
         */
-        friend std::istream &operator>> (std::istream  &input, Hash &h);
+        friend std::istream &operator>>(std::istream &input, Hash &h);
 
         /*!
         * Calculate and return the has value as string

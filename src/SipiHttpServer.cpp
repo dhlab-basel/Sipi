@@ -333,6 +333,7 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, "File not readable");
             return;
         }
+
         if (!contenttype.empty() && (contenttype == "application/ld+json")) {
             conn_obj.header("Content-Type", "application/ld+json");
         } else {
@@ -340,8 +341,8 @@ namespace Sipi {
             conn_obj.header("Link",
                             "<http://iiif.io/api/image/2/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         }
-        json_t *root = json_object();
 
+        json_t *root = json_object();
         json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/2/context.json"));
 
         std::string host = conn_obj.header("host");
@@ -352,10 +353,13 @@ namespace Sipi {
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
         size_t width, height;
+
         //
         // get cache info
         //
+
         std::shared_ptr<SipiCache> cache = serv->cache();
+
         if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
             Sipi::SipiImage tmpimg;
             try {
@@ -368,8 +372,8 @@ namespace Sipi {
 
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
-
         json_t *sizes = json_array();
+
         for (int i = 1; i < 5; i++) {
             SipiSize size(i);
             size_t w, h;
@@ -382,57 +386,43 @@ namespace Sipi {
             json_object_set_new(sobj, "height", json_integer(h));
             json_array_append_new(sizes, sobj);
         }
-        json_object_set_new(root, "sizes", sizes);
 
+        json_object_set_new(root, "sizes", sizes);
         json_t *profile_arr = json_array();
         json_array_append_new(profile_arr, json_string("http://iiif.io/api/image/2/level2.json"));
         json_t *profile = json_object();
-
         const char *formats_str[] = {"tif", "jpg", "png", "jp2"};
         json_t *formats = json_array();
+
         for (unsigned int i = 0; i < sizeof(formats_str) / sizeof(char *); i++) {
             json_array_append_new(formats, json_string(formats_str[i]));
         }
-        json_object_set_new(profile, "formats", formats);
 
+        json_object_set_new(profile, "formats", formats);
         const char *qualities_str[] = {"color", "gray"};
         json_t *qualities = json_array();
+
         for (unsigned int i = 0; i < sizeof(qualities_str) / sizeof(char *); i++) {
             json_array_append_new(qualities, json_string(qualities_str[i]));
         }
+
         json_object_set_new(profile, "qualities", qualities);
 
-        const char *supports_str[] = {
-                "color",
-                "cors",
-                "mirroring",
-                "profileLinkHeader",
-                "regionByPct",
-                "regionByPx",
-                "rotationArbitrary",
-                "rotationBy90s",
-                "sizeAboveFull",
-                "sizeByWhListed",
-                "sizeByForcedWh",
-                "sizeByH",
-                "sizeByPct",
-                "sizeByW",
-                "sizeByWh"
-        };
+        const char *supports_str[] = {"color", "cors", "mirroring", "profileLinkHeader", "regionByPct", "regionByPx",
+                                      "rotationArbitrary", "rotationBy90s", "sizeAboveFull", "sizeByWhListed",
+                                      "sizeByForcedWh", "sizeByH", "sizeByPct", "sizeByW", "sizeByWh"};
+
         json_t *supports = json_array();
+
         for (unsigned int i = 0; i < sizeof(supports_str) / sizeof(char *); i++) {
             json_array_append_new(supports, json_string(supports_str[i]));
         }
+
         json_object_set_new(profile, "supports", supports);
-
         json_array_append_new(profile_arr, profile);
-
         json_object_set_new(root, "profile", profile_arr);
-
         char *json_str = json_dumps(root, JSON_INDENT(3));
-
         conn_obj.sendAndFlush(json_str, strlen(json_str));
-
         free(json_str);
 
         //TODO and all the other CJSON obj?
@@ -443,15 +433,11 @@ namespace Sipi {
     //=========================================================================
 
 
-    std::pair<std::string, std::string> SipiHttpServer::get_canonical_url(size_t tmp_w,
-                                                                          size_t tmp_h,
-                                                                          const std::string &host,
-                                                                          const std::string &prefix,
-                                                                          const std::string &identifier,
-                                                                          std::shared_ptr<SipiRegion> region,
-                                                                          std::shared_ptr<SipiSize> size,
-                                                                          SipiRotation &rotation,
-                                                                          SipiQualityFormat &quality_format) {
+    std::pair<std::string, std::string>
+    SipiHttpServer::get_canonical_url(size_t tmp_w, size_t tmp_h, const std::string &host, const std::string &prefix,
+                                      const std::string &identifier, std::shared_ptr<SipiRegion> region,
+                                      std::shared_ptr<SipiSize> size, SipiRotation &rotation,
+                                      SipiQualityFormat &quality_format) {
         static const int canonical_len = 127;
 
         char canonical_region[canonical_len + 1];
@@ -472,11 +458,10 @@ namespace Sipi {
         }
 
         size->canonical(canonical_size, canonical_len);
-
         float angle;
         bool mirror = rotation.get_rotation(angle);
-
         char canonical_rotation[canonical_len + 1];
+
         if (mirror || (angle != 0.0)) {
             if ((angle - floorf(angle)) < 1.0e-6) { // it's an integer
                 if (mirror) {
@@ -499,6 +484,7 @@ namespace Sipi {
         const unsigned canonical_header_len = 511;
         char canonical_header[canonical_header_len + 1];
         char ext[5];
+
         switch (quality_format.format()) {
             case SipiQualityFormat::JPG: {
                 ext[0] = 'j';
@@ -507,6 +493,7 @@ namespace Sipi {
                 ext[3] = '\0';
                 break; // jpg
             }
+
             case SipiQualityFormat::JP2: {
                 ext[0] = 'j';
                 ext[1] = 'p';
@@ -514,6 +501,7 @@ namespace Sipi {
                 ext[3] = '\0';
                 break; // jp2
             }
+
             case SipiQualityFormat::TIF: {
                 ext[0] = 't';
                 ext[1] = 'i';
@@ -521,6 +509,7 @@ namespace Sipi {
                 ext[3] = '\0';
                 break; // tif
             }
+
             case SipiQualityFormat::PNG: {
                 ext[0] = 'p';
                 ext[1] = 'n';
@@ -528,6 +517,7 @@ namespace Sipi {
                 ext[3] = '\0';
                 break; // png
             }
+
             case SipiQualityFormat::PDF: {
                 ext[0] = 'p';
                 ext[1] = 'd';
@@ -535,6 +525,7 @@ namespace Sipi {
                 ext[3] = '\0';
                 break; // pdf
             }
+
             default: {
                 throw SipiError(__file__, __LINE__,
                                 "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png, .pdf");
@@ -542,20 +533,24 @@ namespace Sipi {
         }
 
         std::string format;
+
         if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
             switch (quality_format.quality()) {
                 case SipiQualityFormat::COLOR: {
                     format = "/color.";
                     break;
                 }
+
                 case SipiQualityFormat::GRAY: {
                     format = "/gray.";
                     break;
                 }
+
                 case SipiQualityFormat::BITONAL: {
                     format = "/bitonal.";
                     break;
                 }
+
                 default: {
                     format = "/default.";
                 }
@@ -565,9 +560,8 @@ namespace Sipi {
         }
 
         (void) snprintf(canonical_header, canonical_header_len,
-                        "<http://%s/%s/%s/%s/%s/%s/default.%s>; rel=\"canonical\"",
-                        host.c_str(), prefix.c_str(), identifier.c_str(), canonical_region, canonical_size,
-                        canonical_rotation, ext);
+                        "<http://%s/%s/%s/%s/%s/%s/default.%s>; rel=\"canonical\"", host.c_str(), prefix.c_str(),
+                        identifier.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
         std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
                                 std::string(canonical_size) + "/" + std::string(canonical_rotation) + format +
                                 std::string(ext);
@@ -587,18 +581,23 @@ namespace Sipi {
         std::vector<std::string> params;
         size_t pos = 0;
         size_t old_pos = 0;
+
         while ((pos = uri.find('/', pos)) != std::string::npos) {
             pos++;
+
             if (pos == 1) { // if first char is a token skip it!
                 old_pos = pos;
                 continue;
             }
+
             params.push_back(uri.substr(old_pos, pos - old_pos - 1));
             old_pos = pos;
         }
+
         if (old_pos != uri.length()) {
             params.push_back(uri.substr(old_pos, std::string::npos));
         }
+
         //for (int i = 0; i < params.size(); i++) cerr << params[i] << endl;
 
         if (params.size() < 1) {
@@ -613,6 +612,7 @@ namespace Sipi {
         //
         if (params.size() == 3) {
             std::string infile;
+
             if (prefix_as_path) {
                 infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
                          urldecode(params[iiif_identifier]);
@@ -660,11 +660,11 @@ namespace Sipi {
             return;
         }
 
-
         if (params.size() < 7) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Query has too few parameters");
             return;
         }
+
         if (params.size() > 7) {
             send_error(conn_obj, Connection::NOT_FOUND, "Too many \"/\"'s – imageid not found");
             return;
@@ -673,7 +673,9 @@ namespace Sipi {
         //
         // getting region parameters
         //
+
         auto region = std::make_shared<SipiRegion>();
+
         try {
             region = std::make_shared<SipiRegion>(params[iiif_region]);
             std::stringstream ss;
@@ -687,7 +689,9 @@ namespace Sipi {
         //
         // getting scaling/size parameters
         //
+
         auto size = std::make_shared<SipiSize>();
+
         try {
             size = std::make_shared<SipiSize>(params[iiif_size]);
             std::stringstream ss;
@@ -701,7 +705,9 @@ namespace Sipi {
         //
         // getting rotation parameters
         //
+
         SipiRotation rotation;
+
         try {
             rotation = SipiRotation(params[iiif_rotation]);
             std::stringstream ss;
@@ -713,6 +719,7 @@ namespace Sipi {
         }
 
         SipiQualityFormat quality_format;
+
         try {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
             std::stringstream ss;
@@ -728,8 +735,10 @@ namespace Sipi {
         //
         /*
         string infile;
+
         if (params[iiif_prefix] == serv->salsah_prefix()) {
             Salsah salsah;
+
             try {
                 salsah = Salsah(&conn_obj, urldecode(params[iiif_identifier]));
             } catch (Sipi::SipiError &err) {
@@ -737,14 +746,13 @@ namespace Sipi {
                 return;
             }
 
-
             infile = salsah.getFilepath();
+
             if (salsah.getRights() < Salsah::RESOURCE_ACCESS_VIEW_RESTRICTED) {
                 send_error(conn_obj, Connection::FORBIDDEN, "No right to view image");
                 return;
             }
-        }
-        else {
+        } else {
             infile = serv->imgroot() + "/" + prefix + "/" + identifier;
         }
         */
@@ -773,6 +781,7 @@ namespace Sipi {
 
             size_t colon_pos = permission.find(':');
             std::string qualifier;
+
             if (colon_pos != std::string::npos) {
                 qualifier = permission.substr(colon_pos + 1);
                 permission = permission.substr(0, colon_pos);
@@ -808,9 +817,11 @@ namespace Sipi {
         size_t extpos = infile.find_last_of('.');
         std::string extension;
         SipiQualityFormat::FormatType in_format;
+
         if (extpos != std::string::npos) {
             extension = infile.substr(extpos + 1);
         }
+
         if ((extension == "tif") || (extension == "TIF") || (extension == "tiff") || (extension == "TIFF")) {
             in_format = SipiQualityFormat::TIF;
         } else if ((extension == "jpg") || (extension == "JPG")) {
@@ -823,12 +834,12 @@ namespace Sipi {
         } else if ((extension == "pdf") || (extension == "PDF")) {
             in_format = SipiQualityFormat::PDF;
         }
+
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
             syslog(LOG_ERR, "File %s not found", infile.c_str());
             send_error(conn_obj, Connection::NOT_FOUND);
             return;
         }
-
 
         float angle;
         bool mirror = rotation.get_rotation(angle);
@@ -836,9 +847,10 @@ namespace Sipi {
         //
         // get cache info
         //
-        std::shared_ptr<SipiCache> cache = serv->cache();
 
+        std::shared_ptr<SipiCache> cache = serv->cache();
         size_t img_w = 0, img_h = 0;
+
         if (in_format == SipiQualityFormat::PDF) {
             if (size->getType() != SipiSize::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
@@ -887,21 +899,15 @@ namespace Sipi {
             }
         }
 
-
         //.....................................................................
         // here we start building the canonical URL
         //
+
         std::pair<std::string, std::string> tmppair;
+
         try {
-            tmppair = serv->get_canonical_url(img_w,
-                                              img_h,
-                                              conn_obj.host(),
-                                              params[iiif_prefix],
-                                              params[iiif_identifier],
-                                              region,
-                                              size,
-                                              rotation,
-                                              quality_format);
+            tmppair = serv->get_canonical_url(img_w, img_h, conn_obj.host(), params[iiif_prefix],
+                                              params[iiif_identifier], region, size, rotation, quality_format);
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
@@ -913,17 +919,15 @@ namespace Sipi {
         //
         // now we check if we can send the file directly
         //
-        if ((region->getType() == SipiRegion::FULL) &&
-            (size->getType() == SipiSize::FULL) &&
-            (angle == 0.0) &&
-            (!mirror) && watermark.empty() &&
-            (quality_format.format() == in_format) &&
+        if ((region->getType() == SipiRegion::FULL) && (size->getType() == SipiSize::FULL) && (angle == 0.0) &&
+            (!mirror) && watermark.empty() && (quality_format.format() == in_format) &&
             (quality_format.quality() == SipiQualityFormat::DEFAULT)) {
 
             syslog(LOG_DEBUG, "Sending unmodified file....");
             conn_obj.status(Connection::OK);
             conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
             conn_obj.header("Link", canonical_header);
+
             switch (quality_format.format()) {
                 case SipiQualityFormat::TIF: {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
@@ -950,7 +954,8 @@ namespace Sipi {
                     break;
                 }
 
-                default: {}
+                default: {
+                }
             }
 
             try {
@@ -971,16 +976,20 @@ namespace Sipi {
         if (quality_format.format() == SipiQualityFormat::PDF) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported");
         }
+
+
         syslog(LOG_DEBUG, "Checking for cache...");
 
         if (cache != nullptr) {
             syslog(LOG_DEBUG, "Cache found, testing for canonical %s", canonical.c_str());
             std::string cachefile = cache->check(infile, canonical);
+
             if (!cachefile.empty()) {
                 syslog(LOG_DEBUG, "Using cachefile %s", cachefile.c_str());
                 conn_obj.status(Connection::OK);
                 conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
                 conn_obj.header("Link", canonical_header);
+
                 switch (quality_format.format()) {
                     case SipiQualityFormat::TIF: {
                         conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
@@ -1002,7 +1011,8 @@ namespace Sipi {
                         break;
                     }
 
-                    default: {}
+                    default: {
+                    }
                 }
 
                 try {
@@ -1049,14 +1059,17 @@ namespace Sipi {
                     img.convertToIcc(SipiIcc(icc_sRGB), 8); // for now, force 8 bit/sample
                     break;
                 }
+
                 case SipiQualityFormat::GRAY: {
                     img.convertToIcc(SipiIcc(icc_GRAY_D50), 8); // for now, force 8 bit/sample
                     break;
                 }
+
                 case SipiQualityFormat::BITONAL: {
                     img.toBitonal();
                     break;
                 }
+
                 default: {
                     send_error(conn_obj, Connection::BAD_REQUEST, "Invalid quality specificer");
                     return;
@@ -1069,18 +1082,19 @@ namespace Sipi {
         //
         if (!watermark.empty()) {
             watermark = "watermark.tif";
+
             try {
                 img.add_watermark(watermark);
             } catch (Sipi::SipiError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
             }
+
             syslog(LOG_INFO, "GET %s: adding watermark", uri.c_str());
         }
 
         img.connection(&conn_obj);
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
-
         std::string cachefile;
 
         if (cache != nullptr) {
@@ -1148,6 +1162,7 @@ namespace Sipi {
                         img.write("jpx", "HTTP");
                     } catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
+
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
@@ -1173,6 +1188,7 @@ namespace Sipi {
                         img.write("tif", "HTTP");
                     } catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
+
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
                             unlink(cachefile.c_str());
@@ -1283,8 +1299,11 @@ namespace Sipi {
     //=========================================================================
 
     SipiHttpServer::SipiHttpServer(int port_p, unsigned nthreads_p, const std::string userid_str,
-                                   const std::string &logfile_p, const std::string &loglevel_p)
-            : Server::Server(port_p, nthreads_p, userid_str, logfile_p, loglevel_p) {
+                                   const std::string &logfile_p, const std::string &loglevel_p) : Server::Server(port_p,
+                                                                                                                 nthreads_p,
+                                                                                                                 userid_str,
+                                                                                                                 logfile_p,
+                                                                                                                 loglevel_p) {
         _salsah_prefix = "imgrep";
         _cache = nullptr;
     }
@@ -1311,7 +1330,6 @@ namespace Sipi {
         syslog(LOG_INFO, "Serving images from %s", _imgroot.c_str());
         syslog(LOG_DEBUG, "Salsah prefix: %s", _salsah_prefix.c_str());
         setlogmask(old_ll);
-
 
         addRoute(Connection::GET, "/favicon.ico", favicon_handler);
         addRoute(Connection::GET, "/", process_get_request);

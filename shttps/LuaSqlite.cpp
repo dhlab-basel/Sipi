@@ -55,10 +55,12 @@ namespace shttps {
 
     static Sqlite *toSqlite(lua_State *L, int index) {
         Sqlite *db = static_cast<Sqlite *>(lua_touserdata(L, index));
+
         if (db == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
+
         return db;
     }
     //=========================================================================
@@ -67,10 +69,12 @@ namespace shttps {
         Sqlite *db;
         luaL_checktype(L, index, LUA_TUSERDATA);
         db = (Sqlite *) luaL_checkudata(L, index, LUASQLITE);
+
         if (db == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
+
         return db;
     }
     //=========================================================================
@@ -88,10 +92,12 @@ namespace shttps {
     //
     static int Sqlite_gc(lua_State *L) {
         Sqlite *db = toSqlite(L, 1);
+
         if (db->sqlite_handle != nullptr) {
             sqlite3_close_v2(db->sqlite_handle);
             db->sqlite_handle = nullptr;
         }
+
         delete db->dbname;
         return 0;
     }
@@ -108,10 +114,12 @@ namespace shttps {
 
     static Stmt *toStmt(lua_State *L, int index) {
         Stmt *stmt = (Stmt *) lua_touserdata(L, index);
+
         if (stmt == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
+
         return stmt;
     }
     //=========================================================================
@@ -120,10 +128,12 @@ namespace shttps {
         luaL_checktype(L, index, LUA_TUSERDATA);
 
         Stmt *stmt = (Stmt *) luaL_checkudata(L, index, LUASQLSTMT);
+
         if (stmt == nullptr) {
             lua_pushstring(L, "Type error");
             lua_error(L);
         }
+
         return stmt;
     }
     //=========================================================================
@@ -165,28 +175,34 @@ namespace shttps {
     //
     static int Sqlite_query(lua_State *L) {
         int top = lua_gettop(L);
+
         if (top != 2) {
             // throw an error!
             lua_pushstring(L, "Incorrect number of arguments!");
             return lua_error(L);
         }
+
         Sqlite *db = checkSqlite(L, 1);
+
         if (db == nullptr) {
             lua_pushstring(L, "Couldn't connect to database!");
             return lua_error(L);
         }
+
         const char *sql = nullptr;
+
         if (lua_isstring(L, 2)) {
             sql = lua_tostring(L, 2);
-        }
-        else {
+        } else {
             lua_pushstring(L, "No SQL given!");
             lua_error(L);
             return 0;
         }
+
         sqlite3_stmt *stmt_handle;
         int status = sqlite3_prepare_v2(db->sqlite_handle, sql, strlen(sql), &stmt_handle, nullptr);
-        if (status !=  SQLITE_OK) {
+
+        if (status != SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(db->sqlite_handle));
             return lua_error(L);
         }
@@ -210,13 +226,11 @@ namespace shttps {
     //=========================================================================
 
 
-    static const luaL_Reg Sqlite_meta[] = {
-            {"__gc",       Sqlite_gc},
-            {"__tostring", Sqlite_tostring},
-            {"__shl",      Sqlite_query},
-            {"__bnot",     Sqlite_destroy},
-            {0,            0}
-    };
+    static const luaL_Reg Sqlite_meta[] = {{"__gc",       Sqlite_gc},
+                                           {"__tostring", Sqlite_tostring},
+                                           {"__shl",      Sqlite_query},
+                                           {"__bnot",     Sqlite_destroy},
+                                           {0,            0}};
     //=========================================================================
 
 
@@ -255,29 +269,23 @@ namespace shttps {
                 if (lua_isinteger(L, i)) {
                     int val = lua_tointeger(L, i);
                     status = sqlite3_bind_int(stmt->stmt_handle, i - 1, val);
-                }
-                else if (lua_isnumber(L, i)) {
+                } else if (lua_isnumber(L, i)) {
                     double val = lua_tonumber(L, i);
                     status = sqlite3_bind_double(stmt->stmt_handle, i - 1, val);
-                }
-                else if (lua_isstring(L, i)) {
+                } else if (lua_isstring(L, i)) {
                     size_t len;
                     const char *val = lua_tolstring(L, i, &len);
                     if (strlen(val) == len) { // it's a real string
                         status = sqlite3_bind_text(stmt->stmt_handle, i - 1, val, len, SQLITE_TRANSIENT);
-                    }
-                    else {
+                    } else {
                         status = sqlite3_bind_blob(stmt->stmt_handle, i - 1, val, len, SQLITE_TRANSIENT);
                     }
-                }
-                else if (lua_isnil(L, i)) {
+                } else if (lua_isnil(L, i)) {
                     status = sqlite3_bind_null(stmt->stmt_handle, i - 1);
-                }
-                else if (lua_isboolean(L, i)) {
+                } else if (lua_isboolean(L, i)) {
                     int val = lua_toboolean(L, i);
                     status = sqlite3_bind_int(stmt->stmt_handle, i - 1, val);
-                }
-                else {
+                } else {
                     lua_pushstring(L, "Stmt_next: Invalid datatype for binding to prepared statments!");
                     return lua_error(L);
                 }
@@ -289,14 +297,14 @@ namespace shttps {
         }
 
         int status = sqlite3_step(stmt->stmt_handle);
-        if (status ==  SQLITE_ROW) {
+        if (status == SQLITE_ROW) {
             int ncols = sqlite3_column_count(stmt->stmt_handle);
 
             lua_createtable(L, 0, ncols); // table
 
             for (int col = 0; col < ncols; col++) {
                 lua_pushinteger(L, col); // table - col
-                int ctype =  sqlite3_column_type(stmt->stmt_handle, col);
+                int ctype = sqlite3_column_type(stmt->stmt_handle, col);
                 switch (ctype) {
                     case SQLITE_INTEGER: {
                         int val = sqlite3_column_int(stmt->stmt_handle, col);
@@ -326,11 +334,9 @@ namespace shttps {
                 }
                 lua_rawset(L, -3); // table
             }
-        }
-        else if (status == SQLITE_DONE) {
+        } else if (status == SQLITE_DONE) {
             lua_pushnil(L);
-        }
-        else {
+        } else {
             lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
             return lua_error(L);
         }
@@ -365,13 +371,11 @@ namespace shttps {
     //=========================================================================
 
 
-    static const luaL_Reg Stmt_meta[] = {
-            {"__gc",       Stmt_gc},
-            {"__tostring", Stmt_tostring},
-            {"__call",     Stmt_next},
-            {"__bnot",     Stmt_destroy},
-            {0,            0}
-    };
+    static const luaL_Reg Stmt_meta[] = {{"__gc",       Stmt_gc},
+                                         {"__tostring", Stmt_tostring},
+                                         {"__call",     Stmt_next},
+                                         {"__bnot",     Stmt_destroy},
+                                         {0,            0}};
     //=========================================================================
 
 
@@ -387,30 +391,31 @@ namespace shttps {
             lua_pushstring(L, "'sqlite(path, mode)': no enough parameters!");
             return lua_error(L);
         }
+
         if (!lua_isstring(L, 1)) {
             lua_pushstring(L, "'sqlite(path, mode)': no enough parameters!");
             return lua_error(L);
         }
-        const char *dbpath = lua_tostring(L, 1);
 
+        const char *dbpath = lua_tostring(L, 1);
         int flags = SQLITE_OPEN_READWRITE;
-        if ((top >= 2) && (lua_isstring(L,2))) {
+
+        if ((top >= 2) && (lua_isstring(L, 2))) {
             std::string flagstr = lua_tostring(L, 1);
             if (flagstr == "RO") {
                 flags = SQLITE_OPEN_READONLY;
-            }
-            else if (flagstr == "RW") {
+            } else if (flagstr == "RW") {
                 flags = SQLITE_OPEN_READWRITE;
-            }
-            else if (flagstr == "CRW") {
+            } else if (flagstr == "CRW") {
                 flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
             }
         }
-        flags |=  SQLITE_OPEN_NOMUTEX;
 
+        flags |= SQLITE_OPEN_NOMUTEX;
         sqlite3 *handle;
         int status = sqlite3_open_v2(dbpath, &handle, flags, nullptr);
-        if (status !=  SQLITE_OK) {
+
+        if (status != SQLITE_OK) {
             lua_pushstring(L, sqlite3_errmsg(handle));
             return lua_error(L);
         }
@@ -447,7 +452,6 @@ namespace shttps {
         // stack: metatable
 
         luaL_setfuncs(L, Sqlite_meta, 0);
-
 
         lua_pop(L, 1); // drop metatable
         // stack: table(LUASQLITE)

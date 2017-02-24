@@ -45,7 +45,6 @@ namespace Sipi {
 
     extern char sipiserver[];
 
-
     extern void sipiGlobals(lua_State *L, shttps::Connection &conn, void *user_data);
 
 }

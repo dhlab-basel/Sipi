@@ -34,12 +34,12 @@
  */
 namespace Sipi {
 
-   /*!
-    * \class Salsah
-    *
-    * This is a "private" classed to encapsulate access to the old PHP-bases Salsah backend in order to use the
-    * IIIF compatible image server there too.
-    */
+    /*!
+     * \class Salsah
+     *
+     * This is a "private" classed to encapsulate access to the old PHP-bases Salsah backend in order to use the
+     * IIIF compatible image server there too.
+     */
     class Salsah {
     public:
         typedef enum {
@@ -48,8 +48,8 @@ namespace Sipi {
             ADMIN_RIGHTS = 4,         // ???
             ADMIN_PERSONS = 8,        // may add/modify persons within the project
             ADMIN_ADD_RESOURCE = 256, // may add/upload a new resource belonging to project or to system (project_id = 0)
-        	ADMIN_ROOT = 65536        // = 2^16
-        }  AdminRights;
+            ADMIN_ROOT = 65536        // = 2^16
+        } AdminRights;
         typedef enum {
             RESOURCE_ACCESS_NONE = 0,               // Resource is not visible
             RESOURCE_ACCESS_VIEW_RESTRICTED = 1,    // Resource is viewable with restricted rights (e.g. watermark)
@@ -62,10 +62,7 @@ namespace Sipi {
             RESOURCE_ACCESS_RIGHTS = 8              // User may change the access rights
         } ResourceRights;
         typedef enum {
-            GROUP_WORLD = 1,
-            GROUP_USER = 2,
-            GROUP_MEMBER = 3,
-            GROUP_OWNER = 4
+            GROUP_WORLD = 1, GROUP_USER = 2, GROUP_MEMBER = 3, GROUP_OWNER = 4
         } DefaultGroups;
 
     private:
@@ -76,13 +73,24 @@ namespace Sipi {
         int active_project;
         int lang_id;
         ResourceRights rights;
-        Salsah::ResourceRights salsah_get_resource_and_rights(int res_id, const std::string &quality, int user_id, int project_id);
+
+        Salsah::ResourceRights
+        salsah_get_resource_and_rights(int res_id, const std::string &quality, int user_id, int project_id);
+
     public:
-        inline Salsah() {nx = ny = user_id = active_project = lang_id = -1; rights = RESOURCE_ACCESS_NONE; }
+        inline Salsah() {
+            nx = ny = user_id = active_project = lang_id = -1;
+            rights = RESOURCE_ACCESS_NONE;
+        }
+
         Salsah(shttps::Connection *conobj, const std::string &res_id_str);
+
         inline Salsah::ResourceRights getRights() { return rights; }
+
         inline std::string getFilepath() { return filepath; }
+
         inline int getNx() { return nx; }
+
         inline int getNy() { return ny; }
     };
 

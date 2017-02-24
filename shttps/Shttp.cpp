@@ -42,16 +42,14 @@ static void sighandler(int sig) {
         syslog(LOG_INFO, "Got SIGINT, stopping server");
         setlogmask(old_ll);
         serverptr->stop();
-    }
-    else {
+    } else {
         exit(0);
     }
 }
 
 
 /*LUA TEST****************************************************************************/
-static int lua_gaga (lua_State *L)
-{
+static int lua_gaga(lua_State *L) {
     lua_getglobal(L, shttps::luaconnection); // push onto stack
     shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1); // does not change the stack
     lua_remove(L, -1); // remove from stack
@@ -73,8 +71,7 @@ static int lua_gaga (lua_State *L)
 /*!
  * Just some testing testing the extension of lua, not really doing something useful
  */
-static void new_lua_func(lua_State *L, shttps::Connection &conn, void *user_data)
-{
+static void new_lua_func(lua_State *L, shttps::Connection &conn, void *user_data) {
     lua_pushcfunction(L, lua_gaga);
     lua_setglobal(L, "gaga");
 }
@@ -83,10 +80,9 @@ static void new_lua_func(lua_State *L, shttps::Connection &conn, void *user_data
 /*LUA TEST****************************************************************************/
 
 
-void RootHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy)
-{
+void RootHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
     conn.setBuffer();
-    std::vector<std::string> headers = conn.header();
+    std::vector <std::string> headers = conn.header();
     for (unsigned i = 0; i < headers.size(); i++) {
         conn << headers[i] << " : " << conn.header(headers[i]) << "\n";
     }
@@ -96,12 +92,11 @@ void RootHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
 }
 
 
-void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy)
-{
+void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
     conn.setBuffer();
     conn.setChunkedTransfer();
 
-    std::vector<std::string> headers = conn.header();
+    std::vector <std::string> headers = conn.header();
     for (unsigned i = 0; i < headers.size(); i++) {
         std::cerr << headers[i] << " : " << conn.header(headers[i]) << std::endl;
     }
@@ -136,8 +131,8 @@ int main(int argc, char *argv[]) {
     std::string docroot;
     std::string tmpdir;
     std::string scriptdir;
-    std::vector<shttps::LuaRoute> routes;
-    std::pair<std::string,std::string> filehandler_info;
+    std::vector <shttps::LuaRoute> routes;
+    std::pair <std::string, std::string> filehandler_info;
     int keep_alive = 20;
     size_t max_post_size = 0;
 
@@ -145,40 +140,38 @@ int main(int argc, char *argv[]) {
         if ((strcmp(argv[i], "-p") == 0) || (strcmp(argv[i], "-port") == 0)) {
             i++;
             if (i < argc) port = atoi(argv[i]);
-        }
-        else if ((strcmp(argv[i], "-c") == 0) || (strcmp(argv[i], "-config") == 0)) {
+        } else if ((strcmp(argv[i], "-c") == 0) || (strcmp(argv[i], "-config") == 0)) {
             i++;
             if (i < argc) configfile = argv[i];
-        }
-        else if ((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "-docroot") == 0)) {
+        } else if ((strcmp(argv[i], "-d") == 0) || (strcmp(argv[i], "-docroot") == 0)) {
             i++;
             if (i < argc) docroot = argv[i];
-        }
-        else if ((strcmp(argv[i], "-t") == 0) || (strcmp(argv[i], "-tmpdir") == 0)) {
+        } else if ((strcmp(argv[i], "-t") == 0) || (strcmp(argv[i], "-tmpdir") == 0)) {
             i++;
             if (i < argc) tmpdir = argv[i];
-        }
-        else if ((strcmp(argv[i], "-n") == 0) || (strcmp(argv[i], "-nthreads") == 0)) {
+        } else if ((strcmp(argv[i], "-n") == 0) || (strcmp(argv[i], "-nthreads") == 0)) {
             i++;
             if (i < argc) nthreads = atoi(argv[i]);
-        }
-        else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "-help") == 0) || (strcmp(argv[i], "--help") == 0)) {
+        } else if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "-help") == 0) ||
+                   (strcmp(argv[i], "--help") == 0)) {
             std::cerr << "usage:" << std::endl;
-            std::cerr << "shttp-test [-p|-port <int def=4711>] [-c|-config <filename>] [-d|-docroot <path>] [-t|-tmpdir <path>] [-n|-nthreads <int def=4>]" << std::endl << std::endl;
+            std::cerr
+                    << "shttp-test [-p|-port <int def=4711>] [-c|-config <filename>] [-d|-docroot <path>] [-t|-tmpdir <path>] [-n|-nthreads <int def=4>]"
+                    << std::endl << std::endl;
             return 0;
         }
     }
 
-   /*
-    * Form if config file:
-    *
-    * shttps = {
-    *    docroot = '/Volumes/data/shttps-docroot',
-    *    tmpdir = '/tmp',
-    *    port = 8080,
-    *    nthreads = 16
-    * }
-    */
+    /*
+     * Form if config file:
+     *
+     * shttps = {
+     *    docroot = '/Volumes/data/shttps-docroot',
+     *    tmpdir = '/tmp',
+     *    port = 8080,
+     *    nthreads = 16
+     * }
+     */
     if (!configfile.empty()) {
         try {
             shttps::LuaServer luacfg = shttps::LuaServer(configfile);
@@ -199,8 +192,7 @@ int main(int argc, char *argv[]) {
             std::string s;
             std::string initscript = luacfg.configString("shttps", "initscript", s);
             routes = luacfg.configRoute("routes");
-        }
-        catch (shttps::Error &err) {
+        } catch (shttps::Error &err) {
             std::cerr << err << std::endl;
         }
     }

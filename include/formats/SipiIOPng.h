@@ -32,43 +32,43 @@
 
 namespace Sipi {
 
-    class SipiIOPng: public SipiIO {
+    class SipiIOPng : public SipiIO {
     public:
-       /*!
-        * Method used to read an image file
-        *
-        * \param *img Pointer to SipiImage instance
-        * \param filepath Image file path
-        * \param reduce Reducing factor. Not used reading TIFF files
-        */
-        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
+        /*!
+         * Method used to read an image file
+         *
+         * \param *img Pointer to SipiImage instance
+         * \param filepath Image file path
+         * \param reduce Reducing factor. Not used reading TIFF files
+         */
+        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
+                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
 
-       /*!
-        * Get the dimension of the image
-        *
-        * \param[in] filepath Pathname of the image file
-        * \param[out] width Width of the image in pixels
-        * \param[out] height Height of the image in pixels
-        */
+        /*!
+         * Get the dimension of the image
+         *
+         * \param[in] filepath Pathname of the image file
+         * \param[out] width Width of the image in pixels
+         * \param[out] height Height of the image in pixels
+         */
         bool getDim(std::string filepath, size_t &width, size_t &height);
 
 
-       /*!
-        * Write a PNG image to a file, stdout or to a memory buffer
-        *
-        * If the filepath is "-", the PNG file is built in an internal memory buffer
-        * and after finished transfered to stdout. This is necessary because libtiff
-        * makes extensive use of "lseek" which is not available on stdout!
-        *
-        * \param *img Pointer to SipiImage instance
-        * \param filepath Name of the image file to be written. Please note that
-        * - "-" means to write the image data to stdout
-        * - "HTTP" means to write the image data to the HTTP-server output
-        */
+        /*!
+         * Write a PNG image to a file, stdout or to a memory buffer
+         *
+         * If the filepath is "-", the PNG file is built in an internal memory buffer
+         * and after finished transfered to stdout. This is necessary because libtiff
+         * makes extensive use of "lseek" which is not available on stdout!
+         *
+         * \param *img Pointer to SipiImage instance
+         * \param filepath Name of the image file to be written. Please note that
+         * - "-" means to write the image data to stdout
+         * - "HTTP" means to write the image data to the HTTP-server output
+         */
         void write(SipiImage *img, std::string filepath, int quality = 0);
     };
 }
-
 
 
 #endif
