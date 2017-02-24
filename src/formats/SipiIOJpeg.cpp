@@ -91,8 +91,9 @@ namespace Sipi {
         do {
             int tmp_n = write(file_buffer->file_id, file_buffer->buffer + nn, n);
             if (tmp_n < 0) {
+                throw JpegError("Couldn't write to file!");
                 //throw SipiImageError(__file__, __LINE__, "Couldn't write to file!");
-                return false; // and create an error message!!
+                //return false; // and create an error message!!
             }
             else {
                 n -= tmp_n;
@@ -266,7 +267,8 @@ namespace Sipi {
             html_buffer->conobj->sendAndFlush(html_buffer->buffer, html_buffer->buflen);
         }
         catch (int i) { // an error occurred (possibly a broken pipe)
-            return false;
+            throw JpegError("Couldn't write to HTTP socket");
+            //return false;
         }
         cinfo->dest->free_in_buffer = html_buffer->buflen;
         cinfo->dest->next_output_byte = html_buffer->buffer;
@@ -883,8 +885,6 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, jpgerr.what());
         }
 
-
-
         //
         // Here we write the marker
         //
@@ -953,7 +953,13 @@ namespace Sipi {
 
         if (img->icc != nullptr) {
             unsigned int len;
-            const unsigned char *buf = img->icc->iccBytes(len);
+            const unsigned char *buf;
+            try {
+                buf = img->icc->iccBytes(len);
+            }
+            catch (SipiError &err) {
+                std::cerr << err << std::endl;
+            }
             unsigned char start[14] = {0x49, 0x43, 0x43, 0x5F, 0x50, 0x52, 0x4F, 0x46, 0x49, 0x4C, 0x45, 0x0}; //"ICC_PROFILE\000";
             size_t start_l = 14;
             unsigned int n = len / (65533 - start_l + 1) + 1;
@@ -1008,7 +1014,7 @@ namespace Sipi {
 
                 delete [] buf;
                 try {
-                jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk.get(), start_l + len);
+                    jpeg_write_marker(&cinfo, JPEG_APP0 + 13, (JOCTET *) iptcchunk.get(), start_l + len);
                 }
                 catch (JpegError &jpgerr) {
                     jpeg_destroy_compress(&cinfo);

@@ -956,7 +956,7 @@ namespace Sipi {
             try {
                 syslog(LOG_INFO, "Sending file %s", infile.c_str());
                 conn_obj.sendFile(infile);
-            } catch (int err) {
+            } catch (shttps::InputFailure iofail) {
                 // -1 was thrown
                 syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                 return;
@@ -1008,7 +1008,7 @@ namespace Sipi {
                 try {
                     syslog(LOG_DEBUG, "Sending cachefile %s", cachefile.c_str());
                     conn_obj.sendFile(cachefile);
-                } catch (int err) {
+                } catch (shttps::InputFailure err) {
                     // -1 was thrown
                     syslog(LOG_WARNING, "Browser unexpectedly closed connection");
                     return;
@@ -1323,8 +1323,5 @@ namespace Sipi {
         Server::run();
     }
     //=========================================================================
-
-
-
 
 }

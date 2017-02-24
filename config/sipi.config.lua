@@ -26,6 +26,8 @@ sipi = {
     --
     -- userid = '_www',
 
+    hostname = 'localhost',
+    
     --
     -- port number the server is listening to
     --
@@ -40,6 +42,11 @@ sipi = {
     -- Number of seconds a connection (socket) remains open at maximum
     --
     keep_alive = 5,
+
+    --
+    -- Maximal size of a post request
+    --
+    max_post_size = '300M',
 
     --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable

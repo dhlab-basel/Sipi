@@ -50,12 +50,13 @@ namespace Sipi {
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         std::string init_script;
         std::string cache_dir;
-        std::string cache_size;
+        size_t cache_size;
         float cache_hysteresis;
         int keep_alive;
         std::string thumb_size;
         int cache_n_files;
         int n_threads;
+        size_t max_post_size;
         std::string tmp_dir;
         std::string scriptdir;
         std::vector<shttps::LuaRoute> routes;
@@ -97,7 +98,7 @@ namespace Sipi {
 
         inline std::string getInitScript(void) { return init_script; }
 
-        inline std::string getCacheSize(void) { return cache_size; }
+        inline size_t getCacheSize(void) { return cache_size; }
 
         inline std::string getCacheDir(void) { return cache_dir; }
 
@@ -110,6 +111,8 @@ namespace Sipi {
         inline int getCacheNFiles(void) { return cache_n_files; }
 
         inline int getNThreads(void) { return n_threads; }
+
+        inline size_t getMaxPostSize(void) { return max_post_size; }
 
         inline std::string getTmpDir(void) { return tmp_dir; }
 

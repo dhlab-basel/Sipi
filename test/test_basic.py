@@ -50,3 +50,9 @@ class TestBasic:
     def test_deny(self, manager):
         """return 401 Unauthorized if the user does not have permission to see the image"""
         manager.expect_status_code("/knora/DenyLeaves.jpg/full/full/0/default.jpg", 401)
+
+    def test_thumbnail(self, manager):
+        """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
+        response_json = manager.post_file("/make_thumbnail", "Leaves.jpg", "image/jpeg")
+        filename = response_json["filename"]
+        manager.expect_status_code("/thumbs/{}_THUMB.jpg/full/full/0/default.jpg".format(filename), 200)

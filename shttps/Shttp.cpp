@@ -139,6 +139,8 @@ int main(int argc, char *argv[]) {
     std::vector<shttps::LuaRoute> routes;
     std::pair<std::string,std::string> filehandler_info;
     int keep_alive = 20;
+    size_t max_post_size = 0;
+
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "-p") == 0) || (strcmp(argv[i], "-port") == 0)) {
             i++;
@@ -193,6 +195,7 @@ int main(int argc, char *argv[]) {
             scriptdir = luacfg.configString("shttps", "scriptdir", "./scripts");
             nthreads = luacfg.configInteger("shttps", "nthreads", 4);
             keep_alive = luacfg.configInteger("shttps", "keep_alive", 20);
+            max_post_size = luacfg.configInteger("shttps", "max_post_size", 0);
             std::string s;
             std::string initscript = luacfg.configString("shttps", "initscript", s);
             routes = luacfg.configRoute("routes");
@@ -211,6 +214,7 @@ int main(int argc, char *argv[]) {
 #endif
     server.tmpdir(tmpdir); // set the directory for storing temporaray files during upload
     server.scriptdir(scriptdir); // set the direcxtory where the Lua scripts are found for the "Lua"-routes
+    server.max_post_size(max_post_size); // set the maximal post size
     server.luaRoutes(routes);
     server.keep_alive_timeout(keep_alive); // set the keep alive timeout
     server.add_lua_globals_func(sqliteGlobals, &server);

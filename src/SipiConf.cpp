@@ -37,7 +37,20 @@ namespace Sipi {
             ssl_key = luacfg.configString("sipi", "ssl_key", "");
 #endif
             init_script = luacfg.configString("sipi", "initscript", ".");
-            cache_size = luacfg.configString("sipi", "cachesize", "");
+
+            std::string cachesize_str = luacfg.configString("sipi", "cachesize", "0");
+            if (!cachesize_str.empty()) {
+                size_t l = cachesize_str.length();
+                char c = cachesize_str[l - 1];
+                if (c == 'M') {
+                    cache_size = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024;
+                } else if (c == 'G') {
+                    cache_size = stoll(cachesize_str.substr(0, l - 1)) * 1024 * 1024 * 1024;
+                } else {
+                    cache_size = stoll(cachesize_str);
+                }
+            }
+
             cache_dir = luacfg.configString("sipi", "cachedir", "");
             cache_hysteresis = luacfg.configFloat("sipi", "cache_hysteresis", 0.1);
             prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
@@ -45,6 +58,19 @@ namespace Sipi {
             thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
             cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);
             n_threads = luacfg.configInteger("sipi", "nthreads", 2*std::thread::hardware_concurrency());
+
+            std::string max_post_size_str = luacfg.configString("sipi", "max_post_size", "0");
+            if (!max_post_size_str.empty()) {
+                size_t l = max_post_size_str.length();
+                char c = max_post_size_str[l - 1];
+                if (c == 'M') {
+                    max_post_size = stoll(max_post_size_str.substr(0, l - 1)) * 1024 * 1024;
+                } else if (c == 'G') {
+                    max_post_size = stoll(max_post_size_str.substr(0, l - 1)) * 1024 * 1024 * 1024;
+                } else {
+                    max_post_size = stoll(max_post_size_str);
+                }
+            }
             tmp_dir = luacfg.configString("sipi", "tmpdir", "/tmp");
             scriptdir = luacfg.configString("sipi", "scriptdir", "./scripts");
             jwt_secret = luacfg.configString("sipi", "jwt_secret", "");
