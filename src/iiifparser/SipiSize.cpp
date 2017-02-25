@@ -111,7 +111,8 @@ namespace Sipi {
                     ny = shttps::Parsing::parse_int(height_str);
 
                     if (nx == 0 || ny == 0) {
-                        throw SipiError(__file__, __LINE__, "IIIF size would result in a width or height of zero: " + str);
+                        throw SipiError(__file__, __LINE__,
+                                        "IIIF size would result in a width or height of zero: " + str);
                     }
 
                     if (exclamation_mark) {
@@ -375,8 +376,8 @@ namespace Sipi {
         }
 
         std::stringstream ss;
-        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w="
-           << w << " h=" << h << " reduce=" << reduce << " reduce only=" << redonly;
+        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w=" << w << " h=" << h << " reduce=" << reduce
+           << " reduce only=" << redonly;
         syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         w_p = w;
@@ -394,39 +395,48 @@ namespace Sipi {
 
     void SipiSize::canonical(char *buf, int buflen) {
         int n;
+
         if (!canonical_ok && (size_type != SipiSize::FULL)) {
             std::string msg = "Canonical size not determined!";
             throw SipiError(__file__, __LINE__, msg);
         }
+
         switch (size_type) {
             case SipiSize::PIXELS_XY: {
                 n = snprintf(buf, buflen, "%ld,%ld", w, h);
                 break;
             }
+
             case SipiSize::PIXELS_X: {
                 n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
+
             case SipiSize::PIXELS_Y: {
                 n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
+
             case SipiSize::MAXDIM: {
                 n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
+
             case SipiSize::PERCENTS: {
                 n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
+
             case SipiSize::REDUCE: {
                 n = snprintf(buf, buflen, "%ld,", w);
                 break;
             }
+
             case SipiSize::FULL: {
                 n = snprintf(buf, buflen, "full"); // replace with "max" for version 3.0 of iiif
             }
         }
+
         if ((n < 0) || (n >= buflen)) {
             throw SipiError(__file__, __LINE__, "Error creating size string!");
         }
@@ -439,10 +449,8 @@ namespace Sipi {
     std::ostream &operator<<(std::ostream &outstr, const SipiSize &rhs) {
         outstr << "IIIF-Server Size parameter:";
         outstr << "  Size type: " << rhs.size_type;
-        outstr
-                << " | percent = " << std::to_string(rhs.percent)
-                << " | nx = " << std::to_string(rhs.nx)
-                << " | ny = " << std::to_string(rhs.ny);
+        outstr << " | percent = " << std::to_string(rhs.percent) << " | nx = " << std::to_string(rhs.nx) << " | ny = "
+               << std::to_string(rhs.ny);
         return outstr;
     };
     //-------------------------------------------------------------------------

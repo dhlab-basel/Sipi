@@ -20,8 +20,8 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  */
- #ifndef __defined_essentials_h
- #define __defined_essentials_h
+#ifndef __defined_essentials_h
+#define __defined_essentials_h
 
 #include <cstdlib>
 #include <sstream>
@@ -50,11 +50,15 @@ namespace Sipi {
         std::string _mimetype; //!< original mime type
         shttps::HashType _hash_type; //!< type of checksum
         std::string _data_chksum; //!< the checksum of pixel data
+
     public:
         /*!
         * Constructor for empty packet
         */
-        inline SipiEssentials() { _hash_type = shttps::HashType::none; _is_set = false; }
+        inline SipiEssentials() {
+            _hash_type = shttps::HashType::none;
+            _is_set = false;
+        }
 
         /*!
         * Constructor where all fields are passed
@@ -64,11 +68,12 @@ namespace Sipi {
         * \param[in] hash_type_p Checksumtype as defined in Hash.h (shttps::HashType)
         * \param[in] data_chksum The actual checksum of the internal image data
         */
-        inline SipiEssentials(const std::string &origname_p,
-            const std::string &mimetype_p,
-            shttps::HashType hash_type_p,
-            const std::string &data_chksum_p)
-            : _origname(origname_p), _mimetype(mimetype_p), _hash_type(hash_type_p), _data_chksum(data_chksum_p) { _is_set = true; }
+        inline SipiEssentials(const std::string &origname_p, const std::string &mimetype_p,
+                              shttps::HashType hash_type_p, const std::string &data_chksum_p) : _origname(origname_p),
+                                                                                                _mimetype(mimetype_p),
+                                                                                                _hash_type(hash_type_p),
+                                                                                                _data_chksum(
+                                                                                                        data_chksum_p) { _is_set = true; }
 
         /*!
         * Constructor taking a serialized packet (as string)
@@ -85,7 +90,10 @@ namespace Sipi {
         /*!
         * Setter for original name
         */
-        inline void origname(const std::string &origname_p) { _origname = origname_p; _is_set = true; }
+        inline void origname(const std::string &origname_p) {
+            _origname = origname_p;
+            _is_set = true;
+        }
 
         /*!
         * Getter for mimetype
@@ -152,7 +160,7 @@ namespace Sipi {
         /*!
         * Stream output operator
         */
-        inline friend std::ostream &operator<< (std::ostream &ostr, const SipiEssentials &rhs) {
+        inline friend std::ostream &operator<<(std::ostream &ostr, const SipiEssentials &rhs) {
             ostr << rhs._origname << "|" << rhs._mimetype << "|" << rhs.hash_type_string() << "|" << rhs._data_chksum;
             return ostr;
         }

@@ -47,10 +47,7 @@ namespace Sipi {
     public:
 
         typedef enum {
-            SORT_ATIME_ASC,
-            SORT_ATIME_DESC,
-            SORT_FSIZE_ASC,
-            SORT_FSIZE_DESC,
+            SORT_ATIME_ASC, SORT_ATIME_DESC, SORT_FSIZE_ASC, SORT_FSIZE_DESC,
         } SortMethod;
 
         /*!
@@ -107,13 +104,14 @@ namespace Sipi {
          * This is the prototype function to used as parameter for the method SipiCache::loop
          * which is applied to all cached files.
          */
-        typedef void (*ProcessOneCacheFile)(int index, const std::string&, const SipiCache::CacheRecord&, void *userdata);
+        typedef void (*ProcessOneCacheFile)(int index, const std::string &, const SipiCache::CacheRecord &,
+                                            void *userdata);
 
     private:
         std::mutex locking;
         std::string _cachedir; //!< path to the cache directory
-        std::unordered_map<std::string,CacheRecord> cachetable; //!< Internal map of all cached files
-        std::unordered_map<std::string,SizeRecord> sizetable; //!< Internal map of original file paths and image size
+        std::unordered_map<std::string, CacheRecord> cachetable; //!< Internal map of all cached files
+        std::unordered_map<std::string, SizeRecord> sizetable; //!< Internal map of original file paths and image size
         unsigned long long cachesize; //!< number of bytes in the cache
         unsigned long long max_cachesize; //!< maximum number of bytes that can be cached
         unsigned nfiles; //!< number of files in cache
@@ -135,7 +133,8 @@ namespace Sipi {
          * have not been accessed recently will be deleted. The cache_hysteresis (between 0.0 and 1.0) defines the
          * amount of bytes that have to be cleared in relation to the max_cachesize_p.
          */
-        SipiCache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0, float cache_hysteresis_p = 0.1);
+        SipiCache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0,
+                  float cache_hysteresis_p = 0.1);
 
         /*!
          * Cleans up the cache, serializes the actual cache content into a file and closes all caching
@@ -152,10 +151,13 @@ namespace Sipi {
          * \freturns true or false,
          */
 #if defined(HAVE_ST_ATIMESPEC)
+
         int tcompare(struct timespec &t1, struct timespec &t2);
+
 #else
         int tcompare(time_t &t1, time_t &t2);
 #endif
+
         /*!
          * Purge the cache to make room for more files. Uses the cache_hysteresis, max_cachesize and max_nfiles values
          * for the amount of files that should be purged.
@@ -191,7 +193,8 @@ namespace Sipi {
          * \param[in] canonical_p Canonical IIIF URL
          * \param[in] cachepath_p Path of the cache file
          */
-        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p, size_t img_w_p, size_t img_h_p);
+        void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p,
+                 size_t img_w_p, size_t img_h_p);
 
         /*!
          * Remove one file from the cache

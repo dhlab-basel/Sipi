@@ -30,20 +30,20 @@
 
 namespace Sipi {
 
-   /*!
-    * Handles IPTC data based on the exiv2 library
-    */
+    /*!
+     * Handles IPTC data based on the exiv2 library
+     */
     class SipiIptc {
+    private:
         Exiv2::IptcData iptcData; //!< Private member variable holding the exiv2 IPTC object
 
     public:
-
-       /*!
-        * Constructor
-        *
-        * \param[in] Buffer containing the IPTC data in native format
-        * \param[in] Length of the buffer
-        */
+        /*!
+         * Constructor
+         *
+         * \param[in] Buffer containing the IPTC data in native format
+         * \param[in] Length of the buffer
+         */
         SipiIptc(const unsigned char *iptc, unsigned int len);
 
         /*!
@@ -57,16 +57,16 @@ namespace Sipi {
         * \param[out] len Length of the data in bytes
         * \returns Chunk of chars holding the IPTC data
         */
-        unsigned char * iptcBytes(unsigned int &len);
+        unsigned char *iptcBytes(unsigned int &len);
 
-       /*!
-        * The overloaded << operator which is used to write the IPTC data formatted to the outstream
-        *
-        * \param[in] lhs The output stream
-        * \param[in] rhs Reference to an instance of a SipiIptc
-        * \returns Returns ostream object
-        */
-        friend std::ostream &operator<< (std::ostream &lhs, SipiIptc &rhs);
+        /*!
+         * The overloaded << operator which is used to write the IPTC data formatted to the outstream
+         *
+         * \param[in] lhs The output stream
+         * \param[in] rhs Reference to an instance of a SipiIptc
+         * \returns Returns ostream object
+         */
+        friend std::ostream &operator<<(std::ostream &lhs, SipiIptc &rhs);
 
     };
 

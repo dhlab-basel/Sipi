@@ -39,7 +39,7 @@ namespace Sipi {
     extern unsigned char *read_watermark(std::string wmfile, int &nx, int &ny, int &nc);
 
     /*! Class which implements the TIFF-reader/writer */
-    class SipiIOTiff: public SipiIO {
+    class SipiIOTiff : public SipiIO {
     private:
         /*!
          * Read the EXIF data from the TIFF file and create an Exiv2::Exif object
@@ -49,11 +49,11 @@ namespace Sipi {
          */
         void readExif(SipiImage *img, TIFF *tif, toff_t exif_offset);
 
-       /*!
-        * Write the EXIF data to the TIFF file
-         * \param img Pointer to SipiImage instance
-         * \param[in] tif Pointer to TIFF file handle
-        */
+        /*!
+         * Write the EXIF data to the TIFF file
+          * \param img Pointer to SipiImage instance
+          * \param[in] tif Pointer to TIFF file handle
+         */
         void writeExif(SipiImage *img, TIFF *tif);
 
         /*!
@@ -63,35 +63,37 @@ namespace Sipi {
          */
         void separateToContig(SipiImage *img, unsigned int sll);
 
-       /*!
-        * Converts a bitonal 1 bit image to a bitonal 8 bit image
-        *
-        * \param img Pointer to SipiImage instance
-        * \param[in] Length of scanline in bytes
-        * \param[in] Value to be used for black pixels
-        * \param[in] Value to be used for white pixels
-        */
+        /*!
+         * Converts a bitonal 1 bit image to a bitonal 8 bit image
+         *
+         * \param img Pointer to SipiImage instance
+         * \param[in] Length of scanline in bytes
+         * \param[in] Value to be used for black pixels
+         * \param[in] Value to be used for white pixels
+         */
         void cvrt1BitTo8Bit(SipiImage *img, unsigned int sll, unsigned int black, unsigned int white);
 
-       /*!
-        * Converts a 8 bps bitonal image to 1 bps bitonal image
-        *
-        * \param[in] img Reference to SipiImage instance
-        * \param[out] sll Scan line lengt
-        * \returns Buffer of 1-bit data (padded to bytes). NOTE: This buffer has to be deleted by the caller!
-        */
+        /*!
+         * Converts a 8 bps bitonal image to 1 bps bitonal image
+         *
+         * \param[in] img Reference to SipiImage instance
+         * \param[out] sll Scan line lengt
+         * \returns Buffer of 1-bit data (padded to bytes). NOTE: This buffer has to be deleted by the caller!
+         */
         unsigned char *cvrt8BitTo1bit(const SipiImage &img, unsigned int &sll);
 
     public:
         static void initLibrary(void);
-       /*!
-        * Method used to read an image file
-        *
-        * \param *img Pointer to SipiImage instance
-        * \param filepath Image file path
-        * \param reduce Reducing factor. Not used reading TIFF files
-        */
-        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
+
+        /*!
+         * Method used to read an image file
+         *
+         * \param *img Pointer to SipiImage instance
+         * \param filepath Image file path
+         * \param reduce Reducing factor. Not used reading TIFF files
+         */
+        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
+                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
 
         /*!
         * Get the dimension of the image
@@ -103,18 +105,18 @@ namespace Sipi {
         bool getDim(std::string filepath, size_t &width, size_t &height);
 
 
-       /*!
-        * Write a TIFF image to a file, stdout or to a memory buffer
-        *
-        * If the filepath is "-", the TIFF file is built in an internal memory buffer
-        * and after finished transfered to stdout. This is necessary because libtiff
-        * makes extensive use of "lseek" which is not available on stdout!
-        *
-        * \param *img Pointer to SipiImage instance
-        * \param filepath Name of the image file to be written. Please note that
-        * - "-" means to write the image data to stdout
-        * - "HTTP" means to write the image data to the HTTP-server output
-        */
+        /*!
+         * Write a TIFF image to a file, stdout or to a memory buffer
+         *
+         * If the filepath is "-", the TIFF file is built in an internal memory buffer
+         * and after finished transfered to stdout. This is necessary because libtiff
+         * makes extensive use of "lseek" which is not available on stdout!
+         *
+         * \param *img Pointer to SipiImage instance
+         * \param filepath Name of the image file to be written. Please note that
+         * - "-" means to write the image data to stdout
+         * - "HTTP" means to write the image data to the HTTP-server output
+         */
         void write(SipiImage *img, std::string filepath, int quality = 0);
 
     };

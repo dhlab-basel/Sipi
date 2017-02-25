@@ -91,7 +91,6 @@ namespace shttps {
                 // A regex for parsing an integer containing only digits. In C++11, initialization of this
                 // static local variable happens once and is thread-safe.
                 static std::regex int_regex("^[0-9]+$", std::regex_constants::ECMAScript);
-
                 std::smatch int_match;
 
                 if (std::regex_match(str, int_match, int_regex)) {
@@ -116,7 +115,6 @@ namespace shttps {
                 // A regex for parsing a floating-point number containing only digits and an optional decimal point. In C++11,
                 // initialization of this static local variable happens once and is thread-safe.
                 static std::regex float_regex("^[0-9]+(\\.[0-9]+)?$", std::regex_constants::ECMAScript);
-
                 std::smatch float_match;
 
                 if (std::regex_match(str, float_match, float_regex)) {

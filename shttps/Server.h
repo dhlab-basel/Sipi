@@ -45,15 +45,16 @@
 #include <iostream>
 
 #ifdef SHTTPS_ENABLE_SSL
+
 #include "openssl/bio.h"
 #include "openssl/ssl.h"
 #include "openssl/err.h"
+
 #endif
 
 #include "Global.h"
 #include "Connection.h"
 #include "LuaServer.h"
-
 
 
 #include "lua.hpp"
@@ -69,11 +70,13 @@
 namespace shttps {
 
 
-    typedef void (*RequestHandler)(Connection&, LuaServer&, void *, void *);
+    typedef void (*RequestHandler)(Connection &, LuaServer &, void *, void *);
 
-    extern void FileHandler(Connection& conn, LuaServer& lua, void* user_data, void* handler_data);
+    extern void FileHandler(Connection &conn, LuaServer &lua, void *user_data, void *handler_data);
 
-    typedef enum { CONTINUE, CLOSE } ThreadStatus;
+    typedef enum {
+        CONTINUE, CLOSE
+    } ThreadStatus;
 
 
     /*!
@@ -145,21 +148,25 @@ namespace shttps {
         protected:
             SSL *cSSL;
         public:
-            inline SSLError (const char *file, const int line, const char *msg, SSL *cSSL_p = nullptr)
-                : Error(file, line, msg), cSSL(cSSL_p) {};
-            inline SSLError (const char *file, const int line, const std::string &msg, SSL *cSSL_p = nullptr)
-                : Error(file, line, msg), cSSL(cSSL_p) {};
+            inline SSLError(const char *file, const int line, const char *msg, SSL *cSSL_p = nullptr) : Error(file,
+                                                                                                              line,
+                                                                                                              msg),
+                                                                                                        cSSL(cSSL_p) {};
+
+            inline SSLError(const char *file, const int line, const std::string &msg, SSL *cSSL_p = nullptr) : Error(
+                    file, line, msg), cSSL(cSSL_p) {};
+
             inline std::string to_string(void) {
                 std::stringstream ss;
                 ss << "SSL-ERROR at [" << file << ": " << line << "] ";
                 BIO *bio = BIO_new(BIO_s_mem());
-                ERR_print_errors (bio);
+                ERR_print_errors(bio);
                 char *buf = nullptr;
-                long n =  BIO_get_mem_data (bio, &buf);
+                long n = BIO_get_mem_data (bio, &buf);
                 if (n > 0) {
                     ss << buf << " : ";
                 }
-                BIO_free (bio);
+                BIO_free(bio);
                 //ss << "Description: " << message;
                 return ss.str();
             };
@@ -167,30 +174,30 @@ namespace shttps {
 
 #       endif
 
-public:
-    /*!
-    * Used to send a message between main thread and worker threads. A pipe is
-    * used and the worker theads use poll to detect an incoming message.
-    */
-    class CommMsg {
     public:
+        /*!
+        * Used to send a message between main thread and worker threads. A pipe is
+        * used and the worker theads use poll to detect an incoming message.
+        */
+        class CommMsg {
+        public:
 
-        static inline int send(int pipe_id) {
-            if ((::send(pipe_id, "X", 1, 0)) != 1) {
-                return -1;
-            }
-            return 0;
-        };
+            static inline int send(int pipe_id) {
+                if ((::send(pipe_id, "X", 1, 0)) != 1) {
+                    return -1;
+                }
+                return 0;
+            };
 
-        static inline int read(int pipe_id) {
-            char c;
-            if (::read(pipe_id, &c, 1) != 1) {
-                return -1;
-            }
-            return 0;
+            static inline int read(int pipe_id) {
+                char c;
+                if (::read(pipe_id, &c, 1) != 1) {
+                    return -1;
+                }
+                return 0;
+            };
         };
-    };
-    //=========================================================================
+        //=========================================================================
 
     private:
         int port; //!< listening Port for server
@@ -225,6 +232,7 @@ public:
         size_t _max_post_size;
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
+
         std::string _logfilename;
         std::string _loglevel;
 
@@ -235,7 +243,8 @@ public:
         * \param[in] port_p Listening port of HTTP server
         * \param[in] nthreads_p Maximal number of parallel threads serving the requests
         */
-        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "shttps.log", const std::string &loglevel_p = "DEBUG");
+        Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "",
+               const std::string &logfile_p = "shttps.log", const std::string &loglevel_p = "DEBUG");
 
         /*!
         * Decrease the semaphore, wait if semaphore would be smaller than zero
@@ -361,14 +370,14 @@ public:
          *
          * \returns Actual maximal size of  post request
          */
-         inline size_t max_post_size(void) { return _max_post_size; }
+        inline size_t max_post_size(void) { return _max_post_size; }
 
         /*!
          * Set the maximal size of a post request
          *
          * \param[in] sz Maximal size of a post request in bytes
          */
-         inline void max_post_size(size_t sz) { _max_post_size = sz; }
+        inline void max_post_size(size_t sz) { _max_post_size = sz; }
 
         /*!
         * Returns the routes defined for being handletd by Lua scripts
@@ -462,8 +471,7 @@ public:
             _initscript.reserve(t.tellg());
             t.seekg(0, std::ios::beg);
 
-            _initscript.assign((std::istreambuf_iterator<char>(t)),
-                       std::istreambuf_iterator<char>());
+            _initscript.assign((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         }
 
         /*!
@@ -495,14 +503,16 @@ public:
         void addRoute(Connection::HttpMethod method_p, const std::string &path, RequestHandler handler_p,
                       void *handler_data_p = nullptr);
 
-       /*!
-        * Process a request... (Eventually should be private method)
-        *
-        * \param[in] sock Socket id
-        * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
-        * \param[in] peer_port Port number of peer/client
-        */
-        ThreadStatus processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure, int &keep_alive);
+        /*!
+         * Process a request... (Eventually should be private method)
+         *
+         * \param[in] sock Socket id
+         * \param[in] peer_ip String containing IP (IP4 or IP6) of client/peer
+         * \param[in] peer_port Port number of peer/client
+         */
+        ThreadStatus
+        processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure,
+                       int &keep_alive);
 
         /*!
         * Return the user data that has been added previously

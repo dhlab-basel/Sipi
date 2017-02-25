@@ -47,12 +47,12 @@
 
 namespace Sipi {
 
-   /*!
-    * The class SipiHttpServer implements a webserver that can be used to serve images using the IIIF
-    * API. For details on the API look for  \url http://iiif.io . I implemented support for
-    * cross domain scripting (CORS according to \url http://www.html5rocks.com/en/tutorials/cors/). As a
-    * special feature we support acces to the old PHP-based salsah version (this is a bad hack!)
-    */
+    /*!
+     * The class SipiHttpServer implements a webserver that can be used to serve images using the IIIF
+     * API. For details on the API look for  \url http://iiif.io . I implemented support for
+     * cross domain scripting (CORS according to \url http://www.html5rocks.com/en/tutorials/cors/). As a
+     * special feature we support acces to the old PHP-based salsah version (this is a bad hack!)
+     */
     class SipiHttpServer : public shttps::Server {
     private:
     protected:
@@ -62,41 +62,42 @@ namespace Sipi {
         bool _prefix_as_path;
         std::string _logfile;
         std::shared_ptr<SipiCache> _cache;
+
     public:
-       /*!
-        * Constructor which automatically starts the server
-        *
-        * \param port_p Portnumber on which the server should listen
-        * \param root_p Path to the root of directory containing the images
-        */
-        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "", const std::string &logfile_p = "sipi.log", const std::string &loglevel_p = "DEBUG");
+        /*!
+         * Constructor which automatically starts the server
+         *
+         * \param port_p Portnumber on which the server should listen
+         * \param root_p Path to the root of directory containing the images
+         */
+        SipiHttpServer(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "",
+                       const std::string &logfile_p = "sipi.log", const std::string &loglevel_p = "DEBUG");
+
         void run();
 
-        std::pair<std::string,std::string> get_canonical_url(
-            size_t img_w,
-            size_t img_h,
-            const std::string &host,
-            const std::string &prefix,
-            const std::string &identifier,
-            std::shared_ptr<SipiRegion> region,
-            std::shared_ptr<SipiSize> size,
-            SipiRotation &rotation,
-            SipiQualityFormat &quality_format
-        );
+        std::pair<std::string, std::string>
+        get_canonical_url(size_t img_w, size_t img_h, const std::string &host, const std::string &prefix,
+                          const std::string &identifier, std::shared_ptr<SipiRegion> region,
+                          std::shared_ptr<SipiSize> size, SipiRotation &rotation, SipiQualityFormat &quality_format);
 
 
         inline pid_t pid(void) { return _pid; }
 
         inline void imgroot(const std::string &imgroot_p) { _imgroot = imgroot_p; }
+
         inline std::string imgroot(void) { return _imgroot; }
 
-        inline std::string salsah_prefix(void) {return _salsah_prefix; }
+        inline std::string salsah_prefix(void) { return _salsah_prefix; }
+
         inline void salsah_prefix(const std::string &salsah_prefix) { _salsah_prefix = salsah_prefix; }
 
         inline bool prefix_as_path(void) { return _prefix_as_path; }
+
         inline void prefix_as_path(bool prefix_as_path_p) { _prefix_as_path = prefix_as_path_p; }
 
-        void cache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0, float cache_hysteresis_p = 0.1);
+        void cache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0,
+                   float cache_hysteresis_p = 0.1);
+
         inline std::shared_ptr<SipiCache> cache() { return _cache; }
 
     };

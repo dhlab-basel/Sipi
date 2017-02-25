@@ -46,27 +46,29 @@ namespace Sipi {
         int n;
         if (str.empty() || (str == "full")) {
             coord_type = FULL;
-            rx = 0.;
-            ry = 0.;
-            rw = 0.;
-            rh = 0.;
+            rx = 0.F;
+            ry = 0.F;
+            rw = 0.F;
+            rh = 0.F;
             canonical_ok = true; // "full" is a canonical value
-        }
-        else if (str.find("pct:") != std::string::npos) {
+        } else if (str.find("pct:") != std::string::npos) {
             coord_type = SipiRegion::PERCENTS;
             std::string tmpstr = str.substr(4);
             n = sscanf(tmpstr.c_str(), "%f,%f,%f,%f", &rx, &ry, &rw, &rh);
+
             if (n != 4) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\"");
             }
+
             canonical_ok = false;
-        }
-        else {
+        } else {
             coord_type = SipiRegion::COORDS;
             n = sscanf(str.c_str(), "%f,%f,%f,%f", &rx, &ry, &rw, &rh);
+
             if (n != 4) {
                 throw SipiError(__file__, __LINE__, "IIIF Error reading Region parameter  \"" + str + "\"");
             }
+
             canonical_ok = false;
         }
     }
@@ -75,17 +77,17 @@ namespace Sipi {
     SipiRegion::CoordType SipiRegion::crop_coords(size_t nx, size_t ny, int &p_x, int &p_y, size_t &p_w, size_t &p_h) {
         switch (coord_type) {
             case COORDS: {
-                x = floor(rx + 0.5);
-                y = floor(ry + 0.5);
-                w = floor(rw + 0.5);
-                h = floor(rh + 0.5);
+                x = floor(rx + 0.5F);
+                y = floor(ry + 0.5F);
+                w = floor(rw + 0.5F);
+                h = floor(rh + 0.5F);
                 break;
             }
             case PERCENTS: {
-                x = floor((rx*nx/100.) + 0.5);
-                y = floor((ry*ny/100.) + 0.5);
-                w = floor((rw*nx/100.) + 0.5);
-                h = floor((rh*ny/100.) + 0.5);
+                x = floor((rx * nx / 100.F) + 0.5F);
+                y = floor((ry * ny / 100.F) + 0.5F);
+                w = floor((rw * nx / 100.F) + 0.5F);
+                h = floor((rh * ny / 100.F) + 0.5F);
                 break;
             }
             case FULL: {
@@ -100,37 +102,31 @@ namespace Sipi {
         if (x < 0) {
             w += x;
             x = 0;
-        }
-        else if (x >= nx) {
+        } else if (x >= nx) {
             std::stringstream msg;
-            msg << "Invalid croping region outside of image (x=" << x << " nx=" << nx << ")";
+            msg << "Invalid cropping region outside of image (x=" << x << " nx=" << nx << ")";
             throw SipiError(__file__, __LINE__, msg.str());
         }
+
         if (y < 0) {
             h += y;
             y = 0;
-        }
-        else if (y >= ny) {
+        } else if (y >= ny) {
             std::stringstream msg;
-            msg << "Invalid croping region outside of image (y=" << y << " ny=" << ny << ")";
+            msg << "Invalid cropping region outside of image (y=" << y << " ny=" << ny << ")";
             throw SipiError(__file__, __LINE__, msg.str());
         }
 
         if (w == 0) {
             w = nx - x;
-        }
-        else if ((x + w) > nx) {
+        } else if ((x + w) > nx) {
             w = nx - x;
         }
+
         if (h == 0) {
             h = ny - y;
-        }
-        else if ((y + h) > ny) {
+        } else if ((y + h) > ny) {
             h = ny - y;
-        }
-        if ((w < 0) || (h < 0)) {
-            std::string msg = "Invalid croping region with zero or negative dimension (w x h):" + std::to_string(w) + " " + std::to_string(h);
-            throw SipiError(__file__, __LINE__, msg);
         }
 
         p_x = x;
@@ -150,9 +146,10 @@ namespace Sipi {
             std::string msg = "Canonical coordinates not determined";
             throw SipiError(__file__, __LINE__, msg);
         }
+
         switch (coord_type) {
             case FULL: {
-                (void) snprintf (buf, buflen, "full");
+                (void) snprintf(buf, buflen, "full");
                 break;
             }
             case COORDS:
@@ -167,14 +164,11 @@ namespace Sipi {
     //-------------------------------------------------------------------------
     // Output to stdout for debugging etc.
     //
-    std::ostream &operator<< (std::ostream &outstr, const SipiRegion &rhs) {
+    std::ostream &operator<<(std::ostream &outstr, const SipiRegion &rhs) {
         outstr << "IIIF-Server Region:";
         outstr << "  Coordinate type: " << rhs.coord_type;
-        outstr
-            << " | rx = " << std::to_string(rhs.rx)
-            << " | ry = " << std::to_string(rhs.ry)
-            << " | rw = " << std::to_string(rhs.rw)
-            << " | rh = " << std::to_string(rhs.rh);
+        outstr << " | rx = " << std::to_string(rhs.rx) << " | ry = " << std::to_string(rhs.ry) << " | rw = "
+               << std::to_string(rhs.rw) << " | rh = " << std::to_string(rhs.rh);
         return outstr;
     }
     //-------------------------------------------------------------------------

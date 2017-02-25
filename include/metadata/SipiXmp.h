@@ -44,35 +44,37 @@ namespace Sipi {
     * This class handles XMP metadata. It uses the Exiv2 library
     */
     class SipiXmp {
+    private:
         Exiv2::XmpData xmpData; //!< Private member variable holding the exiv2 XMP data
         std::string __xmpstr;
+
     public:
-       /*!
-        * Constructor
-        *
-        * \param[in] xmp A std::string containing RDF/XML with XMP data
-        */
+        /*!
+         * Constructor
+         *
+         * \param[in] xmp A std::string containing RDF/XML with XMP data
+         */
         SipiXmp(const std::string &xmp);
 
-       /*!
-        * Constructor
-        *
-        * \param[in] xmp A C-string (char *)containing RDF/XML with XMP data
-        */
+        /*!
+         * Constructor
+         *
+         * \param[in] xmp A C-string (char *)containing RDF/XML with XMP data
+         */
         SipiXmp(const char *xmp);
 
-       /*!
-        * Constructor
-        *
-        * \param[in] xmp A string containing RDF/XML with XMP data
-        * \param[in] len Length of the string
-        */
+        /*!
+         * Constructor
+         *
+         * \param[in] xmp A string containing RDF/XML with XMP data
+         * \param[in] len Length of the string
+         */
         SipiXmp(const char *xmp, int len);
 
 
-       /*!
-        * Destructor
-        */
+        /*!
+         * Destructor
+         */
         ~SipiXmp();
 
 
@@ -81,17 +83,17 @@ namespace Sipi {
         * \param[out] len Length of the data on bytes
         * \returns Chunk of chars holding the xmp data
         */
-        char * xmpBytes(unsigned int &len);
+        char *xmpBytes(unsigned int &len);
 
 
-       /*!
-        * The overloaded << operator which is used to write the xmp formatted to the outstream
-        *
-        * \param[in] lhs The output stream
-        * \param[in] rhs Reference to an instance of a SipiXmp
-        * \returns Returns ostream object
-        */
-        friend std::ostream &operator<< (std::ostream &lhs, const SipiXmp &rhs);
+        /*!
+         * The overloaded << operator which is used to write the xmp formatted to the outstream
+         *
+         * \param[in] lhs The output stream
+         * \param[in] rhs Reference to an instance of a SipiXmp
+         * \returns Returns ostream object
+         */
+        friend std::ostream &operator<<(std::ostream &lhs, const SipiXmp &rhs);
 
     };
 

@@ -54,6 +54,7 @@ namespace Sipi {
             PERCENTS,  //!< The percentage of scaling is given, IIIF: "pct:ppp"
             REDUCE     //!< A reduce factor can be given, 0=no scaling, 1=0.5, 2=0.25, 3=0.125,...(Note: this is an extension to the IIIF standard) IIIF: "red:ii"
         } SizeType;
+
     private:
         static size_t limitdim; //!< maximal dimension of an image
         SizeType size_type; //!< Holds the type of size/scaling parameters given

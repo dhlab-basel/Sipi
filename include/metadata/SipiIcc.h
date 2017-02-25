@@ -36,7 +36,6 @@
 #include <lcms2.h>
 
 
-
 namespace Sipi {
 
     class SipiImage; //!< forward declaration
@@ -56,13 +55,19 @@ namespace Sipi {
      * This class implements the handling of ICC color profiles
      */
     class SipiIcc {
+    private:
         cmsHPROFILE icc_profile;            //!< Handle of the littleCMS profile data
         PredefinedProfiles profile_type;    //!< Profile type that is represented
+
     public:
         /*!
          * Constructor (default) which results in empty, undefined profile
          */
-        inline SipiIcc() { icc_profile = NULL; profile_type = icc_undefined;};
+        inline SipiIcc() {
+            icc_profile = NULL;
+            profile_type = icc_undefined;
+        };
+
         /*!
          * Constructor which takes a blob that contains the ICC profile
          * \param[in] buf Buffer holding the binary profile data
@@ -76,10 +81,10 @@ namespace Sipi {
          */
         SipiIcc(const SipiIcc &icc_p);
 
-       /*!
-        * Constructor using littleCMS profile
-        * \param[in] icc_profile_p LittleCMS profile
-        */
+        /*!
+         * Constructor using littleCMS profile
+         * \param[in] icc_profile_p LittleCMS profile
+         */
         SipiIcc(cmsHPROFILE &icc_profile_p);
 
         /**
@@ -96,7 +101,8 @@ namespace Sipi {
          * \param[in] tfunc Transfer function tables as retrieved by libtiff with either (1 << bitspersample) or 3*(1 << bitspersample) entries
          * \param[in] Length of tranfer function table
          */
-        SipiIcc(float white_point_p[], float primaries_p[], const unsigned short *tfunc = NULL, const int tfunc_len = 0);
+        SipiIcc(float white_point_p[], float primaries_p[], const unsigned short *tfunc = NULL,
+                const int tfunc_len = 0);
 
         /**
          * Destructor
@@ -107,7 +113,7 @@ namespace Sipi {
          * Assignment operator which makes deep copy
          * \param[in] rhs Instance of SipiIcc
          */
-        SipiIcc& operator=(const SipiIcc &rhs);
+        SipiIcc &operator=(const SipiIcc &rhs);
 
         /*!
          * Get the blob containing the ICC profile
@@ -120,7 +126,7 @@ namespace Sipi {
          * Retireve the littleCMS profile
          * \returns Handle to littleCMS profile
          */
-        cmsHPROFILE getIccProfile()  const;
+        cmsHPROFILE getIccProfile() const;
 
         /*!
          * Get the profile type
@@ -133,21 +139,21 @@ namespace Sipi {
          * \param[in] bps Desired bits/sample
          * \returns Formatter as used by cmsTransfrom
          */
-        unsigned int iccFormatter(int bps)  const;
+        unsigned int iccFormatter(int bps) const;
 
         /*!
          * returns a littleCMS formatter with the given bits/sample for the given SipImage
          * \param img The SipiImage instance whose color profile is used to create the formatter
          * \returns Formatter as used by cmsTransfrom
          */
-        unsigned int iccFormatter(SipiImage *img)  const;
+        unsigned int iccFormatter(SipiImage *img) const;
 
         /**
          * Print info to output stream
          * \param[in] lhs Output stream
          * \param[in] rhs SipiIcc instance
          */
-        friend std::ostream &operator<< (std::ostream &lhs, SipiIcc &rhs);
+        friend std::ostream &operator<<(std::ostream &lhs, SipiIcc &rhs);
     };
 
 }

@@ -115,29 +115,27 @@ namespace shttps {
             }
         }
     }
-   //=========================================================================
+    //=========================================================================
 
 
-    static void default_handler(Connection &conn, LuaServer &lua, void *user_data, void *hd)
-    {
+    static void default_handler(Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         conn.status(Connection::NOT_FOUND);
         conn.header("Content-Type", "text/text");
         conn.setBuffer();
+
         try {
             conn << "No handler available" << Connection::flush_data;
-        }
-        catch (InputFailure iofail) {
+        } catch (InputFailure iofail) {
             return;
         }
-        syslog(LOG_WARNING, "No handler available! Host: %s Uri: %s", conn.host().c_str(), conn.uri().c_str());
 
+        syslog(LOG_WARNING, "No handler available! Host: %s Uri: %s", conn.host().c_str(), conn.uri().c_str());
         return;
     }
     //=========================================================================
 
 
-    void ScriptHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd)
-    {
+    void ScriptHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
 
@@ -154,6 +152,7 @@ namespace shttps {
 
         size_t extpos = script.find_last_of('.');
         std::string extension;
+
         if (extpos != std::string::npos) {
             extension = script.substr(extpos + 1);
         }
@@ -162,7 +161,6 @@ namespace shttps {
             if (extension == "lua") { // pure lua
                 std::ifstream inf;
                 inf.open(script); //open the input file
-
                 std::stringstream sstr;
                 sstr << inf.rdbuf(); //read the file
                 std::string luacode = sstr.str();//str holds the content of the file
@@ -172,24 +170,22 @@ namespace shttps {
                         conn.flush();
                         return;
                     }
-                }
-                catch (Error &err) {
+                } catch (Error &err) {
                     try {
-						conn.setBuffer();
+                        conn.setBuffer();
                         conn.status(Connection::INTERNAL_SERVER_ERROR);
                         conn.header("Content-Type", "text/text; charset=utf-8");
                         conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                         conn.flush();
-                    }
-                    catch(int i) {
+                    } catch (int i) {
                         return;
                     }
+
                     syslog(LOG_ERR, "ScriptHandler: error executing lua script: %s", err.to_string().c_str());
                     return;
                 }
                 conn.flush();
-            }
-            else if (extension == "elua") { // embedded lua <lua> .... </lua>
+            } else if (extension == "elua") { // embedded lua <lua> .... </lua>
                 conn.setBuffer();
                 std::ifstream inf;
                 inf.open(script);//open the input file
@@ -200,6 +196,7 @@ namespace shttps {
 
                 size_t pos = 0;
                 size_t end = 0; // end of last lua code (including </lua>)
+
                 while ((pos = eluacode.find("<lua>", end)) != std::string::npos) {
                     std::string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
@@ -207,11 +204,11 @@ namespace shttps {
                     if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     std::string luastr;
+
                     if ((end = eluacode.find("</lua>", pos)) != std::string::npos) { // we found end;
                         luastr = eluacode.substr(pos, end - pos);
                         end += 6;
-                    }
-                    else {
+                    } else {
                         luastr = eluacode.substr(pos);
                     }
 
@@ -220,46 +217,43 @@ namespace shttps {
                             conn.flush();
                             return;
                         }
-                    }
-                    catch (Error &err) {
+                    } catch (Error &err) {
                         try {
                             conn.status(Connection::INTERNAL_SERVER_ERROR);
                             conn.header("Content-Type", "text/text; charset=utf-8");
                             conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
-                        }
-                        catch (InputFailure iofail) {
+                        } catch (InputFailure iofail) {
                             return;
                         }
+
                         syslog(LOG_ERR, "ScriptHandler: error executing lua chunk: %s", err.to_string().c_str());
                         return;
                     }
                 }
+
                 std::string htmlcode = eluacode.substr(end);
                 conn << htmlcode;
                 conn.flush();
-            }
-            else {
+            } else {
                 conn.status(Connection::INTERNAL_SERVER_ERROR);
                 conn.header("Content-Type", "text/text; charset=utf-8");
                 conn << "Script has no valid extension: '" << extension << "' !";
                 conn.flush();
                 syslog(LOG_ERR, "ScriptHandler: error executing script, unknown extension: %s", extension.c_str());
             }
-        }
-        catch (InputFailure iofail) {
+        } catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit
-        }
-        catch (Error &err) {
+        } catch (Error &err) {
             try {
                 conn.status(Connection::INTERNAL_SERVER_ERROR);
                 conn.header("Content-Type", "text/text; charset=utf-8");
                 conn << err;
                 conn.flush();
-            }
-            catch (InputFailure iofail) {
+            } catch (InputFailure iofail) {
                 return;
             }
+
             syslog(LOG_ERR, "FileHandler: internal error: %s", err.to_string().c_str());
             return;
         }
@@ -267,19 +261,18 @@ namespace shttps {
     //=========================================================================
 
 
-    void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd)
-    {
+    void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
 
         std::string docroot;
         std::string route;
+
         if (hd == nullptr) {
             docroot = ".";
             route = "/";
-        }
-        else {
-            std::pair<std::string, std::string> tmp = *((std::pair<std::string, std::string> *)hd);
+        } else {
+            std::pair<std::string, std::string> tmp = *((std::pair<std::string, std::string> *) hd);
             docroot = *((std::string *) hd);
             route = tmp.first;
             docroot = tmp.second;
@@ -291,9 +284,7 @@ namespace shttps {
             if (uri[0] != '/') uri = "/" + uri;
         }
 
-
         std::string infile = docroot + uri;
-
 
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
             conn.status(Connection::NOT_FOUND);
@@ -305,12 +296,12 @@ namespace shttps {
         }
 
         struct stat s;
+
         if (stat(infile.c_str(), &s) == 0) {
             if (!(s.st_mode & S_IFREG)) { // we have not a regular file, do nothing!
                 return;
             }
-        }
-        else {
+        } else {
             return;
         }
 
@@ -318,23 +309,22 @@ namespace shttps {
 
         size_t extpos = uri.find_last_of('.');
         std::string extension;
+
         if (extpos != std::string::npos) {
             extension = uri.substr(extpos + 1);
         }
+
         try {
             if ((extension == "html") && (mime.first == "text/html")) {
                 conn.header("Content-Type", "text/html; charset=utf-8");
                 conn.sendFile(infile);
-            }
-            else if (extension == "js") {
+            } else if (extension == "js") {
                 conn.header("Content-Type", "application/javascript; charset=utf-8");
                 conn.sendFile(infile);
-            }
-            else if (extension == "css") {
+            } else if (extension == "css") {
                 conn.header("Content-Type", "text/css; charset=utf-8");
                 conn.sendFile(infile);
-            }
-            else if (extension == "lua") { // pure lua
+            } else if (extension == "lua") { // pure lua
                 conn.setBuffer();
                 std::ifstream inf;
                 inf.open(infile);//open the input file
@@ -348,24 +338,23 @@ namespace shttps {
                         conn.flush();
                         return;
                     }
-                }
-                catch (Error &err) {
+                } catch (Error &err) {
                     try {
                         conn.status(Connection::INTERNAL_SERVER_ERROR);
                         conn.header("Content-Type", "text/text; charset=utf-8");
                         conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                         conn.flush();
-                    }
-                    catch(int i) {
+                    } catch (int i) {
                         syslog(LOG_ERR, "FileHandler: error executing lua chunk!");
                         return;
                     }
+
                     syslog(LOG_ERR, "FileHandler: error executing lua chunk: %s", err.to_string().c_str());
                     return;
                 }
+
                 conn.flush();
-            }
-            else if (extension == "elua") { // embedded lua <lua> .... </lua>
+            } else if (extension == "elua") { // embedded lua <lua> .... </lua>
                 conn.setBuffer();
                 std::ifstream inf;
                 inf.open(infile);//open the input file
@@ -376,6 +365,7 @@ namespace shttps {
 
                 size_t pos = 0;
                 size_t end = 0; // end of last lua code (including </lua>)
+
                 while ((pos = eluacode.find("<lua>", end)) != std::string::npos) {
                     std::string htmlcode = eluacode.substr(end, pos - end);
                     pos += 5;
@@ -383,11 +373,11 @@ namespace shttps {
                     if (!htmlcode.empty()) conn << htmlcode; // send html...
 
                     std::string luastr;
+
                     if ((end = eluacode.find("</lua>", pos)) != std::string::npos) { // we found end;
                         luastr = eluacode.substr(pos, end - pos);
                         end += 6;
-                    }
-                    else {
+                    } else {
                         luastr = eluacode.substr(pos);
                     }
 
@@ -396,48 +386,45 @@ namespace shttps {
                             conn.flush();
                             return;
                         }
-                    }
-                    catch (Error &err) {
+                    } catch (Error &err) {
                         try {
                             conn.status(Connection::INTERNAL_SERVER_ERROR);
                             conn.header("Content-Type", "text/text; charset=utf-8");
                             conn << "Lua Error:\r\n==========\r\n" << err << "\r\n";
                             conn.flush();
-                        }
-                        catch (InputFailure iofail) { }
+                        } catch (InputFailure iofail) {}
+
                         syslog(LOG_ERR, "FileHandler: error executing lua chunk: %s", err.to_string().c_str());
                         return;
                     }
                 }
+
                 std::string htmlcode = eluacode.substr(end);
                 conn << htmlcode;
                 conn.flush();
-            }
-            else {
+            } else {
                 conn.header("Content-Type", mime.first + "; " + mime.second);
                 conn.sendFile(infile);
             }
-        }
-        catch (InputFailure iofail) {
+        } catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit
-        }
-        catch (Error &err) {
+        } catch (Error &err) {
             try {
                 conn.status(Connection::INTERNAL_SERVER_ERROR);
                 conn.header("Content-Type", "text/text; charset=utf-8");
                 conn << err;
                 conn.flush();
-            }
-            catch (InputFailure iofail) { }
+            } catch (InputFailure iofail) {}
+
             syslog(LOG_ERR, "FileHandler: internal error: %s", err.to_string().c_str());
             return;
         }
     }
     //=========================================================================
 
-    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p, const std::string &loglevel_p)
-        : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p), _loglevel(loglevel_p)
-    {
+    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p,
+                   const std::string &loglevel_p) : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p),
+                                                    _loglevel(loglevel_p) {
         _ssl_port = -1;
 
         //
@@ -450,33 +437,27 @@ namespace shttps {
         _keep_alive_timeout = 20;
 
         int ll;
+
         if (_loglevel == "DEBUG") {
             ll = LOG_DEBUG;
-        }
-        else if (_loglevel == "INFO") {
+        } else if (_loglevel == "INFO") {
             ll = LOG_INFO;
-        }
-        else if (_loglevel == "NOTICE") {
+        } else if (_loglevel == "NOTICE") {
             ll = LOG_NOTICE;
-        }
-        else if (_loglevel == "WARN") {
+        } else if (_loglevel == "WARN") {
             ll = LOG_WARNING;
-        }
-        else if (_loglevel == "ERROR") {
+        } else if (_loglevel == "ERROR") {
             ll = LOG_ERR;
-        }
-        else if (_loglevel == "CRITICAL") {
+        } else if (_loglevel == "CRITICAL") {
             ll = LOG_CRIT;
-        }
-        else if (_loglevel == "ALERT") {
+        } else if (_loglevel == "ALERT") {
             ll = LOG_ALERT;
-        }
-        else if (_loglevel == "EMER") {
+        } else if (_loglevel == "EMER") {
             ll = LOG_EMERG;
-        }
-        else {
+        } else {
             ll = LOG_ERR;
         }
+
         openlog(loggername, LOG_CONS | LOG_PERROR, LOG_DAEMON);
         setlogmask(LOG_UPTO(ll));
 
@@ -487,7 +468,6 @@ namespace shttps {
         if (!userid_str.empty()) {
             if (getuid() == 0) { // must be root to setuid() !!
                 struct passwd pwd, *res;
-
                 size_t buffer_len = sysconf(_SC_GETPW_R_SIZE_MAX) * sizeof(char);
                 auto buffer = make_unique<char[]>(buffer_len);
                 getpwnam_r(userid_str.c_str(), &pwd, buffer.get(), buffer_len, &res);
@@ -497,28 +477,24 @@ namespace shttps {
                         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
                         syslog(LOG_INFO, "Server will run as user %s (%d)", userid_str.c_str(), getuid());
                         setlogmask(old_ll);
+
                         if (setgid(pwd.pw_gid) == 0) {
                             int old_ll = setlogmask(LOG_MASK(LOG_INFO));
                             syslog(LOG_INFO, "Server will run with group-id %d", getgid());
                             setlogmask(old_ll);
-                        }
-                        else {
+                        } else {
                             syslog(LOG_ERR, "setgid() failed! Reason: %m");
                         }
-                    }
-                    else {
+                    } else {
                         syslog(LOG_ERR, "setgid() failed! Reason: %m");
                     }
-                }
-                else {
+                } else {
                     syslog(LOG_ERR, "Could not get uid of user %s: you must start Sipi as root", userid_str.c_str());
                 }
-            }
-            else {
+            } else {
                 syslog(LOG_ERR, "Could not get uid of user %s: you must start Sipi as root", userid_str.c_str());
             }
         }
-
 
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -534,6 +510,7 @@ namespace shttps {
     //=========================================================================
 
 #ifdef SHTTPS_ENABLE_SSL
+
     void Server::jwt_secret(const std::string &jwt_secret_p) {
         _jwt_secret = jwt_secret_p;
         auto secret_size = _jwt_secret.size();
@@ -548,9 +525,7 @@ namespace shttps {
 #endif
 
 
-
-    RequestHandler Server::getHandler(Connection &conn, void** handler_data_p)
-    {
+    RequestHandler Server::getHandler(Connection &conn, void **handler_data_p) {
         std::map<std::string, RequestHandler>::reverse_iterator item;
 
         size_t max_match_len = 0;
@@ -559,6 +534,7 @@ namespace shttps {
 
         for (item = handler[conn.method()].rbegin(); item != handler[conn.method()].rend(); ++item) {
             size_t len = conn.uri().length() < item->first.length() ? conn.uri().length() : item->first.length();
+
             if (item->first == conn.uri().substr(0, len)) {
                 if (len > max_match_len) {
                     max_match_len = len;
@@ -567,6 +543,7 @@ namespace shttps {
                 }
             }
         }
+
         if (max_match_len > 0) {
             *handler_data_p = handler_data[conn.method()][matching_path];
             return matching_handler;
@@ -581,12 +558,14 @@ namespace shttps {
         struct sockaddr_in serv_addr;
 
         sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+
         if (sockfd < 0) {
             syslog(LOG_ERR, "Could not create socket: %m");
             exit(1);
         }
 
         int optval = 1;
+
         if (::setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval) < 0) {
             syslog(LOG_ERR, "Could not set socket option: %m");
             exit(1);
@@ -607,8 +586,9 @@ namespace shttps {
 
         if (::listen(sockfd, SOMAXCONN) < 0) {
             syslog(LOG_ERR, "Could not listen on socket: %m");
-            exit (1);
+            exit(1);
         }
+
         return sockfd;
     }
     //=========================================================================
@@ -624,7 +604,6 @@ namespace shttps {
     static void idle_remove(pthread_t tid_p) {
         int index = 0;
         bool in_idle = false;
-
         std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
 
         for (auto tid : idle_thread_ids) {
@@ -632,6 +611,7 @@ namespace shttps {
                 in_idle = true;
                 break;
             }
+
             index++;
         }
 
@@ -644,25 +624,28 @@ namespace shttps {
     }
     //=========================================================================
 
-    static int close_socket(TData* tdata) {
+    static int close_socket(TData *tdata) {
 
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != nullptr) {
             int sstat;
             while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
             if (sstat < 0) {
-                syslog(LOG_WARNING, "SSL socket error: shutdown of socket failed at [%s: %d] with error code %d", __file__, __LINE__, SSL_get_error(tdata->cSSL, sstat));
+                syslog(LOG_WARNING, "SSL socket error: shutdown of socket failed at [%s: %d] with error code %d",
+                       __file__, __LINE__, SSL_get_error(tdata->cSSL, sstat));
             }
             SSL_free(tdata->cSSL);
             tdata->cSSL = nullptr;
         }
 #endif
         if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
-            syslog(LOG_DEBUG, "Debug: shutting down socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: shutting down socket at [%s: %d]: %m failed (client terminated already?)",
+                   __file__, __LINE__);
         }
 
         if (close(tdata->sock) == -1) {
-            syslog(LOG_DEBUG, "Debug: closing socket at [%s: %d]: %m failed (client terminated already?)", __file__, __LINE__);
+            syslog(LOG_DEBUG, "Debug: closing socket at [%s: %d]: %m failed (client terminated already?)", __file__,
+                   __LINE__);
         }
 
         return 0;
@@ -687,8 +670,7 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
         if (tdata->cSSL != nullptr) {
             sockstream = make_unique<SockStream>(tdata->cSSL);
-        }
-        else {
+        } else {
             sockstream = make_unique<SockStream>(tdata->sock);
         }
 #else
@@ -703,8 +685,7 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != nullptr) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
-            }
-            else {
+            } else {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
             }
 #else
@@ -717,16 +698,19 @@ namespace shttps {
             // tstatus is CONTINUE. Let's check if we got in the meantime a CLOSE message from the main...
             //
             pollfd readfds[2];
-            readfds[0] = { tdata->commpipe_read, POLLIN, 0 };
-            readfds[1] = { tdata->sock, POLLIN, 0 };
+            readfds[0] = {tdata->commpipe_read, POLLIN, 0};
+            readfds[1] = {tdata->sock, POLLIN, 0};
+
             if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
                 syslog(LOG_ERR, "Non-blocking poll failed at [%s: %d]", __file__, __LINE__);
                 tstatus = CLOSE;
                 break; // accept returned something strange – probably we want to shutdown the server
             }
+
             if (readfds[1].revents & POLLIN) {
                 continue;
             }
+
             if (readfds[0].revents & POLLIN) { // something on the pipe from the main
                 //
                 // we got a message on the communication channel from the main thread...
@@ -738,8 +722,7 @@ namespace shttps {
                 keep_alive = -1;
                 if (readfds[1].revents & POLLIN) { // but we already have data...
                     continue; // continue loop
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -751,8 +734,7 @@ namespace shttps {
                 keep_alive = -1;
                 if (readfds[1].revents & POLLIN) { // but we already have data...
                     continue; // we have data, we will close after the next round...
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -765,14 +747,15 @@ namespace shttps {
             //
             // use poll to wait...
             //
-            readfds[0] = { tdata->commpipe_read, POLLIN, 0};
-            readfds[1] = { tdata->sock, POLLIN, 0};
+            readfds[0] = {tdata->commpipe_read, POLLIN, 0};
+            readfds[1] = {tdata->sock, POLLIN, 0};
             if (poll(readfds, 2, keep_alive * 1000) < 0) {
                 syslog(LOG_ERR, "Blocking poll failed at [%s: %d]", __file__, __LINE__);
                 tstatus = CLOSE;
                 idle_remove(my_tid);
                 break; // accept returned something strange – probably we want to shutdown the server
             }
+
             if (!(readfds[0].revents | readfds[1].revents)) { // we got a timeout from poll
                 //
                 // timeout from poll
@@ -781,6 +764,7 @@ namespace shttps {
                 idle_remove(my_tid);
                 break;
             }
+
             if (readfds[0].revents & POLLIN) { // something on the pipe...
                 //
                 // we got a message on the communication channel from the main thread...
@@ -790,12 +774,13 @@ namespace shttps {
                     idle_remove(my_tid);
                     break;
                 }
+
                 keep_alive = -1;
                 idle_remove(my_tid);
+
                 if (readfds[1].revents & POLLIN) { // but we already have data...
                     continue; // continue loop
-                }
-                else {
+                } else {
                     break;
                 }
             }
@@ -812,11 +797,10 @@ namespace shttps {
 
         int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
         if (compipe_write > 0) {
-            if (close (compipe_write) == -1) {
+            if (close(compipe_write) == -1) {
                 syslog(LOG_ERR, "Commpipe_write close error at [%s: %d]: %m", __file__, __LINE__);
             }
-        }
-        else {
+        } else {
             syslog(LOG_DEBUG, "Thread to stop does not exist");
         }
 
@@ -828,8 +812,7 @@ namespace shttps {
     //=========================================================================
 
 
-    void Server::run()
-    {
+    void Server::run() {
         // Start a thread just to catch signals sent to the server process.
         pthread_t sighandler_thread;
         sigset_t set;
@@ -853,7 +836,7 @@ namespace shttps {
         //
         // now we are adding the lua routes
         //
-        for (auto & route : _lua_routes) {
+        for (auto &route : _lua_routes) {
             route.script = _scriptdir + "/" + route.script;
             addRoute(route.method, route.route, ScriptHandler, &(route.script));
 
@@ -881,14 +864,16 @@ namespace shttps {
 
         while (running) {
             int sock;
-
             pollfd readfds[3];
             int n_readfds = 0;
-            readfds[0] = { _sockfd, POLLIN, 0}; n_readfds++;
-            readfds[1] = {stoppipe[0], POLLIN, 0}; n_readfds++;
+            readfds[0] = {_sockfd, POLLIN, 0};
+            n_readfds++;
+            readfds[1] = {stoppipe[0], POLLIN, 0};
+            n_readfds++;
 
             if (_ssl_port > 0) {
-                readfds[2] = {_ssl_sockfd, POLLIN, 0}; n_readfds++;
+                readfds[2] = {_ssl_sockfd, POLLIN, 0};
+                n_readfds++;
             }
 
             if (poll(readfds, n_readfds, -1) < 0) {
@@ -948,7 +933,7 @@ namespace shttps {
 
             // Construct a TData for the thread that will handle the request. The TData will
             // be deleted by process_request() when it completes.
-            TData* thread_data = new TData();
+            TData *thread_data = new TData();
             thread_data->sock = newsockfs;
             thread_data->peer_ip = client_ip;
             thread_data->peer_port = peer_port;
@@ -966,7 +951,8 @@ namespace shttps {
                     }
                     SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
                     if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
-                        std::string msg = "OpenSSL error: SSL_CTX_use_certificate_file(" + _ssl_certificate + ") failed";
+                        std::string msg =
+                                "OpenSSL error: SSL_CTX_use_certificate_file(" + _ssl_certificate + ") failed";
                         syslog(LOG_ERR, "%s", msg.c_str());
                         throw SSLError(__file__, __LINE__, msg);
                     }
@@ -992,8 +978,7 @@ namespace shttps {
                     }
 
                     //Here is the SSL Accept portion.  Now all reads and writes must use SS
-                    int suc;
-                    if ((suc = SSL_accept(cSSL)) <= 0) {
+                    if ((SSL_accept(cSSL)) <= 0) {
                         std::string msg = "OpenSSL error: SSL_accept() failed";
                         syslog(LOG_ERR, "%s", msg.c_str());
                         throw SSLError(__file__, __LINE__, msg);
@@ -1001,10 +986,14 @@ namespace shttps {
                 } catch (SSLError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
                     int sstat;
+
                     while ((sstat = SSL_shutdown(cSSL)) == 0);
+
                     if (sstat < 0) {
-                        syslog(LOG_WARNING, "SSL socket error: shutdown (2) of socket failed: %d", SSL_get_error(cSSL, sstat));
+                        syslog(LOG_WARNING, "SSL socket error: shutdown (2) of socket failed: %d",
+                               SSL_get_error(cSSL, sstat));
                     }
+
                     SSL_free(cSSL);
                     cSSL = nullptr;
                 }
@@ -1054,11 +1043,11 @@ namespace shttps {
                 running = false;
                 break;
             }
+
 #ifdef SHTTPS_ENABLE_SSL
             if (thread_data->cSSL != nullptr) {
                 add_thread(thread_id, commpipe[0], thread_data->sock, thread_data->cSSL);
-            }
-            else {
+            } else {
                 add_thread(thread_id, commpipe[0], thread_data->sock);
             }
 #else
@@ -1099,20 +1088,21 @@ namespace shttps {
         ::sem_close(_semaphore);
 
         // std::cerr << "signal_result is " << signal_result << std::endl;
-   }
+    }
     //=========================================================================
 
 
-    void Server::addRoute(Connection::HttpMethod method_p, const std::string &path_p, RequestHandler handler_p, void *handler_data_p)
-    {
+    void Server::addRoute(Connection::HttpMethod method_p, const std::string &path_p, RequestHandler handler_p,
+                          void *handler_data_p) {
         handler[method_p][path_p] = handler_p;
         handler_data[method_p][path_p] = handler_data_p;
     }
     //=========================================================================
 
 
-    ThreadStatus Server::processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure, int &keep_alive)
-    {
+    ThreadStatus
+    Server::processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure,
+                           int &keep_alive) {
         if (_tmpdir.empty()) {
             syslog(LOG_WARNING, "_tmpdir is empty");
             throw Error(__file__, __LINE__, "_tmpdir is empty");
@@ -1132,12 +1122,10 @@ namespace shttps {
             conn.peer_port(peer_port);
             conn.secure(secure);
 
-
             if (conn.resetConnection()) {
                 if (conn.keepAlive()) {
                     return CONTINUE;
-                }
-                else {
+                } else {
                     return CLOSE;
                 }
             }
@@ -1146,12 +1134,15 @@ namespace shttps {
             // Setting up the Lua server
             //
             LuaServer luaserver(conn, _initscript, true);
-            luaserver.setLuaPath(_scriptdir + "/?.lua"); // add the script dir to the standard search path fpr lua packages
+            luaserver.setLuaPath(
+                    _scriptdir + "/?.lua"); // add the script dir to the standard search path fpr lua packages
+
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
             }
 
             void *hd = nullptr;
+
             try {
                 RequestHandler handler = getHandler(conn, &hd);
                 handler(conn, luaserver, _user_data, hd);
@@ -1169,13 +1160,12 @@ namespace shttps {
             } else {
                 return CLOSE;
             }
-        }
-        catch (InputFailure iofail) { // "error" is thrown, if the socket was closed from the main thread...
+        } catch (InputFailure iofail) { // "error" is thrown, if the socket was closed from the main thread...
             syslog(LOG_DEBUG, "Socket connection: timeout or socket closed from main");
             return CLOSE;
-        }
-        catch(Error &err) {
+        } catch (Error &err) {
             syslog(LOG_WARNING, "Internal server error: %s", err.to_string().c_str());
+
             try {
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
@@ -1186,6 +1176,7 @@ namespace shttps {
             } catch (InputFailure iofail) {
                 syslog(LOG_DEBUG, "Possibly socket closed by peer");
             }
+
             return CLOSE;
         }
     }
@@ -1203,12 +1194,14 @@ namespace shttps {
     //=========================================================================
 
 #ifdef SHTTPS_ENABLE_SSL
+
     void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL) {
         std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 
         GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
         thread_ids[thread_id_p] = sid;
     }
+
 #endif
     //=========================================================================
 
@@ -1217,7 +1210,7 @@ namespace shttps {
 
         try {
             return thread_ids.at(thread_id_p).sid;
-        } catch (const std::out_of_range& oor) {
+        } catch (const std::out_of_range &oor) {
             return -1;
         }
     }
@@ -1228,8 +1221,7 @@ namespace shttps {
 
         try {
             return thread_ids.at(thread_id_p).commpipe_write;
-        }
-        catch (const std::out_of_range& oor) {
+        } catch (const std::out_of_range &oor) {
             return -1;
         }
     }
@@ -1237,13 +1229,13 @@ namespace shttps {
 
 
 #ifdef SHTTPS_ENABLE_SSL
+
     SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
         std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
 
         try {
             return thread_ids.at(thread_id_p).ssl_sid;
-        }
-        catch (const std::out_of_range& oor) {
+        } catch (const std::out_of_range &oor) {
             return nullptr;
         }
     }

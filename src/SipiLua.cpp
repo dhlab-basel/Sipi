@@ -158,7 +158,8 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static void add_one_cache_file(int index, const std::string &canonical, const SipiCache::CacheRecord &cr, void *userdata) {
+    static void
+    add_one_cache_file(int index, const std::string &canonical, const SipiCache::CacheRecord &cr, void *userdata) {
         lua_State *L = (lua_State *) userdata;
 
         lua_pushinteger(L, index);
@@ -216,17 +217,13 @@ namespace Sipi {
         lua_createtable(L, 0, 0); // table1
         if (sortmethod == "AT_ASC") {
             cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_ATIME_ASC);
-        }
-        else if (sortmethod == "AT_DESC") {
+        } else if (sortmethod == "AT_DESC") {
             cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_ATIME_DESC);
-        }
-        else if (sortmethod == "FS_ASC") {
+        } else if (sortmethod == "FS_ASC") {
             cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_FSIZE_ASC);
-        }
-        else if (sortmethod == "FS_DESC") {
+        } else if (sortmethod == "FS_DESC") {
             cache->loop(add_one_cache_file, (void *) L, SipiCache::SortMethod::SORT_FSIZE_DESC);
-        }
-        else {
+        } else {
             cache->loop(add_one_cache_file, (void *) L);
         }
 
@@ -250,12 +247,12 @@ namespace Sipi {
         }
 
         std::string canonical;
+
         if (top == 1) {
             canonical = std::string(lua_tostring(L, 1));
             lua_pop(L, 1);
             lua_pushboolean(L, cache->remove(canonical));
-        }
-        else {
+        } else {
             lua_pop(L, top);
             lua_pushboolean(L, false);
         }
@@ -282,17 +279,15 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static const luaL_Reg cache_methods[] = {
-            {"size", lua_cache_size},
-            {"max_size", lua_cache_max_size},
-            {"nfiles", lua_cache_nfiles},
-            {"max_nfiles", lua_cache_max_nfiles},
-            {"path", lua_cache_path},
-            {"filelist", lua_cache_filelist},
-            {"delete", lua_delete_cache_file},
-            {"purge", lua_purge_cache},
-            {0,     0}
-    };
+    static const luaL_Reg cache_methods[] = {{"size",       lua_cache_size},
+                                             {"max_size",   lua_cache_max_size},
+                                             {"nfiles",     lua_cache_nfiles},
+                                             {"max_nfiles", lua_cache_max_nfiles},
+                                             {"path",       lua_cache_path},
+                                             {"filelist",   lua_cache_filelist},
+                                             {"delete",     lua_delete_cache_file},
+                                             {"purge",      lua_purge_cache},
+                                             {0,            0}};
     //=========================================================================
 
 
@@ -333,123 +328,115 @@ namespace Sipi {
      */
     static int SImage_new(lua_State *L) {
         int top = lua_gettop(L);
+
         if (top < 1) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.new(): No filename given");
             return 2;
         }
+
         if (!lua_isstring(L, 1)) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.new(): filename must be string");
             return 2;
         }
+
         const char *imgpath = lua_tostring(L, 1);
 
         std::shared_ptr<SipiRegion> region;
         std::shared_ptr<SipiSize> size;
         std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
+
         if (top == 2) {
             if (lua_istable(L, 2)) {
                 //lua_pop(L,1); // remove filename from stack
-            }
-            else {
+            } else {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 lua_pushstring(L, "SipiImage.new(): Second parameter must be table");
                 return 2;
             }
+
             lua_pushnil(L);
+
             while (lua_next(L, 2) != 0) {
                 if (lua_isstring(L, -2)) {
                     const char *param = lua_tostring(L, -2);
+
                     if (strcmp(param, "region") == 0) {
                         if (lua_isstring(L, -1)) {
                             region = std::make_shared<SipiRegion>(lua_tostring(L, -1));
-                        }
-                        else {
+                        } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushboolean(L, false);
                             lua_pushstring(L, "SipiImage.new(): Error in region parameter");
                             return 2;
                         }
-                    }
-                    else if (strcmp(param, "size") == 0) {
+                    } else if (strcmp(param, "size") == 0) {
                         if (lua_isstring(L, -1)) {
                             size = std::make_shared<SipiSize>(lua_tostring(L, -1));
-                        }
-                        else {
+                        } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushboolean(L, false);
                             lua_pushstring(L, "SipiImage.new(): Error in size parameter");
                             return 2;
                         }
-                    }
-                    else if (strcmp(param, "reduce") == 0) {
+                    } else if (strcmp(param, "reduce") == 0) {
                         if (lua_isnumber(L, -1)) {
                             size = std::make_shared<SipiSize>(static_cast<int>(lua_tointeger(L, -1)));
-                        }
-                        else {
+                        } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushboolean(L, false);
                             lua_pushstring(L, "SipiImage.new(): Error in reduce parameter");
                             return 2;
                         }
-                    }
-                    else if (strcmp(param, "original") == 0) {
+                    } else if (strcmp(param, "original") == 0) {
                         if (lua_isstring(L, -1)) {
                             const char *tmpstr = lua_tostring(L, -1);
                             original = tmpstr;
-                        }
-                        else {
+                        } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushboolean(L, false);
                             lua_pushstring(L, "SipiImage.new(): Error in original parameter");
                             return 2;
                         }
-                    }
-                    else if (strcmp(param, "hash") == 0) {
+                    } else if (strcmp(param, "hash") == 0) {
                         if (lua_isstring(L, -1)) {
                             const char *tmpstr = lua_tostring(L, -1);
                             std::string hashstr = tmpstr;
                             if (hashstr == "md5") {
                                 htype = shttps::HashType::md5;
-                            }
-                            else if (hashstr == "sha1") {
+                            } else if (hashstr == "sha1") {
                                 htype = shttps::HashType::sha1;
-                            }
-                            else if (hashstr == "sha256") {
+                            } else if (hashstr == "sha256") {
                                 htype = shttps::HashType::sha256;
-                            }
-                            else if (hashstr == "sha384") {
+                            } else if (hashstr == "sha384") {
                                 htype = shttps::HashType::sha384;
-                            }
-                            else if (hashstr == "sha512") {
+                            } else if (hashstr == "sha512") {
                                 htype = shttps::HashType::sha512;
-                            }
-                            else {
+                            } else {
                                 lua_pop(L, lua_gettop(L));
                                 lua_pushboolean(L, false);
                                 lua_pushstring(L, "SipiImage.new(): Error in hash type");
                                 return 2;
                             }
-                        }
-                        else {
+                        } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushboolean(L, false);
                             lua_pushstring(L, "SipiImage.new(): Error in hash parameter");
                             return 2;
                         }
-                    }
-                    else {
+                    } else {
                         lua_pop(L, lua_gettop(L));
                         lua_pushboolean(L, false);
                         lua_pushstring(L, "SipiImage.new(): Error in parameter table (unknown parameter)");
                         return 2;
                     }
                 }
+
                 /* removes value; keeps key for next iteration */
                 lua_pop(L, 1);
             }
@@ -459,15 +446,14 @@ namespace Sipi {
         SImage *img = pushSImage(L);
         img->image = new SipiImage();
         img->filename = new std::string(imgpath);
+
         try {
             if (!original.empty()) {
                 img->image->readOriginal(imgpath, region, size, original, htype);
-            }
-            else {
+            } else {
                 img->image->read(imgpath, region, size);
             }
-        }
-        catch(SipiImageError &err) {
+        } catch (SipiImageError &err) {
             lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
             std::stringstream ss;
@@ -484,6 +470,7 @@ namespace Sipi {
     static int SImage_dims(lua_State *L) {
         size_t nx, ny;
         int top = lua_gettop(L);
+
         if (top != 1) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
@@ -496,8 +483,7 @@ namespace Sipi {
             SipiImage img;
             try {
                 img.getDim(imgpath, nx, ny);
-            }
-            catch (SipiImageError &err) {
+            } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 std::stringstream ss;
@@ -505,8 +491,7 @@ namespace Sipi {
                 lua_pushstring(L, ss.str().c_str());
                 return 2;
             }
-        }
-        else {
+        } else {
             SImage *img = checkSImage(L, 1);
             if (img == nullptr) {
                 lua_pop(L, top);
@@ -555,17 +540,18 @@ namespace Sipi {
         std::string *path = img->filename;
 
         // get the indicated mimetype and the original filename
-        const char* given_mimetype = lua_tostring(L, 2);
-        const char* given_filename = lua_tostring(L, 3);
+        const char *given_mimetype = lua_tostring(L, 2);
+        const char *given_filename = lua_tostring(L, 3);
 
         lua_pop(L, top); // clear stack
 
         // do the consistency check
+
         bool check;
+
         try {
             check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
-        }
-        catch (SipiImageError &err) {
+        } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "SipiImage.mimetype_consistency(): " << err;
@@ -586,22 +572,22 @@ namespace Sipi {
      */
     static int SImage_crop(lua_State *L) {
         SImage *img = checkSImage(L, 1);
-
         int top = lua_gettop(L);
+
         if (!lua_isstring(L, 2)) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.crop(): Incorrect number of arguments");
             return 2;
         }
+
         const char *regionstr = lua_tostring(L, 2);
         lua_pop(L, top);
-
         std::shared_ptr<SipiRegion> reg;
+
         try {
             reg = std::make_shared<SipiRegion>(regionstr);
-        }
-        catch (SipiError &err) {
+        } catch (SipiError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "SipiImage.crop(): " << err;
@@ -623,17 +609,17 @@ namespace Sipi {
     */
     static int SImage_scale(lua_State *L) {
         SImage *img = checkSImage(L, 1);
-
         int top = lua_gettop(L);
+
         if (!lua_isstring(L, 2)) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.scale(): Incorrect number of arguments");
             return 2;
         }
+
         const char *sizestr = lua_tostring(L, 2);
         lua_pop(L, top);
-
         size_t nx, ny;
 
         try {
@@ -641,8 +627,7 @@ namespace Sipi {
             int r;
             bool ro;
             size.get_size(img->image->getNx(), img->image->getNy(), nx, ny, r, ro);
-        }
-        catch (SipiError &err) {
+        } catch (SipiError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "SipiImage.scale(): " << err;
@@ -664,12 +649,14 @@ namespace Sipi {
     */
     static int SImage_rotate(lua_State *L) {
         int top = lua_gettop(L);
+
         if (top != 2) {
             lua_pop(L, top);
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.rotate(): Incorrect number of arguments");
             return 2;
         }
+
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isnumber(L, 2)) {
@@ -677,6 +664,7 @@ namespace Sipi {
             lua_pushstring(L, "SipiImage.rotate(): Incorrect  arguments");
             return 2;
         }
+
         float angle = lua_tonumber(L, 2);
         lua_pop(L, top);
 
@@ -703,13 +691,13 @@ namespace Sipi {
             lua_pushstring(L, "SipiImage.watermark(): Incorrect arguments");
             return 2;
         }
+
         const char *watermark = lua_tostring(L, 2);
         lua_pop(L, top);
 
         try {
             img->image->add_watermark(watermark);
-        }
-        catch(SipiImageError &err) {
+        } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "SipiImage.watermark(): " << err;
@@ -739,6 +727,7 @@ namespace Sipi {
             lua_pushstring(L, "SipiImage.write(): Incorrect arguments");
             return 2;
         }
+
         const char *imgpath = lua_tostring(L, 2);
         lua_pop(L, 2);
 
@@ -748,34 +737,32 @@ namespace Sipi {
         std::string dirpath;
         std::string basename;
         std::string extension;
+
         if (pos_start == std::string::npos) {
             pos_start = 0;
-        }
-        else {
+        } else {
             dirpath = filename.substr(0, pos_start);
         }
+
         if (pos_ext != std::string::npos) {
             basename = filename.substr(pos_start, pos_ext - pos_start);
             extension = filename.substr(pos_ext + 1);
-        }
-        else {
+        } else {
             basename = filename.substr(pos_start);
         }
-		std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+
+        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
         std::string ftype;
+
         if ((extension == "tif") || (extension == "tiff")) {
             ftype = "tif";
-        }
-        else if ((extension == "jpg") || (extension == "jpeg")) {
+        } else if ((extension == "jpg") || (extension == "jpeg")) {
             ftype = "jpg";
-        }
-        else if (extension == "png") {
+        } else if (extension == "png") {
             ftype = "png";
-        }
-        else if ((extension == "j2k") || (extension == "jpx") || (extension == "jp2")) {
+        } else if ((extension == "j2k") || (extension == "jpx") || (extension == "jp2")) {
             ftype = "jpx";
-        }
-        else {
+        } else {
             lua_pushstring(L, "SipiImage.write(): unsupported file format");
             return lua_error(L);
         }
@@ -787,19 +774,16 @@ namespace Sipi {
             img->image->connection(conn);
             try {
                 img->image->write(ftype, "HTTP");
-            }
-            catch (SipiImageError &err) {
+            } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 lua_pushstring(L, err.to_string().c_str());
                 return 2;
             }
-        }
-        else {
+        } else {
             try {
                 img->image->write(ftype, imgpath);
-            }
-            catch (SipiImageError &err) {
+            } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 lua_pushstring(L, err.to_string().c_str());
@@ -828,25 +812,23 @@ namespace Sipi {
             lua_pushstring(L, "SipiImage.send(): Incorrect arguments");
             return 2;
         }
+
         const char *ext = lua_tostring(L, 2);
         lua_pop(L, top);
 
         std::string extension = ext;
         std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
         std::string ftype;
+
         if ((extension == "tif") || (extension == "tiff")) {
             ftype = "tif";
-        }
-        else if ((extension == "jpg") || (extension == "jpeg")) {
+        } else if ((extension == "jpg") || (extension == "jpeg")) {
             ftype = "jpg";
-        }
-        else if (extension == "png") {
+        } else if (extension == "png") {
             ftype = "png";
-        }
-        else if ((extension == "j2k") || (extension == "jpx")) {
+        } else if ((extension == "j2k") || (extension == "jpx")) {
             ftype = "jpx";
-        }
-        else {
+        } else {
             lua_pushstring(L, "SipiImage.send(): unsupported file format");
             return lua_error(L);
         }
@@ -856,10 +838,10 @@ namespace Sipi {
         lua_remove(L, -1); // remove from stack
 
         img->image->connection(conn);
+
         try {
             img->image->write(ftype, "HTTP");
-        }
-        catch (SipiImageError &err) {
+        } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             lua_pushstring(L, err.to_string().c_str());
             return 2;
@@ -870,21 +852,19 @@ namespace Sipi {
 
         return 2;
     }
-   //=========================================================================
+    //=========================================================================
 
     // map the method names exposed to Lua to the names defined here
-    static const luaL_Reg SImage_methods[] = {
-            {"new", SImage_new},
-            {"dims", SImage_dims}, // #myimg
-            {"write", SImage_write}, // myimg >> filename
-            {"send", SImage_send}, // myimg
-            {"crop", SImage_crop}, // myimg - "100,100,500,500"
-            {"scale", SImage_scale}, // myimg % "500,"
-            {"rotate", SImage_rotate}, // myimg * 45.0
-            {"watermark", SImage_watermark}, // myimg + "wm-path"
-            {"mimetype_consistency", SImage_mimetype_consistency},
-            {0,     0}
-    };
+    static const luaL_Reg SImage_methods[] = {{"new",                  SImage_new},
+                                              {"dims",                 SImage_dims}, // #myimg
+                                              {"write",                SImage_write}, // myimg >> filename
+                                              {"send",                 SImage_send}, // myimg
+                                              {"crop",                 SImage_crop}, // myimg - "100,100,500,500"
+                                              {"scale",                SImage_scale}, // myimg % "500,"
+                                              {"rotate",               SImage_rotate}, // myimg * 45.0
+                                              {"watermark",            SImage_watermark}, // myimg + "wm-path"
+                                              {"mimetype_consistency", SImage_mimetype_consistency},
+                                              {0,                      0}};
     //=========================================================================
 
     static int SImage_gc(lua_State *L) {
@@ -905,11 +885,9 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static const luaL_Reg SImage_meta[] = {
-            {"__gc",       SImage_gc},
-            {"__tostring", SImage_tostring},
-            {0,            0}
-    };
+    static const luaL_Reg SImage_meta[] = {{"__gc",       SImage_gc},
+                                           {"__tostring", SImage_tostring},
+                                           {0,            0}};
     //=========================================================================
 
 

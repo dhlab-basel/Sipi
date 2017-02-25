@@ -69,6 +69,7 @@ namespace Sipi {
         std::string jwt_secret;
         std::string adminuser;
         std::string password;
+
     public:
         SipiConf();
 

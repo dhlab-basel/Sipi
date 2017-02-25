@@ -34,13 +34,19 @@ namespace Sipi {
     class Template {
     private:
         std::string templatestr;
-        std::unordered_map<std::string,std::string> values;
+        std::unordered_map <std::string, std::string> values;
+
     public:
-        Template(std::string &template_p) {templatestr = template_p; };
+        Template(std::string &template_p) { templatestr = template_p; };
+
         void value(const std::string &name, const std::string &sval);
+
         void value(const std::string &name, const char *cval);
+
         void value(const std::string &name, int ival);
+
         void value(const std::string &name, float fval);
+
         std::string get(void);
     };
 

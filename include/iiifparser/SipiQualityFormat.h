@@ -29,16 +29,29 @@
 namespace Sipi {
     class SipiQualityFormat {
     public:
-        typedef enum {DEFAULT, COLOR, GRAY, BITONAL} QualityType;
-        typedef enum {UNSUPPORTED, JPG, TIF, PNG, GIF, JP2, PDF, WEBP} FormatType;
+        typedef enum {
+            DEFAULT, COLOR, GRAY, BITONAL
+        } QualityType;
+        typedef enum {
+            UNSUPPORTED, JPG, TIF, PNG, GIF, JP2, PDF, WEBP
+        } FormatType;
+
     private:
         QualityType quality_type;
         FormatType format_type;
+
     public:
-        inline SipiQualityFormat() {quality_type = SipiQualityFormat::DEFAULT; format_type = SipiQualityFormat::JPG;}
+        inline SipiQualityFormat() {
+            quality_type = SipiQualityFormat::DEFAULT;
+            format_type = SipiQualityFormat::JPG;
+        }
+
         SipiQualityFormat(std::string str);
-        friend std::ostream &operator<< (std::ostream &lhs, const SipiQualityFormat &rhs);
+
+        friend std::ostream &operator<<(std::ostream &lhs, const SipiQualityFormat &rhs);
+
         inline QualityType quality() { return quality_type; };
+
         inline FormatType format() { return format_type; };
     };
 

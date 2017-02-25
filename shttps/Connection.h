@@ -39,70 +39,73 @@ namespace shttps {
 
     extern const size_t max_headerline_len;
 
-    typedef enum { INPUT_READ_FAIL = -1, OUTPUT_WRITE_FAIL = -2 } InputFailure;
+    typedef enum {
+        INPUT_READ_FAIL = -1, OUTPUT_WRITE_FAIL = -2
+    } InputFailure;
 
     class Server;
 
-   /*!
-    * Function which splits a string at the first occurrence of a given character
-    *
-    * \params[in] str String to be split
-    * \param[in] c The character which indicates the split position in the string
-    *
-    * \returns A pair of strings
-    */
-    extern std::pair<std::string,std::string> strsplit(const std::string &str, const char c);
+    /*!
+     * Function which splits a string at the first occurrence of a given character
+     *
+     * \params[in] str String to be split
+     * \param[in] c The character which indicates the split position in the string
+     *
+     * \returns A pair of strings
+     */
+    extern std::pair<std::string, std::string> strsplit(const std::string &str, const char c);
 
-   /*!
-    * Function to read a line from the HTTP stream which is terminated by either
-    * "\n" or "\r\n"
-    *
-    * \param[in] is Input stream (HTTP socket stream)
-    * \param[out] t String containing the line
-    *
-    * \returns Number of bytes read
-    */
-    extern size_t safeGetline(std::istream& is, std::string& t, size_t max_n = 0);
+    /*!
+     * Function to read a line from the HTTP stream which is terminated by either
+     * "\n" or "\r\n"
+     *
+     * \param[in] is Input stream (HTTP socket stream)
+     * \param[out] t String containing the line
+     *
+     * \returns Number of bytes read
+     */
+    extern size_t safeGetline(std::istream &is, std::string &t, size_t max_n = 0);
 
-   /*!
-    * Function to parse the options of a HTTP header line
-    *
-    * \param[in] options Options-part of the string
-    * \param[in] form_encoded Has to be set to true, if it is form_encoded data [default: false]
-    * \param[in] sep Separator character between options [default: ';']
-    *
-    * \returns map of options (all names converted to lower case!)
-    */
-    extern std::unordered_map<std::string,std::string> parse_header_options(const std::string& options, bool form_encoded = false, char sep = ';');
+    /*!
+     * Function to parse the options of a HTTP header line
+     *
+     * \param[in] options Options-part of the string
+     * \param[in] form_encoded Has to be set to true, if it is form_encoded data [default: false]
+     * \param[in] sep Separator character between options [default: ';']
+     *
+     * \returns map of options (all names converted to lower case!)
+     */
+    extern std::unordered_map<std::string, std::string>
+    parse_header_options(const std::string &options, bool form_encoded = false, char sep = ';');
 
-   /*!
-    * urldecode is used to decode an according to the HTTP-standard urlencoded string
-    *
-    * \param[in] src Encoded string
-    * \param[in] form_encoded Boolean which must be true if the string has been part
-    * of a form
-    *
-    * \returns Decoded string
-    */
+    /*!
+     * urldecode is used to decode an according to the HTTP-standard urlencoded string
+     *
+     * \param[in] src Encoded string
+     * \param[in] form_encoded Boolean which must be true if the string has been part
+     * of a form
+     *
+     * \returns Decoded string
+     */
     extern std::string urldecode(const std::string &src, bool form_encoded = false);
 
-   /*!
-    * Encode a string (value) acording the the rules of urlencoded strings
-    *
-    * \param[in] value String to be encoded
-    *
-    * \returns Encoded string
-    */
+    /*!
+     * Encode a string (value) acording the the rules of urlencoded strings
+     *
+     * \param[in] value String to be encoded
+     *
+     * \returns Encoded string
+     */
     extern std::string urlencode(const std::string &value);
 
-   /*!
-    * convert a string to all lowercase characters. The string should contain
-    * only ascii characters. The outcome of non-ascii characters is undefined.
-    *
-    * \param[in] str Input string with mixed case
-    *
-    * \returns String converted to all lower case
-    */
+    /*!
+     * convert a string to all lowercase characters. The string should contain
+     * only ascii characters. The outcome of non-ascii characters is undefined.
+     *
+     * \param[in] str Input string with mixed case
+     *
+     * \returns String converted to all lower case
+     */
     inline void asciitolower(std::string &str) { std::transform(str.begin(), str.end(), str.begin(), ::tolower); }
 
     /*!
@@ -149,15 +152,19 @@ namespace shttps {
         inline void name(const std::string &name_p) { _name = name_p; }
 
         inline std::string value(void) const { return _value; }
+
         inline void value(const std::string &value_p) { _value = value_p; }
 
         inline std::string path(void) const { return _path; }
+
         inline void path(const std::string &path_p) { _path = path_p; }
 
         inline std::string domain(void) const { return _domain; }
+
         inline void domain(const std::string &domain_p) { _domain = domain_p; }
 
         inline std::string expires(void) const { return _expires; }
+
         inline void expires(int seconds_from_now = 0) {
             char buf[100];
             time_t now = time(0);
@@ -166,35 +173,39 @@ namespace shttps {
             strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
             _expires = buf;
         }
+
         inline bool secure(void) const { return _secure; }
+
         inline void secure(bool secure_p) { _secure = secure_p; }
-        inline bool httpOnly(void) const {return _http_only; }
+
+        inline bool httpOnly(void) const { return _http_only; }
+
         inline void httpOnly(bool http_only_p) { _http_only = http_only_p; }
     };
 
-   /*!
-    * For each request, the server creates a new instance of this class which is then passed
-    * to the user supplied handler. It implements the basic features of the HTTP protocol
-    * version 1.1. It is able to cope with chunked transfer and offers methods for reading and writing
-    * from/to the http connection.
-    *
-    * An example of usage is as follows (within a request handler):
-    *
-    *     static void default_handler(Connection &conn, void *user_data)
-    *     {
-    *         conn.status(Connection::NOT_FOUND);
-    *         conn.header("Content-Type", "text/text");
-    *         conn.setBuffer();
-    *         conn << "No handler available" << Connection::flush_data;
-    *     }
-    *
-    */
+    /*!
+     * For each request, the server creates a new instance of this class which is then passed
+     * to the user supplied handler. It implements the basic features of the HTTP protocol
+     * version 1.1. It is able to cope with chunked transfer and offers methods for reading and writing
+     * from/to the http connection.
+     *
+     * An example of usage is as follows (within a request handler):
+     *
+     *     static void default_handler(Connection &conn, void *user_data)
+     *     {
+     *         conn.status(Connection::NOT_FOUND);
+     *         conn.header("Content-Type", "text/text");
+     *         conn.setBuffer();
+     *         conn << "No handler available" << Connection::flush_data;
+     *     }
+     *
+     */
     class Connection {
     public:
-       /*!
-        * \typedef HttpMethods
-        * Enumeration of the existing HTTP methods. Some rather exotic methods have been left out.
-        */
+        /*!
+         * \typedef HttpMethods
+         * Enumeration of the existing HTTP methods. Some rather exotic methods have been left out.
+         */
         typedef enum {
             OPTIONS = 0, //!< Allows a client to determine the options and/or requirements associated with a resource
             GET = 1,     //!< Retrieve whatever information (in the form of an entity) is identified by the Request-URI
@@ -207,10 +218,10 @@ namespace shttps {
             OTHER = 8    //!< Fallback....
         } HttpMethod;
 
-       /*!
-        * \typedef StatusCodes
-        * Enumeration of HTTP status codes.
-        */
+        /*!
+         * \typedef StatusCodes
+         * Enumeration of HTTP status codes.
+         */
         typedef enum {
             CONTINUE = 100,
             SWITCHING_PROTOCOLS = 101,
@@ -270,9 +281,9 @@ namespace shttps {
             UNKOWN_ERROR = 520
         } StatusCodes;
 
-       /*!
-        * \typedef Commands Used for flushing the output stream to the socket
-        */
+        /*!
+         * \typedef Commands Used for flushing the output stream to the socket
+         */
         typedef enum {
             flush_data
         } Commands;
@@ -298,12 +309,12 @@ namespace shttps {
         HttpMethod _method;       //!< request method
         std::string _host;        //!< host name that was used (for virtual hosts)
         std::string _uri;         //!< uri of the request
-        std::unordered_map<std::string,std::string> get_params;     //!< parsed query string
-        std::unordered_map<std::string,std::string> post_params;    //!< parsed post parameters
-        std::unordered_map<std::string,std::string> request_params; //!< parsed and merged get and post parameters
-        std::unordered_map<std::string,std::string> header_in;      //!< Input header fields
-        std::unordered_map<std::string,std::string> header_out;     //!< Output header fields
-        std::unordered_map<std::string,std::string> _cookies;       //!< Incoming cookies
+        std::unordered_map<std::string, std::string> get_params;     //!< parsed query string
+        std::unordered_map<std::string, std::string> post_params;    //!< parsed post parameters
+        std::unordered_map<std::string, std::string> request_params; //!< parsed and merged get and post parameters
+        std::unordered_map<std::string, std::string> header_in;      //!< Input header fields
+        std::unordered_map<std::string, std::string> header_out;     //!< Output header fields
+        std::unordered_map<std::string, std::string> _cookies;       //!< Incoming cookies
         std::vector<UploadedFile> _uploads;               //!< Upoaded files
         std::istream *ins;          //!< incoming data stream
         std::ostream *os;           //!< outgoing data stream
@@ -326,116 +337,117 @@ namespace shttps {
         size_t outbuf_nbytes;       //!< number of bytes used so far in output buffer
         bool _reset_connection;     //!< true, if connection should be reset (e.g. cors)
 
-       /*!
-        * Read, process and parse the HTTP request header
-        */
-        void process_header ();
+        /*!
+         * Read, process and parse the HTTP request header
+         */
+        void process_header();
 
-       /*
-        * Add the given data to the output buffer. If necessary increase its size
-        *
-        * \param[in] buf Buffer containing the data
-        * \param[in] n Number of bytes
-        */
+        /*
+         * Add the given data to the output buffer. If necessary increase its size
+         *
+         * \param[in] buf Buffer containing the data
+         * \param[in] n Number of bytes
+         */
         void add_to_outbuf(char *buf, size_t n);
 
-       /*!
-        * Send the HTTP header. If n > 0, a "Content-Lenght" header is added
-        *
-        * \param[in] n Size of response body (0, if no body or chunked transfer is used)
-        */
+        /*!
+         * Send the HTTP header. If n > 0, a "Content-Lenght" header is added
+         *
+         * \param[in] n Size of response body (0, if no body or chunked transfer is used)
+         */
         void send_header(size_t n = 0);
 
-       /*!
-        * Finalize response and flush all buffers
-        */
+        /*!
+         * Finalize response and flush all buffers
+         */
         void finalize();
 
 
     public:
-       /*!
-        * Default constructor creates empty connection that cannot be used for anything
-        */
+        /*!
+         * Default constructor creates empty connection that cannot be used for anything
+         */
         Connection(void);
 
-       /*!
-        * Constructor of a connection
-        *
-        * The constructor does most of the processing for a connection. In case of a PUT or POST
-        * it reads the body of the message and prepares it for processing. The information can
-        * be accessed by the postParams methods. In case of an upload of one or several files,
-        * the information can be found using the uploads() method.
-        *
-        * \param[in] server_p Pointer to the server instance
-        * \param[in] ins_p An input stream (constructed with \class StreamSock) of the HTTP socket
-        * \param[in] os_p Output stream (constructed with \class StreamSock) of the HTTP socket
-        * \param[in] Path to directory for temporaray files (e.g. uploads)
-        * \param[in] If > 0, an output buffer is created.
-        * \param[in] Increment size of output buffer (it will be increased by multiple of this size if necessary)
-        */
-        Connection(Server *server_p, std::istream *ins_p, std::ostream *os_p, const std::string &tmpdir_p, size_t buf_size = 0, size_t buf_inc = 8192);
+        /*!
+         * Constructor of a connection
+         *
+         * The constructor does most of the processing for a connection. In case of a PUT or POST
+         * it reads the body of the message and prepares it for processing. The information can
+         * be accessed by the postParams methods. In case of an upload of one or several files,
+         * the information can be found using the uploads() method.
+         *
+         * \param[in] server_p Pointer to the server instance
+         * \param[in] ins_p An input stream (constructed with \class StreamSock) of the HTTP socket
+         * \param[in] os_p Output stream (constructed with \class StreamSock) of the HTTP socket
+         * \param[in] Path to directory for temporaray files (e.g. uploads)
+         * \param[in] If > 0, an output buffer is created.
+         * \param[in] Increment size of output buffer (it will be increased by multiple of this size if necessary)
+         */
+        Connection(Server *server_p, std::istream *ins_p, std::ostream *os_p, const std::string &tmpdir_p,
+                   size_t buf_size = 0, size_t buf_inc = 8192);
 
         Connection(const Connection &conn);
 
-        Connection& operator=(const Connection& other);
+        Connection &operator=(const Connection &other);
 
-       /*!
-        * Destructor which frees all resources
-        */
+        /*!
+         * Destructor which frees all resources
+         */
         ~Connection();
 
 
         inline bool finished() { return _finished; } // TODO: Temporary for debugging!!
 
-       /*!
-        * Get the server
-        */
+        /*!
+         * Get the server
+         */
         inline Server *server(void) { return _server; }
 
-       /*!
-        * Get the ip of the peer/client
-        *
-        * \returns String with peer IP (either IP4 or IP6)
-        */
+        /*!
+         * Get the ip of the peer/client
+         *
+         * \returns String with peer IP (either IP4 or IP6)
+         */
         inline std::string peer_ip(void) { return _peer_ip; }
 
-       /*!
-        * Set ip of peer
-        *
-        * \param ip String containing peer ip
-        */
+        /*!
+         * Set ip of peer
+         *
+         * \param ip String containing peer ip
+         */
         inline void peer_ip(const std::string &ip) { _peer_ip = ip; }
 
-       /*!
-        * Get port number of peer
-        *
-        * \returns Port number of peer
-        */
+        /*!
+         * Get port number of peer
+         *
+         * \returns Port number of peer
+         */
         inline int peer_port(void) { return _peer_port; }
 
-       /*!
-        * Set port of peer
-        *
-        * \param port Port number of peer
-        */
+        /*!
+         * Set port of peer
+         *
+         * \param port Port number of peer
+         */
         inline void peer_port(int port) { _peer_port = port; }
 
 
-       /*!
-        * Return true if a secure (SSL) connection is used
-        */
+        /*!
+         * Return true if a secure (SSL) connection is used
+         */
         inline bool secure(void) { return _secure; }
 
-       /*!
-        * Set the secure connection status
-        */
+        /*!
+         * Set the secure connection status
+         */
         inline void secure(bool sec) { _secure = sec; }
 
-       /*!
-        * Get the request URI
-        *
-        * \returns std::string containig the hostname given
-        */
+        /*!
+         * Get the request URI
+         *
+         * \returns std::string containig the hostname given
+         */
         inline std::string host() { return _host; }
 
         /*!
@@ -445,236 +457,237 @@ namespace shttps {
         */
         inline std::string uri() { return _uri; }
 
-       /*!
-        * Returns the request method
-        *
-        * \returns Returns the methods as \typedef HttpMethod
-        */
+        /*!
+         * Returns the request method
+         *
+         * \returns Returns the methods as \typedef HttpMethod
+         */
         inline HttpMethod method() { return _method; }
 
-       /*!
-        * Returns true if keep alive header was present in request
-        *
-        * \returns Keep alive status as boolean
-        */
+        /*!
+         * Returns true if keep alive header was present in request
+         *
+         * \returns Keep alive status as boolean
+         */
         inline bool keepAlive(void) { return _keep_alive; }
 
         inline void keepAlive(bool keep_alive_p) { _keep_alive = keep_alive_p; }
 
-       /*!
-        * Adds a keep-alive timeout to the socket
-        *
-        * \param[in] sock The input socket
-        * \param[in] default_timeout Sets the default timeout of the
-        * has not been a keep-alive header in the HTTP request.
-        */
+        /*!
+         * Adds a keep-alive timeout to the socket
+         *
+         * \param[in] sock The input socket
+         * \param[in] default_timeout Sets the default timeout of the
+         * has not been a keep-alive header in the HTTP request.
+         */
         int setupKeepAlive(int default_timeout = 20);
 
-       /*!
-        * Set the keep alive time (in seconds)
-        *
-        * \param[in] keep_alive_timeout Set the keep alive timeout to this value (in seconds)
-        */
+        /*!
+         * Set the keep alive time (in seconds)
+         *
+         * \param[in] keep_alive_timeout Set the keep alive timeout to this value (in seconds)
+         */
         inline void keepAliveTimeout(int keep_alive_timeout) { _keep_alive_timeout = keep_alive_timeout; }
 
-       /*!
-        * Return the keep alive timeout of the connection
-        *
-        * \returns keep alive timeout in seconds
-        */
+        /*!
+         * Return the keep alive timeout of the connection
+         *
+         * \returns keep alive timeout in seconds
+         */
         inline int keepAliveTimeout(void) { return _keep_alive_timeout; }
 
-       /*!
-        * Sets the response status code
-        *
-        * \param[in] status_code_p Status code as defined in \typedef StatusCodes
-        * \param[in] status_string_p Additional status code description that is added
-        */
+        /*!
+         * Sets the response status code
+         *
+         * \param[in] status_code_p Status code as defined in \typedef StatusCodes
+         * \param[in] status_string_p Additional status code description that is added
+         */
         void status(StatusCodes status_code_p, const std::string status_string_p = "");
 
-       /*!
-        * Returns a list of all header fields in the request as std::vector
-        *
-        * \returns List of all request header fields as std::vector
-        */
+        /*!
+         * Returns a list of all header fields in the request as std::vector
+         *
+         * \returns List of all request header fields as std::vector
+         */
         std::vector<std::string> header(void);
 
-       /*!
-        * Returns the value of the given header field. If the field does not
-        * exist, an empty string is returned.
-        *
-        * \returns String with header field value
-        */
-        inline std::string& header(const std::string& name) { return header_in[name]; }
+        /*!
+         * Returns the value of the given header field. If the field does not
+         * exist, an empty string is returned.
+         *
+         * \returns String with header field value
+         */
+        inline std::string &header(const std::string &name) { return header_in[name]; }
 
-       /*
-        * \brief Adds the given header field to the output header.
-        *
-        * This method is used to add header fields to the output header. This
-        * is only possible as long as the header has not yet been sent. If buffered
-        * output is used, the header and body are sent at the end of processing the request.
-        * However, if an unbuffered connection is used, sending the first data of the message
-        * body will send the header data. Afterwards no more header fields may be added!
-        *
-        * \param name Name of the header field
-        * \param Value of the header field
-        */
+        /*
+         * \brief Adds the given header field to the output header.
+         *
+         * This method is used to add header fields to the output header. This
+         * is only possible as long as the header has not yet been sent. If buffered
+         * output is used, the header and body are sent at the end of processing the request.
+         * However, if an unbuffered connection is used, sending the first data of the message
+         * body will send the header data. Afterwards no more header fields may be added!
+         *
+         * \param name Name of the header field
+         * \param Value of the header field
+         */
         void header(std::string name, std::string value);
 
-       /*!
-        * Send the CORS header with the given origin
-        *
-        * \params[in] origin URL of the origin
-        */
+        /*!
+         * Send the CORS header with the given origin
+         *
+         * \params[in] origin URL of the origin
+         */
         void corsHeader(const char *origin);
 
-       /*!
-        * Send the CORS header with the given origin
-        *
-        * \params[in] origin URL of the origin
-        */
+        /*!
+         * Send the CORS header with the given origin
+         *
+         * \params[in] origin URL of the origin
+         */
         void corsHeader(const std::string &origin);
 
-       /*!
-        * Returns a unordered_map of cookies
-        */
-        inline std::unordered_map<std::string,std::string> cookies (void) { return _cookies; };
+        /*!
+         * Returns a unordered_map of cookies
+         */
+        inline std::unordered_map<std::string, std::string> cookies(void) { return _cookies; };
 
-       /*!
-        * Set a cookie
-        *
-        * \param[in] cookie_p An instance of the cookie data
-        */
+        /*!
+         * Set a cookie
+         *
+         * \param[in] cookie_p An instance of the cookie data
+         */
         void cookies(const Cookie &cookie_p);
 
-       /*!
-        * Get the directory for temporary files
-        *
-        * \returns path of temporary directory
-        */
+        /*!
+         * Get the directory for temporary files
+         *
+         * \returns path of temporary directory
+         */
         inline std::string tmpdir(void) { return _tmpdir; }
 
-       /*!
-        * setting the directory for temporary files
-        *
-        * \param[in] tmpdir_p String with the path to the directory to be used for temporary uploads
-        */
+        /*!
+         * setting the directory for temporary files
+         *
+         * \param[in] tmpdir_p String with the path to the directory to be used for temporary uploads
+         */
         inline void tmpdir(const std::string &tmpdir_p) { _tmpdir = tmpdir_p; }
 
-       /*!
-        * Return a list of the get parameter names
-        *
-        * \returns List of get parameter names as std::vector
-        */
+        /*!
+         * Return a list of the get parameter names
+         *
+         * \returns List of get parameter names as std::vector
+         */
         std::vector<std::string> getParams(void);
 
-       /*!
-        * Return the given get value. If the get parameter does not
-        * exist, an empty string is returned.
-        *
-        * \param[in] name Name of the query parameter
-        */
-        std::string getParams(const std::string& name);
+        /*!
+         * Return the given get value. If the get parameter does not
+         * exist, an empty string is returned.
+         *
+         * \param[in] name Name of the query parameter
+         */
+        std::string getParams(const std::string &name);
 
-       /*!
-        * Return a list of the post parameter names
-        *
-        * \returns List of post parameter names as std::vector
-        */
+        /*!
+         * Return a list of the post parameter names
+         *
+         * \returns List of post parameter names as std::vector
+         */
         std::vector<std::string> postParams(void);
 
-       /*!
-        * Return the given post value. If the post parameter does not
-        * exist, an empty string is returned.
-        *
-        * \param[in] name Name of the post parameter
-        */
-        std::string postParams(const std::string& name);
+        /*!
+         * Return the given post value. If the post parameter does not
+         * exist, an empty string is returned.
+         *
+         * \param[in] name Name of the post parameter
+         */
+        std::string postParams(const std::string &name);
 
-       /*!
-        * Return the uploads
-        *
-        * \returns Vector of UploadedFile
-        */
+        /*!
+         * Return the uploads
+         *
+         * \returns Vector of UploadedFile
+         */
         inline std::vector<UploadedFile> uploads() { return _uploads; }
 
-       /*!
-        * Remove all files that have been uploaded from the temporary directory
-        */
+        /*!
+         * Remove all files that have been uploaded from the temporary directory
+         */
         bool cleanupUploads(void);
 
 
-       /*!
-        * Return a list of the request parameter names. Request parameters
-        * are constructed by merging get and post parameters with get parameter
-        * taking precedence over post parameters (thus overriding post parameters)
-        *
-        * \returns List of post parameter names as std::vector
-        */
+        /*!
+         * Return a list of the request parameter names. Request parameters
+         * are constructed by merging get and post parameters with get parameter
+         * taking precedence over post parameters (thus overriding post parameters)
+         *
+         * \returns List of post parameter names as std::vector
+         */
         std::vector<std::string> requestParams(void);
 
-       /*!
-        * Return the given request value. Request parameters
-        * are constructed by merging get and post parameters with get parameter
-        * taking precedence over post parameters (thus overriding post parameters)
-        * If the request parameter does not
-        * exist, an empty string is returned.
-        *
-        * \param[in] name Name of the post parameter
-        */
-        std::string requestParams(const std::string& name);
+        /*!
+         * Return the given request value. Request parameters
+         * are constructed by merging get and post parameters with get parameter
+         * taking precedence over post parameters (thus overriding post parameters)
+         * If the request parameter does not
+         * exist, an empty string is returned.
+         *
+         * \param[in] name Name of the post parameter
+         */
+        std::string requestParams(const std::string &name);
 
-       /*!
-        * returns a vector of components (separated by a ";") from a header value, e.g.
-        * Content-Disposition: form-data; name="mycontrol"
-        *
-        * \param[in] valstr String to be parsed
-        * \returns Vector of options
-        */
+        /*!
+         * returns a vector of components (separated by a ";") from a header value, e.g.
+         * Content-Disposition: form-data; name="mycontrol"
+         *
+         * \param[in] valstr String to be parsed
+         * \returns Vector of options
+         */
         std::vector<std::string> process_header_value(const std::string &valstr);
 
-       /*!
-        * Returns the content length from PUT and DELETE requests
-        *
-        * \returns Content length
-        */
+        /*!
+         * Returns the content length from PUT and DELETE requests
+         *
+         * \returns Content length
+         */
         inline size_t contentLength(void) { return content_length; }
 
-       /*!
-        *  Get the content from PUT and DELETE requests
-        *
-        *  \returns Content as pointer to char
-        */
+        /*!
+         *  Get the content from PUT and DELETE requests
+         *
+         *  \returns Content as pointer to char
+         */
         inline const char *content(void) const { return _content; }
 
-       /*!
-        * Get the content type for PUT and DELETE requests
-        *
-        * \returns Content type as string
-        */
+        /*!
+         * Get the content type for PUT and DELETE requests
+         *
+         * \returns Content type as string
+         */
         inline std::string contentType(void) { return _content_type; }
 
-       /*!
-        * Add a Content-Length header. This method is used to add the size of the
-        * response body if unbuffered IO is used. If a buffered connection is used,
-        * the Content-Length header will be added automatically!
-        *
-        * \param[in] n Number of octets the body will have
-        */
+        /*!
+         * Add a Content-Length header. This method is used to add the size of the
+         * response body if unbuffered IO is used. If a buffered connection is used,
+         * the Content-Length header will be added automatically!
+         *
+         * \param[in] n Number of octets the body will have
+         */
         inline void addContentLength(size_t n) { header("Content-Length", std::to_string(n)); }
 
-       /*
-        * Use a buffered connection. This method can be used a long as no body data has been added.
-        *
-        * \param[in] buf_size Initial buffer size
-        * \param[in] buf_inc Increment size, if the buffer size has to be increased
-        */
+        /*
+         * Use a buffered connection. This method can be used a long as no body data has been added.
+         *
+         * \param[in] buf_size Initial buffer size
+         * \param[in] buf_inc Increment size, if the buffer size has to be increased
+         */
         void setBuffer(size_t buf_size = 8912, size_t buf_inc = 8912);
 
-        inline bool isBuffered(void) { return ( outbuf != nullptr); }
-       /*!
-        * Set the transfer mode for the response to chunked
-        */
+        inline bool isBuffered(void) { return (outbuf != nullptr); }
+
+        /*!
+         * Set the transfer mode for the response to chunked
+         */
         void setChunkedTransfer();
 
 /*!
@@ -684,47 +697,47 @@ namespace shttps {
         */
         void openCacheFile(const std::string &cfname);
 
-       /*!
-        * close cache file
-        */
+        /*!
+         * close cache file
+         */
         void closeCacheFile(void);
 
-       /*!
-        * Quasi "raw" data transmition. Sens the header if not yet done, and then
-        * send the given data directly to the output without buffering etc.
-        *
-        * \param[in] buffer Data to be transfered
-        * \param[in] n Number of bytes to be sent
-        */
+        /*!
+         * Quasi "raw" data transmition. Sens the header if not yet done, and then
+         * send the given data directly to the output without buffering etc.
+         *
+         * \param[in] buffer Data to be transfered
+         * \param[in] n Number of bytes to be sent
+         */
         void sendData(const void *buffer, size_t n);
 
-       /*!
-        * Send the given data. If the output is buffered, the data is added to the output
-        * buffer. If the connection is unbuffered and chunked, a new chunk is sent containing the data.
-        * If the connection is unbuffered but not chunked, the data is just sent directly.
-        *
-        * \param[in] buffer Data to be transfered
-        * \param[in] n Number of bytes to be sent
-        */
+        /*!
+         * Send the given data. If the output is buffered, the data is added to the output
+         * buffer. If the connection is unbuffered and chunked, a new chunk is sent containing the data.
+         * If the connection is unbuffered but not chunked, the data is just sent directly.
+         *
+         * \param[in] buffer Data to be transfered
+         * \param[in] n Number of bytes to be sent
+         */
         void send(const void *buffer, size_t n);
 
-       /*!
-        * Send the given data. If the connection is buffered, add the data to the output buffer,
-        * calculate the "Content-Lenght" header and add it, then send the whole response. After sending,
-        * the connection is finished and no more data can be sent.
-        * If the connection is unbuffered, just send a new chunk. Please note that the final empty
-        * chunk will be sent of finalization of the connection (called by the destructor).
-        *
-        * \param[in] buffer Data to be transfered
-        * \param[in] n Number of bytes to be sent
-        */
+        /*!
+         * Send the given data. If the connection is buffered, add the data to the output buffer,
+         * calculate the "Content-Lenght" header and add it, then send the whole response. After sending,
+         * the connection is finished and no more data can be sent.
+         * If the connection is unbuffered, just send a new chunk. Please note that the final empty
+         * chunk will be sent of finalization of the connection (called by the destructor).
+         *
+         * \param[in] buffer Data to be transfered
+         * \param[in] n Number of bytes to be sent
+         */
         void sendAndFlush(const void *buffer, size_t n);
 
-       /*!
-        * Sends the data of a file to the connection
-        *
-        * \param[in] path Path to the file
-        */
+        /*!
+         * Sends the data of a file to the connection
+         *
+         * \param[in] path Path to the file
+         */
         void sendFile(const std::string &path, const size_t bufsize = 8192, size_t from = 0, size_t to = 0);
 
         /*!
@@ -746,23 +759,23 @@ namespace shttps {
         */
         Connection &operator<<(Commands cmd);
 
-       /*!
-        * Send a string representation of the given Error to the connection
-        *
-        * \param[in] err Error as might be thrown by the shttps package
-        *
-        * \returns Connection instance
-        */
-        Connection &operator<<(const Error& err);
+        /*!
+         * Send a string representation of the given Error to the connection
+         *
+         * \param[in] err Error as might be thrown by the shttps package
+         *
+         * \returns Connection instance
+         */
+        Connection &operator<<(const Error &err);
 
-       /*!
-        * Sends the header and all data available.
-        */
+        /*!
+         * Sends the header and all data available.
+         */
         void flush(void);
 
-       /*!
-        * Flags the connection to be reset
-        */
+        /*!
+         * Flags the connection to be reset
+         */
         inline bool resetConnection(void) { return _reset_connection; }
     };
 
