@@ -68,7 +68,7 @@ You will need Homebrew_. Then:
     brew install cmake
     brew install doxygen
     brew install openssl
-    brew inwtall libmagic
+    brew install libmagic
     brew install gettext
     brew install nginx
     sudo chown -R $USER /usr/local/var/log/nginx/
