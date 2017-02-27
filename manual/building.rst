@@ -60,7 +60,7 @@ which are specified in the file ``Color Profile EULA.pdf``.
 Mac OS X
 ========
 
-You will need Homebrew_. Then:
+You will need Homebrew_ and at least OSX 10.11.5. Then:
 
 ::
 
