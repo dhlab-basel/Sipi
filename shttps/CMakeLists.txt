@@ -113,25 +113,25 @@ add_dependencies(jansson project_jansson)
 #
 # get libmagic
 #
-Externalproject_Add(
-        project_magic
-        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
-        URL https://github.com/threatstack/libmagic/archive/master.zip
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local  --enable-shared --enable-static
-        BUILD_COMMAND make
-        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
-        BUILD_IN_SOURCE 1
-)
-ExternalProject_Get_Property(project_magic install_dir)
-if(MAKE_SHARED_SHTTPS)
-    add_library(magic SHARED IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(magic STATIC IMPORTED)
-    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
-add_dependencies(magic project_magic)
+#Externalproject_Add(
+#        project_magic
+#        INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/local
+#        URL https://github.com/threatstack/libmagic/archive/master.zip
+#        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master
+#        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/libmagic-master/configure --prefix=${CMAKE_CURRENT_SOURCE_DIR}/local  --enable-shared --enable-static
+#        BUILD_COMMAND make
+#        INSTALL_COMMAND make install INSTALL_TOP=${CMAKE_CURRENT_SOURCE_DIR}/local
+#        BUILD_IN_SOURCE 1
+#)
+#ExternalProject_Get_Property(project_magic install_dir)
+#if(MAKE_SHARED_SHTTPS)
+#    add_library(magic SHARED IMPORTED)
+#    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_SHARED_LIBRARY_SUFFIX})
+#else()
+#    add_library(magic STATIC IMPORTED)
+#    set_property(TARGET magic PROPERTY IMPORTED_LOCATION ${install_dir}/lib/libmagic${CMAKE_STATIC_LIBRARY_SUFFIX})
+#endif()
+#add_dependencies(magic project_magic)
 
 
 message(STATUS " SERVER-DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
