@@ -57,10 +57,10 @@ is responsible for reading and agreeing with Adobe's license conditions,
 which are specified in the file ``Color Profile EULA.pdf``.
 
 
-Mac OS X
-========
+Mac OS X & macOS
+================
 
-You will need Homebrew_. Then:
+You will need Homebrew_ and at least OSX 10.11.5. Then:
 
 ::
 
@@ -68,7 +68,7 @@ You will need Homebrew_. Then:
     brew install cmake
     brew install doxygen
     brew install openssl
-    brew inwtall libmagic
+    brew install libmagic
     brew install gettext
     brew install nginx
     sudo chown -R $USER /usr/local/var/log/nginx/
