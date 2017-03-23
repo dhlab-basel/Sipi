@@ -78,6 +78,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
+        self.sipi_convert_command = "build/sipi -f {} {}"
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -86,7 +87,7 @@ class SipiTestManager:
 
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
-        self.compare_command = "gm compare -metric MAE {} {}"
+        self.compare_command = "gm compare -metric {} {} {}"
         self.info_command = "gm identify -verbose {}"
 
     def start_sipi(self):
@@ -213,7 +214,7 @@ class SipiTestManager:
         temp_file.close()
         return temp_file_path
 
-    def compare_bytes(self, url_path, filename, headers=None):
+    def compare_server_bytes(self, url_path, filename, headers=None):
         """
             Downloads a temporary file and compares it with an existing file on disk. If the two are equivalent,
             deletes the temporary file, otherwise writes Sipi's output to sipi.log and raises an exception.
@@ -264,33 +265,66 @@ class SipiTestManager:
             universal_newlines = True)
         return info_process.stdout
 
-    def compare_images(self, url_path, filename, headers=None):
+    def sipi_convert(self, source_file_path, target_file_path):
         """
-            Downloads a temporary image file and compares it with an existing image file on disk, using GraphicsMagick's
-            'gm compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
-            otherwise writes Sipi's output to sipi.log and raises an exception. Note that this method does not compare image
-            metadata.
+            Runs Sipi on the command line to convert an image from one format to another.
 
-            url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, containing the expected data.
-            headers: an optional dictionary of request headers.
+            source_file_path: the absolute path of the source file.
+            target_file_path: the absolute path of the target file.
+        """
+        convert_process_args = shlex.split(self.sipi_convert_command.format(source_file_path, target_file_path))
+        convert_process = subprocess.run(convert_process_args,
+            cwd=self.sipi_working_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines = True)
+
+        if convert_process.returncode != 0:
+            raise SipiTestError("Error converting {} to {}:\n{}".format(source_file_path, target_file_path, convert_process.stdout))
+
+    def compare_images(self, reference_target_file_path, converted_file_path, metric):
+        """
+            Checks the distortion in converted image by comparing it with a reference image, using 'gm compare'.
+
+            reference_target_file_path: the absolute path of the reference image file.
+            converted_file_path: the absolute path of the image to be checked.
+            metric: the type of comparison to be performed, either 'MAE' or 'PAE'.
         """
 
-        expected_file_path = os.path.join(self.data_dir, filename)
-        expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
-        downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
-        compare_process_args = shlex.split(self.compare_command.format(expected_file_path, downloaded_file_path))
+        compare_process_args = shlex.split(self.compare_command.format(metric, reference_target_file_path, converted_file_path))
         compare_process = subprocess.run(compare_process_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        total_mean_absolute_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
+        total_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
 
-        if compare_process.returncode != 0 or total_mean_absolute_error != "0.0":
-            raise SipiTestError("Downloaded image {} is different from expected image {} (wrote {}):\n{}".format(downloaded_file_path, expected_file_path, self.sipi_log_file, compare_process.stdout))
+        if compare_process.returncode != 0 or total_error != "0.0":
+            raise SipiTestError("Converted image {} is different (using metric {}) from expected image {}:\n{}".format(converted_file_path, metric, reference_target_file_path, compare_process.stdout))
 
-        os.remove(downloaded_file_path)
+    def convert_and_compare(self, reference_source_file, converted_filename, reference_target_file):
+        """
+            Uses Sipi on the command-line to convert an image and compare the result with a reference image.
+            Returns the absolute path of the converted file.
+
+            reference_source_file: the file to be converted (a file path relative to data-dir).
+            reference_target_file: the reference image for checking the converted image (a file path relative to data-dir).
+        """
+
+        # Make absolute paths.
+        reference_source_file_path = os.path.join(self.data_dir, reference_source_file)
+        reference_target_file_path = os.path.join(self.data_dir, reference_target_file)
+        tempdir = tempfile.mkdtemp()
+        converted_file_path = os.path.join(tempdir, converted_filename)
+
+        # Have Sipi convert the reference source image to the target format.
+        self.sipi_convert(reference_source_file_path, converted_file_path)
+
+        # Compare the converted image to the reference target image using MAE and PAE.
+        self.compare_images(reference_target_file_path, converted_file_path, "MAE")
+        self.compare_images(reference_target_file_path, converted_file_path, "PAE")
+
+        return converted_file_path
 
     def post_file(self, url_path, filename, mime_type, headers=None):
         """
