@@ -116,7 +116,11 @@ set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
 set(CONFIGURE_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
 set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
 
-
+#
+# libmagic
+# (used to be build locally from source was moved to prerequisites)
+#
+find_package(LibMagic REQUIRED)
 
 #
 # OpenSSL ??
