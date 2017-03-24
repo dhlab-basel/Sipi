@@ -37,7 +37,9 @@ function get_session_id(cookie)
 
     -- tries to extract the Knora session id from the cookie:
     -- gets the digits between "sid=" and the closing ";" (only given in case of several key value pairs)
-    -- returns nil if it cannot find it
+    -- ";" is expected to separate different key value pairs (https://tools.ietf.org/html/rfc6265#section-4.2.1)
+    -- space is also treated as a separator
+    -- returns nil if it cannot find the session id (pattern does not match)
     session_id = string.match(cookie, "sid=([^%s;]+)")
 
     return session_id
