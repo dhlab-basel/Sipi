@@ -30,6 +30,7 @@
 #include <string>
 #include <cstring>      // Needed for memset
 #include <utility>
+#include <regex>
 
 #include <sys/types.h>
 #include <sys/select.h>
@@ -299,9 +300,19 @@ namespace shttps {
 
         if (stat(infile.c_str(), &s) == 0) {
             if (!(s.st_mode & S_IFREG)) { // we have not a regular file, do nothing!
+                conn.status(Connection::NOT_FOUND);
+                conn.header("Content-Type", "text/text; charset=utf-8");
+                conn << infile << " not aregular file\n";
+                conn.flush();
+                syslog(LOG_ERR, "FileHandler: %s is not regular file", infile.c_str());
                 return;
             }
         } else {
+            conn.status(Connection::NOT_FOUND);
+            conn.header("Content-Type", "text/text; charset=utf-8");
+            conn << "Could not stat file" << infile << "\n";
+            conn.flush();
+            syslog(LOG_ERR, "FileHandler: Could not stat %s", infile.c_str());
             return;
         }
 
@@ -402,6 +413,36 @@ namespace shttps {
                 std::string htmlcode = eluacode.substr(end);
                 conn << htmlcode;
                 conn.flush();
+            } else if ((extension == "mp4") || (extension == "webm")) {
+                size_t start = 0, end = 0;
+                std::string rangestr = conn.header("range");
+                if (!rangestr.empty()) {
+                    std::cmatch cm;
+                    std::regex e("bytes=\\s*(\\d*)-(\\d*)[\\D.*]?");
+                    std::regex_match(rangestr.c_str(), cm, e);
+                    if (cm.size() == 3) {
+                        if (cm[1].str().empty()) {
+                            if (cm[2].str().empty()) {
+                                // throw error!!
+                            }
+                            else {
+                                long long ltmp = atoll(cm[2].str().c_str());
+                                start = s.st_size;
+
+                            }
+                        }
+                        else {
+                            start = atoll(cm[1].str().c_str());
+                            if (cm[2].str().empty()) {
+                                end = s.st_size - 1;
+                            }
+                            else {
+                                end = atoll(cm[1].str().c_str());
+                            }
+
+                        }
+                    }
+                }
             } else {
                 conn.header("Content-Type", mime.first + "; " + mime.second);
                 conn.sendFile(infile);

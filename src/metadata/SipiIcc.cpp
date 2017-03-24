@@ -120,6 +120,12 @@ namespace Sipi {
                 profile_type = icc_GRAY_D50;
                 break;
             }
+            case icc_LUM_D65: {
+                cmsContext context = cmsCreateContext(0, 0);
+                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 2.4));
+                profile_type = icc_LUM_D65;
+                break;
+            }
         }
     }
 
