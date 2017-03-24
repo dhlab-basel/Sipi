@@ -204,8 +204,8 @@ int main(int argc, char *argv[]) {
     if (!ssl_key.empty()) server.ssl_key(ssl_key);
     server.jwt_secret(jwt_secret);
 #endif
-    server.tmpdir(tmpdir); // set the directory for storing temporaray files during upload
-    server.scriptdir(scriptdir); // set the direcxtory where the Lua scripts are found for the "Lua"-routes
+    server.tmpdir(tmpdir); // set the directory for storing temporary files during upload
+    server.scriptdir(scriptdir); // set the directory where the Lua scripts are found for the "Lua"-routes
     server.max_post_size(max_post_size); // set the maximal post size
     server.luaRoutes(routes);
     server.keep_alive_timeout(keep_alive); // set the keep alive timeout
