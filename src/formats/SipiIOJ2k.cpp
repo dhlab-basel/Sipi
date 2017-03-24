@@ -401,7 +401,14 @@ namespace Sipi {
                         img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                         break;
                     }
+                    case kdu_supp::JP2_sLUM_SPACE: {
+                        img->photo = MINISBLACK;
+                        img->icc = std::make_shared<SipiIcc>(icc_LUM_D65);
+                        //img->icc = std::make_shared<SipiIcc>(icc_GRAY_D50);
+                        break;
+                    }
                     default: {
+                        std::cerr << "CS=" << space << std::endl;
                         throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
