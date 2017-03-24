@@ -87,8 +87,8 @@ class SipiTestManager:
 
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
-        self.compare_command = "gm compare -metric {} {} {}"
-        self.info_command = "gm identify -verbose {}"
+        self.compare_command = "compare -metric {} {} {} null:"
+        self.info_command = "identify -verbose {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -214,17 +214,16 @@ class SipiTestManager:
         temp_file.close()
         return temp_file_path
 
-    def compare_server_bytes(self, url_path, filename, headers=None):
+    def compare_server_bytes(self, url_path, expected_file_path, headers=None):
         """
             Downloads a temporary file and compares it with an existing file on disk. If the two are equivalent,
             deletes the temporary file, otherwise writes Sipi's output to sipi.log and raises an exception.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, containing the expected data.
+            expected_file_path: the absolute path of a file containing the expected data.
             headers: an optional dictionary of request headers.
         """
 
-        expected_file_path = os.path.join(self.data_dir, filename)
         expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
         downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
 
@@ -250,7 +249,7 @@ class SipiTestManager:
 
     def get_image_info(self, url_path, headers=None):
         """
-            Downloads a temporary image file, gets informationa about it using GraphicsMagick's 'gm identify'
+            Downloads a temporary image file, gets information about it using ImageMagick's 'identify'
             program with the '-verbose' option, and returns the resulting output.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
@@ -284,7 +283,8 @@ class SipiTestManager:
 
     def compare_images(self, reference_target_file_path, converted_file_path, metric):
         """
-            Checks the distortion in converted image by comparing it with a reference image, using 'gm compare'.
+            Checks the distortion in converted image by comparing it with a reference image, using ImageMagick's
+            'compare' program. Returns an integer representing PAE.
 
             reference_target_file_path: the absolute path of the reference image file.
             converted_file_path: the absolute path of the image to be checked.
@@ -297,49 +297,49 @@ class SipiTestManager:
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        total_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
+        return compare_process.stdout
 
-        if compare_process.returncode != 0 or total_error != "0.0":
-            raise SipiTestError("Converted image {} is different (using metric {}) from expected image {}:\n{}".format(converted_file_path, metric, reference_target_file_path, compare_process.stdout))
+    def data_dir_path(self, relative_path):
+        """
+            Converts a path relative to data-dir into an absolute path.
+        """
+        return os.path.join(self.data_dir, relative_path)
 
-    def convert_and_compare(self, reference_source_file, converted_filename, reference_target_file):
+    def convert_and_compare(self, reference_source_file_path, converted_filename, reference_target_file_path):
         """
             Uses Sipi on the command-line to convert an image and compare the result with a reference image.
-            Returns the absolute path of the converted file.
+            Returns a dictionary containing "converted_file_path" and "pae".
 
-            reference_source_file: the file to be converted (a file path relative to data-dir).
-            reference_target_file: the reference image for checking the converted image (a file path relative to data-dir).
+            reference_source_file_path: the file to be converted (an absolute path).
+            converted_filename: the filename to be used for the converted file.
+            reference_target_file_path: the reference image for checking the converted image (an absolute path).
         """
 
         # Make absolute paths.
-        reference_source_file_path = os.path.join(self.data_dir, reference_source_file)
-        reference_target_file_path = os.path.join(self.data_dir, reference_target_file)
         tempdir = tempfile.mkdtemp()
         converted_file_path = os.path.join(tempdir, converted_filename)
 
         # Have Sipi convert the reference source image to the target format.
         self.sipi_convert(reference_source_file_path, converted_file_path)
 
-        # Compare the converted image to the reference target image using MAE and PAE.
-        self.compare_images(reference_target_file_path, converted_file_path, "MAE")
-        self.compare_images(reference_target_file_path, converted_file_path, "PAE")
+        # Compare the converted image to the reference target image using PAE.
+        pae = self.compare_images(reference_target_file_path, converted_file_path, "PAE")
 
-        return converted_file_path
+        return { "converted_file_path": converted_file_path, "pae": pae }
 
-    def post_file(self, url_path, filename, mime_type, headers=None):
+    def post_file(self, url_path, file_path, mime_type, headers=None):
         """
             Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, which will be uploaded.
+            file_path: the absolute path to the file to be uploaded.
             headers: an optional dictionary of request headers.
         """
 
-        file_path = os.path.join(self.data_dir, filename)
         sipi_url = self.make_sipi_url(url_path)
 
         with open(file_path, "rb") as file_obj:
-            files = { "file": (filename, file_obj, mime_type) }
+            files = { "file": (os.path.basename(file_path), file_obj, mime_type) }
             response = requests.post(sipi_url, files=files, headers=headers)
             return response.json()
 

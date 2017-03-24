@@ -34,19 +34,43 @@ class TestConversions:
     def test_iso_15444_4(self, manager):
         """encode and decode reference images from ISO/IEC 15444-4"""
 
-        # This just tests one image at the moment, because:
-        # - 'gm compare' can't read the reference image file3.jp2
-        # - 'gm compare' reports lots of distortion in Sipi's JP2 images, but visually they look OK.
-        #
-        # I'm going to try with a different comparison tool.
+        results = "\n"
+        bad_result = False
 
-        for i in [1]:
-	        reference_tif = self.reference_tif_tmpl.format(i)
-	        reference_jp2 = self.reference_jp2_tmpl.format(i)
-	        sipi_jp2_filename = self.sipi_jp2_tmpl.format(i)
-	        sipi_tif_filename = self.sipi_tif_tmpl.format(i)
-	        sipi_round_trip_filename = self.sipi_round_trip_tmpl.format(i)
+        # Skip:
+        # - file 2 (https://github.com/dhlab-basel/Sipi/issues/151)
+        # - file 3 (https://github.com/dhlab-basel/Sipi/issues/152)
+        # - file 4 (https://github.com/dhlab-basel/Sipi/issues/144)
+        # - file 6 (https://github.com/dhlab-basel/Sipi/issues/153)
+        # - file 8 (https://github.com/dhlab-basel/Sipi/issues/154)
+        # - file 9 (https://github.com/dhlab-basel/Sipi/issues/145)
 
-	        converted_jp2 = manager.convert_and_compare(reference_tif, sipi_jp2_filename, reference_jp2)
-	        converted_tif = manager.convert_and_compare(reference_jp2, sipi_tif_filename, reference_tif)
-	        round_trip_tif = manager.convert_and_compare(converted_jp2, sipi_round_trip_filename, reference_tif)
+        for i in [1, 5, 7]:
+            reference_tif = manager.data_dir_path(self.reference_tif_tmpl.format(i))
+            reference_jp2 = manager.data_dir_path(self.reference_jp2_tmpl.format(i))
+            sipi_jp2_filename = self.sipi_jp2_tmpl.format(i)
+            sipi_tif_filename = self.sipi_tif_tmpl.format(i)
+            sipi_round_trip_tif_filename = self.sipi_round_trip_tmpl.format(i)
+
+            tif_to_jp2_result = manager.convert_and_compare(reference_tif, sipi_jp2_filename, reference_jp2)
+            converted_jp2 = tif_to_jp2_result["converted_file_path"]
+            results += "Image {}: Reference tif -> jp2 (compare with reference jp2)\n    From: {}\n    To: {}\n    Compare with: {}\n    PAE: {}\n\n".format(i, reference_tif, converted_jp2, reference_jp2, tif_to_jp2_result["pae"])
+
+            if tif_to_jp2_result["pae"] != "0 (0)":
+                bad_result = True
+
+            jp2_to_tif_result = manager.convert_and_compare(reference_jp2, sipi_tif_filename, reference_tif)
+            results += "Image {}: Reference jp2 -> tif (compare with reference tif)\n    From: {}\n    To: {}\n    Compare with: {}\n    PAE: {}\n\n".format(i, reference_jp2, jp2_to_tif_result["converted_file_path"], reference_tif, jp2_to_tif_result["pae"])
+
+            if jp2_to_tif_result["pae"] != "0 (0)":
+                bad_result = True
+
+            round_trip_result = manager.convert_and_compare(converted_jp2, sipi_round_trip_tif_filename, reference_tif)
+            results += "Image {}: Converted jp2 -> tif (compare with reference tif)\n    From: {}\n    To: {}\n    Compare with: {}\n    PAE: {}\n\n".format(i, converted_jp2, round_trip_result["converted_file_path"], reference_tif, round_trip_result["pae"])
+
+            if round_trip_result["pae"] != "0 (0)":
+                bad_result = True
+
+
+        assert not bad_result, results
+

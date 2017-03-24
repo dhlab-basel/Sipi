@@ -39,7 +39,7 @@ class TestServer:
 
     def test_file_bytes(self, manager):
         """return an unmodified JPG file"""
-        manager.compare_server_bytes("/knora/Leaves.jpg/full/full/0/default.jpg", "knora/Leaves.jpg")
+        manager.compare_server_bytes("/knora/Leaves.jpg/full/full/0/default.jpg", manager.data_dir_path("knora/Leaves.jpg"))
 
     def test_restrict(self, manager):
         """return a restricted image in a smaller size"""
@@ -53,6 +53,6 @@ class TestServer:
 
     def test_thumbnail(self, manager):
         """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
-        response_json = manager.post_file("/make_thumbnail", "knora/Leaves.jpg", "image/jpeg")
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}_THUMB.jpg/full/full/0/default.jpg".format(filename), 200)
