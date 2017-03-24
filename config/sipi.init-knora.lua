@@ -66,7 +66,7 @@ function pre_flight(prefix, identifier, cookie)
         -- tries to extract the Knora session id from the cookie:
         -- gets the digits between "sid=" and the closing ";" (only given in case of several key value pairs)
         -- returns nil if it cannot find it
-        session_id = string.match(cookie, "sid=(%d+);?")
+        session_id = string.match(cookie, "sid=([^%s;]+)")
 
         if session_id == nil then
             -- no session_id could be extracted
