@@ -303,7 +303,7 @@ namespace shttps {
      *
      * \param[in] luafile A file containing a Lua script or a Lua code chunk
      */
-    LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode) {
+    LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode, const std::string &lua_scriptdir) {
         if ((L = luaL_newstate()) == nullptr) {
             throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
@@ -311,6 +311,10 @@ namespace shttps {
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
         createGlobals(conn);
+
+        // add the script directory to the standard search path for lua packages
+        // this allows for the inclusion of Lua scripts contained in the Lua script directory
+        this->setLuaPath(lua_scriptdir);
 
         if (!luafile.empty()) {
             if (iscode) {
