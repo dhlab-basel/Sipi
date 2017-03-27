@@ -37,6 +37,10 @@ class TestBasic:
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
 
+    def test_knora_session_parsing(self, manager):
+        """call Lua function that gets the Knora session id from the cookie header sent to Sipi"""
+        manager.expect_status_code("/test_knora_session_cookie", 200)
+
     def test_file_bytes(self, manager):
         """return an unmodified JPG file"""
         manager.compare_bytes("/knora/Leaves.jpg/full/full/0/default.jpg", "Leaves.jpg")
