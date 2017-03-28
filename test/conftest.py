@@ -284,7 +284,7 @@ class SipiTestManager:
     def compare_images(self, reference_target_file_path, converted_file_path, metric):
         """
             Checks the distortion in converted image by comparing it with a reference image, using ImageMagick's
-            'compare' program. Returns an integer representing PAE.
+            'compare' program. Returns a string containing the result.
 
             reference_target_file_path: the absolute path of the reference image file.
             converted_file_path: the absolute path of the image to be checked.
