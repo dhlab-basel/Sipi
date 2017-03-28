@@ -167,5 +167,10 @@ routes = {
         method = 'GET',
         route = '/test_functions',
         script = 'test_functions.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_knora_session_cookie',
+        script = 'test_knora_session_cookie.lua'
     }
 }

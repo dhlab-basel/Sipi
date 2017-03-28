@@ -22,8 +22,22 @@
 
 -- destroy the cookie containing the Knora session id
 
-server.setBuffer()
+local success, errormsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errormsg, server.loglevel.LOG_ERR)
+    send_error(500, "buffer could not be set correctly")
+    return
+end
 
 -- invalidate cookie
-server.sendHeader("Set-Cookie", "sid=deleted;Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+local success, errormsg = server.sendHeader("Set-Cookie", "sid=deleted;Expires=Thu, 01 Jan 1970 00:00:00 GMT")
+if not success then
+    print(errormsg)
+end
 
+-- set content-type to text
+-- jQuery in SALSAH expects a content-type
+local success, errormsg = server.sendHeader("Content-Type", "text/plain")
+if not success then
+    print(">>>1 ", errormsg)
+end

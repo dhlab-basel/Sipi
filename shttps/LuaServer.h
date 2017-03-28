@@ -96,8 +96,9 @@ namespace shttps {
          * \param[in] conn HTTP Connection object
          * \param[in] luafile A script containing lua commands
          * \param[in] iscode If true, the string contains lua-code to be executed directly
+         * \param[in] lua_scriptdir Pattern to be added to the Lua package.path (directory with Lua scripts)
          */
-        LuaServer(Connection &conn, const std::string &luafile, bool iscode);
+        LuaServer(Connection &conn, const std::string &luafile, bool iscode, const std::string &lua_scriptdir);
 
         /*!
          * Copy constructor throws error (not allowed!)

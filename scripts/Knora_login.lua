@@ -22,7 +22,12 @@
 
 -- create a cookie containing the Knora session id
 
-server.setBuffer()
+local success, errormsg = server.setBuffer()
+if not success then
+    server.log("server.setBuffer() failed: " .. errormsg, server.loglevel.LOG_ERR)
+    send_error(500, "buffer could not be set correctly")
+    return
+end
 
 sessionId = server.post['sid']
 
@@ -34,5 +39,15 @@ if sessionId == nil then
 end
 
 -- set the cookie HttpOnly
-server.sendHeader("Set-Cookie", "sid=" .. sessionId .. ";HttpOnly")
+local success, errormsg = server.sendHeader("Set-Cookie", "sid=" .. sessionId .. ";HttpOnly")
+if not success then
+    print(errormsg)
+end
+
+-- set content-type to text
+-- jQuery in SALSAH expects a content-type
+local success, errormsg = server.sendHeader("Content-Type", "text/plain")
+if not success then
+    print(">>>1 ", errormsg)
+end
 

@@ -19,6 +19,8 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
+require "get_knora_session"
+
 -------------------------------------------------------------------------------
 -- This function is being called from sipi before the file is served
 -- Knora is called to ask for the user's permissions on the file
@@ -36,7 +38,6 @@
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
 function pre_flight(prefix, identifier, cookie)
-
 
     if config.prefix_as_path then
         filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
@@ -66,7 +67,7 @@ function pre_flight(prefix, identifier, cookie)
         -- tries to extract the Knora session id from the cookie:
         -- gets the digits between "sid=" and the closing ";" (only given in case of several key value pairs)
         -- returns nil if it cannot find it
-        session_id = string.match(cookie, "sid=(%d+);?")
+        session_id = get_session_id(cookie)
 
         if session_id == nil then
             -- no session_id could be extracted
