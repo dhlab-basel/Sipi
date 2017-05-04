@@ -38,6 +38,8 @@
 
 namespace Sipi {
 
+    extern void icc_error_logger(cmsContext ContextID, cmsUInt32Number ErrorCode, const char *Text);
+
     class SipiImage; //!< forward declaration
 
     /*! Defines predefined profiles which are used by SipiIcc */
@@ -49,7 +51,8 @@ namespace Sipi {
         icc_RGB,            //!< A RGB profile that's given with parameters such as white point, primary colors etc. (see TIFF specs)
         icc_CYMK_standard,  //!< A "standard" CMYK profile. We currently use the "USWebCoatedSWOP" profile
         icc_GRAY_D50,       //!< A standard profile for gray value images using a D50 light source and a gamma of 2.2
-        icc_LUM_D65        //!< A standard profile for gray value images as used be JPEG2000 JP2_sLUM_SPACE
+        icc_LUM_D65,        //!< A standard profile for gray value images as used be JPEG2000 JP2_sLUM_SPACE
+        icc_ROMM_GRAY       //!< A peofile used by the JPEG2000 ISO suite....
     } PredefinedProfiles;
 
     /*!

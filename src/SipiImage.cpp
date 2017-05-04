@@ -380,7 +380,69 @@ namespace Sipi {
     }
     //============================================================================
 
+    void SipiImage::convertYCC2RGB(void) {
+        if (bps == 8) {
+            byte *inbuf = pixels;
+            byte *outbuf = new byte[(size_t) nc * (size_t) nx * (size_t) ny];
+
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    double Y = (double) inbuf[nc * (j * nx + i) + 2];
+                    double Cb = (double) inbuf[nc * (j * nx + i) + 1];;
+                    double Cr = (double) inbuf[nc * (j * nx + i) + 0];
+
+                    int r = (int) (Y + 1.40200 * (Cr - 0x80));
+                    int g = (int) (Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
+                    int b = (int) (Y + 1.77200 * (Cb - 0x80));
+
+                    outbuf[nc * (j * nx + i) + 0] = std::max(0, std::min(255, r));
+                    outbuf[nc * (j * nx + i) + 1] = std::max(0, std::min(255, g));
+                    outbuf[nc * (j * nx + i) + 2] = std::max(0, std::min(255, b));
+
+                    for (size_t k = 3; k < nc; k++) {
+                        outbuf[nc * (j * nx + i) + k] = inbuf[nc * (j * nx + i) + k];
+                    }
+                }
+            }
+
+            pixels = outbuf;
+            delete[] inbuf;
+        } else if (bps == 16) {
+            word *inbuf = (word *) pixels;
+            size_t nnc = nc - 1;
+            unsigned short *outbuf = new unsigned short[nnc * nx * ny];
+
+            for (size_t j = 0; j < ny; j++) {
+                for (size_t i = 0; i < nx; i++) {
+                    double Y = (double) inbuf[nc * (j * nx + i) + 2];
+                    double Cb = (double) inbuf[nc * (j * nx + i) + 1];;
+                    double Cr = (double) inbuf[nc * (j * nx + i) + 0];
+
+                    int r = (int) (Y + 1.40200 * (Cr - 0x80));
+                    int g = (int) (Y - 0.34414 * (Cb - 0x80) - 0.71414 * (Cr - 0x80));
+                    int b = (int) (Y + 1.77200 * (Cb - 0x80));
+
+                    outbuf[nc * (j * nx + i) + 0] = std::max(0, std::min(65535, r));
+                    outbuf[nc * (j * nx + i) + 1] = std::max(0, std::min(65535, g));
+                    outbuf[nc * (j * nx + i) + 2] = std::max(0, std::min(65535, b));
+
+                    for (size_t k = 3; k < nc; k++) {
+                        outbuf[nc * (j * nx + i) + k] = inbuf[nc * (j * nx + i) + k];
+                    }
+                }
+            }
+
+            pixels = (byte *) outbuf;
+            delete[] inbuf;
+        } else {
+            std::string msg = "Bits per sample is not supported for operation: " + std::to_string(bps);
+            throw SipiImageError(__file__, __LINE__, msg);
+        }
+    }
+    //============================================================================
+
     void SipiImage::convertToIcc(const SipiIcc &target_icc_p, int new_bps) {
+        cmsSetLogErrorHandler(icc_error_logger);
         cmsUInt32Number in_formatter, out_formatter;
 
         if (icc == nullptr) {
@@ -406,7 +468,6 @@ namespace Sipi {
                 }
             }
         }
-
         unsigned int nnc = cmsChannelsOf(cmsGetColorSpace(target_icc_p.getIccProfile()));
 
         if (!((new_bps == 8) || (new_bps == 16))) {
