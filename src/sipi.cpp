@@ -646,14 +646,21 @@ int main(int argc, char *argv[]) {
         // read the input image
         //
         Sipi::SipiImage img;
-        img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+        try {
+            img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+            if (format == "jpg") {
+                img.to8bps();
+                //http://www.equasys.de/colorconversion.html
+                img.convertToIcc(Sipi::icc_sRGB, 8);
 
-        if (format == "jpg") {
-            img.to8bps();
-            if (img.getNalpha() > 0) {
-                img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
+                if (img.getNalpha() > 0) {
+                    img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
+                }
             }
+        } catch (Sipi::SipiImageError &err) {
+            std::cerr << err << std::endl;
         }
+
 
         //
         // if we want to remove all metadata from the file...
