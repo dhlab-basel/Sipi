@@ -301,6 +301,7 @@ namespace Sipi {
         siz->get(Ssize, 0, 0, __ny);
         siz->get(Ssize, 0, 1, __nx);
 
+        std::cerr << "LINE = " << __LINE__ << std::endl;
         //
         // is there a region of interest defined ? If yes, get the cropping parameters...
         //
@@ -335,6 +336,7 @@ namespace Sipi {
             }
         }
 
+        std::cerr << "LINE = " << __LINE__ << std::endl;
         if (reduce < 0) reduce = 0;
         codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : nullptr);
 
