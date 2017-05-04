@@ -215,7 +215,7 @@ namespace shttps {
 
         int stoppipe[2];
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
-        std::string _scriptdir; //!< Path to directory, thwere scripts for the "Lua"-routes are found
+        std::string _scriptdir; //!< Path to directory, where scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
         std::string semname; //!< name of the semaphore for restricting the number of threads
         sem_t *_semaphore; //!< semaphore

@@ -1174,9 +1174,12 @@ namespace shttps {
             //
             // Setting up the Lua server
             //
-            LuaServer luaserver(conn, _initscript, true);
-            luaserver.setLuaPath(
-                    _scriptdir + "/?.lua"); // add the script dir to the standard search path fpr lua packages
+
+            // pattern to be added to the Lua package.path
+            // includes Lua files in the Lua script directory
+            std::string lua_scriptdir = _scriptdir + "/?.lua";
+
+            LuaServer luaserver(conn, _initscript, true, lua_scriptdir);
 
             for (auto &global_func : lua_globals) {
                 global_func.func(luaserver.lua(), conn, global_func.func_dataptr);
