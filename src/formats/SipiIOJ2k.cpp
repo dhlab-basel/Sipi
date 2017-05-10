@@ -504,17 +504,17 @@ namespace Sipi {
                 break;
             }
             case 12: {
-                std::vector<bool> get_signed(img->nc, false);
+                std::vector<char> get_signed(img->nc, 0); // vector<bool> does not work -> special treatment in C++
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed.data());
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, (bool *) get_signed.data());
                 img->pixels = (byte *) buffer16;
                 img->bps = 16;
                 break;
             }
             case 16: {
-                std::vector<bool> get_signed(img->nc, false);
+                std::vector<char> get_signed(img->nc, 0); // vector<bool> does not work -> special treatment in C++
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed.data());
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, (bool *) get_signed.data());
                 img->pixels = (byte *) buffer16;
                 break;
             }
