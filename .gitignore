@@ -33,9 +33,6 @@ cmake-build-debug
 # ignore cache
 cache/
 
-# ignore ICC files
-*.icc
-
 #ignore ICC headers
 *_icc.h
 /images/

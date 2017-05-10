@@ -28,6 +28,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <cmath>
+#include <vector>
 #include <cstdio>
 
 #include <string.h>
@@ -102,7 +104,6 @@ namespace Sipi {
     };
     //-------------------------------------------------------------------------
 
-
     //-------------------------------------------------------------------------
     // Write the data to the HTTP server connection
     //........................................................................
@@ -164,10 +165,13 @@ namespace Sipi {
 
         void flush(bool end_of_message = false) {
             if (end_of_message) {
+                std::cerr << msg << std::endl;
                 syslog(LOG_ERR, "%s", msg.c_str());
                 throw KDU_ERROR_EXCEPTION;
             }
         }
+
+        void setMsg(const std::string &msg);
     };
     //=============================================================================
 
@@ -220,8 +224,7 @@ namespace Sipi {
 
         jp2_ultimate_src.open(filepath.c_str());
 
-        if (jpx_in.open(&jp2_ultimate_src, true) <
-            0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
+        if (jpx_in.open(&jp2_ultimate_src, true) < 0) { // if < 0, not compatible with JP2 or JPX.  Try opening as a raw code-stream.
             jp2_ultimate_src.close();
             file_in.open(filepath.c_str());
             input = &file_in;
@@ -266,10 +269,10 @@ namespace Sipi {
                 } while (box.open_next());
             }
 
-
             int stream_id = 0;
             jpx_stream = jpx_in.access_codestream(stream_id);
             input = jpx_stream.open_stream();
+            palette = jpx_stream.access_palette();
         }
 
         kdu_core::kdu_codestream codestream;
@@ -347,19 +350,54 @@ namespace Sipi {
 
         img->bps = codestream.get_bit_depth(0); // bitdepth of zeroth component. Assuming it's valid for all
 
-        img->nc = codestream.get_num_components();
+        img->nc = codestream.get_num_components(); // not the same as the number of colors!
 
+
+        //
+        // The following definitions we need in case we get a palette color image!
+        //
+        byte *rlut = NULL;
+        byte *glut = NULL;
+        byte *blut = NULL;
         //
         // get ICC-Profile if available
         //
         jpx_layer = jpx_in.access_layer(0);
         img->photo = INVALID; // we initialize to an invalid value in order to test later if img->photo has been set
+        int numcol;
         if (jpx_layer.exists()) {
             kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
             kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
-            int numcol = chaninfo.get_num_colours(); // I assume these are the color channels (1, 3 or 4 in case of CMYK)
-            for (size_t i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
-                img->es.push_back(ASSOCALPHA);
+            numcol = chaninfo.get_num_colours(); // I assume these are the color channels (1, 3 or 4 in case of CMYK)
+            int nluts = palette.get_num_luts();
+            if (nluts == 3) {
+                int nentries = palette.get_num_entries( );
+                rlut = new byte[nentries];
+                glut = new byte[nentries];
+                blut = new byte[nentries];
+                float *tmplut =  new float[nentries];
+
+                palette.get_lut(0, tmplut);
+                for (int i = 0; i < nentries; i++) {
+                    rlut[i] = roundf((tmplut[i] + 0.5)*255.0);
+                }
+
+                palette.get_lut(1, tmplut);
+                for (int i = 0; i < nentries; i++) {
+                    glut[i] = roundf((tmplut[i] + 0.5)*255.0);
+                }
+
+                palette.get_lut(2, tmplut);
+                for (int i = 0; i < nentries; i++) {
+                    blut[i] = roundf((tmplut[i] + 0.5)*255.0);
+                }
+                delete [] tmplut;
+            }
+
+            if (img->nc > numcol) { // we have more components than colors -> alpha channel!
+                for (size_t i = 0; i < img->nc - numcol; i++) { // img->nc - numcol: number of alpha channels (?)
+                    img->es.push_back(ASSOCALPHA);
+                }
             }
             if (colinfo.exists()) {
                 int space = colinfo.get_space();
@@ -401,14 +439,35 @@ namespace Sipi {
                         img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);
                         break;
                     }
+                    case kdu_supp::JP2_sLUM_SPACE: {
+                        img->photo = MINISBLACK;
+                        img->icc = std::make_shared<SipiIcc>(icc_LUM_D65);
+                        break;
+                    }
+                    case kdu_supp::JP2_sYCC_SPACE: {
+                        img->photo = YCBCR;
+                        img->icc = std::make_shared<SipiIcc>(icc_sRGB);
+                        break;
+                    }
+                    case 100: {
+                        img->photo = MINISBLACK;
+                        img->icc = std::make_shared<SipiIcc>(icc_ROMM_GRAY);
+                        break;
+                    }
+
                     default: {
+                        std::cerr << "CS=" << space << std::endl;
                         throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
             }
         }
+        else {
+            numcol = img->nc;
+        }
+
         if (img->photo == INVALID) {
-            switch (img->nc) {
+            switch (numcol) {
                 case 1: {
                     img->photo = MINISBLACK;
                     break;
@@ -426,6 +485,7 @@ namespace Sipi {
                 }
             } // switch(numcol)
         }
+
         //
         // the following code directly converts a 16-Bit jpx into an 8-bit image.
         // In order to retrieve a 16-Bit image, use kdu_uin16 *buffer an the apropriate signature of the pull_stripe method
@@ -443,11 +503,18 @@ namespace Sipi {
                 img->pixels = (byte *) buffer8;
                 break;
             }
-            case 16: {
-                bool *get_signed = new bool[img->nc];
-                for (size_t i = 0; i < img->nc; i++) get_signed[i] = FALSE;
+            case 12: {
+                std::vector<char> get_signed(img->nc, 0); // vector<bool> does not work -> special treatment in C++
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, (bool *) get_signed.data());
+                img->pixels = (byte *) buffer16;
+                img->bps = 16;
+                break;
+            }
+            case 16: {
+                std::vector<char> get_signed(img->nc, 0); // vector<bool> does not work -> special treatment in C++
+                kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, (bool *) get_signed.data());
                 img->pixels = (byte *) buffer16;
                 break;
             }
@@ -456,6 +523,7 @@ namespace Sipi {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
+                std::cerr << "BPS=" << img->bps << std::endl;
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
         }
@@ -463,6 +531,30 @@ namespace Sipi {
         codestream.destroy();
         input->close();
         jpx_in.close(); // Not really necessary here.
+
+        if (rlut != NULL) {
+            //
+            // we have a palette color image...
+            //
+            byte *tmpbuf = new byte[img->nx*img->ny*numcol];
+            for (int y = 0; y < img->ny; ++y) {
+                for (int x = 0; x < img->nx; ++x) {
+                    tmpbuf[3*(y*img->nx + x) + 0] = rlut[img->pixels[y*img->nx + x]];
+                    tmpbuf[3*(y*img->nx + x) + 1] = glut[img->pixels[y*img->nx + x]];
+                    tmpbuf[3*(y*img->nx + x) + 2] = blut[img->pixels[y*img->nx + x]];
+                }
+            }
+            delete [] img->pixels;
+            img->pixels = tmpbuf;
+            img->nc = numcol;
+            delete [] rlut;
+            delete [] glut;
+            delete [] blut;
+        }
+        if (img->photo == YCBCR) {
+            img->convertYCC2RGB();
+            img->photo = RGB;
+        }
 
         if ((size != nullptr) && (!redonly)) {
             img->scale(nnx, nny);

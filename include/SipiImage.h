@@ -388,6 +388,12 @@ namespace Sipi {
          */
         static void getDim(std::string filepath, size_t &width, size_t &height);
 
+        /*!
+         * Get the dimension of the image object
+         *
+         * @param[out] width Width of the image in pixels
+         * @param[out] height Height of the image in pixels
+         */
         void getDim(size_t &width, size_t &height);
 
         /*!
@@ -405,6 +411,12 @@ namespace Sipi {
          * \param[in] filepath String containg the path/filename
          */
         void write(std::string ftype, std::string filepath, int quality = -1);
+
+        /*!
+         * Convert full range YCbCr (YCC) to RGB colors
+         */
+        void convertYCC2RGB(void);
+
 
         /*!
          * Converts the image representation
