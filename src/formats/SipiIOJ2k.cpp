@@ -29,6 +29,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <vector>
 #include <cstdio>
 
 #include <string.h>
@@ -503,19 +504,17 @@ namespace Sipi {
                 break;
             }
             case 12: {
-                bool *get_signed = new bool[img->nc];
-                for (size_t i = 0; i < img->nc; i++) get_signed[i] = FALSE;
+                std::vector<bool> get_signed(img->nc, false);
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed.data());
                 img->pixels = (byte *) buffer16;
                 img->bps = 16;
                 break;
             }
             case 16: {
-                bool *get_signed = new bool[img->nc];
-                for (size_t i = 0; i < img->nc; i++) get_signed[i] = FALSE;
+                std::vector<bool> get_signed(img->nc, false);
                 kdu_core::kdu_int16 *buffer16 = new kdu_core::kdu_int16[(int) dims.area() * img->nc];
-                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed);
+                decompressor.pull_stripe(buffer16, stripe_heights, nullptr, nullptr, nullptr, nullptr, get_signed.data());
                 img->pixels = (byte *) buffer16;
                 break;
             }
@@ -548,6 +547,9 @@ namespace Sipi {
             delete [] img->pixels;
             img->pixels = tmpbuf;
             img->nc = numcol;
+            delete [] rlut;
+            delete [] glut;
+            delete [] blut;
         }
         if (img->photo == YCBCR) {
             img->convertYCC2RGB();
