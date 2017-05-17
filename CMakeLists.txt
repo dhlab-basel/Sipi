@@ -232,39 +232,58 @@ CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILE
 # Here we get the ICC profiles from the Adobe website and prepare them for including
 # We just use the AdobeRGB1998.cc and the USWebCoatedSWOP.icc profiles for now...
 #
-unset(ICC CACHE)
-find_file(
-    ICC
-    icc.zip
-    ${COMMON_INCLUDE_FILES_DIR}
-    NO_DEFAULT_PATH
-)
-if(ICC)
-    message(STATUS "Adobe ICC profiles were already downloaded")
-else()
-    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
-endif()
+#unset(ICC CACHE)
+#find_file(
+#    ICC
+#    icc.zip
+#    ${COMMON_INCLUDE_FILES_DIR}
+#    NO_DEFAULT_PATH
+#)
+#if(ICC)
+#    message(STATUS "Adobe ICC profiles were already downloaded")
+#else()
+#    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
+#endif()
 
 set(
         ICC_HEADERS
         ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
-
+        ${COMMON_INCLUDE_FILES_DIR}/YCC709_icc.h
 )
+
 add_custom_command(
         OUTPUT ${ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
-        DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
-        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
-        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+        COMMAND cp ${COMMON_INCLUDE_FILES_DIR}/ICC-Profiles/AdobeRGB1998.icc ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
         COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
-        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+        COMMAND cp ${COMMON_INCLUDE_FILES_DIR}/ICC-Profiles/USWebCoatedSWOP.icc ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
         COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
         COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
-        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
+        COMMAND cp ${COMMON_INCLUDE_FILES_DIR}/ICC-Profiles/YCC709.icm ${COMMON_INCLUDE_FILES_DIR}/YCC709.icm
+        COMMAND xxd -i YCC709.icm YCC709_icc.h
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/YCC709.icm
+        COMMAND cp ${COMMON_INCLUDE_FILES_DIR}/ICC-Profiles/Rec709-Rec1886.icc ${COMMON_INCLUDE_FILES_DIR}/Rec709-Rec1886.icc
+        COMMAND xxd -i Rec709-Rec1886.icc Rec709-Rec1886_icc.h
+        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/Rec709-Rec1886.icc
 )
+
+#add_custom_command(
+#        OUTPUT ${ICC_HEADERS}
+#        COMMENT "Generating ICC profile includes"
+#        WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
+#        DEPENDS ${COMMON_INCLUDE_FILES_DIR}/icc.zip
+#        COMMAND unzip -o ${COMMON_INCLUDE_FILES_DIR}/icc.zip -d ${COMMON_INCLUDE_FILES_DIR}/
+#        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/RGB Profiles/AdobeRGB1998.icc' ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+#        COMMAND xxd -i AdobeRGB1998.icc AdobeRGB1998_icc.h
+#        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
+#        COMMAND cp '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)/CMYK Profiles/USWebCoatedSWOP.icc' ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+#        COMMAND xxd -i USWebCoatedSWOP.icc USWebCoatedSWOP_icc.h
+#        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
+#        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
+#)
 add_custom_target(
         icc_profiles
         DEPENDS ${ICC_HEADERS}

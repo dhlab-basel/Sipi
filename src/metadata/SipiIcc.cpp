@@ -29,13 +29,19 @@ static const char __file__[] = __FILE__;
 #include "SipiError.h"
 #include "AdobeRGB1998_icc.h"
 #include "USWebCoatedSWOP_icc.h"
+#include "Rec709-Rec1886_icc.h"
 
 #include "SipiImage.h"
 #include "shttps/makeunique.h"
 
 namespace Sipi {
 
+    void icc_error_logger(cmsContext ContextID, cmsUInt32Number ErrorCode, const char *Text) {
+        std::cerr << "ICC-CMS-ERROR: " << Text << std::endl;
+    }
+
     SipiIcc::SipiIcc(const unsigned char *icc_buf, int icc_len) {
+        cmsSetLogErrorHandler(icc_error_logger);
         if ((icc_profile = cmsOpenProfileFromMem(icc_buf, icc_len)) == nullptr) {
             std::cerr << "THROWING ERROR IN ICC" << std::endl;
             throw SipiError(__file__, __LINE__, "cmsOpenProfileFromMem failed");
@@ -55,6 +61,7 @@ namespace Sipi {
     }
 
     SipiIcc::SipiIcc(const SipiIcc &icc_p) {
+        cmsSetLogErrorHandler(icc_error_logger);
         if (icc_p.icc_profile != nullptr) {
             cmsUInt32Number len = 0;
             cmsSaveProfileToMem(icc_p.icc_profile, nullptr, &len);
@@ -75,6 +82,7 @@ namespace Sipi {
     }
 
     SipiIcc::SipiIcc(cmsHPROFILE &icc_profile_p) {
+        cmsSetLogErrorHandler(icc_error_logger);
         if (icc_profile_p != nullptr) {
             cmsUInt32Number len = 0;
             cmsSaveProfileToMem(icc_profile_p, nullptr, &len);
@@ -88,6 +96,7 @@ namespace Sipi {
     }
 
     SipiIcc::SipiIcc(PredefinedProfiles predef) {
+        cmsSetLogErrorHandler(icc_error_logger);
         switch (predef) {
             case icc_undefined: {
                 icc_profile = nullptr;
@@ -120,10 +129,22 @@ namespace Sipi {
                 profile_type = icc_GRAY_D50;
                 break;
             }
+            case icc_LUM_D65: {
+                cmsContext context = cmsCreateContext(0, 0);
+                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 2.4));
+                profile_type = icc_LUM_D65;
+                break;
+            }
+            case icc_ROMM_GRAY: {
+                cmsContext context = cmsCreateContext(0, 0);
+                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 1.8));
+                profile_type = icc_ROMM_GRAY;
+            }
         }
     }
 
     SipiIcc::SipiIcc(float white_point_p[], float primaries_p[], const unsigned short tfunc[], const int tfunc_len) {
+        cmsSetLogErrorHandler(icc_error_logger);
         cmsCIExyY white_point;
         white_point.x = white_point_p[0];
         white_point.y = white_point_p[1];
@@ -196,6 +217,7 @@ namespace Sipi {
     }
 
     unsigned int SipiIcc::iccFormatter(int bps) const {
+        cmsSetLogErrorHandler(icc_error_logger);
         cmsUInt32Number format = (bps == 16) ? BYTES_SH(2) : BYTES_SH(1);
         cmsColorSpaceSignature csig = cmsGetColorSpace(icc_profile);
 
@@ -229,6 +251,7 @@ namespace Sipi {
 
 
     unsigned int SipiIcc::iccFormatter(SipiImage *img)  const {
+        cmsSetLogErrorHandler(icc_error_logger);
         cmsUInt32Number format = 0;
         switch (img->bps) {
             case 8: {

@@ -27,7 +27,8 @@ IMAGE = "image"
 -- Mimetype constants
 -------------------------------------------------------------------------------
 
-XML = "application/xml"
+APPLICATION_XML = "application/xml"
+TEXT_XML = "text/xml"
 PLAIN_TEXT = "plain/text"
 
 -------------------------------------------------------------------------------
@@ -40,7 +41,7 @@ PLAIN_TEXT = "plain/text"
 -------------------------------------------------------------------------------
 function get_mediatype(mimetype)
 
-    if mimetype == "application/xml" or mimetype == "text/plain" then
+    if mimetype == APPLICATION_XML or mimetype == TEXT_XML or mimetype == PLAIN_TEXT then
         return TEXT
 
     elseif mimetype == "image/jp2" or mimetype == "image/tiff" or mimetype == "image/png" or mimetype == "image/jpeg" then
@@ -67,7 +68,7 @@ end
 -------------------------------------------------------------------------------
 function check_file_extension(mimetype, filename)
 
-    if (mimetype == XML) then
+    if (mimetype == APPLICATION_XML or mimetype == TEXT_XML) then
         local ext = string.sub(filename, -4)
 
         -- valid extensions are: xml, xsl (XSLT), and .xsd (XML Schema)
