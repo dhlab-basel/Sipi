@@ -53,6 +53,8 @@
 #endif
 
 #include "Global.h"
+#include "Error.h"
+
 #include "Connection.h"
 #include "LuaServer.h"
 
@@ -466,6 +468,9 @@ namespace shttps {
          */
         inline void initscript(const std::string &initscript_p) {
             std::ifstream t(initscript_p);
+            if (t.fail()) {
+                throw Error(__FILE__, __LINE__, "initscript \"" + initscript_p + "\" not found!");
+            }
 
             t.seekg(0, std::ios::end);
             _initscript.reserve(t.tellg());

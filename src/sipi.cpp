@@ -200,6 +200,7 @@ enum optionIndex {
     NTHREADS,
     IMGROOT,
     LOGLEVEL,
+    QUERY,
     HELP
 };
 
@@ -268,6 +269,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                     {NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for web server\n"},
                                     {IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images for the web server\n"},
                                     {LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n"},
+                                    {QUERY,      0, "x",     "query",      option::Arg::None,     "  --query -x \tDump all information about the given file"},
                                     {HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
                                     {UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
                                                                                                           "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted configuration file in Lua\n"
@@ -340,11 +342,9 @@ int main(int argc, char *argv[]) {
     option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
     if (parse.error()) {
-        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
     } else if (options[HELP] || argc == 0) {
-        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
     } else if (options[COMPARE] && options[COMPARE].count() == 2) {
@@ -359,21 +359,18 @@ int main(int argc, char *argv[]) {
                 }
                 std::cout << "comparing files: " << infname1 << " and " << infname2 << std::endl;
             } catch (std::exception &err) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[COMPARE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
 
         if (!exists_file(infname1)) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname1 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
         if (!exists_file(infname2)) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname2 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
@@ -405,8 +402,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (!exists_file(configfile)) {
-            std::cout << "##" << __LINE__ << std::endl;
-            std::cerr << "File not found: " << configfile << std::endl;
+            std::cerr << "Configuration file not found: " << configfile << std::endl;
             std::cerr << options[CONFIGFILE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
@@ -536,6 +532,12 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
+        if (options[QUERY]) {
+            Sipi::SipiImage img;
+            img.read(infname);
+            std::cout << img << std::endl;
+            return (0);
+        }
         //
         // get the output image name
         //
