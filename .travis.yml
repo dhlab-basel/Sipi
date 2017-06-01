@@ -39,11 +39,12 @@ before_install:
 
 script:
 # run the build process in docker container (only on linux)
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker run sipi /bin/sh -c "cd build; cmake ..; make" ; fi
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker run sipi /bin/sh -c "cd build; cmake ..; make; make test" ; fi
 # run the build process directly on the vm (only on osx)
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then cd build ; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then cmake .. ; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then make ; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then make test ; fi
 
 # allways send notification to our slack channel (success and failure)
 # email is sent per default only on failure and once on success after failure
