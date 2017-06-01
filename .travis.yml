@@ -1,6 +1,6 @@
-# only pull the last 5 commits (faster)
+# only pull the last commit (faster)
 git:
-  depth: 5
+  depth: 1
 
 # makes sure that Travis provisions a vm and not a docker container
 sudo: required
@@ -29,24 +29,18 @@ before_install:
 - openssl aes-256-cbc -K $encrypted_7deda1f68196_key -iv $encrypted_7deda1f68196_iv -in private/private.tar.enc -out private/private.tar -d
 - tar xvf private/private.tar
 - mv v7_9-01727L.zip vendor/.
-# build the docker image (only on linux)
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker build -t sipi . ; fi
 # update and install dependencies (only on osx)
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install openssl; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install libmagic; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install cmake doxygen openssl libmagic gettext nginx graphicsmagick --with-jasper python3; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then pip3 install Sphinx pytest requests psutil iiif_validator; fi
 
 script:
-# run the build process in docker container (only on linux)
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker run sipi /bin/sh -c "cd build; cmake ..; make; make check" ; fi
-# run the build process directly on the vm (only on osx)
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then cd build ; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then cmake .. ; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then make ; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then make check ; fi
+# run the build process in docker container (only on linux based vm)
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker run -v $PWD:/sipi sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make check" ; fi
+# run the build process directly on the vm (only on osx based vm)
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then cd build; cmake ..; make; make check; fi
 
-# allways send notification to our slack channel (success and failure)
+# always send notification to our slack channel (success and failure)
 # email is sent per default only on failure and once on success after failure
 notifications:
   slack:

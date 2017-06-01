@@ -1,4 +1,4 @@
-FROM dhlabbasel/sipi-base:14.04
+FROM dhlabbasel/sipi-base:16.04
 
 MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
 
