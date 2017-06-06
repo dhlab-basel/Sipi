@@ -29,20 +29,22 @@
 namespace shttps {
 
     Error::Error(const char *file_p, const int line_p, const char *msg, int errno_p) : runtime_error(
-            std::string(msg) + "\nFile: " + std::string(file_p) + std::string(" Line: ") + std::to_string(line_p)),
-                                                                                       line(line_p), file(file_p),
-                                                                                       message(msg), sysErrno(errno_p) {
+            std::string(msg)
+            + "\nFile: "
+            + std::string(file_p)
+            + std::string(" Line: ")
+            + std::to_string(line_p)), line(line_p), file(file_p), message(msg), sysErrno(errno_p) {
 
     }
     //============================================================================
 
 
     Error::Error(const char *file_p, const int line_p, const std::string &msg, int errno_p) : runtime_error(
-            std::string(msg) + "\nFile: " + std::string(file_p) + std::string(" Line: ") + std::to_string(line_p)),
-                                                                                              line(line_p),
-                                                                                              file(file_p),
-                                                                                              message(msg),
-                                                                                              sysErrno(errno_p) {
+            std::string(msg)
+            + "\nFile: "
+            + std::string(file_p)
+            + std::string(" Line: ")
+            + std::to_string(line_p)), line(line_p), file(file_p), message(msg), sysErrno(errno_p) {
 
     }
     //============================================================================
@@ -58,7 +60,7 @@ namespace shttps {
 
     std::ostream &operator<<(std::ostream &out_stream, const Error &rhs) {
         std::string errStr = rhs.to_string();
-        out_stream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+        out_stream << errStr;
         return out_stream;
     }
     //============================================================================

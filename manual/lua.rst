@@ -101,6 +101,13 @@ containing the Knora session ID.
 
 
 ***************************************
+File uploads to SIPI
+***************************************
+Using Lua it is possible to create an upload function for image files. See the
+scripts ``upload.elua``and ``do-upload.elua`` in the server directory
+
+
+***************************************
 Sipi Functions Available to Lua Scripts
 ***************************************
 

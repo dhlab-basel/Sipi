@@ -47,6 +47,7 @@ namespace Sipi {
         std::string ssl_key;
 #endif
         std::string img_root; //<! path to root of image repository
+        int subdir_levels = -1;
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         std::string init_script;
         std::string cache_dir;

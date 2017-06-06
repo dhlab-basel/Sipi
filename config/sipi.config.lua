@@ -65,6 +65,16 @@ sipi = {
     prefix_as_path = false,
 
     --
+    -- In order not to accumulate to many files into one diretory (which slows down file
+    -- access considerabely), the images are stored in subdirectories 'A'-'Z'.
+    -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
+    -- The recommandeation is that on average there should not me more than a few
+    -- thousand files in a unix directory (your mileage may vay depending on the
+    -- file system used).
+    --
+    subdir_levels = 0,
+
+    --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
     initscript = './config/sipi.init.lua',

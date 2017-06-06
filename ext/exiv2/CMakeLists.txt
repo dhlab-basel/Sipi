@@ -12,13 +12,13 @@ include(ExternalProject)
 #    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
 #endif()
 ExternalProject_Add(project_exiv2
-	DEPENDS expat
-    INSTALL_DIR ${COMMON_LOCAL}
-    URL http://www.exiv2.org/exiv2-0.25.tar.gz
-    SOURCE_DIR ${COMMON_SRCS}/exiv2-0.25
-    CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-0.25/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
+        DEPENDS expat
+        INSTALL_DIR ${COMMON_LOCAL}
+        URL http://www.exiv2.org/builds/exiv2-0.26-trunk.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/exiv2-trunk
+        CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-trunk/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+        BUILD_COMMAND make
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_exiv2 install_dir)
 

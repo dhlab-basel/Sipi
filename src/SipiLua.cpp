@@ -324,7 +324,14 @@ namespace Sipi {
     /*
      * Lua usage:
      *    img = SipiImage.new("filename")
-     *    img = SipiImage.new("filename",{region=<iiif-region-string>, size=<iiif-size-string> , reduce=<integer>, original=origfilename}, hash="md5"|"sha1"|"sha256"|"sha384"|"sha512")
+     *    img = SipiImage.new("filename",
+     *    {
+     *      region=<iiif-region-string>,
+     *      size=<iiif-size-string>,
+     *      reduce=<integer>,
+     *      original=origfilename},
+     *      hash="md5"|"sha1"|"sha256"|"sha384"|"sha512"
+     *    })
      */
     static int SImage_new(lua_State *L) {
         int top = lua_gettop(L);

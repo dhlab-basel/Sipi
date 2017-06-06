@@ -1,4 +1,4 @@
-/* Copyright (C) 2015 Ben Collins <ben@cyphre.com>
+/* Copyright (C) 2015-2016 Ben Collins <ben@cyphre.com>
    This file is part of the JWT C Library
 
    This library is free software; you can redistribute it and/or
@@ -12,7 +12,7 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library; if not, see
+   License along with the JWT Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
 /**
@@ -22,6 +22,8 @@
 
 #ifndef JWT_H
 #define JWT_H
+
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +37,14 @@ typedef enum jwt_alg {
     JWT_ALG_NONE = 0,
     JWT_ALG_HS256,
     JWT_ALG_HS384,
-    JWT_ALG_HS512
+    JWT_ALG_HS512,
+    JWT_ALG_RS256,
+    JWT_ALG_RS384,
+    JWT_ALG_RS512,
+    JWT_ALG_ES256,
+    JWT_ALG_ES384,
+    JWT_ALG_ES512,
+    JWT_ALG_TERM
 } jwt_alg_t;
 
 /**
@@ -45,6 +54,12 @@ typedef enum jwt_alg {
  * Generally, one would use the jwt_new() function to create an object
  * from scratch and jwt_decode() to create and verify and object from an
  * existing token.
+ *
+ * Note, when using RSA keys (e.g. with RS256), the key is expected to be
+ * a private key in PEM format. If the RSA private key requires a passphrase,
+ * the default is to request it on the command line from stdin. However,
+ * you can override this using OpenSSL's default_passwd routines. For
+ * example, using SSL_CTX_set_default_passwd_cb().
  * @{
  */
 
@@ -75,8 +90,7 @@ int jwt_new(jwt_t **jwt);
  * @param token Pointer to a valid JWT string, nul terminated.
  * @param key Pointer to the key for validating the JWT signature or for
  *     decrypting the token or NULL if no validation is to be performed.
- * @param key_len The length of the above key. Must match the algorithm
- *     (e.g. 32 for HS256) and the length of the data in key.
+ * @param key_len The length of the above key.
  * @return 0 on success, valid errno otherwise.
  *
  * @remark If a key is supplied, the token must pass sig check or decrypt
@@ -120,20 +134,57 @@ jwt_t *jwt_dup(jwt_t *jwt);
  */
 
 /**
- * Return the value of a grant.
+ * Return the value of a string grant.
  *
- * Returns the string value for a grant (e.g. "iss"). If it does not exit,
+ * Returns the string value for a grant (e.g. "iss"). If it does not exist,
  * NULL will be returned.
  *
  * @param jwt Pointer to a JWT object.
  * @param grant String containing the name of the grant to return a value
  *     for.
  * @return Returns a string for the value, or NULL when not found.
+ *
+ * Note, this will only return grants with JSON string values. Use
+ * jwt_get_grant_json() to get the JSON representation of more complex
+ * values (e.g. arrays) or use jwt_get_grant_int() to get simple integer
+ * values.
  */
 const char *jwt_get_grant(jwt_t *jwt, const char *grant);
 
 /**
- * Add a new grant to this JWT object.
+ * Return the value of an integer grant.
+ *
+ * Returns the int value for a grant (e.g. "exp"). If it does not exist,
+ * 0 will be returned.
+ *
+ * @param jwt Pointer to a JWT object.
+ * @param grant String containing the name of the grant to return a value
+ *     for.
+ * @return Returns an int for the value, or 0 when not found.
+ *
+ * Note, this will only return grants with JSON integer values. Use
+ * jwt_get_grant_json() to get the JSON representation of more complex
+ * values (e.g. arrays) or use jwt_get_grant() to get string values.
+ */
+long jwt_get_grant_int(jwt_t *jwt, const char *grant);
+
+/**
+ * Return the value of a grant as JSON encoded object string.
+ *
+ * Returns the JSON encoded string value for a grant (e.g. "iss"). If it
+ * does not exist, NULL will be returned.
+ *
+ * @param jwt Pointer to a JWT object.
+ * @param grant String containing the name of the grant to return a value
+ *     for. If this is NULL, all grants will be returned as a JSON encoded
+ *     hash.
+ * @return Returns a string for the value, or NULL when not found. The
+ *     returned string must be freed by the caller.
+ */
+char *jwt_get_grants_json(jwt_t *jwt, const char *grant);
+
+/**
+ * Add a new string grant to this JWT object.
  *
  * Creates a new grant for this object. The string for grant and val
  * are copied internally, so do not require that the pointer or string
@@ -145,10 +196,62 @@ const char *jwt_get_grant(jwt_t *jwt, const char *grant);
  * @param val String containing the value to be saved for grant. Can be
  *     an empty string, but cannot be NULL.
  * @return Returns 0 on success, valid errno otherwise.
+ *
+ * Note, this only allows for string based grants. If you wish to add
+ * integer grants, then use jwt_add_grant_int(). If you wish to add more
+ * complex grants (e.g. an array), then use jwt_add_grants_json().
  */
 int jwt_add_grant(jwt_t *jwt, const char *grant, const char *val);
 
 /**
+ * Add a new integer grant to this JWT object.
+ *
+ * Creates a new grant for this object. The string for grant
+ * is copied internally, so do not require that the pointer or string
+ * remain valid for the lifetime of this object. It is an error if you
+ * try to add a grant that already exists.
+ *
+ * @param jwt Pointer to a JWT object.
+ * @param grant String containing the name of the grant to add.
+ * @param val int containing the value to be saved for grant.
+ * @return Returns 0 on success, valid errno otherwise.
+ *
+ * Note, this only allows for integer based grants. If you wish to add
+ * string grants, then use jwt_add_grant(). If you wish to add more
+ * complex grants (e.g. an array), then use jwt_add_grants_json().
+ */
+int jwt_add_grant_int(jwt_t *jwt, const char *grant, long val);
+
+/**
+ * Add grants from a JSON encoded object string.
+ *
+ * Loads a grant from an existing JSON encoded object string. Overwrites
+ * existing grant. If grant is NULL, then the JSON encoded string is
+ * assumed to be a JSON hash of all grants being added and will be merged
+ * into the grant listing.
+ *
+ * @param jwt Pointer to a JWT object.
+ * @param json String containing a JSON encoded object of grants.
+ * @return Returns 0 on success, valid errno otherwise.
+ */
+int jwt_add_grants_json(jwt_t *jwt, const char *json);
+
+/**
+ * Delete a grant from this JWT object.
+ *
+ * Deletes the named grant from this object. It is not an error if there
+ * is no grant matching the passed name. If grant is NULL, then all grants
+ * are deleted from this JWT.
+ *
+ * @param jwt Pointer to a JWT object.
+ * @param grant String containing the name of the grant to delete. If this
+ *    is NULL, then all grants are deleted.
+ * @return Returns 0 on success, valid errno otherwise.
+ */
+int jwt_del_grants(jwt_t *jwt, const char *grant);
+
+/**
+ * @deprecated
  * Delete a grant from this JWT object.
  *
  * Deletes the named grant from this object. It is not an error if there
@@ -158,20 +261,8 @@ int jwt_add_grant(jwt_t *jwt, const char *grant, const char *val);
  * @param grant String containing the name of the grant to delete.
  * @return Returns 0 on success, valid errno otherwise.
  */
-int jwt_del_grant(jwt_t *jwt, const char *grant);
-
-/**
- * Add grants from a JSON encoded object string.
- *
- * Loads grants from an existing JSON encoded object string (the body
- * portion). Overwrites any existing grants. Should be used on a jwt_new()
- * created JWT object.
- *
- * @param jwt Pointer to a JWT object.
- * @param json String containing a JSON encoded object of grants.
- * @return Returns 0 on success, valid errno otherwise.
- */
-int jwt_add_grants_json(jwt_t *jwt, const char *json);
+int jwt_del_grant(jwt_t *jwt, const char *grant)
+__attribute__ ((deprecated));
 
 /** @} */
 
@@ -255,8 +346,8 @@ char *jwt_encode_str(jwt_t *jwt);
  *
  * Specifies an algorithm for a JWT object. If JWT_ALG_NONE is used, then
  * key must be NULL and len must be 0. All other algorithms must have a
- * valid pointer to key data of a length specific to the algorithm
- * requested (e.g., HS256 requires 32 Bytes of key data).
+ * valid pointer to key data, which may be specific to the algorithm (e.g
+ * RS256 expects a PEM formatted RSA key).
  *
  * @param jwt Pointer to a JWT object.
  * @param alg A valid jwt_alg_t specifier.
@@ -264,7 +355,7 @@ char *jwt_encode_str(jwt_t *jwt);
  * @param len The length of the key data.
  * @return Returns 0 on success, valid errno otherwise.
  */
-int jwt_set_alg(jwt_t *jwt, jwt_alg_t alg, unsigned char *key, int len);
+int jwt_set_alg(jwt_t *jwt, jwt_alg_t alg, const unsigned char *key, int len);
 
 /**
  * Get the jwt_alg_t set for this JWT object.

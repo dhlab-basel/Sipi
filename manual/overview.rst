@@ -44,6 +44,9 @@ authorization logic in Lua_ scripts, and supports restricted access to images,
 either by reducing image dimensions or by adding watermarks. It can easily be
 integrated with Knora_.
 
+In addition, a simple webserver is integrated. The server is able to serve .html_,
+.pdf_, .jpg_,
+
 Sipi is `free software`_, released under the `GNU Affero General Public License`_.
 It is written in C++ and runs on Linux (including Debian_, Ubuntu_, and CentOS_) and
 Mac OS X.
