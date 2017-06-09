@@ -1,3 +1,4 @@
+
 --
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
@@ -29,7 +30,10 @@ sipi = {
     --
     -- userid = '_www',
 
-    hostname = 'localhost',
+    --
+    -- sipi's hostname as reported in the thumbnail response, default is "localhost"
+    --
+    -- hostname = 'localhost',
 
     --
     -- port number the server is listening to
@@ -44,16 +48,16 @@ sipi = {
     --
     -- Maximal size of a post request
     --
-    max_post_size = '30M',
+    max_post_size = '250M',
 
-  --
+    --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
     -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
     -- or <imgroot>/<imageid> (prefix_as_path = FALSE). Please note that "prefix" and "imageid" are
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test/_test_data/images', -- directory for Knora Sipi integration testing
+    imgroot = '/sipi/images', -- make sure that this directory exists
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -63,15 +67,15 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = './config/sipi.init-knora-test.lua',
+    initscript = '/sipi/config/sipi.init-knora.lua',
 
     --
     -- path to the caching directory
     --
-    cachedir = './cache',
+    cachedir = '/sipi/cache',
 
     --
-    -- maxcimal size of the cache
+    -- maximal size of the cache
     --
     cachesize = '100M',
 
@@ -83,7 +87,7 @@ sipi = {
     --
     -- Path to the directory where the scripts for the routes defined below are to be found
     --
-    scriptdir = './scripts',
+    scriptdir = '/sipi/scripts',
 
     ---
     --- Size of the thumbnails
@@ -98,57 +102,25 @@ sipi = {
     --
     -- Path to Knora Application
     --
-    knora_path = 'localhost',
+    knora_path = 'webapihost',
 
     --
     -- Port of Knora Application
     --
-    knora_port = '3333',
+    knora_port = '3333'
 
-    --
-    -- If compiled with SSL support, the port the server is listening for secure connections
-    --
-    ssl_port = 1025,
-
-    --
-    -- If compiled with SSL support, the path to the certificate (must be .pem file)
-    -- The follow commands can be used to generate a self-signed certificate
-    -- # openssl genrsa -out key.pem 2048
-    -- # openssl req -new -key key.pem -out csr.pem
-    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
-    --
-    ssl_certificate = './certificate/certificate.pem',
-
-    --
-    -- If compiled with SSL support, the path to the key file (see above to create)
-    --
-    ssl_key = './certificate/key.pem',
-
-
-    --
-    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
-    --
-    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
-    --            12345678901234567890123456789012
-
-    --
-    -- Name of the logfile (a ".txt" is added...)
-    --
-    logfile = "sipi.log",
-
-    --
-    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
-    --
-    loglevel = "DEBUG",
 }
 
+
 fileserver = {
-    docroot = './server',
+    docroot = '/sipi/server',
     docroute = '/server'
 }
 
 --
--- Custom routes. Each route is URL path associated with a Lua script.
+-- here we define routes that are handled by lua scripts. A route is a defined url:
+-- http://<server-DNS>/<route>
+-- executes the given script defined below
 --
 routes = {
     {

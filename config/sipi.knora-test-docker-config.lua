@@ -117,7 +117,7 @@ sipi = {
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
     --
-    ssl_certificate = './certificate/certificate.pem',
+    ssl_certificate = '/sipi/certificate/certificate.pem',
 
     --
     -- If compiled with SSL support, the path to the key file (see above to create)
@@ -140,6 +140,11 @@ sipi = {
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
     loglevel = "DEBUG",
+}
+
+fileserver = {
+    docroot = '/sipi/server',
+    docroute = '/server'
 }
 
 --
