@@ -287,6 +287,9 @@ inline bool exists_file(const std::string &name) {
 /*!
  * A singleton that does global initialisation and cleanup of libraries used by Sipi. This class is used only
  * in main().
+ *
+ * Some libraries such as the ones used for processing XMP or TIFF need some global initialization. These
+ * are performed in the constructor of this singleton class
  */
 class LibraryInitialiser {
 public:
@@ -348,6 +351,9 @@ int main(int argc, char *argv[]) {
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
     } else if (options[COMPARE] && options[COMPARE].count() == 2) {
+        //
+        // command line function: we want to compare pixelwise to files. After having done this, we exit
+        //
         std::string infname1, infname2;
 
         for (option::Option *opt = options[COMPARE]; opt; opt = opt->next()) {
@@ -391,6 +397,10 @@ int main(int argc, char *argv[]) {
         // if a config file is given, we start sipi as IIIF compatible server
         //
     } else if (options[CONFIGFILE]) {
+        //
+        // there is a configuration file given on the command line. Thus we try to start SIPI in
+        // server mode
+        //
         std::string configfile;
 
         try {
