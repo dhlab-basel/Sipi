@@ -1,14 +1,16 @@
-# only pull the last commit (faster)
-git:
-  depth: 1
-
 # get us a vm with ubuntu 16.04
 dist: trusty
 sudo: required
 
+# only pull the last commit (faster)
+git:
+  depth: 1
+
 # provides us docker
 services:
   - docker
+
+language: cpp
 
 # define some additional environment variables
 env:
@@ -19,15 +21,13 @@ env:
     - REPO=dhlabbasel/sipi
     - TAG=${TRAVIS_BRANCH//\//-}
 
-- script:
+script:
   # decrypt archive containing the kakadu library
   - openssl aes-256-cbc -K $encrypted_7deda1f68196_key -iv $encrypted_7deda1f68196_iv -in private/private.tar.enc -out private/private.tar -d
   - tar xvf private/private.tar
   - mv v7_9-01727L.zip vendor/.
-
   # run compile and tests inside docker
   - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make check"
-
   # login into docker hub, build image, and push
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
   - docker build -f Dockerfile -t $REPO:$COMMIT .
