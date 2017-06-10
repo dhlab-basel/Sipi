@@ -26,7 +26,8 @@ class SipiFilenameHash {
 private:
     const int seed = 137;   //!< an arbitrary seed value (no special meaning...)
     const int numchars = 26;
-    int hash_len;
+    const unsigned int modval = 308915776; // (26^6)
+    const int hash_len = 6;
     std::vector<char> *hash; //!< Pointer to a vector of chars
 
 
@@ -37,7 +38,7 @@ public:
      * @param name Filename of file for which the "hash" should be calculated
      * @param hash_len Number of directory levels. Must be in the range (inklusive) of [1..6]!
      */
-    SipiFilenameHash(const std::string &name, int hash_len_p);
+    SipiFilenameHash(const std::string &name);
 
     /*!
      * Copy constructor (makes deep copy)
@@ -69,7 +70,9 @@ public:
      */
     char &operator[] (int index);
 
-    int check_levels(const std::string &path);
+    static int check_levels(const std::string &path);
+
+    static void migrateToLevels(const std::string &imgdir, int levels);
 };
 
 
