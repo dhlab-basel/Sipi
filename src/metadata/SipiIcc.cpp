@@ -125,13 +125,13 @@ namespace Sipi {
             }
             case icc_GRAY_D50: {
                 cmsContext context = cmsCreateContext(0, 0);
-                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 2.2));
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), cmsBuildGamma(context, 2.2));
                 profile_type = icc_GRAY_D50;
                 break;
             }
             case icc_LUM_D65: {
                 cmsContext context = cmsCreateContext(0, 0);
-                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 2.4));
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), cmsBuildGamma(context, 2.4));
                 profile_type = icc_LUM_D65;
                 break;
             }
@@ -140,7 +140,7 @@ namespace Sipi {
                 if (context == nullptr) std::cerr << "1 +++++++++++++++++++++++" << std::endl;
                 cmsToneCurve* gaga = cmsBuildGamma(context, 1.8);
                 if (gaga == nullptr) std::cerr << "2 +++++++++++++++++++++++" << std::endl;
-                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), gaga);
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), gaga);
                 if (icc_profile == nullptr) std::cerr << "3 +++++++++++++++++++++++" << std::endl;
                 cmsDeleteContext(context);
                 profile_type = icc_ROMM_GRAY;
