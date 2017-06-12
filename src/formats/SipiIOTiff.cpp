@@ -305,7 +305,7 @@ static ExifTag_type exiftag_list[] = {{EXIFTAG_EXPOSURETIME,             EXIF_DT
                                       {EXIFTAG_SHARPNESS,                EXIF_DT_UINT16,     0L,  {0l}},
                                       {EXIFTAG_DEVICESETTINGDESCRIPTION, EXIF_DT_PTR,        0L,  {0L}},
                                       {EXIFTAG_SUBJECTDISTANCERANGE,     EXIF_DT_UINT16,     0L,  {0L}},
-                                      {EXIFTAG_IMAGEUNIQUEID,            EXIF_DT_PTR,        33L, {0L}},};
+                                      {EXIFTAG_IMAGEUNIQUEID,            EXIF_DT_STRING,      0L, {0L}},};
 
 static int exiftag_list_len = sizeof(exiftag_list) / sizeof(ExifTag_type);
 
