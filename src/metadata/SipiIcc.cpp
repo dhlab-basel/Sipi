@@ -136,9 +136,15 @@ namespace Sipi {
                 break;
             }
             case icc_ROMM_GRAY: {
-                cmsContext context = cmsCreateContext(0, 0);
-                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), cmsBuildGamma(context, 1.8));
+                cmsContext context = cmsCreateContext(nullptr, nullptr);
+                if (context == nullptr) std::cerr << "1 +++++++++++++++++++++++" << std::endl;
+                cmsToneCurve* gaga = cmsBuildGamma(context, 1.8);
+                if (gaga == nullptr) std::cerr << "2 +++++++++++++++++++++++" << std::endl;
+                icc_profile = cmsCreateGrayProfile(cmsD50_xyY(), gaga);
+                if (icc_profile == nullptr) std::cerr << "3 +++++++++++++++++++++++" << std::endl;
+                cmsDeleteContext(context);
                 profile_type = icc_ROMM_GRAY;
+                break;
             }
         }
     }

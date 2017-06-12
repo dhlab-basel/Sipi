@@ -451,6 +451,7 @@ namespace Sipi {
                     }
                     case 100: {
                         img->photo = MINISBLACK;
+                        std::cerr << "********************" << std::endl;
                         img->icc = std::make_shared<SipiIcc>(icc_ROMM_GRAY);
                         break;
                     }
@@ -645,6 +646,7 @@ namespace Sipi {
 
 
     void SipiIOJ2k::write(SipiImage *img, std::string filepath, int quality) {
+        std::cerr << *img;
         kdu_customize_warnings(&kdu_sipi_warn);
         kdu_customize_errors(&kdu_sipi_error);
 
@@ -768,9 +770,11 @@ namespace Sipi {
                         break;
                     }
                     default: {
+                        std::cerr << "---------------------------" << std::endl;
                         unsigned int icc_len;
                         kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                         jp2_family_colour.init(icc_bytes);
+                        std::cerr << "===========================" << std::endl;
                     }
                 }
 
