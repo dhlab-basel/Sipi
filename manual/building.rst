@@ -46,8 +46,9 @@ The Kakadu source code archive ``v7_9-01727L.zip`` must be placed in the
 
 Sipi's build process requires CMake_, a C++ compiler that supports the C++11
 standard (such as GCC_ or clang_), and several libraries that are readily
-available on supported platforms. The test framework requires `Python 3`_ and
-nginx_. Instructions for installing these prerequisites are given below.
+available on supported platforms. The test framework requires `Python 3`_,
+nginx_, and a recent version of ImageMagick_. Instructions for installing
+these prerequisites are given below.
 
 The build process downloads and builds Sipi's other prerequisites.
 
@@ -60,7 +61,9 @@ which are specified in the file ``Color Profile EULA.pdf``.
 Mac OS X & macOS
 ================
 
-You will need Homebrew_ and at least OSX 10.11.5. Then:
+You will need Homebrew_ and at least OSX 10.11.5.
+
+Prerequisites for building Sipi without its automated test framework:
 
 ::
 
@@ -70,9 +73,14 @@ You will need Homebrew_ and at least OSX 10.11.5. Then:
     brew install openssl
     brew install libmagic
     brew install gettext
+
+If you also want to run Sipi's tests:
+
+::
+
     brew install nginx
     sudo chown -R $USER /usr/local/var/log/nginx/
-    brew install graphicsmagick --with-jasper
+    brew install imagemagick --with-openjpeg
     brew install python3
     pip3 install Sphinx
     pip3 install pytest
@@ -85,6 +93,8 @@ You will need Homebrew_ and at least OSX 10.11.5. Then:
 Ubuntu 16.04
 ============
 
+Prerequisites for building Sipi without its automated test framework:
+
 ::
 
     sudo apt-get install g++
@@ -93,13 +103,18 @@ Ubuntu 16.04
     sudo apt-get install doxygen
     sudo apt-get install libreadline-dev
     sudo apt-get install gettext
+    sudo apt-get install libmagic-dev
+
+If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.5-4
+or higher. You may need to compile it from source. Then:
+
+::
+
     sudo apt-get install nginx
     sudo chown -R $USER /var/log/nginx
     sudo apt-get install python3
     sudo apt-get install python3-pip
     sudo -H pip3 install --upgrade pip
-    sudo apt-get install libmagic-dev
-    sudo apt-get install graphicsmagick
     sudo -H pip3 install Sphinx
     sudo -H pip3 install pytest
     sudo -H pip3 install requests
@@ -131,7 +146,8 @@ devtoolset-4_, and adding this to your ``.bash_profile``:
 
     source scl_source enable devtoolset-4
 
-Then:
+
+Prerequisites for building Sipi without its automated test framework:
 
 ::
 
@@ -141,11 +157,17 @@ Then:
     sudo yum -y install patch
     sudo yum -y install openssl-devel
     sudo yum -y install gettext
+    sudo yum -y install file-devel
+
+If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.5-4
+or higher. If the RPM packages on the ImageMagick web site don't work for you, you
+can install it from source. Then:
+
+::
+
     sudo yum -y install nginx
     sudo chown -R $USER /var/log/nginx
     sudo chown -R $USER /var/lib/nginx
-    sudo yum -y install file-devel
-    sudo yum -y install GraphicsMagick
     sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm
     sudo yum -y install python35u
     sudo yum -y install python35u-devel
@@ -248,3 +270,4 @@ the top level of the source tree and type:
 .. _`Code::Blocks`: http://www.codeblocks.org/
 .. _LaTeX: https://www.latex-project.org/
 .. _devtoolset-4: https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/
+.. _ImageMagick: http://www.imagemagick.org/

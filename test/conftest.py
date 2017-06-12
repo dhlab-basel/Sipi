@@ -305,27 +305,6 @@ class SipiTestManager:
         """
         return os.path.join(self.data_dir, relative_path)
 
-    def convert_and_compare(self, reference_source_file_path, converted_filename, reference_target_file_path):
-        """
-            Uses Sipi on the command-line to convert an image and compare the result with a reference image.
-            Returns a dictionary containing "converted_file_path" and "pae".
-
-            reference_source_file_path: the file to be converted (an absolute path).
-            converted_filename: the filename to be used for the converted file.
-            reference_target_file_path: the reference image for checking the converted image (an absolute path).
-        """
-
-        # Make absolute paths.
-        tempdir = tempfile.mkdtemp()
-        converted_file_path = os.path.join(tempdir, converted_filename)
-
-        # Have Sipi convert the reference source image to the target format.
-        self.sipi_convert(reference_source_file_path, converted_file_path)
-
-        # Compare the converted image to the reference target image using PAE.
-        pae = self.compare_images(reference_target_file_path, converted_file_path, "PAE")
-
-        return { "converted_file_path": converted_file_path, "pae": pae }
 
     def post_file(self, url_path, file_path, mime_type, headers=None):
         """
