@@ -31,7 +31,7 @@ private:
     std::string path;
     std::string name;
     std::vector<char> *hash; //!< Pointer to a vector of chars
-
+    static int __levels;
 
 public:
     /*!
@@ -62,6 +62,10 @@ public:
      */
     virtual ~SipiFilenameHash();
 
+    inline static void setLevels(int l) { __levels = l; }
+
+    inline static int getLevels(void) { return __levels; }
+
 
     /*!
      * Index operator to access hash character
@@ -72,12 +76,7 @@ public:
      */
     char &operator[] (int index);
 
-    /*!
-     * Copies a file into the subdir structure of the image repository
-     *
-     * @param imgdir Top of image repository
-     */
-    void copyFile(const std::string& imgdir, int levels);
+    std::string filepath(void);
 
     /*!
      * Returns the number of levels used in the image repository
@@ -95,7 +94,6 @@ public:
      */
     static void migrateToLevels(const std::string &imgdir, int levels);
 
-    static bool test__(void);
 };
 
 

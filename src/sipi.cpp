@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "curl/curl.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
@@ -42,6 +46,7 @@
 #include "SipiLua.h"
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
+#include "SipiFilenameHash.h"
 #include "optionparser.h"
 
 #include "jansson.h"
@@ -425,6 +430,44 @@ int main(int argc, char *argv[]) {
 
             //store the config option in a SipiConf obj
             Sipi::SipiConf sipiConf(luacfg);
+
+
+            //
+            // here we check the levels... and mig^ate if necessary
+            //
+            if (sipiConf.getPrefixAsPath()) {
+                //
+                // the prefix is used as part of the path
+                //
+                DIR *dirp = opendir(sipiConf.getImgRoot().c_str());
+                if (dirp == nullptr) {
+                    throw shttps::Error(__file__, __LINE__, std::string("Couldn't read directory content! Path: ") + sipiConf.getImgRoot(), errno);
+                }
+                struct dirent *dp;
+                while ((dp = readdir(dirp)) != nullptr) {
+                    if (dp->d_type == DT_DIR) {
+                        std::string path = sipiConf.getImgRoot() + dp->d_name;
+                        int levels = SipiFilenameHash::check_levels(path);
+                        int new_levels = sipiConf.getSubdirLevels();
+                        if (levels != new_levels) {
+                            std::cerr << "Subdir migration of " << path << "...." << std::endl;
+                            SipiFilenameHash::migrateToLevels(path, new_levels);
+                        }
+                    }
+                }
+            }
+            else {
+                //
+                // the prefix is not used
+                //
+                int levels = SipiFilenameHash::check_levels(sipiConf.getImgRoot());
+                int new_levels = sipiConf.getSubdirLevels();
+                if (levels != new_levels) {
+                    std::cerr << "Subdir migration of " << sipiConf.getImgRoot() << "...." << std::endl;
+                    SipiFilenameHash::migrateToLevels(sipiConf.getImgRoot(), new_levels);
+                }
+            }
+            SipiFilenameHash::setLevels(sipiConf.getSubdirLevels());
 
             //Create object SipiHttpServer
             Sipi::SipiHttpServer server(sipiConf.getPort(), static_cast<unsigned int> (sipiConf.getNThreads()),

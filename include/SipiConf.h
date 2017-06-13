@@ -96,7 +96,7 @@ namespace Sipi {
 
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
 
-        inline int getSubdir(void) { return port; }
+        inline int getSubdirLevels(void) { return subdir_levels; }
 
         inline std::string getInitScript(void) { return init_script; }
 

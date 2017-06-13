@@ -37,6 +37,7 @@
 #include <vector>
 #include <cmath>
 #include <utility>
+#include <SipiFilenameHash.h>
 
 
 #include "SipiImage.h"
@@ -318,11 +319,12 @@ namespace Sipi {
                 return;
             }
         } else {
+            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
                 infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                         urldecode(params[iiif_identifier]);
+                         identifier.filepath();
             } else {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_identifier]);
+                infile = serv->imgroot() + "/" + identifier.filepath();
             }
         }
 
@@ -779,6 +781,17 @@ namespace Sipi {
             permission = pre_flight_return_values.first;
             infile = pre_flight_return_values.second;
 
+            //
+            // here we adjust the path for the subdirs
+            //
+            size_t ppos = infile.rfind("/");
+            if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
+                std::string dirpart = infile.substr(0, ppos);
+                std::string filepart = infile.substr(ppos + 1);
+                SipiFilenameHash identifier = SipiFilenameHash(filepart);
+                infile = dirpart + "/" + identifier.filepath();
+            }
+
             size_t colon_pos = permission.find(':');
             std::string qualifier;
 
@@ -806,11 +819,12 @@ namespace Sipi {
                 }
             }
         } else {
+            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
                 infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                         urldecode(params[iiif_identifier]);
+                        identifier.filepath();
             } else {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_identifier]);
+                infile = serv->imgroot() + "/" + identifier.filepath();
             }
         }
 

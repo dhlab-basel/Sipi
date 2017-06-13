@@ -14,6 +14,8 @@
 
 const static char __file__[] = __FILE__;
 
+int SipiFilenameHash::__levels = 0;
+
 SipiFilenameHash::SipiFilenameHash(const std::string &path_p) : path(path_p) {
     unsigned int hashval = 0;
 
@@ -32,7 +34,7 @@ SipiFilenameHash::SipiFilenameHash(const std::string &path_p) : path(path_p) {
     hash = new std::vector<char>(hash_len, 0);
 
     for (int i = 0; i < hash_len; i++) {
-        (*hash)[i] = 'A' + hashval % modval;
+        (*hash)[i] = 'A' + hashval % numchars;
         hashval /= numchars;
     }
 }
@@ -48,7 +50,7 @@ SipiFilenameHash& SipiFilenameHash::operator=(const SipiFilenameHash& other) {
 }
 
 SipiFilenameHash::~SipiFilenameHash() {
-    delete [] hash;
+    delete hash;
 }
 
 
@@ -59,69 +61,54 @@ char &SipiFilenameHash::operator[] (int index) {
     return (*hash)[index];
 }
 
-void SipiFilenameHash::copyFile(const std::string& imgdir, int levels) {
-    std::ifstream source(path, std::ios::binary);
-    if (source.fail()) {
-        throw shttps::Error(__file__, __LINE__, std::string("Couldnt open file for reading: ") + path);
-    }
 
-    std::string outfname(imgdir);
-    for (int i = 0; i < levels; i++) {
-        char tmp[3] = {'/', (*hash)[i], '\0'};
+std::string SipiFilenameHash::filepath(void) {
+
+    std::string outfname = "";
+    for (int i = 0; i < __levels; i++) {
+        char tmp[3] = {(*hash)[i], '/', '\0'};
         outfname += tmp;
     }
-    outfname = "/" + name;
-    std::ofstream dest(outfname, std::ios::binary);
-    if (source.fail()) {
-        throw shttps::Error(__file__, __LINE__, std::string("Couldnt open file for writing: ") + outfname);
-    }
-
-    dest << source.rdbuf();
-
-    source.close();
-    dest.close();
+    outfname += name;
+    return outfname;
 }
 
+static int n_dirs[6];
 
-static int scanDir(const std::string &path, bool &ok, int level) {
+static int scanDir(const std::string &path, int level) {
+    if (level == 0) {
+        n_dirs[0] = n_dirs[1] = n_dirs[2] = n_dirs[3] = n_dirs[4] = n_dirs[5] = 0;
+    }
     DIR *dirp = opendir(path.c_str());
     if (dirp == nullptr) {
         throw shttps::Error(__file__, __LINE__, std::string("Couldn't read directory content! Path: ") + path, errno);
     }
     struct dirent *dp;
-    int count = 0;
-    int sublevel = -1;
     while ((dp = readdir(dirp)) != nullptr) {
         if (dp->d_type == DT_DIR) {
             if ((dp->d_namlen == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
+                n_dirs[level]++;
                 char tmp[3] = {'/', dp->d_name[0], '\0'};
-                bool is_ok;
-                int old_sublevel = sublevel;
-                sublevel = scanDir(path + tmp, is_ok, level + 1);
-                if ((old_sublevel >= 0) && (old_sublevel != sublevel)) {
-                    closedir(dirp);
-                    throw shttps::Error(__file__, __LINE__, "inconsistency in directory tree!");
-                }
-                if (is_ok) { // we have either 0 or 26 subdirs
-                    count++;
-                }
+                (void) scanDir(path + tmp, level + 1);
             }
         }
     }
-    if ((count == 0) || (count == 26)) { // no or 26 subdirs
-        ok = true;
-    } else {
-        ok = false;
-    }
     closedir(dirp);
-    return (count == 26) ? level + 1 : level;
+
+    int i = 0;
+    int k = 26;
+    if (level == 0) {
+        for (i = 0; i < 6; i++) {
+            if (n_dirs[i] == 0) break;
+            if (n_dirs[i] != k) throw shttps::Error(__file__, __LINE__, "Inconsistent directory tree!");
+            k *= 26;
+        }
+    }
+    return i;
 }
 
 int SipiFilenameHash::check_levels(const std::string &imgdir) {
-    bool ok;
-    int levels = scanDir(imgdir, ok, 0);
-    if (ok) return levels;
-    throw shttps::Error(__file__, __LINE__, "inconsistency in directory tree!");
+    return scanDir(imgdir, 0);
 }
 
 
@@ -141,18 +128,18 @@ static void add_level(const std::string& path, int cur_level) {
                 n_dirs++;
             }
         } else if (dp->d_type == DT_REG) {
+            if (strcmp(dp->d_name, ".") == 0) continue;
+            if (strcmp(dp->d_name, "..") == 0) continue;
+            if (dp->d_name[0] == '.') continue;
             filelist.push_back(std::string(dp->d_name));
         }
     }
     closedir(dirp);
 
-    if (filelist.size() > 0) {
-        if (n_dirs != 0) {
-            throw shttps::Error(__file__, __LINE__, "inconsistency in directory tree!");
-        }
-        //
-        // first create all new subdirs
-        //
+    //
+    // first create all new subdirs
+    //
+    if (n_dirs == 0) {
         for (char c = 'A'; c <= 'Z'; c++) {
             char tmp[3] = {'/', c, '\0'};
             std::string newdirname = path + tmp;
@@ -160,13 +147,18 @@ static void add_level(const std::string& path, int cur_level) {
                 throw shttps::Error(__file__, __LINE__, "Creating subdir failed!", errno);
             }
         }
+    }
 
+    if (filelist.size() > 0) {
+        if (n_dirs != 0) {
+            throw shttps::Error(__file__, __LINE__, "inconsistency in directory tree!");
+        }
         for (auto fname: filelist) {
             SipiFilenameHash fhash(fname);
             char tmp[4] = {'/', fhash[cur_level], '/', '\0'};
-            std::string newfname = path + tmp + fname;
-            std::string oldfname = path + "/" + fname;
-            if (rename(oldfname.c_str(), newfname.c_str())) {
+            std::string newfname(path + tmp + fname);
+            std::string oldfname(path + "/" + fname);
+            if (std::rename(oldfname.c_str(), newfname.c_str())) {
                 throw shttps::Error(__file__, __LINE__, "Rename/move failed!", errno);
             }
         }
@@ -195,10 +187,7 @@ static bool remove_level(const std::string& path, int cur_level) {
                 // we have subdirs – let's enter them recursively
                 //
                 char tmp[3] = {'/', dp->d_name[0], '\0'};
-                if (remove_level(path + tmp, cur_level + 1)) {
-                    // we have emptied the given path by moving files up....
-                    n_emptied_dirs++;
-                }
+                if (remove_level(path + tmp, cur_level + 1)) n_emptied_dirs++;
                 n_dirs++;
             }
         } else if (dp->d_type == DT_REG) {
@@ -209,38 +198,39 @@ static bool remove_level(const std::string& path, int cur_level) {
         }
     }
     closedir(dirp);
+
+    if (n_dirs == 0) {
+        if (cur_level > 0) {
+            //
+            // we have no more subdirs, so we are down at the end. Let's move
+            // all files one level up.
+            //
+            size_t pos = path.rfind("/");
+            if (pos == std::string::npos) throw shttps::Error(__file__, __LINE__, "Inconsistency!");
+            for (auto fname: filelist) {
+                std::string newfname = path.substr(0, pos) + "/" + fname;
+                std::string oldfname = path + "/" + fname;
+                std::cerr << "rename oldfname: " << oldfname << " newfname: " << newfname << std::endl;
+                if (rename(oldfname.c_str(), newfname.c_str())) {
+                    throw shttps::Error(__file__, __LINE__, "Rename/move failed!", errno);
+                }
+            }
+        }
+        return true;
+    }
     if (n_emptied_dirs == 26) {
         //
         // we have emptied all subdirs – let's remove them
         //
-        size_t pos = path.rfind("/");
+        //size_t pos = path.rfind("/");
         for( char c = 'A'; c <= 'Z'; c++) {
             char tmp[3] = {'/', c, '\0'};
-            std::string dirname = path.substr(0, pos) + tmp;
+            //std::string dirname = path.substr(0, pos) + tmp;
+            std::string dirname = path + tmp;
             if (rmdir(dirname.c_str())) {
-                throw shttps::Error(__file__, __LINE__, "rmdir failed!", errno);
+                throw shttps::Error(__file__, __LINE__, std::string("rmdir failed! ") + dirname, errno);
             }
         }
-        return false;
-    }
-
-    if ((n_dirs == 0) && (cur_level > 0)) {
-        //
-        // we have no more subdirs, so we are down at the end. Let's move
-        // all files one level up.
-        //
-        size_t pos = path.rfind("/");
-        if (pos == std::string::npos) throw shttps::Error(__file__, __LINE__, "Inconsistency!");
-        for (auto fname: filelist) {
-
-            std::string newfname = path.substr(0, pos) + "/" + fname;
-            std::string oldfname = path + "/" + fname;
-
-            if (rename(oldfname.c_str(), newfname.c_str())) {
-                throw shttps::Error(__file__, __LINE__, "Rename/move failed!", errno);
-            }
-        }
-        return true;
     }
     return false;
 }
@@ -248,19 +238,19 @@ static bool remove_level(const std::string& path, int cur_level) {
 
 void SipiFilenameHash::migrateToLevels(const std::string& imgdir, int levels) {
     int act_levels = check_levels(imgdir);
+    std::cerr << "act_levels=" << act_levels << " levels=" << levels << std::endl;
     if (levels > act_levels) {
         for (int i = 0; i < (levels - act_levels); i++) {
             add_level(imgdir, 0);
         }
 
     } else if (levels < act_levels) {
+        std::cerr << "Removing levels..." << std::endl;
         for (int i = 0; i < (act_levels - levels); i++) {
-            remove_level(imgdir, 0);
+            std::cerr << "Remove a level..........." << std::endl;
+            (void) remove_level(imgdir, 0);
         }
 
     }
 }
 
-bool SipiFilenameHash::test__(void) {
-    return true;
-}
