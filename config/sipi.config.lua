@@ -26,12 +26,22 @@ sipi = {
     --
     -- userid = '_www',
 
+    --
+    -- Indicate the hostname (DNS-name), under which the SIPI server is being adressed
+    --
     hostname = 'localhost',
     
     --
-    -- port number the server is listening to
+    -- port number the server is listening to. If SIPI is running on a dedicated system, this should
+    -- be set to 80
     --
     port = 1024,
+
+    --
+    -- If compiled with SSL support, the port the server is listening for secure connections.
+    -- If SIPI is running on a dedicated system, this should be set to 443
+    --
+    ssl_port = 1025,
 
     --
     -- Number of threads to use
@@ -39,12 +49,12 @@ sipi = {
     nthreads = 8,
 
     --
-    -- Number of seconds a connection (socket) remains open at maximum
+    -- Number of seconds a connection (socket) remains open at maximum ("keep-alive")
     --
     keep_alive = 5,
 
     --
-    -- Maximal size of a post request
+    -- Maximal size of a post request.
     --
     max_post_size = '300M',
 
@@ -57,6 +67,7 @@ sipi = {
     --
     -- To use Sipi's test data, use the following imgroot, and set prefix_as_path to true below:
     -- imgroot = './test/_test_data/images',
+    --
     imgroot = './images',
 
     --
@@ -66,7 +77,7 @@ sipi = {
 
     --
     -- In order not to accumulate to many files into one diretory (which slows down file
-    -- access considerabely), the images are stored in subdirectories 'A'-'Z'.
+    -- access considerabely), the images are stored in recursive subdirectories 'A'-'Z'.
     -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
     -- The recommandeation is that on average there should not me more than a few
     -- thousand files in a unix directory (your mileage may vay depending on the
@@ -109,7 +120,7 @@ sipi = {
     scriptdir = './scripts',
 
     ---
-    --- Size of the thumbnails
+    --- Size of the thumbnails (to be used within Lua)
     ---
     thumb_size = '!128,128',
 
@@ -117,11 +128,6 @@ sipi = {
     -- Path to the temporary directory
     --
     tmpdir = '/tmp',
-
-    --
-    -- If compiled with SSL support, the port the server is listening for secure connections
-    --
-    ssl_port = 1025,
 
     --
     -- If compiled with SSL support, the path to the certificate (must be .pem file)
@@ -139,13 +145,14 @@ sipi = {
 
 
     --
-    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
+    -- The secret for generating JWT's (JSON Web Tokens) (exactely 42 characters)
     --
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
 
     --
-    -- Name of the logfile (a ".txt" is added...)
+    -- Name of the logfile (a ".txt" is added...) !!! Currently not used, since logging
+    -- is based on syslog !!!!
     --
     logfile = "sipi.log",
 

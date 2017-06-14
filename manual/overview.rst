@@ -42,10 +42,12 @@ Sipi can convert them on the fly to formats that are commonly used on the
 Internet. Sipi offers a flexible framework for specifying authentication and
 authorization logic in Lua_ scripts, and supports restricted access to images,
 either by reducing image dimensions or by adding watermarks. It can easily be
-integrated with Knora_.
+integrated with Knora_. In addition SIPI preserves most of the EXIF_, IPTC_ and XMP_
+metadata and can preservce of transform ICC_ colour profiles.
 
-In addition, a simple webserver is integrated. The server is able to serve .html_,
-.pdf_, .jpg_,
+In addition, a simple webserver is integrated. The server is able to serve most
+common file types. In addition Lua scripts (*.lua) and embedded Lua (that is Lua
+embedded into *.html pages using the tags <lua>…</lua> are supported.
 
 Sipi is `free software`_, released under the `GNU Affero General Public License`_.
 It is written in C++ and runs on Linux (including Debian_, Ubuntu_, and CentOS_) and
@@ -64,3 +66,7 @@ Freely distributable binary releases will be available soon.
 .. _Debian: https://www.debian.org/
 .. _Ubuntu: https://www.ubuntu.com/
 .. _CentOS: https://www.centos.org/
+.. _EXIF: http://www.exif.org
+.. _IPTC: https://iptc.org/standards/photo-metadata/iptc-standard/
+.. _XMP: http://www.adobe.com/products/xmp.html
+.. _ICC: https://en.wikipedia.org/wiki/ICC_profile
