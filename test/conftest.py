@@ -78,7 +78,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
-        self.sipi_convert_command = "build/sipi -f {} {}"
+        self.sipi_convert_command = "build/sipi --file {} --format {} {}"
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -264,14 +264,15 @@ class SipiTestManager:
             universal_newlines = True)
         return info_process.stdout
 
-    def sipi_convert(self, source_file_path, target_file_path):
+    def sipi_convert(self, source_file_path, target_file_path, target_file_format):
         """
             Runs Sipi on the command line to convert an image from one format to another.
 
             source_file_path: the absolute path of the source file.
             target_file_path: the absolute path of the target file.
+            target_file_format: jpx, jpg, tif, or png.
         """
-        convert_process_args = shlex.split(self.sipi_convert_command.format(source_file_path, target_file_path))
+        convert_process_args = shlex.split(self.sipi_convert_command.format(source_file_path, target_file_format, target_file_path))
         convert_process = subprocess.run(convert_process_args,
             cwd=self.sipi_working_dir,
             stdout=subprocess.PIPE,

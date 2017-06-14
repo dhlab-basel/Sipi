@@ -55,7 +55,7 @@ class TestConversions:
             reference_tif = manager.data_dir_path(self.reference_tif_tmpl.format(i))
             sipi_tif = os.path.join(tempdir, self.sipi_tif_tmpl.format(i))
 
-            manager.sipi_convert(reference_jp2, sipi_tif)
+            manager.sipi_convert(reference_jp2, sipi_tif, "tif")
             pae = manager.compare_images(sipi_tif, reference_tif, "PAE")
             results += "Image {}: Converted JP2 -> TIFF\n    Reference JP2: {}\n    Reference TIFF: {}\n    Sipi TIFF: {}\n    PAE (Sipi TIFF compared to reference TIFF): {}\n\n".format(i, reference_jp2, reference_tif, sipi_tif, pae)
             pae_regex_match = compare_out_re.match(pae)
@@ -80,8 +80,8 @@ class TestConversions:
             sipi_tif = os.path.join(tempdir, self.sipi_tif_tmpl.format(i))
             sipi_round_trip_tif = os.path.join(self.sipi_round_trip_tmpl.format(i))
 
-            manager.sipi_convert(reference_tif, sipi_jp2)
-            manager.sipi_convert(sipi_jp2, sipi_tif)
+            manager.sipi_convert(reference_tif, sipi_jp2, "jpx")
+            manager.sipi_convert(sipi_jp2, sipi_tif, "tif")
             pae = manager.compare_images(sipi_tif, reference_tif, "PAE")
 
             results += "Image {}: Converted TIFF -> JP2 -> TIFF\n    Reference TIFF: {}\n    Sipi JP2: {}\n    Sipi TIFF: {}\n    PAE (Sipi TIFF compared to reference TIFF): {}\n\n".format(i, reference_tif, sipi_jp2, sipi_tif, pae)
