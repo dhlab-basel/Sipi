@@ -314,6 +314,19 @@ namespace Sipi {
             permission = pre_flight_return_values.first;
             infile = pre_flight_return_values.second;
 
+            //
+            // here we adjust the path for the subdirs
+            //
+            if (SipiFilenameHash::getLevels()) {
+                size_t ppos = infile.rfind("/");
+                if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
+                    std::string dirpart = infile.substr(0, ppos);
+                    std::string filepart = infile.substr(ppos + 1);
+                    SipiFilenameHash identifier = SipiFilenameHash(filepart);
+                    infile = dirpart + "/" + identifier.filepath();
+                }
+            }
+
             if (permission != "allow") {
                 send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
                 return;
@@ -615,11 +628,12 @@ namespace Sipi {
         if (params.size() == 3) {
             std::string infile;
 
+            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
                 infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                         urldecode(params[iiif_identifier]);
+                         identifier.filepath();
             } else {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_identifier]);
+                infile = serv->imgroot() + "/" + identifier.filepath();
             }
 
             if (access(infile.c_str(), R_OK) == 0) {
@@ -784,12 +798,14 @@ namespace Sipi {
             //
             // here we adjust the path for the subdirs
             //
-            size_t ppos = infile.rfind("/");
-            if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
-                std::string dirpart = infile.substr(0, ppos);
-                std::string filepart = infile.substr(ppos + 1);
-                SipiFilenameHash identifier = SipiFilenameHash(filepart);
-                infile = dirpart + "/" + identifier.filepath();
+            if (SipiFilenameHash::getLevels()) {
+                size_t ppos = infile.rfind("/");
+                if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
+                    std::string dirpart = infile.substr(0, ppos);
+                    std::string filepart = infile.substr(ppos + 1);
+                    SipiFilenameHash identifier = SipiFilenameHash(filepart);
+                    infile = dirpart + "/" + identifier.filepath();
+                }
             }
 
             size_t colon_pos = permission.find(':');

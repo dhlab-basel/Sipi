@@ -66,18 +66,26 @@ end
         -- image format.
         --
         success, tmpimgref = SipiImage.new(tmppath)
-
         if not success then
             server.sendStatus(500)
             server.log(gaga, server.loglevel.error)
             return false
         end
+
         myimg[imgindex] = tmpimgref
 
         filename = imgparam["origname"]
         n1, n2 = string.find(filename, '.', 1, true)
         newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
-        filename = config.imgroot .. '/' .. newfilename[imgindex]
+
+        success, newfilepath = helper.filename_hash(newfilename[imgindex]);
+        if not success then
+            server.sendStatus(500)
+            server.log(gaga, server.loglevel.error)
+            return false
+        end
+
+        filename = config.imgroot .. '/' .. newfilepath
 
         local status, errmsg = myimg[imgindex]:write(filename, {original = imgparam["origname"], hash = "sha256"})
         if not status then

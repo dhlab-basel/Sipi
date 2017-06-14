@@ -29,12 +29,14 @@
 
 #include <stdio.h>
 #include <SipiCache.h>
+#include <SipiFilenameHash.h>
 
 
 #include "SipiImage.h"
 #include "SipiLua.h"
 #include "SipiHttpServer.h"
 #include "SipiCache.h"
+#include "Error.h"
 
 namespace Sipi {
 
@@ -289,6 +291,52 @@ namespace Sipi {
                                              {"purge",      lua_purge_cache},
                                              {0,            0}};
     //=========================================================================
+
+    static int lua_filenamehash_helper(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'helper.hash(filename)': parameter missing");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'helper.hash(filename)': filename is not a string");
+            return 2;
+        }
+
+        const char *filename = lua_tostring(L, 1);
+        lua_settop(L, 0); // clear stack
+
+        std::string filepath;
+        try {
+            SipiFilenameHash hash(filename);
+            filepath = hash.filepath();
+        } catch(shttps::Error &err) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            std::stringstream ss;
+            ss << "'helper.hash(filename)': ";
+            ss << err;
+            lua_pushstring(L, ss.str().c_str());
+            return 2;
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushstring(L, filepath.c_str());
+
+        return 2;
+    }
+    //=========================================================================
+
+    static const luaL_Reg helper_methods[] = {{"filename_hash", lua_filenamehash_helper},
+                                             {0,            0}};
+    //=========================================================================
+
 
 
     static SImage *toSImage(lua_State *L, int index) {
@@ -904,11 +952,13 @@ namespace Sipi {
         //
         // filesystem functions
         //
-        //lua_pushstring(L, "cache"); // table1 - "fs"
         lua_newtable(L); // table
         luaL_setfuncs(L, cache_methods, 0);
-        //lua_rawset(L, -3); // table
         lua_setglobal(L, "cache");
+
+        lua_newtable(L); // table
+        luaL_setfuncs(L, helper_methods, 0);
+        lua_setglobal(L, "helper");
 
         lua_getglobal(L, SIMAGE);
         if (lua_isnil(L, -1)) {

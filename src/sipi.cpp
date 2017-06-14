@@ -433,7 +433,7 @@ int main(int argc, char *argv[]) {
 
 
             //
-            // here we check the levels... and mig^ate if necessary
+            // here we check the levels... and migrate if necessary
             //
             if (sipiConf.getPrefixAsPath()) {
                 //
