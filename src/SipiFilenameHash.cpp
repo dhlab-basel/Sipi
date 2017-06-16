@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <string.h>
 
 #include "SipiFilenameHash.h"
 #include "Error.h"
@@ -86,7 +87,7 @@ static int scanDir(const std::string &path, int level) {
     struct dirent *dp;
     while ((dp = readdir(dirp)) != nullptr) {
         if (dp->d_type == DT_DIR) {
-            if ((dp->d_namlen == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
+            if ((strlen(dp->d_name) == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
                 n_dirs[level]++;
                 char tmp[3] = {'/', dp->d_name[0], '\0'};
                 (void) scanDir(path + tmp, level + 1);
@@ -122,7 +123,7 @@ static void add_level(const std::string& path, int cur_level) {
     int n_dirs = 0;
     while ((dp = readdir(dirp)) != nullptr) {
         if (dp->d_type == DT_DIR) {
-            if ((dp->d_namlen == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
+            if ((strlen(dp->d_name) == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
                 char tmp[3] = {'/', dp->d_name[0], '\0'};
                 add_level(path + tmp, cur_level + 1);
                 n_dirs++;
@@ -182,7 +183,7 @@ static bool remove_level(const std::string& path, int cur_level) {
     //
     while ((dp = readdir(dirp)) != nullptr) {
         if (dp->d_type == DT_DIR) {
-            if ((dp->d_namlen == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
+            if ((strlen(dp->d_name) == 1) && (dp->d_name[0] >= 'A' && dp->d_name[0] <= 'Z')) {
                 //
                 // we have subdirs – let's enter them recursively
                 //
