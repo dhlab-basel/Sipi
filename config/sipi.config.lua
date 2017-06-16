@@ -175,8 +175,15 @@ admin = {
 }
 
 fileserver = {
+    --
+    -- directory where the documents for the normal webserver are located
+    --
     docroot = './server',
-    docroute = '/server'
+
+    --
+    -- route under which the normal webserver shouöd respond to requests
+    --
+    wwwroute = '/server'
 }
 
 --

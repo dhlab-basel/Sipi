@@ -137,7 +137,7 @@ admin = {
 
 fileserver = {
     docroot = './server',
-    docroute = '/server'
+    wwwroute = '/server'
 }
 
 --

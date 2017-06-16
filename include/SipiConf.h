@@ -66,7 +66,7 @@ namespace Sipi {
         std::string logfile;
         std::string loglevel;
         std::string docroot;
-        std::string docroute;
+        std::string wwwroute;
         std::string jwt_secret;
         std::string adminuser;
         std::string password;
@@ -132,7 +132,7 @@ namespace Sipi {
 
         inline std::string getDocRoot(void) { return docroot; }
 
-        inline std::string getDocRoute(void) { return docroute; }
+        inline std::string getWWWRoute(void) { return wwwroute; }
 
         inline std::string getJwtSecret(void) { return jwt_secret; }
 

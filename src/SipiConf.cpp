@@ -86,7 +86,7 @@ namespace Sipi {
         password = luacfg.configString("admin", "password", "");
         routes = luacfg.configRoute("routes");
         docroot = luacfg.configString("fileserver", "docroot", "");
-        docroute = luacfg.configString("fileserver", "docroute", "");
+        wwwroute = luacfg.configString("fileserver", "wwwroute", "");
     }
 
 }

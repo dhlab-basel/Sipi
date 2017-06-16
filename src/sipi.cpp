@@ -521,14 +521,14 @@ int main(int argc, char *argv[]) {
             // now we set the routes for the normal HTTP server file handling
             //
             std::string docroot = sipiConf.getDocRoot();
-            std::string docroute = sipiConf.getDocRoute();
+            std::string wwwroute = sipiConf.getWWWRoute();
             std::pair<std::string, std::string> filehandler_info;
 
-            if (!(docroute.empty() || docroot.empty())) {
-                filehandler_info.first = docroute;
+            if (!(wwwroute.empty() || docroot.empty())) {
+                filehandler_info.first = wwwroute;
                 filehandler_info.second = docroot;
-                server.addRoute(shttps::Connection::GET, docroute, shttps::FileHandler, &filehandler_info);
-                server.addRoute(shttps::Connection::POST, docroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::GET, wwwroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::POST, wwwroute, shttps::FileHandler, &filehandler_info);
             }
 
             server.run();
