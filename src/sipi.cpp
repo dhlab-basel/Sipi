@@ -332,8 +332,10 @@ private:
 };
 
 int main(int argc, char *argv[]) {
+    //
+    // first we initialize the libraries that sipi uses
+    //
     try {
-        // Initialise libraries used by Sipi.
         LibraryInitialiser &sipi_init = LibraryInitialiser::instance();
         _unused(sipi_init); // Silence compiler warning about unused variable.
     } catch (shttps::Error &e) {
@@ -617,6 +619,28 @@ int main(int argc, char *argv[]) {
             } catch (std::exception &err) {
                 std::cerr << options[FORMAT].desc->help;
                 return EXIT_FAILURE;
+            }
+        }
+        else {
+            //
+            // there is no format option given – we try to determine the format
+            // from the output name extension
+            //
+            size_t pos = outfname.rfind(".");
+            if (pos != std::string::npos) {
+                std::string ext = outfname.substr(pos + 1);
+                if ((ext == "jpx") || (ext == "jp2")) {
+                    format = "jpx";
+                }
+                else if ((ext == "tif") || (ext == "tiff")) {
+                    format = "tif";
+                }
+                else if ((ext == "jpg") || (ext == "jpeg")) {
+                    format = "jpg";
+                }
+                else if (ext == "png") {
+                    format = "png";
+                }
             }
         }
 
