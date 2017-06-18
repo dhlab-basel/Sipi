@@ -1,54 +1,39 @@
-# only pull the last 5 commits (faster)
-git:
-  depth: 5
-
-# makes sure that Travis provisions a vm and not a docker container
+# get us a vm with ubuntu 16.04
+dist: trusty
 sudo: required
 
-# Ubuntu 14.04 (defines the type of the linux vm)
-dist: trusty
+# only pull the last commit (faster)
+git:
+  depth: 1
 
-# OS X 10.11 / XCode 7.3.1 (defines the type of the osx vm)
-osx_image: xcode7.3
-
-# provides a build environment for this language
-language: cpp
-
-# spins up docker (only on linux)
+# provides us docker
 services:
   - docker
 
-# define the job matrix, i.e. tells Travis to spin up two virtual machines (osx and linux)
-matrix:
-  include:
-  - os: linux
-  - os: osx
+language: cpp
 
-before_install:
-# decrypt archive containing the kakadu library (on osx and linux)
-- openssl aes-256-cbc -K $encrypted_7deda1f68196_key -iv $encrypted_7deda1f68196_iv -in private/private.tar.enc -out private/private.tar -d
-- tar xvf private/private.tar
-- mv v7_9-01727L.zip vendor/.
-# build the docker image (only on linux)
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker build -t sipi . ; fi
-# update and install dependencies (only on osx)
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install log4cpp; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install openssl; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install libmagic; fi
+# define some additional environment variables
+env:
+  global:
+    - secure: WPQBoKTtyd80dNfPUvR/L83SYb3riCYtI/tyf5ReHY2lZ9y7+ZQAcb2R2YFWw7b12yAZ/HKqrA1m+6UyRtfM/HgA8BIUoMPeV0+sV9+cf7rPMNz7+iuk3wgRMDgbs5mD7w5RPWEqRuSiAjTJdDYv8gVx9SLwOVWSoM8/Uj9eccf30WkQuG024I1HUoaJBJH+7vD8qleUyoxescX94xeg8o5IOT6vNVJV1MK61EJmd1as6aKBhzmo4kxyHnDYQGPhbwpzwKMxhpcOjX3Mvr7YoLbRvnhddHU2TXrC9yRhaDF/Iu/Uu1uoSdfZ3XifIAywRH/TYqEqZbwW0T3bRZ8qqt3JrA2PGAYQ9+HDjm+7Thg4xW2QuOnvmWK9gumK2NQgdzINQR+iC+hFRszD5rMSy4867LlJYJgxrZcW801w4wzYIc0QhP0VktYl1OG35b8FXqVtMV2D23G8mVg6K2MGqv1A/JTEQU7MAz3C+P+XhQDvrynDeRh3XLsaNSJlj7RMx/OSLnSg4xPZ+PO7Uj/kqmdLb9XHjhNnE609CH3Kn5NgdR2sE+/sZYI9jkWbT3sxvuVdQBnrSdbzXAKLp0V/GHAP6ymw/ci7U+TGDMhiEU+U53O/oNAQ2BVhYL8IIvtygPUK+QT/L5OW12tbtSK/2Sa8Au6jf5OPHusoc6tormk= # DOCKER_USER
+    - secure: ZEjIXow+plBGsZyjWqytSHHGCacAAD6Gdj+NmFK+JDdL4F9i2ndhDl8pcaunr6PHQWXgzyNWt9YOauQWGuiUSwIyJBkkSzC1KRCZXQR/ZxrJEk9vSFcYHHTPCJgDNViiqo0l1gNYcP/Po/EpE6Fljs4JLveFh/zmetRHKE0vAvc5tfeDjXXRoEQ4CYF1yycWF21mCHg493UVK67FR+3XAeNi7of9ZIT4iGmxUH+9Htd5srhkdDTTJqqwEe1Ql5EJ3LW5+Ssj8fRDNr7vgTnLz9wb8Wv9Ez3/q2Fukv1VIB4rWTMmUERxzWkxyu05tK2DYOFrSN8LQdJVu+pzRl0qHmQSITwekCq974Bav89BvkoEb7xT0kbCwZOLswqVBt+jLOBRLBUmlZn7REkRGcBEHNhIR82q4hVS7aZHeLIx8QGYoREKKKKVcvEr+LxucqvsO6RbGtkeqUjOmv4q8qzWrewGuzS5J+NmI9V7h3QWGyDVU/cdKf6lyo9nmnZ8YmUp5xeKwaiL1yfO7K16jxYnNQvfnPc+3VmiX8Wb8PRAxUysmY2fCQJIyMsSSSNaHv7dA0AJFRqOeZDzaPHN5zOHS8mvSBou4Sq878R97poFkU5k9PWFkQ0pc+fSh07L1wClMosqd2qpxEypFxWV5DkQKZk3gF+mnrsvrKoKcy1CB68= # DOCKER_PASS
+    - COMMIT=${TRAVIS_COMMIT::8}
+    - REPO=dhlabbasel/sipi
+    - TAG=${TRAVIS_BRANCH//\//-}
 
 script:
-# run the build process in docker container (only on linux)
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then docker run sipi /bin/sh -c "cd build; cmake ..; make" ; fi
-# run the build process directly on the vm (only on osx)
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then cd build ; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then cmake .. ; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then make ; fi
+  # decrypt archive containing the kakadu library
+  - openssl aes-256-cbc -K $encrypted_7deda1f68196_key -iv $encrypted_7deda1f68196_iv -in private/private.tar.enc -out private/private.tar -d
+  - tar xvf private/private.tar
+  - mv v7_9-01727L.zip vendor/.
+  # run compile and tests inside docker
+  - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make check"
+  # login into docker hub, build image, and push
+  - docker login -u $DOCKER_USER -p $DOCKER_PASS
+  - docker build -f Dockerfile -t $REPO:$COMMIT .
+  - docker tag $REPO:$COMMIT $REPO:$TAG
+  - docker push $REPO
 
-# allways send notification to our slack channel (success and failure)
-# email is sent per default only on failure and once on success after failure
 notifications:
   slack:
-    secure: MGtrlgeHZ8F6SHmMOyOVuUac4IVSW7MF5tYGOHrRxyYuUZ5H/mADF/nHrY1wWwn9YHB460TkIma48/ctC21wyFecfvSzxfBuJtFflsXSpe8gE9DnlWaSZJgrcC7KwNcxDi4+0wIQHvFg8jbUZflsI1sB0ctMLzlt8gKQqRzjnlttznxUnU+8iEkUrPqRpFrwdL84J38Pdi4xy+7cMlx6VfaBj2UcBQz+jN22fJqOq4haCAj1w/ExrZJ1FaXJlgGafYQLV2YBeIdXrKNVV1dXpGElpOybuFbsi0XWHxHBaEALgoTZHot9QX3NXeRlm5BLVtqYXo06jFVydnnkvup44HYgPH6IFSbe4lh4kS+NKn+zbKjHwcPN2RZEvICmdpU9Gz/c0RVCPOp1NUQnnrMPcU8Q3X9LSa//y+X1nawk3vzjqeecLNZ6hJ6BAzzhF7Sy8kP5irTpGozwJtSZl8dQZX67sG7AQRpKhNw1HwGQSToasmPy8yQyVGozCoXS1m0R381xczNJcm8Ah2ApFT77VkglMwGtktWGGnYlXImwnKBK+DwJvQVkCtQ8bI5ZcGOOkH41zZ0QJ851eUMMrn2L7DDpBiZFXfp9BTWuBSIJtXTQ1SYldundmOJLKswx2rl+swngdF4cWS37lGMTiebpuxalWQ0O4uhflm7tRb0Kx9I=
-
-
+    secure: "PxvA5zguh3T64J+c7JHnXtKM9jo8S5qIDJ6IT7d2l66xI48Hf3hiM/Tr9C+Duc1krrMViB935AzDFaK5QZPOgzbzHd1AMugLTSD/ds+puimZ8W8gwZVH3MkYyqPXVofCEZaCKPbGOQTQ5Z6wAaGLZ2wuaAwMaqvKi8fMPc6r7M/Ggaagsiw8t9ScRcMTFt2PbmXfdcazIaPigMramLFXDel+AgFW3ay5D9ophs2QsfRlNAxd1OxAHZFIgoimI13H9fM7Efs1TWBywqUVkd9Fsl5aiY5zEcJN7NezgAJrUynL9FJwPBV+NcOAfm/WBqJ82K0zCSE2blhLr2ixVsfhuceEUXVa/2Y1qthOkKFEgggcfnth7D12RjLOY5Qr8J8f9q45A1cTqsiitKS9qfgulcV1fNqho4X9EROrVY20Li9eWNDQOK4EiHclpfnBZ1NVH0DrRt7y19zdyW749RUOy9NO1MMhjl93E6K9KELVGlfCOsm9ZxKGzZsV4XA3nClXlIn7IdE7jlc/bmyC0nWf8HGge8l+HSJp0c4F078VOF5eIq3aNm9H740736ycSr/W6Puj34QblFTslR4/7qCDtfB/Hf7HNyPSK+thiHlNUZa4WeOT7lb/iDHevpCBQ2+HFQFfxwLIFbC+jlZKQfRNHIwoHG5rzCZPf1stUtREKN0="

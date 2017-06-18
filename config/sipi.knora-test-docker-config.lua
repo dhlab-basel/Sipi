@@ -53,7 +53,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test/_test_data/images', -- directory for Knora Sipi integration testing
+    imgroot = '/sipi/test/_test_data/images', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -63,12 +63,12 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = './config/sipi.init-knora-test.lua',
+    initscript = '/sipi/config/sipi.init-knora-test.lua',
 
     --
     -- path to the caching directory
     --
-    cachedir = './cache',
+    cachedir = '/sipi/cache',
 
     --
     -- maxcimal size of the cache
@@ -83,7 +83,7 @@ sipi = {
     --
     -- Path to the directory where the scripts for the routes defined below are to be found
     --
-    scriptdir = './scripts',
+    scriptdir = '/sipi/scripts',
 
     ---
     --- Size of the thumbnails
@@ -98,7 +98,7 @@ sipi = {
     --
     -- Path to Knora Application
     --
-    knora_path = 'localhost',
+    knora_path = 'webapihost',
 
     --
     -- Port of Knora Application
@@ -117,12 +117,12 @@ sipi = {
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
     --
-    ssl_certificate = './certificate/certificate.pem',
+    ssl_certificate = '/sipi/certificate/certificate.pem',
 
     --
     -- If compiled with SSL support, the path to the key file (see above to create)
     --
-    ssl_key = './certificate/key.pem',
+    ssl_key = '/sipi/certificate/key.pem',
 
 
     --
@@ -143,7 +143,7 @@ sipi = {
 }
 
 fileserver = {
-    docroot = './server',
+    docroot = '/sipi/server',
     docroute = '/server'
 }
 
