@@ -448,7 +448,9 @@ int main(int argc, char *argv[]) {
                 struct dirent *dp;
                 while ((dp = readdir(dirp)) != nullptr) {
                     if (dp->d_type == DT_DIR) {
-                        std::string path = sipiConf.getImgRoot() + dp->d_name;
+                        if (strcmp(dp->d_name, ".") == 0) continue;
+                        if (strcmp(dp->d_name, "..") == 0) continue;
+                        std::string path = sipiConf.getImgRoot() + "/" + dp->d_name;
                         int levels = SipiFilenameHash::check_levels(path);
                         int new_levels = sipiConf.getSubdirLevels();
                         if (levels != new_levels) {
