@@ -28,11 +28,14 @@ script:
   - mv v7_9-01727L.zip vendor/.
   # run compile and tests inside docker
   - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make check"
+
+after_success:
   # login into docker hub, build image, and push
   - docker login -u $DOCKER_USER -p $DOCKER_PASS
   - docker build -f Dockerfile -t $REPO:$COMMIT .
   - docker tag $REPO:$COMMIT $REPO:$TAG
-  - docker push $REPO
+  # only push to docker if it is not a pull request
+  - if [ "$TRAVIS_EVENT_TYPE" -ne "pull_request" ]; then docker push $REPO ; fi
 
 notifications:
   slack:
