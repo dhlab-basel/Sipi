@@ -30,7 +30,7 @@
 #include <cstring>      // Needed for memset
 #include <chrono>
 
-#include <sys/types.h>
+//#include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -44,7 +44,7 @@
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
-#include "ChunkReader.h"
+//#include "ChunkReader.h"
 
 #include "sole.hpp"
 #include "Parsing.h"

@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
  *//*!
- * \brief Implements a simple HTTP server.
+ * \brief Implements a simple IIIF server.
  *
  */
 #include <syslog.h>
@@ -35,6 +35,10 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "curl/curl.h"
 #include "shttps/Global.h"
 #include "shttps/LuaServer.h"
@@ -42,6 +46,7 @@
 #include "SipiLua.h"
 #include "SipiImage.h"
 #include "SipiHttpServer.h"
+#include "SipiFilenameHash.h"
 #include "optionparser.h"
 
 #include "jansson.h"
@@ -200,6 +205,7 @@ enum optionIndex {
     NTHREADS,
     IMGROOT,
     LOGLEVEL,
+    QUERY,
     HELP
 };
 
@@ -268,6 +274,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                     {NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for web server\n"},
                                     {IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images for the web server\n"},
                                     {LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n"},
+                                    {QUERY,      0, "x",     "query",      option::Arg::None,     "  --query -x \tDump all information about the given file"},
                                     {HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
                                     {UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
                                                                                                           "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted configuration file in Lua\n"
@@ -285,6 +292,9 @@ inline bool exists_file(const std::string &name) {
 /*!
  * A singleton that does global initialisation and cleanup of libraries used by Sipi. This class is used only
  * in main().
+ *
+ * Some libraries such as the ones used for processing XMP or TIFF need some global initialization. These
+ * are performed in the constructor of this singleton class
  */
 class LibraryInitialiser {
 public:
@@ -322,8 +332,10 @@ private:
 };
 
 int main(int argc, char *argv[]) {
+    //
+    // first we initialize the libraries that sipi uses
+    //
     try {
-        // Initialise libraries used by Sipi.
         LibraryInitialiser &sipi_init = LibraryInitialiser::instance();
         _unused(sipi_init); // Silence compiler warning about unused variable.
     } catch (shttps::Error &e) {
@@ -340,14 +352,15 @@ int main(int argc, char *argv[]) {
     option::Parser parse(usage, argc, argv, &options[0], &buffer[0]);
 
     if (parse.error()) {
-        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
     } else if (options[HELP] || argc == 0) {
-        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_SUCCESS;
     } else if (options[COMPARE] && options[COMPARE].count() == 2) {
+        //
+        // command line function: we want to compare pixelwise to files. After having done this, we exit
+        //
         std::string infname1, infname2;
 
         for (option::Option *opt = options[COMPARE]; opt; opt = opt->next()) {
@@ -359,21 +372,18 @@ int main(int argc, char *argv[]) {
                 }
                 std::cout << "comparing files: " << infname1 << " and " << infname2 << std::endl;
             } catch (std::exception &err) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[COMPARE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
         }
 
         if (!exists_file(infname1)) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname1 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
         if (!exists_file(infname2)) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname2 << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
@@ -394,6 +404,10 @@ int main(int argc, char *argv[]) {
         // if a config file is given, we start sipi as IIIF compatible server
         //
     } else if (options[CONFIGFILE]) {
+        //
+        // there is a configuration file given on the command line. Thus we try to start SIPI in
+        // server mode
+        //
         std::string configfile;
 
         try {
@@ -405,8 +419,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (!exists_file(configfile)) {
-            std::cout << "##" << __LINE__ << std::endl;
-            std::cerr << "File not found: " << configfile << std::endl;
+            std::cerr << "Configuration file not found: " << configfile << std::endl;
             std::cerr << options[CONFIGFILE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
@@ -419,6 +432,46 @@ int main(int argc, char *argv[]) {
 
             //store the config option in a SipiConf obj
             Sipi::SipiConf sipiConf(luacfg);
+
+
+            //
+            // here we check the levels... and migrate if necessary
+            //
+            if (sipiConf.getPrefixAsPath()) {
+                //
+                // the prefix is used as part of the path
+                //
+                DIR *dirp = opendir(sipiConf.getImgRoot().c_str());
+                if (dirp == nullptr) {
+                    throw shttps::Error(__file__, __LINE__, std::string("Couldn't read directory content! Path: ") + sipiConf.getImgRoot(), errno);
+                }
+                struct dirent *dp;
+                while ((dp = readdir(dirp)) != nullptr) {
+                    if (dp->d_type == DT_DIR) {
+                        if (strcmp(dp->d_name, ".") == 0) continue;
+                        if (strcmp(dp->d_name, "..") == 0) continue;
+                        std::string path = sipiConf.getImgRoot() + "/" + dp->d_name;
+                        int levels = SipiFilenameHash::check_levels(path);
+                        int new_levels = sipiConf.getSubdirLevels();
+                        if (levels != new_levels) {
+                            std::cerr << "Subdir migration of " << path << "...." << std::endl;
+                            SipiFilenameHash::migrateToLevels(path, new_levels);
+                        }
+                    }
+                }
+            }
+            else {
+                //
+                // the prefix is not used
+                //
+                int levels = SipiFilenameHash::check_levels(sipiConf.getImgRoot());
+                int new_levels = sipiConf.getSubdirLevels();
+                if (levels != new_levels) {
+                    std::cerr << "Subdir migration of " << sipiConf.getImgRoot() << "...." << std::endl;
+                    SipiFilenameHash::migrateToLevels(sipiConf.getImgRoot(), new_levels);
+                }
+            }
+            SipiFilenameHash::setLevels(sipiConf.getSubdirLevels());
 
             //Create object SipiHttpServer
             Sipi::SipiHttpServer server(sipiConf.getPort(), static_cast<unsigned int> (sipiConf.getNThreads()),
@@ -472,14 +525,14 @@ int main(int argc, char *argv[]) {
             // now we set the routes for the normal HTTP server file handling
             //
             std::string docroot = sipiConf.getDocRoot();
-            std::string docroute = sipiConf.getDocRoute();
+            std::string wwwroute = sipiConf.getWWWRoute();
             std::pair<std::string, std::string> filehandler_info;
 
-            if (!(docroute.empty() || docroot.empty())) {
-                filehandler_info.first = docroute;
+            if (!(wwwroute.empty() || docroot.empty())) {
+                filehandler_info.first = wwwroute;
                 filehandler_info.second = docroot;
-                server.addRoute(shttps::Connection::GET, docroute, shttps::FileHandler, &filehandler_info);
-                server.addRoute(shttps::Connection::POST, docroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::GET, wwwroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::POST, wwwroute, shttps::FileHandler, &filehandler_info);
             }
 
             server.run();
@@ -508,7 +561,6 @@ int main(int argc, char *argv[]) {
         try {
             server.imgroot(std::string(options[IMGROOT].arg));
         } catch (std::exception &err) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[IMGROOT].desc->help << std::endl;
             return EXIT_FAILURE;
         }
@@ -523,19 +575,23 @@ int main(int argc, char *argv[]) {
         try {
             infname = std::string(options[FILEIN].arg);
         } catch (std::exception &err) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "Invalid input filename." << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
         if (!exists_file(infname)) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << "File not found: " << infname << std::endl;
             std::cerr << options[FILEIN].desc->help << std::endl;
             return EXIT_FAILURE;
         }
 
+        if (options[QUERY]) {
+            Sipi::SipiImage img;
+            img.read(infname);
+            std::cout << img << std::endl;
+            return (0);
+        }
         //
         // get the output image name
         //
@@ -545,7 +601,6 @@ int main(int argc, char *argv[]) {
             try {
                 outfname = std::string(parse.nonOption(0));
             } catch (std::exception &err) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "incorrect output filename " << std::endl;
                 std::cerr << options[FILEIN].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -564,8 +619,37 @@ int main(int argc, char *argv[]) {
             try {
                 format = std::string(options[FORMAT].arg);
             } catch (std::exception &err) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[FORMAT].desc->help;
+                return EXIT_FAILURE;
+            }
+        }
+        else {
+            //
+            // there is no format option given – we try to determine the format
+            // from the output name extension
+            //
+            size_t pos = outfname.rfind(".");
+            if (pos != std::string::npos) {
+                std::string ext = outfname.substr(pos + 1);
+                if ((ext == "jpx") || (ext == "jp2")) {
+                    format = "jpx";
+                }
+                else if ((ext == "tif") || (ext == "tiff")) {
+                    format = "tif";
+                }
+                else if ((ext == "jpg") || (ext == "jpeg")) {
+                    format = "jpg";
+                }
+                else if (ext == "png") {
+                    format = "png";
+                }
+                else {
+                    std::cerr << "Not a supported filename extension: '" << ext << "' !" << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+            else {
+                std::cerr << "No filename extension or '--format' option to determine file format!" << std::endl;
                 return EXIT_FAILURE;
             }
         }
@@ -590,12 +674,10 @@ int main(int argc, char *argv[]) {
                 }
 
                 if (regV.size() != 4) {
-                    std::cout << "##" << __LINE__ << std::endl;
                     std::cerr << options[REGION].desc->help << std::endl;
                     return EXIT_FAILURE;
                 }
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[REGION].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -616,7 +698,6 @@ int main(int argc, char *argv[]) {
         try {
             reduce = options[REDUCE] ? (std::stoi(options[REDUCE].arg)) : 0;
         } catch (std::exception &e) {
-            std::cout << "##" << __LINE__ << std::endl;
             std::cerr << options[REDUCE].desc->help << std::endl;
             return EXIT_FAILURE;
         }
@@ -627,7 +708,6 @@ int main(int argc, char *argv[]) {
             try {
                 size = std::make_shared<Sipi::SipiSize>(options[SIZE].arg);
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SIZE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -635,7 +715,6 @@ int main(int argc, char *argv[]) {
             try {
                 size = std::make_shared<Sipi::SipiSize>(std::stoi(options[SCALE].arg));
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SCALE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -670,7 +749,6 @@ int main(int argc, char *argv[]) {
             try {
                 skipmeta = options[SKIPMETA].arg;
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[SKIPMETA].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -689,7 +767,6 @@ int main(int argc, char *argv[]) {
             try {
                 iccprofile = options[ICC].arg;
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ICC].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -719,7 +796,6 @@ int main(int argc, char *argv[]) {
             try {
                 mirror = options[MIRROR].arg;
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[MIRROR].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -731,7 +807,6 @@ int main(int argc, char *argv[]) {
             try {
                 angle = std::stof(options[ROTATE].arg);
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[ROTATE].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -756,14 +831,12 @@ int main(int argc, char *argv[]) {
             try {
                 infname = std::string(options[WATERMARK].arg);
             } catch (std::exception &err) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "Invalid watermark filename." << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
 
             if (!exists_file(infname)) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << "File not found: " << infname << std::endl;
                 std::cerr << options[WATERMARK].desc->help << std::endl;
                 return EXIT_FAILURE;
@@ -781,7 +854,6 @@ int main(int argc, char *argv[]) {
             try {
                 quality = std::stoi(options[QUALITY].arg);
             } catch (std::exception &e) {
-                std::cout << "##" << __LINE__ << std::endl;
                 std::cerr << options[QUALITY].desc->help << std::endl;
                 return EXIT_FAILURE;
             }
@@ -797,7 +869,6 @@ int main(int argc, char *argv[]) {
             std::cout << img.getNx() << " " << img.getNy() << std::endl;
         }
     } else {
-        std::cout << "##" << __LINE__ << std::endl;
         option::printUsage(std::cout, usage);
         return EXIT_FAILURE;
     }

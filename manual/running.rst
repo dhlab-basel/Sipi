@@ -147,7 +147,7 @@ Configuration Files
 Sipi's configuration file is written in Lua_. You can make your own configuration file by
 adapting ``config/sipi.config.lua``.
 
-- Check that the port number is correct and that your operating system's firewal
+- Check that the port number is correct and that your operating system's firewall
   does not block it.
 - Set ``imgroot`` to the directory containing the files to be served.
 - Create the directory ``cache`` in the top-level directory of the source tree.

@@ -1,85 +1,21 @@
-<html>
-    <head>
-        <title>UPLOAD</title>
-    </head>
-    <body>
-        <h1>UPLOAD</h1>
-        <hr/>
-		<h2>Header</h2>
-		<table>
 <lua>
-    myimg = {}
-    newfilename = {}
-    for imgindex,imgparam in pairs(server.uploads) do
 
-        --
-        -- check if tmporary directory is available, if not, create it
-        --
-        tmpdir = config.imgroot .. '/tmp/'
-        local success, exists = server.fs.exists(tmpdir)
-        if not success then
-            server.sendStatus(500)
-            server.log(exists, server.loglevel.error)
-            return false
-        end
-        if not exists then
-            local success, errmsg = server.fs.mkdir(tmpdir, 511)
-            if not success then
-                server.sendStatus(500)
-                server.log(errmsg, server.loglevel.error)
-                return false
-            end
-        end
-
-        --
-        -- copy the file to a safe place
-        --
-        local success, uuid62 = server.uuid62()
-        if not success then
-            server.sendStatus(500)
-            server.log(uuid62, server.loglevel.error)
-            return false
-        end
-        tmppath =  tmpdir .. uuid62
-        local success, errmsg = server.copyTmpfile(imgindex, tmppath)
-        if not success then
-            server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
-            return false
-        end
-
-        success, gaga = SipiImage.new(tmppath)
-
-        if not success then
-            server.sendStatus(500)
-            server.log(gaga, server.loglevel.error)
-            return false
-        end
-        myimg[imgindex] = gaga
-
-        filename = imgparam["origname"]
-        n1, n2 = string.find(filename, '.', 1, true)
-        newfilename[imgindex] = string.sub(filename, 1, n1 - 1) .. '.jp2'
-        filename = config.imgroot .. '/' .. newfilename[imgindex]
-
-        local status, errmsg = myimg[imgindex]:write(filename)
-        if not status then
-            server.print('Error converting image to j2k: ', errmsg)
-        end
-
-        success, errmsg = server.fs.unlink(tmppath)
-        if not success then
-            server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
-            return false
-        end
-    end
-    for imgindex,fn in pairs(newfilename) do
-        server.print('<tr><td>', fn,
-            '</td><td><a href="http://localhost:1024/images/', fn, '/full/full/0/default.jpg"><img src="http://localhost:1024/images/', fn,'/full/,250/0/default.jpg" /></a></td></tr>')
-    end
+success,token = authorize_page('admin.sipi.org', 'administrator', config.adminuser, config.password)
+if not success then
+    return
+end
 
 </lua>
-    </table>
-    </body>
+<html>
+<head>
+	<title>Send Form</title>
+</head>
+<body>
+	<h1>Upload files....</h1>
+	<hr/>
+	<form action="do-upload.elua" method="POST" enctype="multipart/form-data">
+		<input name="Datei" type="file" size="50" accept="image/*" multiple><br/>
+		<input type="submit" value="UPLOAD">
+	</form>
+</body>
 </html>

@@ -42,7 +42,7 @@ Sipi provides the Lua interpreter the LuaRocks_ package manager. Sipi does not
 use the system's Lua interpreter or package manager.
 
 The Lua interepreter in Sipi runs in a multithreaded environment: each
-connection runs in its own thread and has its own Lua interpreter. Therefore,
+request runs in its own thread and has its own Lua interpreter. Therefore,
 only Lua packages that are known to be thread-safe may be used.
 
 
@@ -98,6 +98,13 @@ Knora about the user's permissions on the image
 (see ``sipi.init-knora.lua``). The scripts ``Knora_login.lua`` and
 ``Knora_logout.lua`` handle the setting and unsetting of a cookie
 containing the Knora session ID.
+
+
+***************************************
+File uploads to SIPI
+***************************************
+Using Lua it is possible to create an upload function for image files. See the
+scripts ``upload.elua``and ``do-upload.elua`` in the server directory
 
 
 ***************************************
@@ -543,6 +550,150 @@ Sipi Variables Available to Lua Scripts
    - ``tmpname``: a temporary path to the uploaded file.
    - ``mimetype``: the MIME type of the uploaded file as provided by the browser.
    - ``filesize``: the size of uploaded file in bytes.
+
+********************
+Lua helper functions
+********************
+
+helper.filename_hash
+====================
+
+::
+
+    success, filepath = helper.filename_hash(fileid)
+
+if ``subdir_levels``(see configuration file) is > 0, recursive subdirectories named
+'A', 'B',.., 'Z' are used to split the image files accross multiple directories. A simple
+hash-algorithm is being used. This function returns a filepath with the subdirectories
+prepended, e.g `gaga.jp2`` becomes ``C/W/gaga.jpg``
+
+Example:
+
+::
+
+        success, newfilepath = helper.filename_hash(newfilename[imgindex]);
+        if not success then
+            server.sendStatus(500)
+            server.log(gaga, server.loglevel.error)
+            return false
+        end
+
+        filename = config.imgroot .. '/' .. newfilepath
+
+
+*******************
+Lua image functions
+*******************
+
+There is an image object implemented which allows to manipulate and convert images.
+
+SipiImage.new(filename)
+=========================
+
+The simple form is:
+
+::
+
+        img = SipiImage.new("filename")
+
+The more complex form is as follows:
+
+::
+
+    img = SipiImage.new("filename", {
+            region=<iiif-region-string>,
+            size=<iiif-size-string>,
+            reduce=<integer>,
+            original=origfilename,
+            hash="md5"|"sha1"|"sha256"|"sha384"|"sha512"
+          })
+
+This creates a new Lua image object and loads the given image into. The second form
+allows to indicate a region, the size or a reduce factor and the original filename.
+Th ``hash`` parameter indicates that the given checksum should be calcukated out of the
+pixel values and written into the header.
+
+SipiImage.dims()
+================
+
+::
+
+        success, dims = img.dims()
+        if success then
+            server.print('nx=', dims.nx, ' ny=', dims.ny)
+        end
+
+Returns the dimensions of the image.
+
+SipiImage.crop(<iiif-region-string>)
+=============================
+
+::
+
+        success, errormsg = img.crop(<IIIF-region-string>)
+
+Crops the image to the given rectangular region. The parameter must be a valid
+IIIF-region string.
+
+SipiImage.scale(<iiif-size-string>)
+===================================
+
+::
+
+        success, errormsg = img.scale(<iiif-size-string>)
+
+Resizes the image to the given size as iiif-conformant size string.
+
+SipiImage.rotate(<iiif-rotation-string>)
+========================================
+
+::
+
+        success, errormsg = img.rotate(<iiif-rotation-string>)
+
+ Rotates and/or mirrors the image according the given iiif-conformant rotation string.
+
+SipiImage.watermark(<wm-file-path>)
+===================================
+
+::
+
+        success, errormsg = img.watermark(<wm-file-path>)
+
+Applies the given watermark file to the image. The watermark file must be a bitonal
+TIFF file.
+
+SipiImage.write(<filepath>)
+===========================
+
+::
+
+    success, errormsg = img.write(<filepath>)
+
+    success, errormsg = img.write('HTTP.jpg')
+
+The first version write the image to a file, the second writes the file to the HTTP connection.
+The file format is determined by the extension:
+
+- ``jpg`` : writes a JPEG file
+- ``tif`` : writes a TIFF file
+- ``png`` : writes a png file
+- ``jpx`` : writes a JPGE2000 file
+
+SipiImage.send(<format>)
+========================
+
+::
+
+    success, errormsg = img.send(<format>)
+
+Sends the file to the HTTP connection. As format are allowed:
+
+- ``jpg`` : writes a JPEG file
+- ``tif`` : writes a TIFF file
+- ``png`` : writes a png file
+- ``jpx`` : writes a JPGE2000 file
+
 
 **********************
 Installing Lua modules

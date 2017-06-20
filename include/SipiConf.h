@@ -47,6 +47,7 @@ namespace Sipi {
         std::string ssl_key;
 #endif
         std::string img_root; //<! path to root of image repository
+        int subdir_levels = -1;
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         std::string init_script;
         std::string cache_dir;
@@ -65,7 +66,7 @@ namespace Sipi {
         std::string logfile;
         std::string loglevel;
         std::string docroot;
-        std::string docroute;
+        std::string wwwroute;
         std::string jwt_secret;
         std::string adminuser;
         std::string password;
@@ -95,7 +96,7 @@ namespace Sipi {
 
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
 
-        inline int getSubdir(void) { return port; }
+        inline int getSubdirLevels(void) { return subdir_levels; }
 
         inline std::string getInitScript(void) { return init_script; }
 
@@ -131,7 +132,7 @@ namespace Sipi {
 
         inline std::string getDocRoot(void) { return docroot; }
 
-        inline std::string getDocRoute(void) { return docroute; }
+        inline std::string getWWWRoute(void) { return wwwroute; }
 
         inline std::string getJwtSecret(void) { return jwt_secret; }
 
