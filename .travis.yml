@@ -35,7 +35,7 @@ after_success:
   - docker build -f Dockerfile -t $REPO:$COMMIT .
   - docker tag $REPO:$COMMIT $REPO:$TAG
   # only push to docker if it is not a pull request
-  - if [ "$TRAVIS_EVENT_TYPE" -ne "pull_request" ]; then docker push $REPO ; fi
+  - if [ "$TRAVIS_EVENT_TYPE" != "pull_request" ]; then docker push $REPO ; fi
 
 notifications:
   slack:
