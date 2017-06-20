@@ -643,6 +643,14 @@ int main(int argc, char *argv[]) {
                 else if (ext == "png") {
                     format = "png";
                 }
+                else {
+                    std::cerr << "Not a supported filename extension: '" << ext << "' !" << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+            else {
+                std::cerr << "No filename extension or '--format' option to determine file format!" << std::endl;
+                return EXIT_FAILURE;
             }
         }
 
