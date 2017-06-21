@@ -133,13 +133,26 @@ if mediatype == IMAGE then
     end
 
     fullImgName = baseName .. '.jpx'
+
+
+    --
+    -- with sublevels:
+    --
+    success, newFilePath = helper.filename_hash(fullImgName);
+    if not success then
+        server.sendStatus(500)
+        server.log(gaga, server.loglevel.error)
+        return false
+     end
+
+
     success, fullDims = fullImg:dims()
     if not success then
         server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
         return
     end
 
-    success, errmsg = fullImg:write(knoraDir .. fullImgName)
+    success, errmsg = fullImg:write(knoraDir .. newFilePath)
     if not success then
         server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
@@ -154,6 +167,16 @@ if mediatype == IMAGE then
 
     thumbImgName = baseName .. '.jpg'
 
+    --
+    -- with sublevels:
+    --
+    success, newThumbPath = helper.filename_hash(thumbImgName);
+    if not success then
+        server.sendStatus(500)
+        server.log(gaga, server.loglevel.error)
+        return false
+     end
+
     success, thumbDims = thumbImg:dims()
     if not success then
         server.log("thumbImg:dims() failed: " .. thumbDims, server.loglevel.LOG_ERR)
@@ -161,7 +184,7 @@ if mediatype == IMAGE then
     end
 
 
-    success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+    success, errmsg = thumbImg:write(knoraDir .. newThumbPath)
     if not success then
         server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
