@@ -594,8 +594,10 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         if (unlink(filename) != 0) {
+            std::stringstream ss;
+            ss << strerror(errno) << " File to unlink: " << filename;
             lua_pushboolean(L, false);
-            lua_pushstring(L, strerror(errno));
+            lua_pushstring(L, ss.str().c_str());
             return 2;
         }
 
