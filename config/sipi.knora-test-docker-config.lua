@@ -100,6 +100,18 @@ sipi = {
     --
     knora_path = 'webapihost',
 
+
+    --
+    -- In order not to accumulate to many files into one diretory (which slows down file
+    -- access considerabely), the images are stored in recursive subdirectories 'A'-'Z'.
+    -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
+    -- The recommandeation is that on average there should not me more than a few
+    -- thousand files in a unix directory (your mileage may vay depending on the
+    -- file system used).
+    --
+    subdir_levels = 1,
+
+
     --
     -- Port of Knora Application
     --
@@ -143,8 +155,15 @@ sipi = {
 }
 
 fileserver = {
-    docroot = '/sipi/server',
-    docroute = '/server'
+    --
+    -- directory where the documents for the normal webserver are located
+    --
+    docroot = './server',
+
+    --
+    -- route under which the normal webserver shouöd respond to requests
+    --
+    wwwroute = '/server'
 }
 
 --
