@@ -60,33 +60,23 @@ for imgindex, imgparam in pairs(server.uploads) do
         return -1
     end
 
-    --
-    -- create new tmp image file name with sublevels:
-    --
-    success, newTmpName = helper.filename_hash(tmpname);
-    if not success then
-        server.sendStatus(500, "Internal server error")
-        server.log(gaga, server.loglevel.error)
-        return false
-    end
-
     local tmppath =  tmpdir .. tmpname
 
     --
     -- check if directory is available, if not, create it
     --
-    local success, exists = server.fs.exists(tmppath)
-    if not success then
-        send_error(500, "Internal server error")
-        return -1
-    end
-    if not exists then
-        local success, result = server.fs.mkdir(tmppath, 511)
-        if not success then
-            send_error(500, "Couldn't create tmpdir: " .. result)
-            return -1
-        end
-    end
+    --local success, exists = server.fs.exists(tmppath)
+    --if not success then
+    --    send_error(500, "Internal server error")
+    --    return -1
+    --end
+    --if not exists then
+    --    local success, result = server.fs.mkdir(tmppath, 511)
+    --    if not success then
+    --        send_error(500, "Couldn't create tmpdir: " .. result)
+    --        return -1
+    --    end
+    --end
 
 
     local success, result = server.copyTmpfile(imgindex, tmppath)
@@ -158,18 +148,8 @@ for imgindex, imgparam in pairs(server.uploads) do
 
     local thumbname = tmpname .. ".jpg"
 
-    --
-    -- create new thumnail image file path with sublevels:
-    --
-    success, newThumbPath = helper.filename_hash(thumbname);
-    if not success then
-        server.sendStatus(500, "Internal server error")
-        server.log(gaga, server.loglevel.error)
-        return false
-    end
 
-
-    local success, result = myimg:write(thumbsdir .. newThumbPath)
+    local success, result = myimg:write(thumbsdir .. thumbname)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
         return -1
