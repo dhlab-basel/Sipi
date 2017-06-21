@@ -100,7 +100,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     end
 
     --
-    -- get the dimensions and print them
+    -- get the dimensions
     --
     local success, dims = myimg:dims()
     if not success then
@@ -127,8 +127,20 @@ for imgindex, imgparam in pairs(server.uploads) do
     end
 
 
-    local thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
-    local success, result = myimg:write(thumbname)
+    local thumbname = tmpname .. ".jpg"
+
+    --
+    -- create new thumnail image file path with sublevels:
+    --
+    success, newThumbPath = helper.filename_hash(thumbname);
+    if not success then
+        server.sendStatus(500, "Internal server error")
+        server.log(gaga, server.loglevel.error)
+        return false
+    end
+
+
+    local success, result = myimg:write(thumbsdir .. newThumbPath)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
         return -1
@@ -138,7 +150,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
-        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. tmpname .. "_THUMB.jpg" .. "/full/full/0/default.jpg",
+        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbname .. "/full/full/0/default.jpg",
         filename = tmpname, -- make this a IIIF URL
         original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,

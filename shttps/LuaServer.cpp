@@ -2696,7 +2696,7 @@ namespace shttps {
             if (lua_gettop(L) > 0) {
                 errorMsg = lua_tostring(L, 1);
                 lua_pop(L, 1);
-                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg);
+                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg + "\n" + luastr);
             } else {
                 throw Error(__file__, __LINE__, "LuaServer::executeChunk failed");
             }

@@ -77,7 +77,7 @@ if not success then
     server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
     return
 end
-if  not exists then
+if not exists then
     server.fs.mkdir(knoraDir, 511)
 end
 
@@ -87,7 +87,9 @@ if not success then
     return
 end
 
+--
 -- create full quality image (jp2)
+--
 success, fullImg = SipiImage.new(sourcePath)
 if not success then
     server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.LOG_ERR)
@@ -119,7 +121,7 @@ end
 fullImgName = baseName .. '.jpx'
 
 --
--- with sublevels:
+-- create new full quality image file path with sublevels:
 --
 success, newFilePath = helper.filename_hash(fullImgName);
 if not success then
@@ -136,7 +138,7 @@ end
 fullImg:write(knoraDir .. newFilePath)
 
 -- create thumbnail (jpg)
-success, thumbImg = SipiImage.new(sourcePath, {size = config.thumb_size})
+success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
 if not success then
     server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.LOG_ERR)
     return
@@ -152,7 +154,7 @@ end
 thumbImgName = baseName .. '.jpg'
 
 --
--- with sublevels:
+-- create new thumnail image file path with sublevels:
 --
 success, newThumbPath = helper.filename_hash(thumbImgName);
 if not success then
@@ -168,13 +170,15 @@ if not success then
 end
 
 
+--
 -- delete tmp and preview files
+--
 success, errmsg = server.fs.unlink(sourcePath)
 if not success then
     server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
     return
 end
-success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
+success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. ".jpg")
 if not success then
     server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
     return
