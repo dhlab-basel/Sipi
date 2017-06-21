@@ -158,7 +158,7 @@ fileserver = {
     --
     -- directory where the documents for the normal webserver are located
     --
-    docroot = './server',
+    docroot = '/sipi/server',
 
     --
     -- route under which the normal webserver shouöd respond to requests
