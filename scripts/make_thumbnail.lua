@@ -28,20 +28,27 @@ if not success then
 end
 
 --
--- check if temporary directory is available, if not, create it
+-- check if temporary directory is available. it needs to be created before sipi is started
 --
-local tmpdir = config.imgroot .. '/tmp/'
-local success, exists = server.fs.exists(tmpdir)
-if not success then
-    send_error(500, "Internal server error")
+local tmpDir = config.imgroot .. '/tmp/'
+local success, exists = server.fs.exists(tmpDir)
+if not exists then
+    local errorMsg = "Directory " .. tmpDir .. " not found. Please make sure it exists before starting sipi."
+    send_error(500, errorMsg)
+    server.log(errorMsg, server.loglevel.LOG_ERR)
     return -1
 end
+
+--
+-- check if thumbs directory is available. it needs to be created befoer sipi is started.
+--
+local thumbsDir = config.imgroot .. '/thumbs/'
+local success, exists = server.fs.exists(thumbsDir)
 if not exists then
-    local success, result = server.fs.mkdir(tmpdir, 511)
-    if not success then
-        send_error(500, "Couldn't create tmpdir: " .. result)
-        return -1
-    end
+    local errorMsg = "Directory " .. thumbsDir .. " not found. Please make sure it exists before starting sipi."
+    send_error(500, errorMsg)
+    server.log(errorMsg, server.loglevel.LOG_ERR)
+    return -1
 end
 
 if server.uploads == nil then
@@ -52,46 +59,43 @@ end
 for imgindex, imgparam in pairs(server.uploads) do
 
     --
-    -- copy the file to a safe place
+    -- copy the file to tmp directory
     --
-    local success, tmpname = server.uuid62()
+
+    -- create tmp name
+    local success, tmpName = server.uuid62()
     if not success then
         send_error(500, "Couldn't generate uuid62!")
         return -1
     end
 
-    local tmppath =  tmpdir .. tmpname
-
-    --
-    -- check if directory is available, if not, create it
-    --
-    --local success, exists = server.fs.exists(tmppath)
-    --if not success then
-    --    send_error(500, "Internal server error")
-    --    return -1
-    --end
-    --if not exists then
-    --    local success, result = server.fs.mkdir(tmppath, 511)
-    --    if not success then
-    --        send_error(500, "Couldn't create tmpdir: " .. result)
-    --        return -1
-    --    end
-    --end
-
-
-    local success, result = server.copyTmpfile(imgindex, tmppath)
+    -- create tmp name with sublevels
+    local success, tmpNameWithSublevels = helper.filename_hash(tmpName);
     if not success then
-        send_error(500, "Couldn't copy uploaded file: " .. result .. " - tmppath: " .. tmppath)
+        server.sendStatus(500)
+        server.log(gaga, server.loglevel.LOG_ERR)
+        return false
+    end
+
+    local tmpPath =  tmpDir .. tmpNameWithSublevels
+
+    local success, result = server.copyTmpfile(imgindex, tmpPath)
+    if not success then
+        local errorMsg = "Couldn't copy uploaded file to tmp path: " .. tmpPath .. ", result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
     end
 
 
     --
-    -- create a SipiImage, already resized to the thumbnail size
+    -- create a thumnail sized SipiImage
     --
-    local success, myimg = SipiImage.new(tmppath, {size = config.thumb_size})
+    local success, thumbImg = SipiImage.new(tmpPath, {size = config.thumb_size})
     if not success then
-        send_error(500, "Couldn't create thumbnail: " .. myimg)
+        local errorMsg = "Couldn't create thumbnail for path: " .. tmpPath  .. ", result: " .. thumbImg
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
     end
 
@@ -103,7 +107,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         return -1
     end
 
-    local success, check = myimg:mimetype_consistency(submitted_mimetype.mimetype, filename)
+    local success, check = thumbImg:mimetype_consistency(submitted_mimetype.mimetype, filename)
     if not success then
         send_error(500, "Couldn't check mimteype consistency: " .. check)
         return -1
@@ -121,7 +125,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     -- get the dimensions
     --
-    local success, dims = myimg:dims()
+    local success, dims = thumbImg:dims()
     if not success then
         send_error(500, "Couldn't get image dimensions: " .. dims)
         return -1
@@ -129,38 +133,26 @@ for imgindex, imgparam in pairs(server.uploads) do
 
 
     --
-    -- write the thumbnail file
+    -- write the thumbnail file by reusing newTmpName, which already has the directory sublevels
     --
-    local thumbsdir = config.imgroot .. '/thumbs/'
-    local success, exists = server.fs.exists(thumbsdir)
-    if not success then
-        send_error(500, "Internal server error")
-        return -1
-    end
-    if not exists then
-        local success, result = server.fs.mkdir(thumbsdir, 511)
-        if not success then
-            send_error(500, "Couldn't create thumbsdir: " .. result)
-            return -1
-        end
-    end
+    local thumbNameWithoutLevels = tmpName .. ".jpg"
+    local thumbNameWithLevels = tmpNameWithSublevels .. ".jpg"
 
 
-    local thumbname = tmpname .. ".jpg"
-
-
-    local success, result = myimg:write(thumbsdir .. thumbname)
+    local success, result = thumbImg:write(thumbsDir .. thumbNameWithLevels)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
         return -1
     end
 
+    server.log("thumbnail path: " .. thumbsDir .. thumbNameWithLevels, server.loglevel.LOG_DEBUG)
+
     answer = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
-        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbname .. "/full/full/0/default.jpg",
-        filename = tmpname, -- make this a IIIF URL
+        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbNameWithoutLevels .. "/full/full/0/default.jpg",
+        filename = tmpName, -- make this a IIIF URL
         original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,
         file_type = 'IMAGE'
@@ -169,18 +161,3 @@ for imgindex, imgparam in pairs(server.uploads) do
 end
 
 send_success(answer)
-
-function checkDirectoryExistsAndCreateIfNeeded (path)
-    local success, exists = server.fs.exists(path)
-    if not success then
-        send_error(500, "Internal server error")
-        return -1
-    end
-    if not exists then
-        local success, result = server.fs.mkdir(path, 511)
-        if not success then
-            send_error(500, "Couldn't create directory: " .. path .. " - result: " .. result)
-            return -1
-        end
-    end
-end

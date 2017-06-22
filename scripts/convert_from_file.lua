@@ -53,6 +53,7 @@ end
 tmpdir = config.imgroot .. '/tmp/'
 sourcePath = tmpdir .. filename
 
+
 -- check if source is readable
 success, readable = server.fs.is_readable(sourcePath)
 if not success then

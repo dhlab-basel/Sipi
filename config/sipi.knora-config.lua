@@ -117,8 +117,12 @@ sipi = {
     --
     -- Port of Knora Application
     --
-    knora_port = '3333'
+    knora_port = '3333',
 
+    --
+    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
+    --
+    loglevel = "DEBUG"
 }
 
 
