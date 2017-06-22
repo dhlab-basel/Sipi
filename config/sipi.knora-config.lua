@@ -114,7 +114,7 @@ sipi = {
 
 fileserver = {
     docroot = './server',
-    docroute = '/server'
+    wwwroute = '/server'
 }
 
 --

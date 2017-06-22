@@ -1,3 +1,4 @@
+
 --
 -- Copyright © 2016 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
 -- Ivan Subotic, Tobias Schweizer, André Kilchenmann, and André Fatton.
@@ -19,12 +20,20 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 --
+--
+-- configuration file for use with Knora
+--
 sipi = {
     --
-    -- user under which the sipi server should run. Don't set (comment out) this configuration variable
-    -- if SIPI should use the user which launches SIPI!
+    -- The user under which the Sipi server should run. Use this only if Sipi should setuid to a particular user after
+    -- starting. Otherwise, leave this commented out. If this setting is used, Sipi must be started as root.
     --
     -- userid = '_www',
+
+    --
+    -- sipi's hostname as reported in the thumbnail response, default is "localhost"
+    --
+    -- hostname = 'localhost',
 
     --
     -- port number the server is listening to
@@ -37,13 +46,18 @@ sipi = {
     keep_alive = 5,
 
     --
+    -- Maximal size of a post request
+    --
+    max_post_size = '250M',
+
+    --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
     -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
     -- or <imgroot>/<imageid> (prefix_as_path = FALSE). Please note that "prefix" and "imageid" are
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test/_test_data/images',
+    imgroot = '/sipi/images', -- make sure that this directory exists
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -53,37 +67,27 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    -- initscript = 'sipi.knora.lua',
-    initscript = './config/sipi.init.lua',
+    initscript = '/sipi/config/sipi.init-knora.lua',
 
     --
     -- path to the caching directory
     --
-    cachedir = './cache',
+    cachedir = '/sipi/cache',
 
     --
     -- maximal size of the cache
-    -- The cache will be purged if either the maximal size or maximal number
-    -- of files is reached
     --
-    cachesize = '200M',
+    cachesize = '100M',
 
     --
-    -- maximal number of files to be cached
-    -- The cache will be purged if either the maximal size or maximal number
-    -- of files is reached
+    -- if the cache becomes full, the given percentage of file space is marked for reuase
     --
-    cache_nfiles = 250,
-
-    --
-    -- if the cache becomes full, the given percentage of file space is marked for reuse
-    --
-    cache_hysteresis = 0.15,
+    cache_hysteresis = 0.1,
 
     --
     -- Path to the directory where the scripts for the routes defined below are to be found
     --
-    scriptdir = './scripts',
+    scriptdir = '/sipi/scripts',
 
     ---
     --- Size of the thumbnails
@@ -96,48 +100,21 @@ sipi = {
     tmpdir = '/tmp',
 
     --
-    -- If compiled with SSL support, the port the server is listening for secure connections
+    -- Path to Knora Application
     --
-    ssl_port = 1025,
+    knora_path = 'webapihost',
 
     --
-    -- If compiled with SSL support, the path to the certificate (must be .pem file)
-    -- The follow commands can be used to generate a self-signed certificate
-    -- # openssl genrsa -out key.pem 2048
-    -- # openssl req -new -key key.pem -out csr.pem
-    -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
+    -- Port of Knora Application
     --
-    ssl_certificate = './certificate/certificate.pem',
-
-    --
-    -- If compiled with SSL support, the path to the key file (see above to create)
-    --
-    ssl_key = './certificate/key.pem',
-
-
-    --
-    -- The secret for generating JWT's (JSON Web Tokens) (42 characters)
-    --
-    jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
-    --            12345678901234567890123456789012
+    knora_port = '3333'
 
 }
 
-admin = {
-    --
-    -- username of admin user
-    --
-    user = 'admin',
-
-    --
-    -- Administration password
-    --
-    password = 'Sipi-Admin'
-}
 
 fileserver = {
-    docroot = './server',
-    wwwroute = '/server'
+    docroot = '/sipi/server',
+    docroute = '/server'
 }
 
 --
@@ -147,29 +124,29 @@ fileserver = {
 --
 routes = {
     {
-        method = 'DELETE',
-        route = '/api/cache',
-        script = 'cache.lua'
+        method = 'POST',
+        route = '/make_thumbnail',
+        script = 'make_thumbnail.lua'
     },
     {
-        method = 'GET',
-        route = '/api/cache',
-        script = 'cache.lua'
+        method = 'POST',
+        route = '/convert_from_binaries',
+        script = 'convert_from_binaries.lua'
     },
     {
-        method = 'GET',
-        route = '/api/exit',
-        script = 'exit.lua'
+        method = 'POST',
+        route = '/convert_from_file',
+        script = 'convert_from_file.lua'
     },
     {
-        method = 'GET',
-        route = '/luaexe/test1',
-        script = 'test1.lua'
+        method = 'POST',
+        route = '/Knora_login',
+        script = 'Knora_login.lua'
     },
     {
-        method = 'GET',
-        route = '/luaexe/test2',
-        script = 'test2.lua'
+        method = 'POST',
+        route = '/Knora_logout',
+        script = 'Knora_logout.lua'
     }
 
 }

@@ -344,7 +344,7 @@ add_executable(
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h)
 add_dependencies(sipi icc_profiles)
 
 

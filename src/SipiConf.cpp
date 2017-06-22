@@ -29,6 +29,7 @@ namespace Sipi {
     SipiConf::SipiConf(shttps::LuaServer &luacfg) {
         userid_str = luacfg.configString("sipi", "userid", "");
         img_root = luacfg.configString("sipi", "imgroot", ".");
+        subdir_levels = luacfg.configInteger("sipi", "subdir_levels", 0);
         hostname = luacfg.configString("sipi", "hostname", "localhost");
         port = luacfg.configInteger("sipi", "port", 3333);
 #ifdef SHTTPS_ENABLE_SSL
@@ -85,7 +86,7 @@ namespace Sipi {
         password = luacfg.configString("admin", "password", "");
         routes = luacfg.configRoute("routes");
         docroot = luacfg.configString("fileserver", "docroot", "");
-        docroute = luacfg.configString("fileserver", "docroute", "");
+        wwwroute = luacfg.configString("fileserver", "wwwroute", "");
     }
 
 }

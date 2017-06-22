@@ -767,6 +767,14 @@ namespace Sipi {
                         jp2_family_colour.init(icc_bytes);
                         break;
                     }
+                    case icc_LUM_D65: {
+                        jp2_family_colour.init(JP2_sLUM_SPACE);
+                        break;
+                    }
+                    case icc_ROMM_GRAY: {
+                        jp2_family_colour.init(JP2_sLUM_SPACE);
+                        break;
+                    }
                     default: {
                         unsigned int icc_len;
                         kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);

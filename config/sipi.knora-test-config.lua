@@ -142,6 +142,11 @@ sipi = {
     loglevel = "DEBUG",
 }
 
+fileserver = {
+    docroot = './server',
+    docroute = '/server'
+}
+
 --
 -- Custom routes. Each route is URL path associated with a Lua script.
 --
