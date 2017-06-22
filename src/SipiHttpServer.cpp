@@ -68,9 +68,9 @@ namespace Sipi {
         iiif_prefix = 0,            //!< http://{url}/*{prefix}*/{id}/{region}/{size}/{rotation}/{quality}.{format}
         iiif_identifier = 1,        //!< http://{url}/{prefix}/*{id}*/{region}/{size}/{rotation}/{quality}.{format}
         iiif_region = 2,            //!< http://{url}/{prefix}/{id}/{region}/{size}/{rotation}/{quality}.{format}
-        iiif_size = 3,                //!< http://{url}/{prefix}/{id}/{region}/*{size}*/{rotation}/{quality}.{format}
-        iiif_rotation = 4,            //!< http://{url}/{prefix}/{id}/{region}/{size}/*{rotation}*/{quality}.{format}
-        iiif_qualityformat = 5,        //!< http://{url}/{prefix}/{id}/{region}/{size}/{rotation}/*{quality}.{format}*
+        iiif_size = 3,              //!< http://{url}/{prefix}/{id}/{region}/*{size}*/{rotation}/{quality}.{format}
+        iiif_rotation = 4,          //!< http://{url}/{prefix}/{id}/{region}/{size}/*{rotation}*/{quality}.{format}
+        iiif_qualityformat = 5,     //!< http://{url}/{prefix}/{id}/{region}/{size}/{rotation}/*{quality}.{format}*
     } IiifParams;
 
     /*!
@@ -318,6 +318,7 @@ namespace Sipi {
             // here we adjust the path for the subdirs
             //
             if (SipiFilenameHash::getLevels()) {
+
                 size_t ppos = infile.rfind("/");
                 if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
                     std::string dirpart = infile.substr(0, ppos);

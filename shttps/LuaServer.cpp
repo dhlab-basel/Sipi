@@ -2610,6 +2610,41 @@ namespace shttps {
     }
     //=========================================================================
 
+    const std::vector<std::string> LuaServer::configStringList(const std::string table, const std::string variable) {
+        std::vector<std::string> strings;
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return strings;
+        }
+
+        lua_getfield(L, -1, variable.c_str());
+
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 2);
+            return strings;
+        }
+
+        if (!lua_istable(L, -1)) {
+            throw Error(__file__, __LINE__, "Value '" + variable + "' in config file must be a table");
+        }
+
+        for (int i = 1;; i++) {
+            lua_rawgeti(L, -1, i);
+
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+                break;
+            }
+            if (lua_isstring(L, -1)) {
+                std::string tmpstr = lua_tostring(L, -1);
+                strings.push_back(tmpstr);
+            }
+            lua_pop(L, 1);
+        }
+        return strings;
+    }
+    //=========================================================================
+
 
     const std::vector<LuaRoute> LuaServer::configRoute(const std::string routetable) {
         static struct {

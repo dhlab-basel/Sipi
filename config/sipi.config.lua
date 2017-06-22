@@ -86,6 +86,11 @@ sipi = {
     subdir_levels = 1,
 
     --
+    --
+    --
+    subdir_excludes = { "tmp", "thumb"},
+
+    --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
     initscript = './config/sipi.init.lua',

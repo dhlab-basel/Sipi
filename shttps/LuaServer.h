@@ -160,6 +160,8 @@ namespace shttps {
 
         float configFloat(const std::string table, const std::string variable, const float defval);
 
+        const std::vector<std::string> configStringList(const std::string table, const std::string stringlist);
+
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
         /*!
