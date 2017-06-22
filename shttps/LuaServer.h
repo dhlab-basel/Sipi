@@ -166,9 +166,10 @@ namespace shttps {
          * Execute a chunk of Lua code
          *
          * \param[in] luastr String containing the Lua code
+         * \param[in] scriptname String containing the Lua script name
          * \returns Either the value 1 or an integer result that the Lua code provides
          */
-        int executeChunk(const std::string &luastr);
+        int executeChunk(const std::string &luastr, const std::string &scriptname);
 
         /*!
          * Executes a Lua function that either is defined in C or in Lua

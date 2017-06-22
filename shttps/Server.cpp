@@ -167,7 +167,7 @@ namespace shttps {
                 std::string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    if (lua.executeChunk(luacode) < 0) {
+                    if (lua.executeChunk(luacode, script) < 0) {
                         conn.flush();
                         return;
                     }
@@ -214,7 +214,7 @@ namespace shttps {
                     }
 
                     try {
-                        if (lua.executeChunk(luastr) < 0) {
+                        if (lua.executeChunk(luastr, script) < 0) {
                             conn.flush();
                             return;
                         }
@@ -345,7 +345,7 @@ namespace shttps {
                 std::string luacode = sstr.str();//str holds the content of the file
 
                 try {
-                    if (lua.executeChunk(luacode) < 0) {
+                    if (lua.executeChunk(luacode, infile) < 0) {
                         conn.flush();
                         return;
                     }
@@ -393,7 +393,7 @@ namespace shttps {
                     }
 
                     try {
-                        if (lua.executeChunk(luastr) < 0) {
+                        if (lua.executeChunk(luastr, infile) < 0) {
                             conn.flush();
                             return;
                         }

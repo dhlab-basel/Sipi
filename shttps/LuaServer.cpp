@@ -2691,14 +2691,14 @@ namespace shttps {
     //=========================================================================
 
 
-    int LuaServer::executeChunk(const std::string &luastr) {
+    int LuaServer::executeChunk(const std::string &luastr, const std::string &scriptname ) {
         if (luaL_dostring(L, luastr.c_str()) != LUA_OK) {
             const char *errorMsg = nullptr;
 
             if (lua_gettop(L) > 0) {
                 errorMsg = lua_tostring(L, 1);
                 lua_pop(L, 1);
-                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg + "\n" + luastr);
+                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg + ", scriptname: " + scriptname);
             } else {
                 throw Error(__file__, __LINE__, "LuaServer::executeChunk failed");
             }
