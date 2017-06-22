@@ -317,14 +317,23 @@ namespace Sipi {
             //
             // here we adjust the path for the subdirs
             //
-            if (SipiFilenameHash::getLevels()) {
-
-                size_t ppos = infile.rfind("/");
-                if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
-                    std::string dirpart = infile.substr(0, ppos);
-                    std::string filepart = infile.substr(ppos + 1);
-                    SipiFilenameHash identifier = SipiFilenameHash(filepart);
-                    infile = dirpart + "/" + identifier.filepath();
+            if (SipiFilenameHash::getLevels() > 0) {
+                bool use_subdirs = true;
+                if (prefix_as_path) {
+                    for (auto str: serv->dirs_to_exclude()) {
+                        if (str == urldecode(params[iiif_prefix])) {
+                            use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                        }
+                    }
+                }
+                if (use_subdirs) {
+                    size_t ppos = infile.rfind("/");
+                    if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
+                        std::string dirpart = infile.substr(0, ppos);
+                        std::string filepart = infile.substr(ppos + 1);
+                        SipiFilenameHash identifier = SipiFilenameHash(filepart);
+                        infile = dirpart + "/" + identifier.filepath();
+                    }
                 }
             }
 
@@ -335,8 +344,20 @@ namespace Sipi {
         } else {
             SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                         identifier.filepath();
+                bool use_subdirs = true;
+                for (auto str: serv->dirs_to_exclude()) {
+                    if (str == urldecode(params[iiif_prefix])) {
+                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                    }
+                }
+                if (use_subdirs) {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                             identifier.filepath();
+                }
+                else {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                             urldecode(params[iiif_identifier]);
+                }
             } else {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
@@ -631,8 +652,20 @@ namespace Sipi {
 
             SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                         identifier.filepath();
+                bool use_subdirs = true;
+                for (auto str: serv->dirs_to_exclude()) {
+                    if (str == urldecode(params[iiif_prefix])) {
+                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                    }
+                }
+                if (use_subdirs) {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                             identifier.filepath();
+                }
+                else {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                            urldecode(params[iiif_identifier]);
+                }
             } else {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
@@ -799,13 +832,23 @@ namespace Sipi {
             //
             // here we adjust the path for the subdirs
             //
-            if (SipiFilenameHash::getLevels()) {
-                size_t ppos = infile.rfind("/");
-                if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
-                    std::string dirpart = infile.substr(0, ppos);
-                    std::string filepart = infile.substr(ppos + 1);
-                    SipiFilenameHash identifier = SipiFilenameHash(filepart);
-                    infile = dirpart + "/" + identifier.filepath();
+            if (SipiFilenameHash::getLevels() > 0) {
+                bool use_subdirs = true;
+                if (prefix_as_path) {
+                    for (auto str: serv->dirs_to_exclude()) {
+                        if (str == urldecode(params[iiif_prefix])) {
+                            use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                        }
+                    }
+                }
+                if (use_subdirs) {
+                    size_t ppos = infile.rfind("/");
+                    if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
+                        std::string dirpart = infile.substr(0, ppos);
+                        std::string filepart = infile.substr(ppos + 1);
+                        SipiFilenameHash identifier = SipiFilenameHash(filepart);
+                        infile = dirpart + "/" + identifier.filepath();
+                    }
                 }
             }
 
@@ -838,8 +881,20 @@ namespace Sipi {
         } else {
             SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
             if (prefix_as_path) {
-                infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                        identifier.filepath();
+                bool use_subdirs = true;
+                for (auto str: serv->dirs_to_exclude()) {
+                    if (str == urldecode(params[iiif_prefix])) {
+                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                    }
+                }
+                if (use_subdirs) {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                             identifier.filepath();
+                }
+                else {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                            urldecode(params[iiif_identifier]);
+                }
             } else {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }

@@ -509,6 +509,7 @@ int main(int argc, char *argv[]) {
             server.add_lua_globals_func(shttps::sqliteGlobals); // add new lua function "gaga"
             server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add Lua SImage functions
             server.prefix_as_path(sipiConf.getPrefixAsPath());
+            server.dirs_to_exclude(sipiConf.getSubdirExcludes());
 
             //
             // cache parameter...
