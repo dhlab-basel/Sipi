@@ -426,7 +426,6 @@ namespace shttps {
                                 // throw error!!
                             }
                             else {
-                                long long ltmp = atoll(cm[2].str().c_str());
                                 start = s.st_size;
 
                             }

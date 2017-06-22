@@ -48,7 +48,8 @@ namespace Sipi {
 #endif
         std::string img_root; //<! path to root of image repository
         int subdir_levels = -1;
-        bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
+        std::vector<std::string> subdir_excludes;
+        bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it..
         std::string init_script;
         std::string cache_dir;
         size_t cache_size;
@@ -97,6 +98,8 @@ namespace Sipi {
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
 
         inline int getSubdirLevels(void) { return subdir_levels; }
+
+        inline std::vector<std::string> getSubdirExcludes(void) { return subdir_excludes; }
 
         inline std::string getInitScript(void) { return init_script; }
 
