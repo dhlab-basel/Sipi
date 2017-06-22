@@ -22,7 +22,6 @@
 import pytest
 import tempfile
 import os
-import re
 
 # Tests file conversions.
 
@@ -40,28 +39,22 @@ class TestConversions:
         results = "\n"
         bad_result = False
         tempdir = tempfile.mkdtemp()
-        compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\)$")
 
         # Skip:
         # - file 3 (https://github.com/dhlab-basel/Sipi/issues/152)
-        # - file 4 (https://github.com/dhlab-basel/Sipi/issues/144)
-        # - file 5 (https://github.com/ImageMagick/ImageMagick/issues/409)
-        # - file 6 (https://github.com/dhlab-basel/Sipi/issues/153)
-        # - file 7 (https://github.com/ImageMagick/ImageMagick/issues/409)
-        # - file 8 (https://github.com/dhlab-basel/Sipi/issues/154)
+        # - files 2 and 5-9 (https://github.com/ImageMagick/ImageMagick/issues/409)
 
-        for i in [1, 2, 9]:
+        for i in [1, 4]:
             reference_jp2 = manager.data_dir_path(self.reference_jp2_tmpl.format(i))
             reference_tif = manager.data_dir_path(self.reference_tif_tmpl.format(i))
             sipi_tif = os.path.join(tempdir, self.sipi_tif_tmpl.format(i))
 
             manager.sipi_convert(reference_jp2, sipi_tif, "tif")
             pae = manager.compare_images(sipi_tif, reference_tif, "PAE")
-            results += "Image {}: Converted JP2 -> TIFF\n    Reference JP2: {}\n    Reference TIFF: {}\n    Sipi TIFF: {}\n    PAE (Sipi TIFF compared to reference TIFF): {}\n\n".format(i, reference_jp2, reference_tif, sipi_tif, pae)
-            pae_regex_match = compare_out_re.match(pae)
-            assert pae_regex_match != None, "Couldn't parse comparison result: {}".format(pae)
 
-            if int(pae_regex_match.group(1)) > 300:
+            results += "Image {}: Converted JP2 -> TIFF\n    Reference JP2: {}\n    Reference TIFF: {}\n    Sipi TIFF: {}\n    PAE (Sipi TIFF compared to reference TIFF): {}\n\n".format(i, reference_jp2, reference_tif, sipi_tif, pae)
+
+            if pae > 0:
                 bad_result = True
 
         assert not bad_result, results
@@ -86,7 +79,7 @@ class TestConversions:
 
             results += "Image {}: Converted TIFF -> JP2 -> TIFF\n    Reference TIFF: {}\n    Sipi JP2: {}\n    Sipi TIFF: {}\n    PAE (Sipi TIFF compared to reference TIFF): {}\n\n".format(i, reference_tif, sipi_jp2, sipi_tif, pae)
 
-            if pae != "0 (0)":
+            if pae > 0:
                 bad_result = True
 
         assert not bad_result, results

@@ -32,6 +32,7 @@ import tempfile
 import filecmp
 import shutil
 import psutil
+import re
 
 
 @pytest.fixture(scope="session")
@@ -88,6 +89,7 @@ class SipiTestManager:
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
         self.compare_command = "compare -metric {} {} {} null:"
+        self.compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\).*$")
         self.info_command = "identify -verbose {}"
 
     def start_sipi(self):
@@ -285,7 +287,7 @@ class SipiTestManager:
     def compare_images(self, reference_target_file_path, converted_file_path, metric):
         """
             Checks the distortion in converted image by comparing it with a reference image, using ImageMagick's
-            'compare' program. Returns a string containing the result.
+            'compare' program. Returns an integer representing the result.
 
             reference_target_file_path: the absolute path of the reference image file.
             converted_file_path: the absolute path of the image to be checked.
@@ -298,7 +300,10 @@ class SipiTestManager:
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        return compare_process.stdout
+        compare_out_str = compare_process.stdout
+        compare_out_regex_match = self.compare_out_re.match(compare_out_str)
+        assert compare_out_regex_match != None, "Couldn't parse comparison result: {}".format(compare_out_str)
+        return int(compare_out_regex_match.group(1))
 
     def data_dir_path(self, relative_path):
         """
