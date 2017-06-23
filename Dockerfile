@@ -9,6 +9,7 @@ COPY . /sipi
 RUN cd /sipi/build && \
     make install && \
     mkdir /sipi/images && \
+    mkdir /sipi/images/knora && \
     mkdir /sipi/cache && \
     rm -rf /sipi/vendor && \
     rm -rf /sipi/build && \

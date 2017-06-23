@@ -28,29 +28,46 @@ if not success then
 end
 
 --
--- check if temporary directory is available. it needs to be created before sipi is started
+-- check if temporary directory is available, if not, create it.
 --
 local tmpDir = config.imgroot .. '/tmp/'
 local success, exists = server.fs.exists(tmpDir)
-if not exists then
-    local errorMsg = "Directory " .. tmpDir .. " not found. Please make sure it exists before starting sipi."
-    send_error(500, errorMsg)
-    server.log(errorMsg, server.loglevel.LOG_ERR)
+if not success then
+    send_error(500, "Internal server error: " .. exists)
     return -1
+end
+if not exists then
+    local success, result = server.fs.mkdir(tmpDir, 511)
+    if not success then
+        local errorMsg = "Could not create tmpDir: " .. tmpDir .. " , result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
+        return -1
+    end
 end
 
 --
--- check if thumbs directory is available. it needs to be created befoer sipi is started.
+-- check if thumbs directory is available, if not, create it.
 --
 local thumbsDir = config.imgroot .. '/thumbs/'
 local success, exists = server.fs.exists(thumbsDir)
-if not exists then
-    local errorMsg = "Directory " .. thumbsDir .. " not found. Please make sure it exists before starting sipi."
-    send_error(500, errorMsg)
-    server.log(errorMsg, server.loglevel.LOG_ERR)
+if not success then
+    send_error(500, "Internal server error: " .. exists)
     return -1
 end
+if not exists then
+    local success, result = server.fs.mkdir(thumbsDir, 511)
+    if not success then
+        local errorMsg = "Could not create thumbsDir: " .. thumbsDir .. " , result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
+        return -1
+    end
+end
 
+--
+-- check if something was uploaded
+--
 if server.uploads == nil then
     send_error(400, "no image uploaded")
     return -1
@@ -59,7 +76,7 @@ end
 for imgindex, imgparam in pairs(server.uploads) do
 
     --
-    -- copy the file to tmp directory
+    -- copy the uploaded file (from config.tmpdir) to tmpDir so we have access to it in later requests
     --
 
     -- create tmp name
@@ -69,15 +86,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         return -1
     end
 
-    -- create tmp name with sublevels
-    local success, tmpNameWithSublevels = helper.filename_hash(tmpName);
-    if not success then
-        server.sendStatus(500)
-        server.log(gaga, server.loglevel.LOG_ERR)
-        return false
-    end
-
-    local tmpPath =  tmpDir .. tmpNameWithSublevels
+    local tmpPath =  tmpDir .. tmpName
 
     local success, result = server.copyTmpfile(imgindex, tmpPath)
     if not success then
@@ -135,23 +144,22 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     -- write the thumbnail file by reusing newTmpName, which already has the directory sublevels
     --
-    local thumbNameWithoutLevels = tmpName .. ".jpg"
-    local thumbNameWithLevels = tmpNameWithSublevels .. ".jpg"
+    local thumbName = tmpName .. ".jpg"
 
 
-    local success, result = thumbImg:write(thumbsDir .. thumbNameWithLevels)
+    local success, result = thumbImg:write(thumbsDir .. thumbName)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
         return -1
     end
 
-    server.log("thumbnail path: " .. thumbsDir .. thumbNameWithLevels, server.loglevel.LOG_DEBUG)
+    server.log("thumbnail path: " .. thumbsDir .. thumbName, server.loglevel.LOG_DEBUG)
 
     answer = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
-        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbNameWithoutLevels .. "/full/full/0/default.jpg",
+        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbName .. "/full/full/0/default.jpg",
         filename = tmpName, -- make this a IIIF URL
         original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,

@@ -23,6 +23,20 @@
 
 require "send_response"
 
+
+--
+-- check if knora directory is available. needs to be created before sipi is started,
+-- so that sipi can create the directory sublevels on startup.
+--
+knoraDir = config.imgroot .. '/knora/'
+local success, exists = server.fs.exists(knoraDir)
+if not exists then
+    local errorMsg = "Directory " .. knoraDir .. " not found. Please make sure it exists before starting sipi."
+    send_error(500, errorMsg)
+    server.log(errorMsg, server.loglevel.LOG_ERR)
+    return -1
+end
+
 success, errmsg = server.setBuffer()
 if not success then
     server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.LOG_ERR)
@@ -43,21 +57,19 @@ filename = server.post['filename']
 
 -- check if all the expected params are set
 if originalFilename == nil or originalMimetype == nil or filename == nil then
-
     send_error(400, PARAMETERS_INCORRECT)
-
     return
 end
 
 -- file with name given in param "filename" has been saved by make_thumbnail.lua beforehand
-tmpdir = config.imgroot .. '/tmp/'
-sourcePath = tmpdir .. filename
+tmpDir = config.imgroot .. '/tmp/'
+sourcePath = tmpDir .. filename
 
 
 -- check if source is readable
 success, readable = server.fs.is_readable(sourcePath)
 if not success then
-    server.log("server.fs.is_readable() failed: " .. readable, server.loglevel.LOG_ERR)
+    server.log("Source: " .. sourcePath .. "not readable, " .. readable, server.loglevel.LOG_ERR)
     return
 end
 if not readable then
@@ -68,19 +80,6 @@ if not readable then
 end
 
 -- all params are set
-
---
--- check if knora directory is available, if not, create it
---
-knoraDir = config.imgroot .. '/knora/'
-success, exists = server.fs.exists(knoraDir)
-if not success then
-    server.log("server.fs.exists() failed: " .. exists, server.loglevel.LOG_ERR)
-    return
-end
-if not exists then
-    server.fs.mkdir(knoraDir, 511)
-end
 
 success, baseName = server.uuid62()
 if not success then
