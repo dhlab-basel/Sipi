@@ -118,7 +118,7 @@ sipi = {
     --
     -- If compiled with SSL support, the port the server is listening for secure connections
     --
-    ssl_port = 1025,
+    -- ssl_port = 1025,
 
     --
     -- If compiled with SSL support, the path to the certificate (must be .pem file)
@@ -127,12 +127,12 @@ sipi = {
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
     --
-    ssl_certificate = './certificate/certificate.pem',
+    -- ssl_certificate = './certificate/certificate.pem',
 
     --
     -- If compiled with SSL support, the path to the key file (see above to create)
     --
-    ssl_key = './certificate/key.pem',
+    -- ssl_key = './certificate/key.pem',
 
 
     --

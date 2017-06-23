@@ -76,6 +76,7 @@ function pre_flight(prefix, identifier, cookie)
         end
 
         knora_url = 'http://' .. config.knora_path .. ':' .. config.knora_port .. '/v1/files/' .. identifier
+
         --print("knora_url: " .. knora_url)
 
         success, result = server.http("GET", knora_url, knora_cookie_header, 5000)

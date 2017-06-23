@@ -142,10 +142,9 @@ for imgindex, imgparam in pairs(server.uploads) do
 
 
     --
-    -- write the thumbnail file by reusing newTmpName, which already has the directory sublevels
+    -- write the thumbnail file
     --
-    local thumbName = tmpName .. ".jpg"
-
+    local thumbName = tmpName .. "_THUMB.jpg"
 
     local success, result = thumbImg:write(thumbsDir .. thumbName)
     if not success then

@@ -178,7 +178,7 @@ if not success then
     server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
     return
 end
-success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. ".jpg")
+success, errmsg = server.fs.unlink(config.imgroot .. '/thumbs/' .. filename .. "_THUMB.jpg")
 if not success then
     server.log("server.fs.unlink failed: " .. errmsg, server.loglevel.LOG_ERR)
     return
