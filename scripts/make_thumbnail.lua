@@ -144,7 +144,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     -- write the thumbnail file
     --
-    local thumbName = tmpName .. "_THUMB.jpg"
+    local thumbName = tmpName .. ".jpg"
 
     local success, result = thumbImg:write(thumbsDir .. thumbName)
     if not success then
