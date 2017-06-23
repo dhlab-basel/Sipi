@@ -626,7 +626,7 @@ SipiImage.dims()
 Returns the dimensions of the image.
 
 SipiImage.crop(<iiif-region-string>)
-=============================
+====================================
 
 ::
 

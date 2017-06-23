@@ -105,8 +105,21 @@ Prerequisites for building Sipi without its automated test framework:
     sudo apt-get install gettext
     sudo apt-get install libmagic-dev
 
-If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.5-4
-or higher. You may need to compile it from source. Then:
+If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.6
+or higher. We suggest compiling it from source:
+
+::
+
+    sudo apt-get install libtiff5-dev libjpeg-turbo8-dev libopenjp2-7-dev
+    wget https://github.com/ImageMagick/ImageMagick/archive/7.0.6-0.tar.gz
+    tar -xzf 7.0.6-0.tar.gz
+    cd ImageMagick-7.0.6-0/
+    ./configure
+    make
+    sudo make install
+    sudo ldconfig /usr/local/lib
+
+Then:
 
 ::
 
@@ -159,9 +172,21 @@ Prerequisites for building Sipi without its automated test framework:
     sudo yum -y install gettext
     sudo yum -y install file-devel
 
-If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.5-4
-or higher. If the RPM packages on the ImageMagick web site don't work for you, you
-can install it from source. Then:
+If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.6
+or higher. We suggest compiling it from source:
+
+::
+
+    sudo yum install libtiff-devel libjpeg-turbo-devel openjpeg2-devel
+    wget https://github.com/ImageMagick/ImageMagick/archive/7.0.6-0.tar.gz
+    tar -xzf 7.0.6-0.tar.gz
+    cd ImageMagick-7.0.6-0/
+    ./configure
+    make
+    sudo make install
+    sudo ldconfig /usr/local/lib
+
+Then:
 
 ::
 

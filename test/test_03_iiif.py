@@ -25,6 +25,8 @@ import pytest
 
 class TestIIIF:
 
+    component = "The Sipi server"
+
     def test_iiif_validation(self, manager):
         """pass the IIIF validator's tests"""
         manager.run_iiif_validator()

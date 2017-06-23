@@ -27,6 +27,8 @@ import os
 
 class TestConversions:
 
+    component = "The Sipi command-line program"
+
     reference_tif_tmpl = "iso-15444-4/reference_jp2/jp2_{}.tif"
     reference_jp2_tmpl = "iso-15444-4/testfiles_jp2/file{}.jp2"
     sipi_jp2_tmpl = "sipi_file{}.jp2"

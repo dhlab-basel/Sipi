@@ -24,6 +24,7 @@ import pytest
 # Tests basic functionality of the Sipi server.
 
 class TestServer:
+    component = "The Sipi server"
 
     def test_sipi_starts(self, manager):
         """start"""
