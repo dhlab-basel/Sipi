@@ -32,6 +32,7 @@ import tempfile
 import filecmp
 import shutil
 import psutil
+import re
 
 
 @pytest.fixture(scope="session")
@@ -78,6 +79,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
+        self.sipi_convert_command = "build/sipi --file {} --format {} {}"
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -86,8 +88,9 @@ class SipiTestManager:
 
         self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
-        self.compare_command = "gm compare -metric MAE {} {}"
-        self.info_command = "gm identify -verbose {}"
+        self.compare_command = "compare -metric {} {} {} null:"
+        self.compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\).*$")
+        self.info_command = "identify -verbose {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -213,17 +216,16 @@ class SipiTestManager:
         temp_file.close()
         return temp_file_path
 
-    def compare_bytes(self, url_path, filename, headers=None):
+    def compare_server_bytes(self, url_path, expected_file_path, headers=None):
         """
             Downloads a temporary file and compares it with an existing file on disk. If the two are equivalent,
             deletes the temporary file, otherwise writes Sipi's output to sipi.log and raises an exception.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, containing the expected data.
+            expected_file_path: the absolute path of a file containing the expected data.
             headers: an optional dictionary of request headers.
         """
 
-        expected_file_path = os.path.join(self.data_dir, filename)
         expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
         downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
 
@@ -249,7 +251,7 @@ class SipiTestManager:
 
     def get_image_info(self, url_path, headers=None):
         """
-            Downloads a temporary image file, gets informationa about it using GraphicsMagick's 'gm identify'
+            Downloads a temporary image file, gets information about it using ImageMagick's 'identify'
             program with the '-verbose' option, and returns the resulting output.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
@@ -264,48 +266,65 @@ class SipiTestManager:
             universal_newlines = True)
         return info_process.stdout
 
-    def compare_images(self, url_path, filename, headers=None):
+    def sipi_convert(self, source_file_path, target_file_path, target_file_format):
         """
-            Downloads a temporary image file and compares it with an existing image file on disk, using GraphicsMagick's
-            'gm compare' program with the mean absolute error metric. If 'compare' finds no distortion, deletes the temporary file,
-            otherwise writes Sipi's output to sipi.log and raises an exception. Note that this method does not compare image
-            metadata.
+            Runs Sipi on the command line to convert an image from one format to another.
 
-            url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, containing the expected data.
-            headers: an optional dictionary of request headers.
+            source_file_path: the absolute path of the source file.
+            target_file_path: the absolute path of the target file.
+            target_file_format: jpx, jpg, tif, or png.
+        """
+        convert_process_args = shlex.split(self.sipi_convert_command.format(source_file_path, target_file_format, target_file_path))
+        convert_process = subprocess.run(convert_process_args,
+            cwd=self.sipi_working_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines = True)
+
+        if convert_process.returncode != 0:
+            raise SipiTestError("Error converting {} to {}:\n{}".format(source_file_path, target_file_path, convert_process.stdout))
+
+    def compare_images(self, reference_target_file_path, converted_file_path, metric):
+        """
+            Checks the distortion in converted image by comparing it with a reference image, using ImageMagick's
+            'compare' program. Returns an integer representing the result.
+
+            reference_target_file_path: the absolute path of the reference image file.
+            converted_file_path: the absolute path of the image to be checked.
+            metric: the type of comparison to be performed, either 'MAE' or 'PAE'.
         """
 
-        expected_file_path = os.path.join(self.data_dir, filename)
-        expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
-        downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
-        compare_process_args = shlex.split(self.compare_command.format(expected_file_path, downloaded_file_path))
+        compare_process_args = shlex.split(self.compare_command.format(metric, reference_target_file_path, converted_file_path))
         compare_process = subprocess.run(compare_process_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             universal_newlines = True)
 
-        total_mean_absolute_error = compare_process.stdout.splitlines()[-1].strip().split()[-1]
+        compare_out_str = compare_process.stdout
+        compare_out_regex_match = self.compare_out_re.match(compare_out_str)
+        assert compare_out_regex_match != None, "Couldn't parse comparison result: {}".format(compare_out_str)
+        return int(compare_out_regex_match.group(1))
 
-        if compare_process.returncode != 0 or total_mean_absolute_error != "0.0":
-            raise SipiTestError("Downloaded image {} is different from expected image {} (wrote {}):\n{}".format(downloaded_file_path, expected_file_path, self.sipi_log_file, compare_process.stdout))
+    def data_dir_path(self, relative_path):
+        """
+            Converts a path relative to data-dir into an absolute path.
+        """
+        return os.path.join(self.data_dir, relative_path)
 
-        os.remove(downloaded_file_path)
 
-    def post_file(self, url_path, filename, mime_type, headers=None):
+    def post_file(self, url_path, file_path, mime_type, headers=None):
         """
             Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
-            filename: the name of a file in the test data directory, which will be uploaded.
+            file_path: the absolute path to the file to be uploaded.
             headers: an optional dictionary of request headers.
         """
 
-        file_path = os.path.join(self.data_dir, filename)
         sipi_url = self.make_sipi_url(url_path)
 
         with open(file_path, "rb") as file_obj:
-            files = { "file": (filename, file_obj, mime_type) }
+            files = { "file": (os.path.basename(file_path), file_obj, mime_type) }
             response = requests.post(sipi_url, files=files, headers=headers)
             return response.json()
 
@@ -361,6 +380,7 @@ def pytest_itemcollected(item):
     par = item.parent.obj
     node = item.obj
     pref = par.__doc__.strip() if par.__doc__ else par.__class__.__name__
+    component = par.component
     suf = node.__doc__.strip() if node.__doc__ else node.__name__
     if pref or suf:
-        item._nodeid = ": Sipi should ".join((pref, suf))
+        item._nodeid = "{}: {} should {}".format(pref, component, suf)

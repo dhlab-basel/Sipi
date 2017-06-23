@@ -46,8 +46,8 @@ integrated with Knora_. In addition SIPI preserves most of the EXIF_, IPTC_ and 
 metadata and can preservce of transform ICC_ colour profiles.
 
 In addition, a simple webserver is integrated. The server is able to serve most
-common file types. In addition Lua scripts (*.lua) and embedded Lua (that is Lua
-embedded into *.html pages using the tags <lua>…</lua> are supported.
+common file types. In addition Lua scripts and embedded Lua (i.e., Lua
+embedded into HTML pages using the tags <lua>…</lua> are supported.
 
 Sipi is `free software`_, released under the `GNU Affero General Public License`_.
 It is written in C++ and runs on Linux (including Debian_, Ubuntu_, and CentOS_) and

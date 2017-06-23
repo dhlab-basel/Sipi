@@ -21,10 +21,12 @@
 
 import pytest
 
-# Tests image format conversions using the Sipi server.
+# Tests the Sipi server's conformance to the IIIF standard.
 
-class TestConversions:
+class TestIIIF:
 
-    def test_tif8_to_jpg(self, manager):
-        """convert Leaves8.tif to JPG"""
-        manager.compare_images("/knora/Leaves8.tif/full/full/0/default.jpg", "Leaves8.jpg")
+    component = "The Sipi server"
+
+    def test_iiif_validation(self, manager):
+        """pass the IIIF validator's tests"""
+        manager.run_iiif_validator()
