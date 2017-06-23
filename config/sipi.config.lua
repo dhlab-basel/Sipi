@@ -86,6 +86,15 @@ sipi = {
     subdir_levels = 1,
 
     --
+    -- if subdir_levels is > 0 and if prefix_as_path is true, all prefixes will be
+    -- regarded as directories under imgroot. Thus, the subdirs 'A'-'Z' will be
+    -- created in these directories for the prefixes. However, it may make sense
+    -- for certain prefixes *not* to use subdirs. A list of these prefix-directories
+    -- can be given with this configuration parameter.
+    --
+    subdir_excludes = { "tmp", "thumb"},
+
+    --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
     initscript = './config/sipi.init.lua',

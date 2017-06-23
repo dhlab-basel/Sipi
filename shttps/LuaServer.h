@@ -160,15 +160,18 @@ namespace shttps {
 
         float configFloat(const std::string table, const std::string variable, const float defval);
 
+        const std::vector<std::string> configStringList(const std::string table, const std::string stringlist);
+
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
         /*!
          * Execute a chunk of Lua code
          *
          * \param[in] luastr String containing the Lua code
+         * \param[in] scriptname String containing the Lua script name
          * \returns Either the value 1 or an integer result that the Lua code provides
          */
-        int executeChunk(const std::string &luastr);
+        int executeChunk(const std::string &luastr, const std::string &scriptname);
 
         /*!
          * Executes a Lua function that either is defined in C or in Lua

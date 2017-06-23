@@ -438,6 +438,8 @@ int main(int argc, char *argv[]) {
             // here we check the levels... and migrate if necessary
             //
             if (sipiConf.getPrefixAsPath()) {
+                std::vector<std::string> dirs_to_exclude = sipiConf.getSubdirExcludes();
+
                 //
                 // the prefix is used as part of the path
                 //
@@ -450,6 +452,11 @@ int main(int argc, char *argv[]) {
                     if (dp->d_type == DT_DIR) {
                         if (strcmp(dp->d_name, ".") == 0) continue;
                         if (strcmp(dp->d_name, "..") == 0) continue;
+                        bool exclude = false;
+                        for (auto direx : dirs_to_exclude) {
+                            if (direx == dp->d_name) exclude = true;
+                        }
+                        if (exclude) continue;
                         std::string path = sipiConf.getImgRoot() + "/" + dp->d_name;
                         int levels = SipiFilenameHash::check_levels(path);
                         int new_levels = sipiConf.getSubdirLevels();
@@ -502,6 +509,7 @@ int main(int argc, char *argv[]) {
             server.add_lua_globals_func(shttps::sqliteGlobals); // add new lua function "gaga"
             server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add Lua SImage functions
             server.prefix_as_path(sipiConf.getPrefixAsPath());
+            server.dirs_to_exclude(sipiConf.getSubdirExcludes());
 
             //
             // cache parameter...

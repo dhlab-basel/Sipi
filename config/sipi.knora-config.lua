@@ -65,6 +65,25 @@ sipi = {
     prefix_as_path = true,
 
     --
+    -- In order not to accumulate to many files into one diretory (which slows down file
+    -- access considerabely), the images are stored in recursive subdirectories 'A'-'Z'.
+    -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
+    -- The recommandeation is that on average there should not me more than a few
+    -- thousand files in a unix directory (your mileage may vay depending on the
+    -- file system used).
+    --
+    subdir_levels = 1,
+
+    --
+    -- if subdir_levels is > 0 and if prefix_as_path is true, all prefixes will be
+    -- regarded as directories under imgroot. Thus, the subdirs 'A'-'Z' will be
+    -- created in these directories for the prefixes. However, it may make sense
+    -- for certain prefixes *not* to use subdirs. A list of these prefix-directories
+    -- can be given with this configuration parameter.
+    --
+    subdir_excludes = { "tmp", "thumbs"},
+
+    --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
     initscript = './config/sipi.init-knora.lua',
@@ -107,13 +126,24 @@ sipi = {
     --
     -- Port of Knora Application
     --
-    knora_port = '3333'
+    knora_port = '3333',
 
+    --
+    -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
+    --
+    loglevel = "DEBUG"
 }
 
 
 fileserver = {
+    --
+    -- directory where the documents for the normal webserver are located
+    --
     docroot = './server',
+
+    --
+    -- route under which the normal webserver shouöd respond to requests
+    --
     wwwroute = '/server'
 }
 

@@ -111,7 +111,9 @@ if mediatype == IMAGE then
     end
 
 
+    --
     -- create full quality image (jp2)
+    --
     success, fullImg = SipiImage.new(sourcePath)
     if not success then
         server.log("SipiImage.new() failed: " .. fullImg, server.loglevel.LOG_ERR)
@@ -132,27 +134,38 @@ if mediatype == IMAGE then
         return
     end
 
-    fullImgName = baseName .. '.jpx'
     success, fullDims = fullImg:dims()
     if not success then
         server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
         return
     end
 
-    success, errmsg = fullImg:write(knoraDir .. fullImgName)
+    fullImgName = baseName .. '.jpx'
+
+    --
+    -- create new full quality image file path with sublevels:
+    --
+    success, newFilePath = helper.filename_hash(fullImgName);
+    if not success then
+        server.sendStatus(500)
+        server.log(gaga, server.loglevel.error)
+        return false
+    end
+
+    success, errmsg = fullImg:write(knoraDir .. newFilePath)
     if not success then
         server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
     end
 
+    --
     -- create thumbnail (jpg)
+    --
     success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
     if not success then
         server.log("SipiImage.new failed: " .. thumbImg, server.loglevel.LOG_ERR)
         return
     end
-
-    thumbImgName = baseName .. '.jpg'
 
     success, thumbDims = thumbImg:dims()
     if not success then
@@ -160,8 +173,20 @@ if mediatype == IMAGE then
         return
     end
 
+    thumbImgName = baseName .. '.jpg'
 
-    success, errmsg = thumbImg:write(knoraDir .. thumbImgName)
+    --
+    -- create new thumnail image file path with sublevels:
+    --
+    success, newThumbPath = helper.filename_hash(thumbImgName);
+    if not success then
+        server.sendStatus(500)
+        server.log(gaga, server.loglevel.error)
+        return false
+    end
+
+
+    success, errmsg = thumbImg:write(knoraDir .. newThumbPath)
     if not success then
         server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
         return

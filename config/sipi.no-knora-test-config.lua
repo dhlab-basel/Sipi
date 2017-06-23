@@ -132,6 +132,11 @@ sipi = {
     loglevel = "TRACE",
 }
 
+fileserver = {
+    docroot = './server',
+    wwwroute = '/server'
+}
+
 --
 -- here we define routes that are handled by lua scripts. A route is a defined url:
 -- http://<server-DNS>/<route>

@@ -60,4 +60,4 @@ class TestServer:
         """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
         filename = response_json["filename"]
-        manager.expect_status_code("/thumbs/{}_THUMB.jpg/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)

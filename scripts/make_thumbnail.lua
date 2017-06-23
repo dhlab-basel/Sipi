@@ -28,22 +28,46 @@ if not success then
 end
 
 --
--- check if temporary directory is available, if not, create it
+-- check if temporary directory is available, if not, create it.
 --
-local tmpdir = config.imgroot .. '/tmp/'
-local success, exists = server.fs.exists(tmpdir)
+local tmpDir = config.imgroot .. '/tmp/'
+local success, exists = server.fs.exists(tmpDir)
 if not success then
-    send_error(500, "Internal server error")
+    send_error(500, "Internal server error: " .. exists)
     return -1
 end
 if not exists then
-    local success, result = server.fs.mkdir(tmpdir, 511)
+    local success, result = server.fs.mkdir(tmpDir, 511)
     if not success then
-        send_error(500, "Couldn't create tmpdir: " .. result)
+        local errorMsg = "Could not create tmpDir: " .. tmpDir .. " , result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
     end
 end
 
+--
+-- check if thumbs directory is available, if not, create it.
+--
+local thumbsDir = config.imgroot .. '/thumbs/'
+local success, exists = server.fs.exists(thumbsDir)
+if not success then
+    send_error(500, "Internal server error: " .. exists)
+    return -1
+end
+if not exists then
+    local success, result = server.fs.mkdir(thumbsDir, 511)
+    if not success then
+        local errorMsg = "Could not create thumbsDir: " .. thumbsDir .. " , result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
+        return -1
+    end
+end
+
+--
+-- check if something was uploaded
+--
 if server.uploads == nil then
     send_error(400, "no image uploaded")
     return -1
@@ -52,27 +76,35 @@ end
 for imgindex, imgparam in pairs(server.uploads) do
 
     --
-    -- copy the file to a safe place
+    -- copy the uploaded file (from config.tmpdir) to tmpDir so we have access to it in later requests
     --
-    local success, tmpname = server.uuid62()
+
+    -- create tmp name
+    local success, tmpName = server.uuid62()
     if not success then
         send_error(500, "Couldn't generate uuid62!")
         return -1
     end
-    local tmppath =  tmpdir .. tmpname
-    local success, result = server.copyTmpfile(imgindex, tmppath)
+
+    local tmpPath =  tmpDir .. tmpName
+
+    local success, result = server.copyTmpfile(imgindex, tmpPath)
     if not success then
-        send_error(500, "Couldn't copy uploaded file: " .. result)
+        local errorMsg = "Couldn't copy uploaded file to tmp path: " .. tmpPath .. ", result: " .. result
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
     end
 
 
     --
-    -- create a SipiImage, already resized to the thumbnail size
+    -- create a thumnail sized SipiImage
     --
-    local success, myimg = SipiImage.new(tmppath, {size = config.thumb_size})
+    local success, thumbImg = SipiImage.new(tmpPath, {size = config.thumb_size})
     if not success then
-        send_error(500, "Couldn't create thumbnail: " .. myimg)
+        local errorMsg = "Couldn't create thumbnail for path: " .. tmpPath  .. ", result: " .. thumbImg
+        send_error(500, errorMsg)
+        server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
     end
 
@@ -84,7 +116,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         return -1
     end
 
-    local success, check = myimg:mimetype_consistency(submitted_mimetype.mimetype, filename)
+    local success, check = thumbImg:mimetype_consistency(submitted_mimetype.mimetype, filename)
     if not success then
         send_error(500, "Couldn't check mimteype consistency: " .. check)
         return -1
@@ -100,9 +132,9 @@ for imgindex, imgparam in pairs(server.uploads) do
     end
 
     --
-    -- get the dimensions and print them
+    -- get the dimensions
     --
-    local success, dims = myimg:dims()
+    local success, dims = thumbImg:dims()
     if not success then
         send_error(500, "Couldn't get image dimensions: " .. dims)
         return -1
@@ -112,34 +144,22 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     -- write the thumbnail file
     --
-    local thumbsdir = config.imgroot .. '/thumbs/'
-    local success, exists = server.fs.exists(thumbsdir)
-    if not success then
-        send_error(500, "Internal server error")
-        return -1
-    end
-    if not exists then
-        local success, result = server.fs.mkdir(thumbsdir, 511)
-        if not success then
-            send_error(500, "Couldn't create thumbsdir: " .. result)
-            return -1
-        end
-    end
+    local thumbName = tmpName .. ".jpg"
 
-
-    local thumbname = thumbsdir .. tmpname .. "_THUMB.jpg"
-    local success, result = myimg:write(thumbname)
+    local success, result = thumbImg:write(thumbsDir .. thumbName)
     if not success then
         send_error(500, "Couldn't create thumbnail: " .. result)
         return -1
     end
 
+    server.log("thumbnail path: " .. thumbsDir .. thumbName, server.loglevel.LOG_DEBUG)
+
     answer = {
         nx_thumb = dims.nx,
         ny_thumb = dims.ny,
         mimetype_thumb = 'image/jpeg',
-        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. tmpname .. "_THUMB.jpg" .. "/full/full/0/default.jpg",
-        filename = tmpname, -- make this a IIIF URL
+        preview_path = "http://" .. config.hostname .. ":" .. config.port .."/thumbs/" .. thumbName .. "/full/full/0/default.jpg",
+        filename = tmpName, -- make this a IIIF URL
         original_mimetype = submitted_mimetype.mimetype,
         original_filename = filename,
         file_type = 'IMAGE'

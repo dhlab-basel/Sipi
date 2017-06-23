@@ -61,6 +61,16 @@ sipi = {
     prefix_as_path = true,
 
     --
+    -- In order not to accumulate to many files into one diretory (which slows down file
+    -- access considerabely), the images are stored in recursive subdirectories 'A'-'Z'.
+    -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
+    -- The recommandeation is that on average there should not me more than a few
+    -- thousand files in a unix directory (your mileage may vay depending on the
+    -- file system used).
+    --
+    subdir_levels = 0,
+
+    --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
     initscript = './config/sipi.init-knora-test.lua',
@@ -108,7 +118,7 @@ sipi = {
     --
     -- If compiled with SSL support, the port the server is listening for secure connections
     --
-    ssl_port = 1025,
+    -- ssl_port = 1025,
 
     --
     -- If compiled with SSL support, the path to the certificate (must be .pem file)
@@ -117,12 +127,12 @@ sipi = {
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
     --
-    ssl_certificate = './certificate/certificate.pem',
+    -- ssl_certificate = './certificate/certificate.pem',
 
     --
     -- If compiled with SSL support, the path to the key file (see above to create)
     --
-    ssl_key = './certificate/key.pem',
+    -- ssl_key = './certificate/key.pem',
 
 
     --
@@ -143,8 +153,15 @@ sipi = {
 }
 
 fileserver = {
+    --
+    -- directory where the documents for the normal webserver are located
+    --
     docroot = './server',
-    docroute = '/server'
+
+    --
+    -- route under which the normal webserver shouöd respond to requests
+    --
+    wwwroute = '/server'
 }
 
 --

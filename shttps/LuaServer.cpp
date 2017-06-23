@@ -594,8 +594,10 @@ namespace shttps {
         lua_settop(L, 0); // clear stack
 
         if (unlink(filename) != 0) {
+            std::stringstream ss;
+            ss << strerror(errno) << " File to unlink: " << filename;
             lua_pushboolean(L, false);
-            lua_pushstring(L, strerror(errno));
+            lua_pushstring(L, ss.str().c_str());
             return 2;
         }
 
@@ -2608,6 +2610,41 @@ namespace shttps {
     }
     //=========================================================================
 
+    const std::vector<std::string> LuaServer::configStringList(const std::string table, const std::string variable) {
+        std::vector<std::string> strings;
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, 1);
+            return strings;
+        }
+
+        lua_getfield(L, -1, variable.c_str());
+
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 2);
+            return strings;
+        }
+
+        if (!lua_istable(L, -1)) {
+            throw Error(__file__, __LINE__, "Value '" + variable + "' in config file must be a table");
+        }
+
+        for (int i = 1;; i++) {
+            lua_rawgeti(L, -1, i);
+
+            if (lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+                break;
+            }
+            if (lua_isstring(L, -1)) {
+                std::string tmpstr = lua_tostring(L, -1);
+                strings.push_back(tmpstr);
+            }
+            lua_pop(L, 1);
+        }
+        return strings;
+    }
+    //=========================================================================
+
 
     const std::vector<LuaRoute> LuaServer::configRoute(const std::string routetable) {
         static struct {
@@ -2689,14 +2726,14 @@ namespace shttps {
     //=========================================================================
 
 
-    int LuaServer::executeChunk(const std::string &luastr) {
+    int LuaServer::executeChunk(const std::string &luastr, const std::string &scriptname ) {
         if (luaL_dostring(L, luastr.c_str()) != LUA_OK) {
             const char *errorMsg = nullptr;
 
             if (lua_gettop(L) > 0) {
                 errorMsg = lua_tostring(L, 1);
                 lua_pop(L, 1);
-                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg);
+                throw Error(__file__, __LINE__, std::string("LuaServer::executeChunk failed: ") + errorMsg + ", scriptname: " + scriptname);
             } else {
                 throw Error(__file__, __LINE__, "LuaServer::executeChunk failed");
             }
