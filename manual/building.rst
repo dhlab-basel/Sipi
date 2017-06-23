@@ -226,7 +226,7 @@ Then compile Sipi:
 Running Tests
 *************
 
-The tests are currently very incomplete, but you can run them in the ``build`` directory like this:
+You can run the automated tests in the ``build`` directory like this:
 
 ::
 
