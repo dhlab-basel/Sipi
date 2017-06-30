@@ -102,7 +102,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     local success, thumbImg = SipiImage.new(tmpPath, {size = config.thumb_size})
     if not success then
-        local errorMsg = "Couldn't create thumbnail for path: " .. tmpPath  .. ", result: " .. thumbImg
+        local errorMsg = "Couldn't create thumbnail for path: " .. tmpPath  .. ", result: " .. tostring(thumbImg)
         send_error(500, errorMsg)
         server.log(errorMsg, server.loglevel.LOG_ERR)
         return -1
@@ -148,7 +148,9 @@ for imgindex, imgparam in pairs(server.uploads) do
 
     local success, result = thumbImg:write(thumbsDir .. thumbName)
     if not success then
-        send_error(500, "Couldn't create thumbnail: " .. result)
+        local errorMsg = "Couldn't create thumbnail for path: " .. .. thumbsDir .. thumbName  .. ", result: " .. tostring(thumbImg)
+        send_error(500, errorMsg)
+        server.log(errorMsg , server.loglevel.LOG_ERR)
         return -1
     end
 
