@@ -145,16 +145,17 @@ for imgindex, imgparam in pairs(server.uploads) do
     -- write the thumbnail file
     --
     local thumbName = tmpName .. ".jpg"
+    local thumbPath = thumbsDir .. thumbName
 
-    local success, result = thumbImg:write(thumbsDir .. thumbName)
+    server.log("thumbnail path: " .. thumbPath, server.loglevel.LOG_DEBUG)
+
+    local success, result = thumbImg:write(thumbPath)
     if not success then
-        local errorMsg = "Couldn't create thumbnail for path: " .. thumbsDir .. thumbName  .. ", result: " .. tostring(result)
+        local errorMsg = "Couldn't create thumbnail for path: " .. thumbPath  .. ", result: " .. tostring(result)
         send_error(500, errorMsg)
         server.log(errorMsg , server.loglevel.LOG_ERR)
         return -1
     end
-
-    server.log("thumbnail path: " .. thumbsDir .. thumbName, server.loglevel.LOG_DEBUG)
 
     answer = {
         nx_thumb = dims.nx,
