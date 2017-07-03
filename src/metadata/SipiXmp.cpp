@@ -55,9 +55,10 @@ namespace Sipi {
     //=========================================================================
 
     SipiXmp::SipiXmp(const std::string &xmp) {
-        //__xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
-        // return; // provisional code until Exiv2::Xmp is threadsafe
+        __xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
         // TODO: Testing required if now Exiv2::Xmp is thread save
+        /*
         try {
             if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
                 Exiv2::XmpParser::terminate();
@@ -67,13 +68,15 @@ namespace Sipi {
         catch(Exiv2::BasicError<char> &err) {
             throw SipiError(__file__, __LINE__, err.what());
         }
+         */
     }
     //============================================================================
 
     SipiXmp::SipiXmp(const char *xmp) {
-        //__xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
-        //return; // provisional code until Exiv2::Xmp is threadsafe
+        __xmpstr = xmp; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
         // TODO: Testing required if now Exiv2::Xmp is thread save
+        /*
         try {
             if (Exiv2::XmpParser::decode(xmpData, xmp) != 0) {
                 Exiv2::XmpParser::terminate();
@@ -83,14 +86,16 @@ namespace Sipi {
         catch(Exiv2::BasicError<char> &err) {
             throw SipiError(__file__, __LINE__, err.what());
         }
+         */
     }
     //============================================================================
 
     SipiXmp::SipiXmp(const char *xmp, int len) {
         std::string buf(xmp, len);
-        //__xmpstr = buf; // provisional code until Exiv2::Xmp is threadsafe
-        //return; // provisional code until Exiv2::Xmp is threadsafe
+        __xmpstr = buf; // provisional code until Exiv2::Xmp is threadsafe
+        return; // provisional code until Exiv2::Xmp is threadsafe
         // TODO: Testing required if now Exiv2::Xmp is thread save
+        /*
         try {
             if (Exiv2::XmpParser::decode(xmpData, buf) != 0) {
                 Exiv2::XmpParser::terminate();
@@ -100,6 +105,7 @@ namespace Sipi {
         catch(Exiv2::BasicError<char> &err) {
             throw SipiError(__file__, __LINE__, err.what());
         }
+         */
     }
     //============================================================================
 
@@ -111,13 +117,14 @@ namespace Sipi {
 
 
     char * SipiXmp::xmpBytes(unsigned int &len) {
-        //char *__buf = new char[__xmpstr.length() + 1];
-        //memcpy (__buf, __xmpstr.c_str(), __xmpstr.length());
-        //__buf[__xmpstr.length()] = '\0';
-        //len = __xmpstr.length();
-        //return __buf; // provisional code until Exiv2::Xmp is threadsafe
+        char *__buf = new char[__xmpstr.length() + 1];
+        memcpy (__buf, __xmpstr.c_str(), __xmpstr.length());
+        __buf[__xmpstr.length()] = '\0';
+        len = __xmpstr.length();
+        return __buf; // provisional code until Exiv2::Xmp is threadsafe
         // TODO: Testing required if now Exiv2::Xmp is thread save
 
+        /*
         std::string xmpPacket;
         try {
             if (0 != Exiv2::XmpParser::encode(xmpPacket, xmpData, Exiv2::XmpParser::useCompactFormat)) {
@@ -134,6 +141,7 @@ namespace Sipi {
         memcpy (buf, xmpPacket.c_str(), len);
         buf[len] = '\0';
         return buf;
+         */
     }
     //============================================================================
 
