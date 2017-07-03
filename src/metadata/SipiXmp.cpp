@@ -111,7 +111,7 @@ namespace Sipi {
 
 
     SipiXmp::~SipiXmp() {
-        Exiv2::XmpParser::terminate();
+        //Exiv2::XmpParser::terminate();
     }
     //============================================================================
 
@@ -146,6 +146,7 @@ namespace Sipi {
     //============================================================================
 
     std::ostream &operator<< (std::ostream &outstr, const SipiXmp &rhs) {
+        /*
         for (Exiv2::XmpData::const_iterator md = rhs.xmpData.begin();
         md != rhs.xmpData.end(); ++md) {
             outstr << std::setfill(' ') << std::left
@@ -159,6 +160,7 @@ namespace Sipi {
                 << std::dec << md->value()
                 << std::endl;
         }
+         */
         return outstr;
     }
     //============================================================================
