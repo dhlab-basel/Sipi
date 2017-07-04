@@ -144,8 +144,8 @@ for imgindex, imgparam in pairs(server.uploads) do
     --
     -- write the thumbnail file
     --
-    local thumbName = tmpName .. ".jpg"
-    local thumbPath = thumbsDir .. thumbName
+    thumbName = tmpName .. ".jpg"
+    thumbPath = thumbsDir .. thumbName
 
     server.log("thumbnail path: " .. thumbPath, server.loglevel.LOG_DEBUG)
 
