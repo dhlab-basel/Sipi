@@ -150,6 +150,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     server.log("thumbnail path: " .. thumbPath, server.loglevel.LOG_DEBUG)
 
     local success, result = thumbImg:write(thumbPath)
+    server.log("thumbnail path: " .. thumbPath, server.loglevel.LOG_DEBUG)
     if not success then
         local errorMsg = "Couldn't create thumbnail for path: " .. thumbPath  .. ", result: " .. tostring(result)
         send_error(500, errorMsg)
