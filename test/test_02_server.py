@@ -61,3 +61,10 @@ class TestServer:
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+    def test_lausane_thumbnail(self, manager):
+        """create thumbnail with Lausanne file"""
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/ru09_sp_f_rn_12_06_kat-r.tif"), "image/tiff")
+        print(response_json)
+        filename = response_json["filename"]
+        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
