@@ -406,7 +406,7 @@ endif()
 add_custom_target(check
         DEPENDS sipi
         COMMAND pytest
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin
