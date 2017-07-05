@@ -27,7 +27,7 @@ script:
   - tar xvf private/private.tar
   - mv v7_9-01727L.zip vendor/.
   # run compile and tests inside docker
-  - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make check"
+  - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make test; make check"
 
 after_success:
   # login into docker hub, build image, and push
