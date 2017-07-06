@@ -31,7 +31,6 @@
 #include <sqlite3.h>
 #include "LuaSqlite.h"
 
-#include "SipiHttpServer.h"
 
 namespace shttps {
 

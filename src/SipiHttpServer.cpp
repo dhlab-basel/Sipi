@@ -1121,7 +1121,7 @@ namespace Sipi {
         Sipi::SipiImage img;
 
         try {
-            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG);
+            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG, serv->scaling_quality());
         } catch (const SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
             return;
@@ -1392,6 +1392,7 @@ namespace Sipi {
                                                                                                                  loglevel_p) {
         _salsah_prefix = "imgrep";
         _cache = nullptr;
+        _scaling_quality = {HIGH, HIGH, HIGH, HIGH};
     }
     //=========================================================================
 

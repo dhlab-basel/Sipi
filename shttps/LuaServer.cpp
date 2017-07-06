@@ -2645,18 +2645,20 @@ namespace shttps {
     }
     //=========================================================================
 
-    const std::map<std::string,std::string> LuaServer::configTable(const std::string table, const std::string variable) {
+    const std::map<std::string,std::string> LuaServer::configStringTable(const std::string table, const std::string variable) {
         std::map<std::string,std::string> subtable;
 
+        int top = lua_gettop(L);
+
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
-            lua_pop(L, 1);
+            lua_pop(L, top);
             return subtable;
         }
 
-        lua_getfield(L, -1, variable.c_str());
+        lua_getfield(L, 1, variable.c_str());
 
         if (lua_isnil(L, -1)) {
-            lua_pop(L, 2);
+            lua_pop(L, lua_gettop(L));
             return subtable;
         }
 
@@ -2664,21 +2666,29 @@ namespace shttps {
             throw Error(__file__, __LINE__, "Value '" + variable + "' in config file must be a table");
         }
 
-        for (int i = 1;; i++) {
-            lua_rawgeti(L, -1, i);
+        lua_pushvalue(L, -1);
+        lua_pushnil(L);
 
-            if (lua_isnil(L, -1)) {
-                lua_pop(L, 1);
-                break;
-            }
-
+        while (lua_next(L, -2)) {
+            std::string valstr, keystr;
+            lua_pushvalue(L, -2);
             if (lua_isstring(L, -1)) {
-                std::string tmpstr = lua_tostring(L, -1);
-                //subtable.push_back(tmpstr);
+                keystr = lua_tostring(L, -1);
             }
-            lua_pop(L, 1);
+            else {
+                throw Error(__file__, __LINE__, "Key element'" + variable + "' in config file must be a string");
+            }
+            if (lua_isstring(L, -2)) {
+                valstr = lua_tostring(L, -2);
+            }
+            else {
+                throw Error(__file__, __LINE__, "Value element'" + variable + "' in config file must be a string");
+            }
+            lua_pop(L, 2);
+            subtable[keystr] = valstr;
         }
 
+        return subtable;
 
     };
 

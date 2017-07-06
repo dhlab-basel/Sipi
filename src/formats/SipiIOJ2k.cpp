@@ -559,7 +559,14 @@ namespace Sipi {
         }
 
         if ((size != nullptr) && (!redonly)) {
-            img->scale(nnx, nny);
+            switch (scaling_quality.jk2) {
+                case HIGH: img->scale(nnx, nny);
+                    break;
+                case MEDIUM: img->scaleMedium(nnx, nny);
+                    break;
+                case LOW: img->scaleFast(nnx, nny);
+            }
+
         }
         return true;
     }

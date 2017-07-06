@@ -87,9 +87,6 @@ namespace Sipi {
         SKIP_NONE = 0x00, SKIP_ICC = 0x01, SKIP_XMP = 0x02, SKIP_IPTC = 0x04, SKIP_EXIF = 0x08, SKIP_ALL = 0xFF
     } SkipMetadata;
 
-    typedef enum {
-        HIGH, MEDIUM, LOW
-    } ScalingQuality;
 
     /*!
     * This class implements the error handling for the different image formats.
@@ -332,7 +329,7 @@ namespace Sipi {
          */
         void read(std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
                   std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false,
-                  ScalingQuality scaling_quality = HIGH);
+                  ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
 
         /*!
          * Read an image that is to be considered an "original image". In this case
@@ -473,7 +470,7 @@ namespace Sipi {
          * \param[in] nnx New horizonal dimension (width)
          * \param[in] nny New vertical dimension (height)
          */
-        bool SipiImage::scaleMedium(size_t nnx, size_t nny);
+        bool scaleMedium(size_t nnx, size_t nny);
 
         /*!
          * Resize an image using the best (but slow) algorithm

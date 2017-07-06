@@ -51,7 +51,7 @@ namespace Sipi {
         std::vector<std::string> subdir_excludes;
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         int jpeg_quality;
-        std::string scaling_quality;
+        std::map<std::string,std::string> scaling_quality;
         std::string init_script;
         std::string cache_dir;
         size_t cache_size;
@@ -101,7 +101,7 @@ namespace Sipi {
 
         inline int getJpegQuality(void) { return jpeg_quality; }
 
-        inline std::string getScalingQuality(void) { return scaling_quality; }
+        inline std::map<std::string,std::string> getScalingQuality(void) { return scaling_quality; }
 
         inline int getSubdirLevels(void) { return subdir_levels; }
 

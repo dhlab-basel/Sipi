@@ -23,7 +23,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
-#include <memory>
+//#include <memory>
 #include <climits>
 
 #include "lcms2.h"
@@ -265,18 +265,18 @@ namespace Sipi {
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
 
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[std::string("tif")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("tif")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
         } else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[std::string("jpg")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpg")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
         } else if (_fext == "png") {
-            got_file = io[std::string("png")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("png")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
         } else if ((_fext == "jp2") || (_fext == "jpx") || (_fext == "j2k")) {
-            got_file = io[std::string("jpx")]->read(this, filepath, region, size, force_bps_8);
+            got_file = io[std::string("jpx")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
         }
 
         if (!got_file) {
             for (auto const &iterator : io) {
-                if ((got_file = iterator.second->read(this, filepath, region, size, force_bps_8))) break;
+                if ((got_file = iterator.second->read(this, filepath, region, size, force_bps_8, scaling_quality))) break;
             }
         }
 
@@ -771,7 +771,7 @@ namespace Sipi {
             xlut[i] = (size_t) (i * (nx - 1) / nnx + 0.5);
         }
         for (size_t i = 0; i < nny; i++) {
-            xlut[i] = (size_t) (i * (ny - 1) / nny + 0.5);
+            ylut[i] = (size_t) (i * (ny - 1) / nny + 0.5);
         }
 
         if (bps == 8) {
@@ -803,6 +803,9 @@ namespace Sipi {
             return false;
 
         }
+
+        nx = nnx;
+        ny = nny;
         return true;
     }
     /*==========================================================================*/
@@ -857,6 +860,9 @@ namespace Sipi {
             return false;
             // clean up and throw exception
         }
+
+        nx = nnx;
+        ny = nny;
         return true;
     }
     /*==========================================================================*/

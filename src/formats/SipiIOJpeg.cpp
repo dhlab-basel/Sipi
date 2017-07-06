@@ -689,7 +689,14 @@ namespace Sipi {
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
-                img->scale(nnx, nny);
+                switch (scaling_quality.jpeg) {
+                    case HIGH: img->scale(nnx, nny); std::cerr << "------------------>SCALING HIGH" << std::endl << std::flush;
+                        break;
+                    case MEDIUM: img->scaleMedium(nnx, nny); std::cerr << "------------------>SCALING MEDIUM" << std::endl << std::flush;
+                        break;
+                    case LOW: img->scaleFast(nnx, nny); std::cerr << "------------------>SCALING LOW" << std::endl << std::flush;
+                        break;
+                }
             }
         }
 

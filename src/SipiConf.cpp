@@ -40,7 +40,7 @@ namespace Sipi {
         subdir_excludes = luacfg.configStringList("sipi", "subdir_excludes"); // has no defaults, returns an empty vector if nothing is there
         prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
         jpeg_quality = luacfg.configInteger("sipi", "jeg_quality", 60);
-        scaling_quality = luacfg.configString("sipi", "scaling_quality", "low");
+        scaling_quality = luacfg.configStringTable("sipi", "scaling_quality");
 
         init_script = luacfg.configString("sipi", "initscript", ".");
         std::string cachesize_str = luacfg.configString("sipi", "cachesize", "0");

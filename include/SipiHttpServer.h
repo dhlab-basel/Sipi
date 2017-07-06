@@ -43,6 +43,7 @@
 #include "SipiCache.h"
 
 #include "lua.hpp"
+#include "SipiIO.h"
 
 
 namespace Sipi {
@@ -64,7 +65,7 @@ namespace Sipi {
         std::string _logfile;
         std::shared_ptr<SipiCache> _cache;
         int _jpeg_quality;
-        std::string _scaling_quality;
+        ScalingQuality _scaling_quality;
 
     public:
         /*!
@@ -106,9 +107,62 @@ namespace Sipi {
 
         inline int jpeg_quality(void) { return _jpeg_quality; }
 
-        inline void scaling_quality(const std::string &scaling_quality_p) { _scaling_quality = scaling_quality_p; }
 
-        inline std::string scaling_quality(void) { return _scaling_quality; }
+        inline void scaling_quality(std::map<std::string,std::string> jpeg_quality_p) {
+            if (jpeg_quality_p["jpk"] == "high") {
+                _scaling_quality.jk2 = HIGH;
+            }
+            else if (jpeg_quality_p["jpk"] == "medium") {
+                _scaling_quality.jk2 = MEDIUM;
+            }
+            else if (jpeg_quality_p["jpk"] == "low") {
+                _scaling_quality.jk2 = LOW;
+            }
+            else {
+                _scaling_quality.jk2 = HIGH;
+            }
+
+            if (jpeg_quality_p["jpeg"] == "high") {
+                _scaling_quality.jpeg = HIGH;
+            }
+            else if (jpeg_quality_p["jpeg"] == "medium") {
+                _scaling_quality.jpeg = MEDIUM;
+            }
+            else if (jpeg_quality_p["jpeg"] == "low") {
+                _scaling_quality.jpeg = LOW;
+            }
+            else {
+                _scaling_quality.jpeg = HIGH;
+            }
+
+            if (jpeg_quality_p["tiff"] == "high") {
+                _scaling_quality.tiff = HIGH;
+            }
+            else if (jpeg_quality_p["tiff"] == "medium") {
+                _scaling_quality.tiff = MEDIUM;
+            }
+            else if (jpeg_quality_p["tiff"] == "low") {
+                _scaling_quality.tiff = LOW;
+            }
+            else {
+                _scaling_quality.tiff = HIGH;
+            }
+
+            if (jpeg_quality_p["png"] == "high") {
+                _scaling_quality.png = HIGH;
+            }
+            else if (jpeg_quality_p["png"] == "medium") {
+                _scaling_quality.png = MEDIUM;
+            }
+            else if (jpeg_quality_p["png"] == "low") {
+                _scaling_quality.png = LOW;
+            }
+            else {
+                _scaling_quality.png = HIGH;
+            }
+        }
+
+        inline ScalingQuality scaling_quality(void) { return _scaling_quality; }
 
         void cache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0,
                    float cache_hysteresis_p = 0.1);

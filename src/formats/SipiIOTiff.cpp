@@ -887,7 +887,13 @@ namespace Sipi {
                 bool redonly;
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
                 if (rtype != SipiSize::FULL) {
-                    img->scale(nnx, nny);
+                    switch (scaling_quality.jpeg) {
+                        case HIGH: img->scale(nnx, nny);
+                            break;
+                        case MEDIUM: img->scaleMedium(nnx, nny);
+                            break;
+                        case LOW: img->scaleFast(nnx, nny);
+                    }
                 }
             }
 
