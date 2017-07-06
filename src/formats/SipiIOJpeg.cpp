@@ -673,6 +673,7 @@ namespace Sipi {
         }
         close(infile);
 
+        
         //
         // do some croping...
         //
