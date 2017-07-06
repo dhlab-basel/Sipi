@@ -768,10 +768,10 @@ namespace Sipi {
         auto ylut = shttps::make_unique<size_t[]>(nny);
 
         for (size_t i = 0; i < nnx; i++) {
-            xlut[i] = (size_t) (i * (nx - 1) / nnx + 0.5);
+            xlut[i] = (size_t) (i * (nx - 1) / (nnx - 1) + 0.5);
         }
         for (size_t i = 0; i < nny; i++) {
-            ylut[i] = (size_t) (i * (ny - 1) / nny + 0.5);
+            ylut[i] = (size_t) (i * (ny - 1) / (nny - 1 ) + 0.5);
         }
 
         if (bps == 8) {
@@ -858,7 +858,6 @@ namespace Sipi {
             delete[] inbuf;
         } else {
             return false;
-            // clean up and throw exception
         }
 
         nx = nnx;
@@ -892,14 +891,12 @@ namespace Sipi {
             nnny = nny;
         }
 
-        float *xlut = new float[nnnx];
+        auto xlut = shttps::make_unique<float[]>(nnnx);
+        auto ylut = shttps::make_unique<float[]>(nnny);
 
         for (size_t i = 0; i < nnnx; i++) {
             xlut[i] = (float) (i * (nx - 1)) / (float) (nnnx - 1);
         }
-
-        float *ylut = new float[nnny];
-
         for (size_t j = 0; j < nnny; j++) {
             ylut[j] = (float) (j * (ny - 1)) / (float) (nnny - 1);
         }
@@ -939,14 +936,9 @@ namespace Sipi {
             pixels = (byte *) outbuf;
             delete[] inbuf;
         } else {
-            delete[] xlut;
-            delete[] ylut;
             return false;
             // clean up and throw exception
         }
-
-        delete[] xlut;
-        delete[] ylut;
 
         //
         // now we have to check if we have to average the pixels

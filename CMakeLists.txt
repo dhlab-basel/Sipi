@@ -36,7 +36,7 @@ set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
 # Usually SIPI is compiled with all static libraries
 #
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
-option(MAKE_DEBUG "Create sipi with debugger options on" OFF)
+option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3

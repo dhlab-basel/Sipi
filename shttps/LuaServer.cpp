@@ -2676,20 +2676,19 @@ namespace shttps {
                 keystr = lua_tostring(L, -1);
             }
             else {
-                throw Error(__file__, __LINE__, "Key element'" + variable + "' in config file must be a string");
+                throw Error(__file__, __LINE__, "Key element of '" + variable + "' in config file must be a string");
             }
             if (lua_isstring(L, -2)) {
                 valstr = lua_tostring(L, -2);
             }
             else {
-                throw Error(__file__, __LINE__, "Value element'" + variable + "' in config file must be a string");
+                throw Error(__file__, __LINE__, "Value element of '" + variable + "' in config file must be a string");
             }
             lua_pop(L, 2);
             subtable[keystr] = valstr;
         }
 
         return subtable;
-
     };
 
     const std::vector<LuaRoute> LuaServer::configRoute(const std::string routetable) {
