@@ -49,6 +49,29 @@ sipi = {
     nthreads = 8,
 
     --
+    -- SIPI is using libjpeg to generate the JPEG images. libjpeg requires a quality value which
+    -- corresponds to the compression rate. 100 is (almost) no compression and best quality, 0
+    -- would be full compression and no quality. Reasonable values are between 30 and 95...
+    --
+    jpeg_quality = 60,
+
+    --
+    -- For scaling images, SIPI offers to methods. The value "high" offers best quality using expensive
+    -- algorithms (bilinear interpolation, if downscaling the image is first scaled up  to an integer
+    -- multple of the requires size, and then downscaled using averaging. This results in the best
+    -- image quality. "medium" uses bilinear interpolation but does not du upscaling before
+    -- downscaling. Scaling quality is set to "low", then just a lookup table and nearest integer
+    -- interpolation is being used to scale the images.
+    -- Recognized values are: "high", "medium", "low".
+    --
+    scaling_quality = {
+        jpeg = "low",
+        tiff = "high",
+        png = "medium",
+        j2k = "heigh"
+    },
+
+    --
     -- Number of seconds a connection (socket) remains open at maximum ("keep-alive")
     --
     keep_alive = 5,
@@ -83,7 +106,7 @@ sipi = {
     -- thousand files in a unix directory (your mileage may vay depending on the
     -- file system used).
     --
-    subdir_levels = 1,
+    subdir_levels = 0,
 
     --
     -- if subdir_levels is > 0 and if prefix_as_path is true, all prefixes will be

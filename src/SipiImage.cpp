@@ -23,8 +23,11 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <memory>
 #include <climits>
+
 #include "lcms2.h"
+#include "makeunique.h"
 
 #include "shttps/Global.h"
 #include "shttps/Hash.h"
@@ -252,7 +255,7 @@ namespace Sipi {
     }
 
     void SipiImage::read(std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
-                         bool force_bps_8) {
+                         bool force_bps_8, ScalingQuality scaling_quality) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
         std::string _fext;
@@ -760,6 +763,104 @@ namespace Sipi {
 
 #undef POSITION
 
+    bool SipiImage::scaleFast(size_t nnx, size_t nny) {
+        auto xlut = shttps::make_unique<size_t[]>(nnx);
+        auto ylut = shttps::make_unique<size_t[]>(nny);
+
+        for (size_t i = 0; i < nnx; i++) {
+            xlut[i] = (size_t) (i * (nx - 1) / nnx + 0.5);
+        }
+        for (size_t i = 0; i < nny; i++) {
+            xlut[i] = (size_t) (i * (ny - 1) / nny + 0.5);
+        }
+
+        if (bps == 8) {
+            byte *inbuf = pixels;
+            byte *outbuf = new byte[nnx * nny * nc];
+            for (size_t y = 0; y < nny; y++) {
+                for (size_t x = 0; x < nnx; x++) {
+                    for (size_t k = 0; k < nc; k++) {
+                        outbuf[nc * (y * nnx + x) + k] = inbuf[nc * (ylut[y] * nx + xlut[x]) + k];
+                    }
+                }
+            }
+            pixels = outbuf;
+            delete[] inbuf;
+        } else if (bps == 16) {
+            word *inbuf = (word *) pixels;
+            word *outbuf = new word[nnx * nny * nc];
+            for (size_t y = 0; y < nny; y++) {
+                for (size_t x = 0; x < nnx; x++) {
+                    for (size_t k = 0; k < nc; k++) {
+                        outbuf[nc * (y * nnx + x) + k] = inbuf[nc * (ylut[y] * nx + xlut[x]) + k];
+                    }
+                }
+            }
+            pixels = (byte *) outbuf;
+            delete[] inbuf;
+
+        } else {
+            return false;
+
+        }
+        return true;
+    }
+    /*==========================================================================*/
+
+
+    bool SipiImage::scaleMedium(size_t nnx, size_t nny) {
+        auto xlut = shttps::make_unique<float[]>(nnx);
+        auto ylut = shttps::make_unique<float[]>(nny);
+
+        for (size_t i = 0; i < nnx; i++) {
+            xlut[i] = (float) (i * (nx - 1)) / (float) (nnx - 1);
+        }
+        for (size_t j = 0; j < nny; j++) {
+            ylut[j] = (float) (j * (ny - 1)) / (float) (nny - 1);
+        }
+
+        if (bps == 8) {
+            byte *inbuf = pixels;
+            byte *outbuf = new byte[nnx * nny * nc];
+            float rx, ry;
+
+            for (size_t j = 0; j < nny; j++) {
+                ry = ylut[j];
+                for (size_t i = 0; i < nnx; i++) {
+                    rx = xlut[i];
+                    for (size_t k = 0; k < nc; k++) {
+                        outbuf[nc * (j * nnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
+                    }
+                }
+            }
+
+            pixels = outbuf;
+            delete[] inbuf;
+        } else if (bps == 16) {
+            word *inbuf = (word *) pixels;
+            word *outbuf = new word[nnx * nny * nc];
+            float rx, ry;
+
+            for (size_t j = 0; j < nny; j++) {
+                ry = ylut[j];
+                for (size_t i = 0; i < nnx; i++) {
+                    rx = xlut[i];
+                    for (size_t k = 0; k < nc; k++) {
+                        outbuf[nc * (j * nnx + i) + k] = bilinn(inbuf, nx, rx, ry, k, nc);
+                    }
+                }
+            }
+
+            pixels = (byte *) outbuf;
+            delete[] inbuf;
+        } else {
+            return false;
+            // clean up and throw exception
+        }
+        return true;
+    }
+    /*==========================================================================*/
+
 
     bool SipiImage::scale(size_t nnx, size_t nny) {
         size_t iix = 1, iiy = 1;
@@ -842,7 +943,7 @@ namespace Sipi {
         delete[] ylut;
 
         //
-        // now we have to check if we have to avarage the pixels
+        // now we have to check if we have to average the pixels
         //
         if ((iix > 1) || (iiy > 1)) {
             if (bps == 8) {

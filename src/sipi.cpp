@@ -510,6 +510,8 @@ int main(int argc, char *argv[]) {
             server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add Lua SImage functions
             server.prefix_as_path(sipiConf.getPrefixAsPath());
             server.dirs_to_exclude(sipiConf.getSubdirExcludes());
+            server.scaling_quality(sipiConf.getScalingQuality());
+            server.jpeg_quality(sipiConf.getJpegQuality());
 
             //
             // cache parameter...

@@ -443,7 +443,8 @@ namespace Sipi {
     }
 
     bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                          std::shared_ptr<SipiSize> size, bool force_bps_8) {
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality) {
         TIFF *tif;
 
         if (nullptr != (tif = TIFFOpen(filepath.c_str(), "r"))) {

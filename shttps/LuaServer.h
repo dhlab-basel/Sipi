@@ -162,6 +162,8 @@ namespace shttps {
 
         const std::vector<std::string> configStringList(const std::string table, const std::string stringlist);
 
+        const std::map<std::string,std::string> configTable(const std::string tablename);
+
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
         /*!

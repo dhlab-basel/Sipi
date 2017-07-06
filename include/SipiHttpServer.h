@@ -60,9 +60,11 @@ namespace Sipi {
         std::string _imgroot;
         std::string _salsah_prefix;
         bool _prefix_as_path;
-        std::vector<std::string> _dirs_to_exclude; //!< Directories which should habe no subdirs even if subdirs are enabled
+        std::vector<std::string> _dirs_to_exclude; //!< Directories which should have no subdirs even if subdirs are enabled
         std::string _logfile;
         std::shared_ptr<SipiCache> _cache;
+        int _jpeg_quality;
+        std::string _scaling_quality;
 
     public:
         /*!
@@ -99,6 +101,14 @@ namespace Sipi {
         inline std::vector<std::string> dirs_to_exclude(void) { return _dirs_to_exclude; }
 
         inline void dirs_to_exclude(const std::vector<std::string> &dirs_to_exclude) { _dirs_to_exclude = dirs_to_exclude; }
+
+        inline void jpeg_quality(int jpeg_quality_p) { _jpeg_quality = jpeg_quality_p; }
+
+        inline int jpeg_quality(void) { return _jpeg_quality; }
+
+        inline void scaling_quality(const std::string &scaling_quality_p) { _scaling_quality = scaling_quality_p; }
+
+        inline std::string scaling_quality(void) { return _scaling_quality; }
 
         void cache(const std::string &cachedir_p, long long max_cachesize_p = 0, unsigned max_nfiles_p = 0,
                    float cache_hysteresis_p = 0.1);

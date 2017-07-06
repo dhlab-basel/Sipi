@@ -417,7 +417,9 @@ namespace Sipi {
 
 
     bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                          std::shared_ptr<SipiSize> size, bool force_bps_8) {
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality)
+    {
         int infile;
         //
         // open the input file
@@ -498,7 +500,6 @@ namespace Sipi {
         unsigned char *icc_buffer = nullptr;
         int icc_buffer_len = 0;
         while (marker) {
-            //fprintf(stderr, "#######################################################################\n");
             if (marker->marker == JPEG_COM) {
                 std::string emdatastr((char *) marker->data, marker->data_length);
                 SipiEssentials se(emdatastr);
