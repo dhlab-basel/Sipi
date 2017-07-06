@@ -137,9 +137,9 @@ else()
 endif()
 
 
-#
-# GoogleTest
-#
+#-------------------
+# Test
+#-------------------
 include(CTest)
 
 if (CMAKE_VERSION VERSION_LESS 3.2)
@@ -170,12 +170,11 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
             "${gmock_SOURCE_DIR}/include")
 endif()
 
-# Trivial example using gtest and gmock
-add_executable(example test/unit/example.cpp)
-target_link_libraries(example gtest gmock_main)
-add_test(NAME example_test COMMAND example)
+# enables cmake's support for testing
+enable_testing()
 
-
+# need to add the unit test directory containing it's own CMakeLists.txt
+add_subdirectory(test/unit)
 
 
 #find_package(JBIG REQUIRED)
@@ -408,14 +407,22 @@ add_custom_target(check
         COMMAND pytest
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
+# will be run when `make test` is executed
+add_test(NAME all_e2e_tests
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
+        COMMAND pytest)
+
+
 install(TARGETS sipi
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
