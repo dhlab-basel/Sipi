@@ -104,6 +104,7 @@ Prerequisites for building Sipi without its automated test framework:
     sudo apt-get install libreadline-dev
     sudo apt-get install gettext
     sudo apt-get install libmagic-dev
+    sudo apt-get install unzip
 
 If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.6
 or higher. We suggest compiling it from source:
