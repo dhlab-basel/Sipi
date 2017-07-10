@@ -62,10 +62,16 @@ class TestServer:
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
-    def test_lausane_thumbnail(self, manager):
+    def test_lausane_thumbnail_noalpha(self, manager):
         """create thumbnail with Lausanne file"""
-        local_file_path = manager.download_file_to_data_dir_tmp("https://drive.switch.ch/index.php/s/FUa0Q9xbAN4FVDZ/download", ".tif")
-        response_json = manager.post_file("/make_thumbnail", local_file_path, "image/tiff")
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("test/_test_data/images/knora/Leaves-small-no-alpha.tif"), "image/tiff")
+        print("\n==>>" + str(response_json))
+        filename = response_json["filename"]
+        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+    def test_lausane_thumbnail_alpha(self, manager):
+        """create thumbnail with Lausanne file"""
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("test/_test_data/images/knora/Leaves-small-alpha.tif"), "image/tiff")
         print("\n==>>" + str(response_json))
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
