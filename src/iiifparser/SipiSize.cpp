@@ -268,7 +268,6 @@ namespace Sipi {
                 } else {
                     h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
-
                 break;
             }
 
@@ -304,7 +303,6 @@ namespace Sipi {
                 } else {
                     w = static_cast<size_t>(ceilf(static_cast<float>(img_w * ny) / img_h_float));
                 }
-
                 break;
             }
 
@@ -324,7 +322,6 @@ namespace Sipi {
                 if (fabs(s - r) < 1.0e-5) {
                     redonly = true;
                 }
-
                 break;
             }
             case SipiSize::REDUCE: {
@@ -380,7 +377,6 @@ namespace Sipi {
                 if (fabsf(s - r) < 1.0e-5) {
                     redonly = true;
                 }
-
                 break;
             }
 

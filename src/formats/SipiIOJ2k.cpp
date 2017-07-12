@@ -340,6 +340,9 @@ namespace Sipi {
                 size->get_size(__nx, __ny, nnx, nny, reduce, redonly);
             }
         }
+        else {
+            reduce = 0;
+        }
 
         if (reduce < 0) reduce = 0;
 
