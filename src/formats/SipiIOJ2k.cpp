@@ -282,6 +282,8 @@ namespace Sipi {
         //codestream.set_fussy(); // Set the parsing error tolerance.
         codestream.set_fast(); // No errors expected in input
 
+        int minimal_reduce = codestream.get_min_dwt_levels();
+        std::cerr << "minimal_reduce=" << minimal_reduce << std::endl;
         //
         // get SipiEssentials (if present) as codestream comment
         //
@@ -339,6 +341,8 @@ namespace Sipi {
         }
 
         if (reduce < 0) reduce = 0;
+        if (reduce > minimal_reduce) reduce = minimal_reduce;
+        std::cerr << "reduce=" << reduce << std::endl;
         codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : nullptr);
 
 

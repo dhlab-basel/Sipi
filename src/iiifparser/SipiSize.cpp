@@ -261,6 +261,8 @@ namespace Sipi {
                     h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
 
+                std::cerr << "img_w=" << img_w << " img_h=" << img_h << " w=" << w << " h=" << h << " reduce=" << reduce << std::endl;
+
                 break;
             }
 

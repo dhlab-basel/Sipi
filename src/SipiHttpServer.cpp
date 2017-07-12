@@ -670,6 +670,8 @@ namespace Sipi {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
 
+            syslog(LOG_ERR, "GET %s: file %s", uri.c_str(), infile.c_str());
+
             if (access(infile.c_str(), R_OK) == 0) {
                 conn_obj.setBuffer();
                 conn_obj.status(Connection::SEE_OTHER);
@@ -720,6 +722,8 @@ namespace Sipi {
             return;
         }
 
+        syslog(LOG_ERR, "GET %s", uri.c_str());
+
         //
         // getting region parameters
         //
@@ -735,6 +739,8 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
         }
+
+        std::cerr << *region << std::endl;
 
         //
         // getting scaling/size parameters
@@ -752,6 +758,8 @@ namespace Sipi {
             return;
         }
 
+        std::cerr << *size << std::endl;
+
         //
         // getting rotation parameters
         //
@@ -767,6 +775,8 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
         }
+
+        std::cerr << rotation << std::endl;
 
         SipiQualityFormat quality_format;
 
