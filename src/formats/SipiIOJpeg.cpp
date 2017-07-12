@@ -443,7 +443,7 @@ namespace Sipi {
         //
         // Since libjpeg is not thread safe, we have unfortunately use a mutex...
         //
-        std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
+        //std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
@@ -668,7 +668,7 @@ namespace Sipi {
             jpeg_destroy_decompress(&cinfo);
         } catch (JpegError &jpgerr) {
             close(infile);
-            inlock.unlock();
+            //inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         close(infile);
@@ -691,11 +691,11 @@ namespace Sipi {
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {
                 switch (scaling_quality.jpeg) {
-                    case HIGH: img->scale(nnx, nny); std::cerr << "------------------>SCALING HIGH" << std::endl << std::flush;
+                    case HIGH: img->scale(nnx, nny);
                         break;
-                    case MEDIUM: img->scaleMedium(nnx, nny); std::cerr << "------------------>SCALING MEDIUM" << std::endl << std::flush;
+                    case MEDIUM: img->scaleMedium(nnx, nny);
                         break;
-                    case LOW: img->scaleFast(nnx, nny); std::cerr << "------------------>SCALING LOW" << std::endl << std::flush;
+                    case LOW: img->scaleFast(nnx, nny);
                         break;
                 }
             }

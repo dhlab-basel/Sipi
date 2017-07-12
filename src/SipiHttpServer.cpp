@@ -1220,7 +1220,7 @@ namespace Sipi {
                     syslog(LOG_DEBUG, "Before writing JPG...");
 
                     try {
-                        img.write("jpg", "HTTP");
+                        img.write("jpg", "HTTP", serv->jpeg_quality());
                     } catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
 
