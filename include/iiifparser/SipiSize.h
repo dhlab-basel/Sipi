@@ -61,8 +61,8 @@ namespace Sipi {
         float percent;      //!< if the scaling is given in percent, this holds the value
         int reduce;         //!< if the scaling is given by a reduce value
         bool redonly;       //!< we *only* have a reduce in the resulting size
-        size_t nx, ny;         //!< the parameters given
-        size_t w, h;           //!< the resulting width and height after processing
+        size_t nx, ny;      //!< the parameters given
+        size_t w, h;        //!< the resulting width and height after processing
         bool canonical_ok;
 
     public:
@@ -141,8 +141,10 @@ namespace Sipi {
          * \param[in] ny original height of image
          * \param[out] w_p Width of scaled image
          * \param[out] h_p Height of scaled image
-         * \param[out] reduce_p Reduce parameter (especially for J2K images with resolution pyramid)
-         * \param[out] rdonly_p True, if scaling can be made with the reduce parameter only
+         * \param[in,out] reduce_p Reduce parameter (especially for J2K images with resolution pyramid). As
+         * input specifiy the maximal reduce factor that is allowed (-1 if no limit), as output the optimal
+         * reduce factor is returned.
+         * \param[out] redonly_p True, if scaling can be made with the reduce parameter only
          *
          * \returns enum SizeType which indicates how the size was specified
          */

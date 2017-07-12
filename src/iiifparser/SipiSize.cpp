@@ -33,6 +33,7 @@
 #include <cstring>
 #include <vector>
 #include <cmath>
+#include <climits>
 
 #include <stdio.h>
 #include <string.h>
@@ -68,7 +69,7 @@ namespace Sipi {
                 size_type = SizeType::REDUCE;
                 std::string reduce_str = str.substr(4);
                 reduce = static_cast<int>(shttps::Parsing::parse_int(reduce_str));
-                if (reduce < 0) percent = 0;
+                if (reduce < 0) reduce = 0;
             } else {
                 bool exclamation_mark = str[0] == '!';
 
@@ -173,6 +174,10 @@ namespace Sipi {
     SipiSize::SizeType
     SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
         redonly = false;
+        if (reduce_p == -1) reduce_p = INT_MAX;
+        int max_reduce = reduce_p;
+        reduce_p = 0;
+
 
         float img_w_float = static_cast<float>(img_w);
         float img_h_float = static_cast<float>(img_h);
@@ -187,42 +192,44 @@ namespace Sipi {
                 bool exact_match_w = true;
                 w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
 
-                while (w > nx) {
+                while ((w > nx) && (reduce_w < max_reduce)) {
                     sf_w *= 2;
                     w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
                     reduce_w++;
                 }
 
-                if (w != nx) {
+                if (w < nx) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_w = false;
                     sf_w /= 2;
                     reduce_w--;
                 }
+                if (w > nx) exact_match_w = false;
 
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
                 h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
 
-                while (h > ny) {
+                while ((h > ny) && (reduce_w < max_reduce)) {
                     sf_h *= 2;
                     h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
                     reduce_h++;
                 }
 
-                if (h != ny) {
+                if (h < ny) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
                     sf_h /= 2;
                     reduce_h--;
                 }
+                if (h > ny) exact_match_h = false;
 
                 if (exact_match_w && exact_match_h && (reduce_w == reduce_h)) {
-                    reduce = reduce_w;
+                    reduce_p = reduce_w;
                     redonly = true;
                 } else {
-                    reduce = reduce_w < reduce_h ? reduce_w : reduce_h; // min()
+                    reduce_p = reduce_w < reduce_h ? reduce_w : reduce_h; // min()
                     redonly = false;
                 }
 
@@ -239,20 +246,21 @@ namespace Sipi {
                 int reduce_w = 0;
                 bool exact_match_w = true;
                 w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
-                while (w > nx) {
+                while ((w > nx) && (reduce_w < max_reduce)) {
                     sf_w *= 2;
                     w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
                     reduce_w++;
                 }
-                if (w != nx) {
+                if (w < nx) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_w = false;
                     sf_w /= 2;
                     reduce_w--;
                 }
+                if (w > nx) exact_match_w = false;
 
                 w = nx;
-                reduce = reduce_w;
+                reduce_p = reduce_w;
                 redonly = exact_match_w; // if exact_match, then reduce only
 
                 if (exact_match_w) {
@@ -260,8 +268,6 @@ namespace Sipi {
                 } else {
                     h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
-
-                std::cerr << "img_w=" << img_w << " img_h=" << img_h << " w=" << w << " h=" << h << " reduce=" << reduce << std::endl;
 
                 break;
             }
@@ -275,21 +281,22 @@ namespace Sipi {
                 bool exact_match_h = true;
                 h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
 
-                while (h > ny) {
+                while ((h > ny) && (reduce_h < max_reduce)) {
                     sf_h *= 2;
                     h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
                     reduce_h++;
                 }
 
-                if (h != ny) {
+                if (h < ny) {
                     // we do not have an exact match. Go back one level with reduce
                     exact_match_h = false;
                     sf_h /= 2;
                     reduce_h--;
                 }
+                if (h > ny) exact_match_h = false;
 
                 h = ny;
-                reduce = reduce_h;
+                reduce_p = reduce_h;
                 redonly = exact_match_h; // if exact_match, then reduce only
 
                 if (exact_match_h) {
@@ -305,13 +312,13 @@ namespace Sipi {
                 w = static_cast<size_t>(ceilf(img_w * percent / 100.F));
                 h = static_cast<size_t>(ceilf(img_h * percent / 100.F));
 
-                reduce = 0;
+                reduce_p = 0;
                 float r = 100.F / percent;
                 float s = 1.0;
 
-                while (2.0 * s <= r) {
+                while ((2.0 * s <= r) && (reduce_p < max_reduce)) {
                     s *= 2.0;
-                    reduce++;
+                    reduce_p++;
                 }
 
                 if (fabs(s - r) < 1.0e-5) {
@@ -324,6 +331,7 @@ namespace Sipi {
                 if (reduce == 0) {
                     w = img_w;
                     h = img_h;
+                    reduce_p = 0;
                     redonly = true;
                     break;
                 }
@@ -333,7 +341,14 @@ namespace Sipi {
 
                 w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf)));
                 h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf)));
-                redonly = true;
+                if (reduce > max_reduce) {
+                    reduce_p = max_reduce;
+                    redonly = false;
+                }
+                else {
+                    reduce_p = reduce;
+                    redonly = true;
+                }
                 break;
             }
 
@@ -355,11 +370,11 @@ namespace Sipi {
                 }
 
                 float s = 1.0;
-                reduce = 0;
+                reduce_p = 0;
 
-                while (2.0 * s <= r) {
+                while ((2.0 * s <= r) && (reduce_p < max_reduce)) {
                     s *= 2.0;
-                    reduce++;
+                    reduce_p++;
                 }
 
                 if (fabsf(s - r) < 1.0e-5) {
@@ -372,21 +387,23 @@ namespace Sipi {
             case SipiSize::FULL: {
                 w = img_w;
                 h = img_h;
-                reduce = 0;
+                reduce_p = 0;
                 redonly = true;
+                break;
             }
         }
 
-        std::stringstream ss;
-        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w=" << w << " h=" << h << " reduce=" << reduce
-           << " reduce only=" << redonly;
-        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         w_p = w;
         h_p = h;
 
-        reduce_p = reduce < 0 ? 0 : reduce;
+        if (reduce_p < 0) reduce_p = 0;
         redonly_p = redonly;
+
+        std::stringstream ss;
+        ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w_p=" << w_p << " h_p=" << h_p << " reduce=" << reduce_p
+           << " reduce only=" << redonly;
+        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         canonical_ok = true;
 
@@ -452,7 +469,7 @@ namespace Sipi {
         outstr << "IIIF-Server Size parameter:";
         outstr << "  Size type: " << rhs.size_type;
         outstr << " | percent = " << std::to_string(rhs.percent) << " | nx = " << std::to_string(rhs.nx) << " | ny = "
-               << std::to_string(rhs.ny);
+               << std::to_string(rhs.ny) << " | reduce = " << rhs.reduce;
         return outstr;
     };
     //-------------------------------------------------------------------------

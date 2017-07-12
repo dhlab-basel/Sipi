@@ -635,8 +635,6 @@ namespace Sipi {
             params.push_back(uri.substr(old_pos, std::string::npos));
         }
 
-        //for (int i = 0; i < params.size(); i++) cerr << params[i] << endl;
-
         if (params.size() < 1) {
             send_error(conn_obj, Connection::BAD_REQUEST, "No parameters/path given");
             return;
@@ -670,7 +668,7 @@ namespace Sipi {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
 
-            syslog(LOG_ERR, "GET %s: file %s", uri.c_str(), infile.c_str());
+            syslog(LOG_DEBUG, "GET %s: file %s", uri.c_str(), infile.c_str());
 
             if (access(infile.c_str(), R_OK) == 0) {
                 conn_obj.setBuffer();
@@ -722,8 +720,6 @@ namespace Sipi {
             return;
         }
 
-        syslog(LOG_ERR, "GET %s", uri.c_str());
-
         //
         // getting region parameters
         //
@@ -739,8 +735,6 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
         }
-
-        std::cerr << *region << std::endl;
 
         //
         // getting scaling/size parameters
@@ -758,8 +752,6 @@ namespace Sipi {
             return;
         }
 
-        std::cerr << *size << std::endl;
-
         //
         // getting rotation parameters
         //
@@ -776,10 +768,7 @@ namespace Sipi {
             return;
         }
 
-        std::cerr << rotation << std::endl;
-
         SipiQualityFormat quality_format;
-
         try {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
             std::stringstream ss;

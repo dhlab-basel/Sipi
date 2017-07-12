@@ -277,7 +277,7 @@ namespace Sipi {
         //
         if (size != nullptr) {
             size_t nnx, nny;
-            int reduce;
+            int reduce = -1;
             bool redonly;
             SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
             if (rtype != SipiSize::FULL) {

@@ -165,7 +165,6 @@ namespace Sipi {
 
         void flush(bool end_of_message = false) {
             if (end_of_message) {
-                std::cerr << msg << std::endl;
                 syslog(LOG_ERR, "%s", msg.c_str());
                 throw KDU_ERROR_EXCEPTION;
             }
@@ -282,8 +281,10 @@ namespace Sipi {
         //codestream.set_fussy(); // Set the parsing error tolerance.
         codestream.set_fast(); // No errors expected in input
 
-        int minimal_reduce = codestream.get_min_dwt_levels();
-        std::cerr << "minimal_reduce=" << minimal_reduce << std::endl;
+        //
+        // get the
+        int maximal_reduce = codestream.get_min_dwt_levels();
+
         //
         // get SipiEssentials (if present) as codestream comment
         //
@@ -329,7 +330,7 @@ namespace Sipi {
         //
         // here we prepare tha scaling/reduce stuff...
         //
-        int reduce = 0;
+        int reduce = maximal_reduce;
         size_t nnx, nny;
         bool redonly = true; // we assume that only a reduce is necessary
         if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
@@ -341,8 +342,7 @@ namespace Sipi {
         }
 
         if (reduce < 0) reduce = 0;
-        if (reduce > minimal_reduce) reduce = minimal_reduce;
-        std::cerr << "reduce=" << reduce << std::endl;
+
         codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : nullptr);
 
 
@@ -462,7 +462,7 @@ namespace Sipi {
                     }
 
                     default: {
-                        std::cerr << "CS=" << space << std::endl;
+                        syslog(LOG_ERR, "Unsupported ICC profile: %s", std::to_string(space).c_str());
                         throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
@@ -529,7 +529,7 @@ namespace Sipi {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
-                std::cerr << "BPS=" << img->bps << std::endl;
+                syslog(LOG_ERR, "Unsupported number of bits/sample: %ld !", img->bps);
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
         }
