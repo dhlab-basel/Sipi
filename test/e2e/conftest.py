@@ -57,7 +57,7 @@ class SipiTestManager:
         with open(os.path.abspath("config.ini")) as config_file:
             self.config.read_file(config_file)
 
-        self.sipi_working_dir = os.path.abspath("..")
+        self.sipi_working_dir = os.path.abspath("../..")
 
         # Ensure Sipi doesn't use caching in tests.
         sipi_cache_dir = os.path.join(self.sipi_working_dir, "cache")

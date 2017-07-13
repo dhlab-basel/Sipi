@@ -231,7 +231,8 @@ You can run the automated tests in the ``build`` directory like this:
 
 ::
 
-    make check
+    make test // will run all tests
+    make check // will run only e2e tests
 
 
 *******************************************
