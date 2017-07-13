@@ -796,6 +796,15 @@ namespace Sipi {
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
+
+        //
+        // we have to check if the image has an alpha channel (not supported by JPEG). If
+        // so, we remove it!
+        //
+        if ((img->getNc() > 3) && (img->getNalpha() > 0)) { // we have an alpha channel....
+            for (size_t i = 3; i < (img->getNalpha() + 3); i++) img->removeChan(i);
+        }
+
         //
         // TODO! Support incoming 16 bit images by converting the buffer to 8 bit!
         //
