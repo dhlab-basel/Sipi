@@ -740,10 +740,6 @@ int main(int argc, char *argv[]) {
                 img.to8bps();
                 //http://www.equasys.de/colorconversion.html
                 img.convertToIcc(Sipi::icc_sRGB, 8);
-
-                if (img.getNalpha() > 0) {
-                    img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
-                }
             }
         } catch (Sipi::SipiImageError &err) {
             std::cerr << err << std::endl;
