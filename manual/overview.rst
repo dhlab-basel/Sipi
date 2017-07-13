@@ -43,7 +43,7 @@ Internet. Sipi offers a flexible framework for specifying authentication and
 authorization logic in Lua_ scripts, and supports restricted access to images,
 either by reducing image dimensions or by adding watermarks. It can easily be
 integrated with Knora_. In addition SIPI preserves most of the EXIF_, IPTC_ and XMP_
-metadata and can preservce of transform ICC_ colour profiles.
+metadata and can preserve or transform ICC_ colour profiles.
 
 In addition, a simple webserver is integrated. The server is able to serve most
 common file types. In addition Lua scripts and embedded Lua (i.e., Lua
