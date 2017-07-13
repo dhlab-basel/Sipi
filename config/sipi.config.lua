@@ -27,7 +27,7 @@ sipi = {
     -- userid = '_www',
 
     --
-    -- Indicate the hostname (DNS-name), under which the SIPI server is being adressed
+    -- Indicate the hostname (DNS-name), under which the SIPI server is being addressed
     --
     hostname = 'localhost',
     
