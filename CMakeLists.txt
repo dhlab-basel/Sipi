@@ -404,7 +404,7 @@ endif()
 
 add_custom_target(check
         DEPENDS sipi
-        COMMAND pytest
+        COMMAND pytest -s
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 # will be run when `make test` is executed

@@ -61,3 +61,17 @@ class TestServer:
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+    def test_lausane_thumbnail_noalpha(self, manager):
+        """create thumbnail with Lausanne file - no alpha"""
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-no-alpha.tif"), "image/tiff")
+        print("\n==>>" + str(response_json))
+        filename = response_json["filename"]
+        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+    def test_lausane_thumbnail_alpha(self, manager):
+        """create thumbnail with Lausanne file - with alpha"""
+        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-alpha.tif"), "image/tiff")
+        print("\n==>>" + str(response_json))
+        filename = response_json["filename"]
+        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
