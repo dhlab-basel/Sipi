@@ -60,7 +60,19 @@ If you are using the `Code::Blocks`_ IDE, you can build a cdb project:
 Writing Tests
 *************
 
-The test framework uses pytest_. To add tests, add a Python class in a file
+We use two test frameworks. We use googletest_ for unit test and pytest_ for
+end-to-end tests.
+
+Unit Tests
+===========
+
+TBA
+
+
+End-to-End Tests
+=================
+
+To add end-to-end tests, add a Python class in a file
 whose name begins with ``test``, in the ``test`` directory. The class's
 methods, whose names must also begin with ``test``, should use the ``manager``
 fixture defined in ``test/conftest.py``, which handles starting and stopping a
@@ -103,5 +115,6 @@ Example:
 
     feature (HTTP server): support more authentication methods
 
+.. _googletest: https://github.com/google/googletest
 .. _pytest: http://doc.pytest.org/en/latest/
 .. _Knora: http://www.knora.org/

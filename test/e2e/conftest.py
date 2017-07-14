@@ -33,6 +33,7 @@ import filecmp
 import shutil
 import psutil
 import re
+import hashlib
 
 
 @pytest.fixture(scope="session")
@@ -56,7 +57,7 @@ class SipiTestManager:
         with open(os.path.abspath("config.ini")) as config_file:
             self.config.read_file(config_file)
 
-        self.sipi_working_dir = os.path.abspath("..")
+        self.sipi_working_dir = os.path.abspath("../..")
 
         # Ensure Sipi doesn't use caching in tests.
         sipi_cache_dir = os.path.join(self.sipi_working_dir, "cache")
@@ -345,6 +346,26 @@ class SipiTestManager:
 
         if validator_process.returncode != 0:
             raise SipiTestError("IIIF validation failed (wrote {}):\n{}".format(self.sipi_log_file, validator_process.stdout))
+
+    def download_file_to_data_dir_tmp(self, url, file_extension = ".bin"):
+        """Only downloads a file to the target directory if not already there"""
+        url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+        test_tmp_directory = self.data_dir_path("test_tmp")
+
+        if not os.path.exists(test_tmp_directory):
+            os.makedirs(test_tmp_directory)
+
+        local_file_path = test_tmp_directory + "/" + url_hash + file_extension
+
+        if not os.path.isfile(local_file_path):
+            r = requests.get(url, stream=True)
+            with open(local_file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            return local_file_path
+        else:
+            return local_file_path
 
 
 class SipiTestError(Exception):

@@ -37,3 +37,7 @@ cache/
 *_icc.h
 /images/
 icc.zip
+
+
+# ignore test results
+/Testing

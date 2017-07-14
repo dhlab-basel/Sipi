@@ -137,6 +137,46 @@ else()
 endif()
 
 
+#-------------------
+# Test
+#-------------------
+include(CTest)
+
+if (CMAKE_VERSION VERSION_LESS 3.2)
+    set(UPDATE_DISCONNECTED_IF_AVAILABLE "")
+else()
+    set(UPDATE_DISCONNECTED_IF_AVAILABLE "UPDATE_DISCONNECTED 1")
+endif()
+
+include(DownloadProject.cmake)
+download_project(PROJ                googletest
+        GIT_REPOSITORY      https://github.com/google/googletest.git
+        GIT_TAG             master
+        ${UPDATE_DISCONNECTED_IF_AVAILABLE}
+        )
+
+# Prevent GoogleTest from overriding our compiler/linker options
+# when building with Visual Studio
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+
+# When using CMake 2.8.11 or later, header path dependencies
+# are automatically added to the gtest and gmock targets.
+# For earlier CMake versions, we have to explicitly add the
+# required directories to the header search path ourselves.
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+    include_directories("${gtest_SOURCE_DIR}/include"
+            "${gmock_SOURCE_DIR}/include")
+endif()
+
+# enables cmake's support for testing
+enable_testing()
+
+# need to add the unit test directory containing it's own CMakeLists.txt
+add_subdirectory(test/unit)
+
+
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
 # message(STATUS "JBIG ${JBIG_INCLUDE_DIR}")
@@ -364,17 +404,25 @@ endif()
 
 add_custom_target(check
         DEPENDS sipi
-        COMMAND pytest
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
+        COMMAND pytest -s
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
+
+# will be run when `make test` is executed
+add_test(NAME all_e2e_tests
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
+        COMMAND pytest)
+
 
 install(TARGETS sipi
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
