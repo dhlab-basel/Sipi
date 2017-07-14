@@ -339,6 +339,7 @@ namespace shttps {
      */
     LuaServer::~LuaServer() {
         lua_close(L);
+        L = nullptr;
     }
     //=========================================================================
 

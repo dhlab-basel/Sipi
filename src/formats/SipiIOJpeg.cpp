@@ -462,7 +462,6 @@ namespace Sipi {
         cinfo.err = jpeg_std_error(&jerr);
         jerr.error_exit = jpegErrorExit;
 
-
         try {
             //jpeg_stdio_src(&cinfo, infile);
             jpeg_file_src(&cinfo, infile);
@@ -492,6 +491,30 @@ namespace Sipi {
             close(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
         }
+
+        if ((region != nullptr) && (region->getType()) == SipiRegion::FULL) {
+            //
+            // no croping...
+            //
+            // here we prepare tha scaling/reduce stuff...
+            //
+            int reduce = 3; // maximal reduce factor is 3: 1/1, 1/2, 1/4 and 1/8
+            bool redonly = true; // we assume that only a reduce is necessary
+            if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
+                size_t nnx, nny;
+                size->get_size(cinfo.image_width, cinfo.image_height, nnx, nny, reduce, redonly);
+            }
+            else {
+                reduce = 0;
+            }
+
+            if (reduce < 0) reduce = 0;
+            cinfo.scale_num = 1;
+            cinfo.scale_denom = 1;
+            for (int i = 0; i < reduce; i++) cinfo.scale_denom *= 2;
+        }
+        cinfo.do_fancy_upsampling = false;
+
 
         //
         // getting Metadata

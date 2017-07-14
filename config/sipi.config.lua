@@ -65,9 +65,9 @@ sipi = {
     -- Recognized values are: "high", "medium", "low".
     --
     scaling_quality = {
-        jpeg = "low",
+        jpeg = "medium",
         tiff = "high",
-        png = "medium",
+        png = "high",
         j2k = "high"
     },
 
