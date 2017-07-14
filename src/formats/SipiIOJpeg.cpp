@@ -492,16 +492,19 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
         }
 
-        if ((region != nullptr) && (region->getType()) == SipiRegion::FULL) {
-            //
-            // no croping...
+        boolean no_cropping = false;
+        if (region == nullptr) no_cropping = true;
+        if ((region != nullptr) && (region->getType()) == SipiRegion::FULL) no_cropping = true;
+
+        size_t nnx, nny;
+        SipiSize::SizeType rtype = size->getType();
+        if (no_cropping) {
             //
             // here we prepare tha scaling/reduce stuff...
             //
             int reduce = 3; // maximal reduce factor is 3: 1/1, 1/2, 1/4 and 1/8
             bool redonly = true; // we assume that only a reduce is necessary
-            if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
-                size_t nnx, nny;
+            if ((size != nullptr) && (rtype != SipiSize::FULL)) {
                 size->get_size(cinfo.image_width, cinfo.image_height, nnx, nny, reduce, redonly);
             }
             else {
@@ -513,8 +516,7 @@ namespace Sipi {
             cinfo.scale_denom = 1;
             for (int i = 0; i < reduce; i++) cinfo.scale_denom *= 2;
         }
-        //cinfo.do_fancy_upsampling = false;
-        std::cerr << "--==>>", cinfo.scale_num << " / " << cinfo.scale_denom << std::endl;
+        cinfo.do_fancy_upsampling = false;
 
 
         //
@@ -699,20 +701,26 @@ namespace Sipi {
 
 
         //
-        // do some croping...
+        // do some cropping...
         //
-        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
+        if (!no_cropping) { // not no cropping (!!) means "do crop"!
+            //
+            // let's first crop the region (we read the full size image in this case)
+            //
             (void) img->crop(region);
+
+            //
+            // no we scale the region to the desired size
+            //
+            int reduce = -1;
+            bool redonly;
+            (void) size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
         }
 
         //
         // resize/Scale the image if necessary
         //
-        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
-            size_t nnx, nny;
-            int reduce = -1;
-            bool redonly;
-            SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
+        if ((size != NULL) && (rtype != SipiSize::FULL)) {
             if (rtype != SipiSize::FULL) {
                 switch (scaling_quality.jpeg) {
                     case HIGH: img->scale(nnx, nny);
