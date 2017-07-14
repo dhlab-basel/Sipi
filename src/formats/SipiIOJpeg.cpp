@@ -513,7 +513,8 @@ namespace Sipi {
             cinfo.scale_denom = 1;
             for (int i = 0; i < reduce; i++) cinfo.scale_denom *= 2;
         }
-        cinfo.do_fancy_upsampling = false;
+        //cinfo.do_fancy_upsampling = false;
+        std::cerr << "--==>>", cinfo.scale_num << " / " << cinfo.scale_denom << std::endl;
 
 
         //
