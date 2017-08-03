@@ -497,7 +497,11 @@ namespace Sipi {
         if ((region != nullptr) && (region->getType()) == SipiRegion::FULL) no_cropping = true;
 
         size_t nnx, nny;
-        SipiSize::SizeType rtype = size->getType();
+        SipiSize::SizeType rtype = SipiSize::FULL;
+        if (size != nullptr) {
+            rtype = size->getType();
+        }
+
         if (no_cropping) {
             //
             // here we prepare tha scaling/reduce stuff...
