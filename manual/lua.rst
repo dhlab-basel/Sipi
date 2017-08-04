@@ -41,7 +41,7 @@ for IIIF image requests, and to write custom routes.
 Sipi provides the Lua interpreter the LuaRocks_ package manager. Sipi does not
 use the system's Lua interpreter or package manager.
 
-The Lua interepreter in Sipi runs in a multithreaded environment: each
+The Lua interpreter in Sipi runs in a multithreaded environment: each
 request runs in its own thread and has its own Lua interpreter. Therefore,
 only Lua packages that are known to be thread-safe may be used.
 
@@ -113,7 +113,7 @@ Sipi Functions Available to Lua Scripts
 
 Sipi provides the following functions that can be called from Lua scripts.
 Each function returns two values. The first value is ``true`` if the operation
-succeeded, ``false`` otherwise. If the operation suceeded, the second value
+succeeded, ``false`` otherwise. If the operation succeeded, the second value
 is the result of the operation, otherwise it is an error message.
 
 server.setBuffer
@@ -423,7 +423,7 @@ server.requireAuth
 
     success, table = server.requireAuth()
 
-Gets HTTP authentification data. Returns ``true, table`` on success or
+Gets HTTP authentication data. Returns ``true, table`` on success or
 ``false, errormsg`` on failure. The result is a table:
 
 ::
@@ -443,7 +443,7 @@ Example:
     success, auth = server.requireAuth()
     if not success then
         server.sendStatus(501)
-        server.print("Error in getting authentification scheme!")
+        server.print("Error in getting authentication scheme!")
         return -1
     end
 
@@ -563,7 +563,7 @@ helper.filename_hash
     success, filepath = helper.filename_hash(fileid)
 
 if ``subdir_levels``(see configuration file) is > 0, recursive subdirectories named
-'A', 'B',.., 'Z' are used to split the image files accross multiple directories. A simple
+'A', 'B',.., 'Z' are used to split the image files across multiple directories. A simple
 hash-algorithm is being used. This function returns a filepath with the subdirectories
 prepended, e.g `gaga.jp2`` becomes ``C/W/gaga.jpg``
 
@@ -610,7 +610,7 @@ The more complex form is as follows:
 
 This creates a new Lua image object and loads the given image into. The second form
 allows to indicate a region, the size or a reduce factor and the original filename.
-Th ``hash`` parameter indicates that the given checksum should be calcukated out of the
+The ``hash`` parameter indicates that the given checksum should be calculated out of the
 pixel values and written into the header.
 
 SipiImage.dims()
@@ -749,7 +749,7 @@ Preparing a Query
 
     qry = db << 'SELECT * FROM image'
 
-Or, if you want to use a prepared query statment:
+Or, if you want to use a prepared query statement:
 
 ::
 
@@ -775,7 +775,7 @@ Executing a Query
         row = qry()
     end
 
-Or with a prepared statment:
+Or with a prepared statement:
 
 ::
 
