@@ -62,16 +62,87 @@ class TestServer:
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
-    def test_lausane_thumbnail_noalpha(self, manager):
+    def test_lausanne_thumbnail_noalpha(self, manager):
         """create thumbnail with Lausanne file - no alpha"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-no-alpha.tif"), "image/tiff")
-        print("\n==>>" + str(response_json))
+        # print("\n==>>" + str(response_json))
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
-    def test_lausane_thumbnail_alpha(self, manager):
+    def test_lausanne_thumbnail_alpha(self, manager):
         """create thumbnail with Lausanne file - with alpha"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-alpha.tif"), "image/tiff")
-        print("\n==>>" + str(response_json))
+        # print("\n==>>" + str(response_json))
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+    def test_concurrency(self, manager):
+        """handle many concurrent requests for different URLs"""
+
+        # The command-line arguments we want to pass to ab for each process.
+        
+        filename = "load_test.jpx"
+
+        ab_processes = [
+            {
+                "concurrent_requests": 10,
+                "total_requests": 10,
+                "url_path": "/knora/{}/full/full/0/default.jpg".format(filename)
+            },
+            {
+                "concurrent_requests": 10,
+                "total_requests": 10,
+                "url_path": "/knora/{}/full/pct:50/0/default.jpg".format(filename)
+            },
+            {
+                "concurrent_requests": 10,
+                "total_requests": 10,
+                "url_path": "/knora/{}/full/full/90/default.jpg".format(filename)
+            },
+            {
+                "concurrent_requests": 50,
+                "total_requests": 1000,
+                "url_path": "/knora/{}/pct:10,10,40,40/full/0/default.jpg".format(filename)
+            },
+            {
+                "concurrent_requests": 50,
+                "total_requests": 1000,
+                "url_path": "/knora/{}/pct:10,10,50,30/full/180/default.jpg".format(filename)
+            }
+        ]
+
+        # Start all the ab processes.
+
+        for process_info in ab_processes:
+            process_info["process"] = manager.run_ab(process_info["concurrent_requests"], process_info["total_requests"], 60, process_info["url_path"])
+
+        # Wait for all the processes to terminate, and get their return codes and output.
+
+        for process_info in ab_processes:
+            process = process_info["process"]
+            process.wait(300)
+            process_info["returncode"] = process.returncode
+            process_info["stdout"] = process.stdout
+
+        # Check whether they all succeeded.
+
+        bad_result = False
+        failure_results = "\n"
+
+        for process_info in ab_processes:
+            stdout_bin = process_info["stdout"].read()
+            stdout_str = stdout_bin.decode("ascii", "ignore") # Strip out non-ASCII characters, because for some reason ab includes an invalid 0xff
+            non_2xx_responses_lines = [line.strip().split()[-1] for line in stdout_str.splitlines() if line.strip().startswith("Non-2xx responses:")]
+
+            if len(non_2xx_responses_lines) > 0:
+                bad_result = True
+                failure_results += "Sipi returned a non-2xx response for URL path {}, returncode {}, and output:\n{}".format(process_info["url_path"], process_info["returncode"], stdout_str)
+
+            if process_info["returncode"] != 0:
+                bad_result = True
+                failure_results += "Failed ab command with URL path {}, returncode {}, and output:\n{}".format(process_info["url_path"], process_info["returncode"], stdout_str)
+
+        if bad_result:
+            failure_results += "\nWrote Sipi log file " + manager.sipi_log_file
+
+        assert not bad_result, failure_results

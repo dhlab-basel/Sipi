@@ -72,7 +72,7 @@ class SipiTestManager:
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
         self.sipi_port = sipi_config["port"]
         self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
-        self.sipi_base_url = "http://localhost:{}".format(self.sipi_port)
+        self.sipi_base_url = "http://127.0.0.1:{}".format(self.sipi_port)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -80,7 +80,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
-        self.sipi_convert_command = "build/sipi --file {} --format {} {}"
+        self.sipi_convert_command = "build/sipi --file {} --format {} {}" # Braces will be replaced by actual arguments. See https://pyformat.info for details on string formatting.
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -92,6 +92,8 @@ class SipiTestManager:
         self.compare_command = "compare -metric {} {} {} null:"
         self.compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\).*$")
         self.info_command = "identify -verbose {}"
+
+        self.ab_command = "ab -v 2 -c {} -n {} -s {} {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -367,6 +369,24 @@ class SipiTestManager:
         else:
             return local_file_path
 
+    def run_ab(self, concurrent_requests, total_requests, timeout, url_path):
+        """
+        Runs Apache ab to test the Sipi server.
+
+        concurrent_requests: the number of concurrent requests to run.
+        total_requests: the total number of requests to run.
+        timeout: the request timeout in seconds.
+        url_path: the Sipi URL path, to be appended to the Sipi base URL.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+        formatted_ab_command = self.ab_command.format(concurrent_requests, total_requests, timeout, sipi_url)
+        ab_args = shlex.split(formatted_ab_command)
+
+        return subprocess.Popen(ab_args,
+                                cwd=self.sipi_working_dir,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
 
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""
