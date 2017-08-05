@@ -77,7 +77,7 @@ class TestServer:
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
     def test_concurrency(self, manager):
-        """handle many concurrent requests for different URLs"""
+        """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
 
         # The command-line arguments we want to pass to ab for each process.
         
@@ -85,28 +85,28 @@ class TestServer:
 
         ab_processes = [
             {
-                "concurrent_requests": 10,
+                "concurrent_requests": 5,
                 "total_requests": 10,
                 "url_path": "/knora/{}/full/full/0/default.jpg".format(filename)
             },
             {
-                "concurrent_requests": 10,
+                "concurrent_requests": 5,
                 "total_requests": 10,
                 "url_path": "/knora/{}/full/pct:50/0/default.jpg".format(filename)
             },
             {
-                "concurrent_requests": 10,
+                "concurrent_requests": 5,
                 "total_requests": 10,
                 "url_path": "/knora/{}/full/full/90/default.jpg".format(filename)
             },
             {
-                "concurrent_requests": 50,
-                "total_requests": 1000,
+                "concurrent_requests": 25,
+                "total_requests": 300,
                 "url_path": "/knora/{}/pct:10,10,40,40/full/0/default.jpg".format(filename)
             },
             {
-                "concurrent_requests": 50,
-                "total_requests": 1000,
+                "concurrent_requests": 25,
+                "total_requests": 100,
                 "url_path": "/knora/{}/pct:10,10,50,30/full/180/default.jpg".format(filename)
             }
         ]
@@ -120,9 +120,13 @@ class TestServer:
 
         for process_info in ab_processes:
             process = process_info["process"]
-            process.wait(300)
+
+            # stderr has been redirected to stdout and is therefore None
+            # do not use wait() because of the danger of a deadlock: https://docs.python.org/3.5/library/subprocess.html#subprocess.Popen.wait
+            stdout, stderr = process.communicate(timeout=300)
+
             process_info["returncode"] = process.returncode
-            process_info["stdout"] = process.stdout
+            process_info["stdout"] = stdout
 
         # Check whether they all succeeded.
 
@@ -130,8 +134,7 @@ class TestServer:
         failure_results = "\n"
 
         for process_info in ab_processes:
-            stdout_bin = process_info["stdout"].read()
-            stdout_str = stdout_bin.decode("ascii", "ignore") # Strip out non-ASCII characters, because for some reason ab includes an invalid 0xff
+            stdout_str = process_info["stdout"].decode("ascii", "ignore") # Strip out non-ASCII characters, because for some reason ab includes an invalid 0xff
             non_2xx_responses_lines = [line.strip().split()[-1] for line in stdout_str.splitlines() if line.strip().startswith("Non-2xx responses:")]
 
             if len(non_2xx_responses_lines) > 0:

@@ -386,7 +386,7 @@ class SipiTestManager:
         return subprocess.Popen(ab_args,
                                 cwd=self.sipi_working_dir,
                                 stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
+                                stderr=subprocess.STDOUT) # redirect stderr to stdout
 
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""
