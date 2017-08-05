@@ -315,21 +315,46 @@ class SipiTestManager:
         return os.path.join(self.data_dir, relative_path)
 
 
-    def post_file(self, url_path, file_path, mime_type, headers=None):
+    def post_file(self, url_path, file_path, mime_type, params=None, headers=None):
         """
             Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             file_path: the absolute path to the file to be uploaded.
+            params: the parameters to be sent with the request (dict).
             headers: an optional dictionary of request headers.
+            :return: the json response as a dict.
         """
 
         sipi_url = self.make_sipi_url(url_path)
 
         with open(file_path, "rb") as file_obj:
             files = { "file": (os.path.basename(file_path), file_obj, mime_type) }
-            response = requests.post(sipi_url, files=files, headers=headers)
+            try:
+                response = requests.post(sipi_url, files=files, data=params, headers=headers)
+                response.raise_for_status()
+            except:
+                raise SipiTestError("post request with image file to {} failed: {}").format(sipi_url, response.json()["message"])
             return response.json()
+
+    def post_request(self, url_path, params, headers=None):
+        """
+        Sends a post request to a Sipi route (without image file).
+
+        :param url_path: a path that will be appended to the Sipi base URL to make the request.
+        :param params: the parameters to be sent with the request (dict).
+        :param headers: an optional dictionary of request headers.
+        :return: the json response as a dict.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+
+        try:
+            response = requests.post(sipi_url, data=params, headers=headers)
+            response.raise_for_status()
+        except:
+            raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
+        return response.json()
 
     def write_sipi_log(self):
         """Writes Sipi's output to a log file."""

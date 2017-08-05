@@ -62,6 +62,17 @@ class TestServer:
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
+        # given the temporary filename, create the file
+        params = {
+            "filename": filename,
+            "originalfilename": "Leaves.jpg",
+            "originalmimetype": "image/jpeg"
+        }
+
+        manager.post_request("/convert_from_file", params)
+
+
+
     def test_lausanne_thumbnail_noalpha(self, manager):
         """create thumbnail with Lausanne file - no alpha"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-no-alpha.tif"), "image/tiff")
@@ -106,7 +117,7 @@ class TestServer:
             },
             {
                 "concurrent_requests": 25,
-                "total_requests": 100,
+                "total_requests": 300,
                 "url_path": "/knora/{}/pct:10,10,50,30/full/180/default.jpg".format(filename)
             }
         ]
