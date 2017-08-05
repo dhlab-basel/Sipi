@@ -334,12 +334,12 @@ class SipiTestManager:
                 response = requests.post(sipi_url, files=files, data=params, headers=headers)
                 response.raise_for_status()
             except:
-                raise SipiTestError("post request with image file to {} failed: {}").format(sipi_url, response.json()["message"])
+                raise SipiTestError("post request with image file to {} failed: {}".format(sipi_url, response.json()["message"]))
             return response.json()
 
     def post_request(self, url_path, params, headers=None):
         """
-        Sends a post request to a Sipi route (without image file).
+        Sends a post request to a Sipi route (without binaries).
 
         :param url_path: a path that will be appended to the Sipi base URL to make the request.
         :param params: the parameters to be sent with the request (dict).

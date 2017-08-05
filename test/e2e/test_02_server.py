@@ -69,8 +69,29 @@ class TestServer:
             "originalmimetype": "image/jpeg"
         }
 
-        manager.post_request("/convert_from_file", params)
+        response_json2 = manager.post_request("/convert_from_file", params)
+        filename_full = response_json2["filename_full"]
+        filename_thumb = response_json2["filename_thumb"]
 
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+
+    def test_image_conversion(self, manager):
+        """ convert and store an image file"""
+
+        params = {
+            "originalfilename": "Leaves.jpg",
+            "originalmimetype": "image/jpeg",
+            "source": manager.data_dir_path("knora/Leaves.jpg")
+        }
+
+        response_json = manager.post_request("/convert_from_binaries", params)
+
+        filename_full = response_json["filename_full"]
+        filename_thumb = response_json["filename_thumb"]
+
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
 
 
     def test_lausanne_thumbnail_noalpha(self, manager):
@@ -80,12 +101,40 @@ class TestServer:
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
 
+        # given the temporary filename, create the file
+        params = {
+            "filename": filename,
+            "originalfilename": "Leaves-small-no-alpha.tif",
+            "originalmimetype": "image/tiff"
+        }
+
+        response_json2 = manager.post_request("/convert_from_file", params)
+        filename_full = response_json2["filename_full"]
+        filename_thumb = response_json2["filename_thumb"]
+
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+
     def test_lausanne_thumbnail_alpha(self, manager):
         """create thumbnail with Lausanne file - with alpha"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-alpha.tif"), "image/tiff")
         # print("\n==>>" + str(response_json))
         filename = response_json["filename"]
         manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+
+        # given the temporary filename, create the file
+        params = {
+            "filename": filename,
+            "originalfilename": "Leaves-small-alpha.tif",
+            "originalmimetype": "image/tiff"
+        }
+
+        response_json2 = manager.post_request("/convert_from_file", params)
+        filename_full = response_json2["filename_full"]
+        filename_thumb = response_json2["filename_thumb"]
+
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
 
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
