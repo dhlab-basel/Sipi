@@ -35,7 +35,7 @@ TEST(Configuration, LoadConfigurationFile)
     EXPECT_EQ(sipiConf.getMaxPostSize(), 300 * 1024 * 1024);
     EXPECT_EQ(sipiConf.getImgRoot(), "./images");
     EXPECT_EQ(sipiConf.getPrefixAsPath(), false);
-    EXPECT_EQ(sipiConf.getSubdirLevels(), 1);
+    EXPECT_EQ(sipiConf.getSubdirLevels(), 0);
     EXPECT_EQ(sipiConf.getSubdirExcludes().size(), 2);
     EXPECT_EQ(sipiConf.getInitScript(), "./config/sipi.init.lua");
     EXPECT_EQ(sipiConf.getCacheDir(), "./cache");
@@ -45,5 +45,5 @@ TEST(Configuration, LoadConfigurationFile)
     EXPECT_EQ(sipiConf.getScriptDir(), "./scripts");
     EXPECT_EQ(sipiConf.getThumbSize(), "!128,128");
     EXPECT_EQ(sipiConf.getTmpDir(), "/tmp");
-    EXPECT_EQ(sipiConf.getLoglevel(), "WARNING");
+    EXPECT_EQ(sipiConf.getLoglevel(), "ERROR");
 }

@@ -443,7 +443,8 @@ namespace Sipi {
     }
 
     bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                          std::shared_ptr<SipiSize> size, bool force_bps_8) {
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality) {
         TIFF *tif;
 
         if (nullptr != (tif = TIFFOpen(filepath.c_str(), "r"))) {
@@ -882,11 +883,17 @@ namespace Sipi {
             //
             if (size != NULL) {
                 size_t nnx, nny;
-                int reduce;
+                int reduce = -1;
                 bool redonly;
                 SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
                 if (rtype != SipiSize::FULL) {
-                    img->scale(nnx, nny);
+                    switch (scaling_quality.jpeg) {
+                        case HIGH: img->scale(nnx, nny);
+                            break;
+                        case MEDIUM: img->scaleMedium(nnx, nny);
+                            break;
+                        case LOW: img->scaleFast(nnx, nny);
+                    }
                 }
             }
 

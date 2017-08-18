@@ -33,6 +33,7 @@ import filecmp
 import shutil
 import psutil
 import re
+import hashlib
 
 
 @pytest.fixture(scope="session")
@@ -71,7 +72,7 @@ class SipiTestManager:
         self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
         self.sipi_port = sipi_config["port"]
         self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
-        self.sipi_base_url = "http://localhost:{}".format(self.sipi_port)
+        self.sipi_base_url = "http://127.0.0.1:{}".format(self.sipi_port)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -79,7 +80,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
-        self.sipi_convert_command = "build/sipi --file {} --format {} {}"
+        self.sipi_convert_command = "build/sipi --file {} --format {} {}" # Braces will be replaced by actual arguments. See https://pyformat.info for details on string formatting.
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -91,6 +92,8 @@ class SipiTestManager:
         self.compare_command = "compare -metric {} {} {} null:"
         self.compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\).*$")
         self.info_command = "identify -verbose {}"
+
+        self.ab_command = "ab -v 2 -c {} -n {} -s {} {}"
 
     def start_sipi(self):
         """Starts Sipi and waits until it is ready to receive requests."""
@@ -312,21 +315,46 @@ class SipiTestManager:
         return os.path.join(self.data_dir, relative_path)
 
 
-    def post_file(self, url_path, file_path, mime_type, headers=None):
+    def post_file(self, url_path, file_path, mime_type, params=None, headers=None):
         """
             Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
 
             url_path: a path that will be appended to the Sipi base URL to make the request.
             file_path: the absolute path to the file to be uploaded.
+            params: the parameters to be sent with the request (dict).
             headers: an optional dictionary of request headers.
+            :return: the json response as a dict.
         """
 
         sipi_url = self.make_sipi_url(url_path)
 
         with open(file_path, "rb") as file_obj:
             files = { "file": (os.path.basename(file_path), file_obj, mime_type) }
-            response = requests.post(sipi_url, files=files, headers=headers)
+            try:
+                response = requests.post(sipi_url, files=files, data=params, headers=headers)
+                response.raise_for_status()
+            except:
+                raise SipiTestError("post request with image file to {} failed: {}".format(sipi_url, response.json()["message"]))
             return response.json()
+
+    def post_request(self, url_path, params, headers=None):
+        """
+        Sends a post request to a Sipi route (without binaries).
+
+        :param url_path: a path that will be appended to the Sipi base URL to make the request.
+        :param params: the parameters to be sent with the request (dict).
+        :param headers: an optional dictionary of request headers.
+        :return: the json response as a dict.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+
+        try:
+            response = requests.post(sipi_url, data=params, headers=headers)
+            response.raise_for_status()
+        except:
+            raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
+        return response.json()
 
     def write_sipi_log(self):
         """Writes Sipi's output to a log file."""
@@ -346,6 +374,44 @@ class SipiTestManager:
         if validator_process.returncode != 0:
             raise SipiTestError("IIIF validation failed (wrote {}):\n{}".format(self.sipi_log_file, validator_process.stdout))
 
+    def download_file_to_data_dir_tmp(self, url, file_extension = ".bin"):
+        """Only downloads a file to the target directory if not already there"""
+        url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+        test_tmp_directory = self.data_dir_path("test_tmp")
+
+        if not os.path.exists(test_tmp_directory):
+            os.makedirs(test_tmp_directory)
+
+        local_file_path = test_tmp_directory + "/" + url_hash + file_extension
+
+        if not os.path.isfile(local_file_path):
+            r = requests.get(url, stream=True)
+            with open(local_file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            return local_file_path
+        else:
+            return local_file_path
+
+    def run_ab(self, concurrent_requests, total_requests, timeout, url_path):
+        """
+        Runs Apache ab to test the Sipi server.
+
+        concurrent_requests: the number of concurrent requests to run.
+        total_requests: the total number of requests to run.
+        timeout: the request timeout in seconds.
+        url_path: the Sipi URL path, to be appended to the Sipi base URL.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+        formatted_ab_command = self.ab_command.format(concurrent_requests, total_requests, timeout, sipi_url)
+        ab_args = shlex.split(formatted_ab_command)
+
+        return subprocess.Popen(ab_args,
+                                cwd=self.sipi_working_dir,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT) # redirect stderr to stdout
 
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""

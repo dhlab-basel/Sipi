@@ -35,6 +35,17 @@
  */
 namespace Sipi {
 
+    typedef enum {
+        HIGH = 0, MEDIUM = 1, LOW = 2
+    } ScalingMethod;
+
+    typedef struct _ScalingQuality {
+        ScalingMethod jk2;
+        ScalingMethod jpeg;
+        ScalingMethod tiff;
+        ScalingMethod png;
+    } ScalingQuality;
+
 
     class SipiImage; //!< forward declaration of class SipiImage
 
@@ -54,7 +65,8 @@ namespace Sipi {
          * \param force_bps_8 Convert the file to 8 bits/sample on reading thus enforcing an 8 bit image
          */
         virtual bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
-                          std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true) = 0;
+                          std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
+                          ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH}) = 0;
 
         /*!
          * Get the dimension of the image

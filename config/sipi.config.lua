@@ -49,6 +49,29 @@ sipi = {
     nthreads = 8,
 
     --
+    -- SIPI is using libjpeg to generate the JPEG images. libjpeg requires a quality value which
+    -- corresponds to the compression rate. 100 is (almost) no compression and best quality, 0
+    -- would be full compression and no quality. Reasonable values are between 30 and 95...
+    --
+    jpeg_quality = 60,
+
+    --
+    -- For scaling images, SIPI offers two methods. The value "high" offers best quality using expensive
+    -- algorithms (bilinear interpolation, if downscaling the image is first scaled up  to an integer
+    -- multiple of the requires size, and then downscaled using averaging. This results in the best
+    -- image quality. "medium" uses bilinear interpolation but does not do upscaling before
+    -- downscaling. Scaling quality is set to "low", then just a lookup table and nearest integer
+    -- interpolation is being used to scale the images.
+    -- Recognized values are: "high", "medium", "low".
+    --
+    scaling_quality = {
+        jpeg = "medium",
+        tiff = "high",
+        png = "high",
+        j2k = "high"
+    },
+
+    --
     -- Number of seconds a connection (socket) remains open at maximum ("keep-alive")
     --
     keep_alive = 5,
@@ -60,10 +83,10 @@ sipi = {
 
     --
     -- indicates the path to the root of the image directory. Depending on the settings of the variable
-    -- "prefix_as_path" the images are search at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
+    -- "prefix_as_path" the images are searched at <imgroot>/<prefix>/<imageid> (prefix_as_path = TRUE)
     -- or <imgroot>/<imageid> (prefix_as_path = true). Please note that "prefix" and "imageid" are
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recognized and expanded
-    -- in the final path the image file.
+    -- in the final path of the image file.
     --
     -- To use Sipi's test data, use the following imgroot, and set prefix_as_path to true below:
     -- imgroot = './test/_test_data/images',
@@ -76,14 +99,14 @@ sipi = {
     prefix_as_path = false,
 
     --
-    -- In order not to accumulate to many files into one diretory (which slows down file
+    -- In order not to accumulate too many files into one directory (which slows down file
     -- access considerabely), the images are stored in recursive subdirectories 'A'-'Z'.
     -- If subdir_levels is equal 0, no subdirectories are used. The maximum is 6.
-    -- The recommandeation is that on average there should not me more than a few
-    -- thousand files in a unix directory (your mileage may vay depending on the
+    -- The recommendation is that on average there should not be more than a few
+    -- thousand files in a unix directory (your mileage may vary depending on the
     -- file system used).
     --
-    subdir_levels = 1,
+    subdir_levels = 0,
 
     --
     -- if subdir_levels is > 0 and if prefix_as_path is true, all prefixes will be
@@ -140,7 +163,7 @@ sipi = {
 
     --
     -- If compiled with SSL support, the path to the certificate (must be .pem file)
-    -- The follow commands can be used to generate a self-signed certificate
+    -- The following commands can be used to generate a self-signed certificate
     -- # openssl genrsa -out key.pem 2048
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
@@ -154,7 +177,7 @@ sipi = {
 
 
     --
-    -- The secret for generating JWT's (JSON Web Tokens) (exactely 42 characters)
+    -- The secret for generating JWT's (JSON Web Tokens) (exactly 42 characters)
     --
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
     --            12345678901234567890123456789012
@@ -168,7 +191,7 @@ sipi = {
     --
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "WARNING",
+    loglevel = "ERROR",
 }
 
 admin = {
@@ -190,7 +213,7 @@ fileserver = {
     docroot = './server',
 
     --
-    -- route under which the normal webserver shouöd respond to requests
+    -- route under which the normal webserver should respond to requests
     --
     wwwroute = '/server'
 }

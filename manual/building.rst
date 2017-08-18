@@ -47,8 +47,9 @@ The Kakadu source code archive ``v7_9-01727L.zip`` must be placed in the
 Sipi's build process requires CMake_, a C++ compiler that supports the C++11
 standard (such as GCC_ or clang_), and several libraries that are readily
 available on supported platforms. The test framework requires `Python 3`_,
-nginx_, and a recent version of ImageMagick_. Instructions for installing
-these prerequisites are given below.
+(version 3.5 or later), `Apache ab`_ (which is assumed to be installed by default
+on macOS Sierra), nginx_, and a recent version of ImageMagick_. Instructions
+for installing these prerequisites are given below.
 
 The build process downloads and builds Sipi's other prerequisites.
 
@@ -124,6 +125,7 @@ Then:
 
 ::
 
+    sudo apt-get install ab
     sudo apt-get install nginx
     sudo chown -R $USER /var/log/nginx
     sudo apt-get install python3
@@ -191,6 +193,7 @@ Then:
 
 ::
 
+    sudo yum -y install httpd-tools
     sudo yum -y install nginx
     sudo chown -R $USER /var/log/nginx
     sudo chown -R $USER /var/lib/nginx
@@ -297,4 +300,5 @@ the top level of the source tree and type:
 .. _`Code::Blocks`: http://www.codeblocks.org/
 .. _LaTeX: https://www.latex-project.org/
 .. _devtoolset-4: https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/
+.. _Apache ab: https://httpd.apache.org/docs/2.4/programs/ab.html
 .. _ImageMagick: http://www.imagemagick.org/

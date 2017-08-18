@@ -87,6 +87,7 @@ namespace Sipi {
         SKIP_NONE = 0x00, SKIP_ICC = 0x01, SKIP_XMP = 0x02, SKIP_IPTC = 0x04, SKIP_EXIF = 0x08, SKIP_ALL = 0xFF
     } SkipMetadata;
 
+
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error
@@ -320,14 +321,15 @@ namespace Sipi {
          *
          * \param[in] filepath A string containing the path to the image file
          * \param[in] region Pointer to a SipiRegion which indicates that we
-         *            are only interested in this regeion. The image will be cropped.
+         *            are only interested in this region. The image will be cropped.
          * \param[in] size Pointer to a size object. The image will be scaled accordingly
          * \param[in] force_bps_8 We want in any case a 8 Bit/sample image. Reduce if necessary
          *
          * \throws SipiError
          */
         void read(std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
-                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false);
+                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false,
+                  ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
 
         /*!
          * Read an image that is to be considered an "original image". In this case
@@ -455,7 +457,23 @@ namespace Sipi {
         bool crop(std::shared_ptr<SipiRegion> region);
 
         /*!
-         * Resize an image
+         * Resize an image using a high speed algorithm which may result in poor image quality
+         *
+         * \param[in] nnx New horizonal dimension (width)
+         * \param[in] nny New vertical dimension (height)
+         */
+        bool scaleFast(size_t nnx, size_t nny);
+
+        /*!
+         * Resize an image using some balance between speed and quality
+         *
+         * \param[in] nnx New horizonal dimension (width)
+         * \param[in] nny New vertical dimension (height)
+         */
+        bool scaleMedium(size_t nnx, size_t nny);
+
+        /*!
+         * Resize an image using the best (but slow) algorithm
          *
          * \param[in] nnx New horizonal dimension (width)
          * \param[in] nny New vertical dimension (height)

@@ -165,7 +165,6 @@ namespace Sipi {
 
         void flush(bool end_of_message = false) {
             if (end_of_message) {
-                std::cerr << msg << std::endl;
                 syslog(LOG_ERR, "%s", msg.c_str());
                 throw KDU_ERROR_EXCEPTION;
             }
@@ -199,7 +198,9 @@ namespace Sipi {
 
 
     bool SipiIOJ2k::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                         std::shared_ptr<SipiSize> size, bool force_bps_8) {
+                         std::shared_ptr<SipiSize> size, bool force_bps_8,
+                         ScalingQuality scaling_quality)
+    {
         if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
 
         int num_threads;
@@ -281,6 +282,10 @@ namespace Sipi {
         codestream.set_fast(); // No errors expected in input
 
         //
+        // get the
+        int maximal_reduce = codestream.get_min_dwt_levels();
+
+        //
         // get SipiEssentials (if present) as codestream comment
         //
         kdu_codestream_comment comment = codestream.get_comment();
@@ -325,7 +330,7 @@ namespace Sipi {
         //
         // here we prepare tha scaling/reduce stuff...
         //
-        int reduce = 0;
+        int reduce = maximal_reduce;
         size_t nnx, nny;
         bool redonly = true; // we assume that only a reduce is necessary
         if ((size != nullptr) && (size->getType() != SipiSize::FULL)) {
@@ -335,8 +340,12 @@ namespace Sipi {
                 size->get_size(__nx, __ny, nnx, nny, reduce, redonly);
             }
         }
+        else {
+            reduce = 0;
+        }
 
         if (reduce < 0) reduce = 0;
+
         codestream.apply_input_restrictions(0, 0, reduce, 0, do_roi ? &roi : nullptr);
 
 
@@ -456,7 +465,7 @@ namespace Sipi {
                     }
 
                     default: {
-                        std::cerr << "CS=" << space << std::endl;
+                        syslog(LOG_ERR, "Unsupported ICC profile: %s", std::to_string(space).c_str());
                         throw SipiImageError(__file__, __LINE__, "Unsupported ICC profile: " + std::to_string(space));
                     }
                 }
@@ -523,7 +532,7 @@ namespace Sipi {
                 codestream.destroy();
                 input->close();
                 jpx_in.close(); // Not really necessary here.
-                std::cerr << "BPS=" << img->bps << std::endl;
+                syslog(LOG_ERR, "Unsupported number of bits/sample: %ld !", img->bps);
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
         }
@@ -557,7 +566,14 @@ namespace Sipi {
         }
 
         if ((size != nullptr) && (!redonly)) {
-            img->scale(nnx, nny);
+            switch (scaling_quality.jk2) {
+                case HIGH: img->scale(nnx, nny);
+                    break;
+                case MEDIUM: img->scaleMedium(nnx, nny);
+                    break;
+                case LOW: img->scaleFast(nnx, nny);
+            }
+
         }
         return true;
     }

@@ -635,8 +635,6 @@ namespace Sipi {
             params.push_back(uri.substr(old_pos, std::string::npos));
         }
 
-        //for (int i = 0; i < params.size(); i++) cerr << params[i] << endl;
-
         if (params.size() < 1) {
             send_error(conn_obj, Connection::BAD_REQUEST, "No parameters/path given");
             return;
@@ -669,6 +667,8 @@ namespace Sipi {
             } else {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
+
+            syslog(LOG_DEBUG, "GET %s: file %s", uri.c_str(), infile.c_str());
 
             if (access(infile.c_str(), R_OK) == 0) {
                 conn_obj.setBuffer();
@@ -769,7 +769,6 @@ namespace Sipi {
         }
 
         SipiQualityFormat quality_format;
-
         try {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
             std::stringstream ss;
@@ -1121,7 +1120,7 @@ namespace Sipi {
         Sipi::SipiImage img;
 
         try {
-            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG);
+            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG, serv->scaling_quality());
         } catch (const SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
             return;
@@ -1210,7 +1209,7 @@ namespace Sipi {
                     syslog(LOG_DEBUG, "Before writing JPG...");
 
                     try {
-                        img.write("jpg", "HTTP");
+                        img.write("jpg", "HTTP", serv->jpeg_quality());
                     } catch (SipiImageError &err) {
                         syslog(LOG_ERR, "%s", err.to_string().c_str());
 
@@ -1392,6 +1391,7 @@ namespace Sipi {
                                                                                                                  loglevel_p) {
         _salsah_prefix = "imgrep";
         _cache = nullptr;
+        _scaling_quality = {HIGH, HIGH, HIGH, HIGH};
     }
     //=========================================================================
 

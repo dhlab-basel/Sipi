@@ -339,6 +339,7 @@ namespace shttps {
      */
     LuaServer::~LuaServer() {
         lua_close(L);
+        L = nullptr;
     }
     //=========================================================================
 
@@ -2517,6 +2518,15 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Reads a string item from a Lua config file. A lua config file is always a table with
+     * a name (e.g. sipi which contains configuration parameters
+     *
+     * @param table Table name for config parameters
+     * @param variable Variable name
+     * @param defval Default value to take if variable is not defined
+     * @return Configuartion parameter value
+     */
     std::string LuaServer::configString(const std::string table, const std::string variable, const std::string defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
@@ -2540,7 +2550,15 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /*!
+     * Reads a boolean item from a Lua config file. A lua config file is always a table with
+     * a name (e.g. sipi which contains configuration parameters
+     *
+     * @param table Table name for config parameters
+     * @param variable Variable name
+     * @param defval Default value to take if variable is not defined
+     * @return Configuartion parameter value
+     */
     bool LuaServer::configBoolean(const std::string table, const std::string variable, const bool defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
@@ -2564,6 +2582,15 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Reads a boolean item from a Lua config file. A lua config file is always a table with
+     * a name (e.g. sipi which contains configuration parameters
+     *
+     * @param table Table name for config parameters
+     * @param variable Variable name
+     * @param defval Default value to take if variable is not defined
+     * @return Configuartion parameter value
+     */
     int LuaServer::configInteger(const std::string table, const std::string variable, const int defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
@@ -2587,6 +2614,15 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Reads a float item from a Lua config file. A lua config file is always a table with
+     * a name (e.g. sipi which contains configuration parameters
+     *
+     * @param table Table name for config parameters
+     * @param variable Variable name
+     * @param defval Default value to take if variable is not defined
+     * @return Configuartion parameter value
+     */
     float LuaServer::configFloat(const std::string table, const std::string variable, const float defval) {
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, 1);
@@ -2610,6 +2646,13 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Reads a table of values and returns the values as string vector
+     *
+     * @param table Table name for config parameters
+     * @param variable Variable name (which must be a table/array)
+     * @return Vector of table entries
+     */
     const std::vector<std::string> LuaServer::configStringList(const std::string table, const std::string variable) {
         std::vector<std::string> strings;
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
@@ -2645,7 +2688,65 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+     * Reads a table with key value pairs
+     * @param table Table name for config parameters
+     * @param variable Variable name (which must be a table with key value pairs)
+     * @return Map of key-value pairs
+     */
+    const std::map<std::string,std::string> LuaServer::configStringTable(const std::string table, const std::string variable) {
+        std::map<std::string,std::string> subtable;
 
+        int top = lua_gettop(L);
+
+        if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
+            lua_pop(L, top);
+            return subtable;
+        }
+
+        lua_getfield(L, 1, variable.c_str());
+
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, lua_gettop(L));
+            return subtable;
+        }
+
+        if (!lua_istable(L, -1)) {
+            throw Error(__file__, __LINE__, "Value '" + variable + "' in config file must be a table");
+        }
+
+        lua_pushvalue(L, -1);
+        lua_pushnil(L);
+
+        while (lua_next(L, -2)) {
+            std::string valstr, keystr;
+            lua_pushvalue(L, -2);
+            if (lua_isstring(L, -1)) {
+                keystr = lua_tostring(L, -1);
+            }
+            else {
+                throw Error(__file__, __LINE__, "Key element of '" + variable + "' in config file must be a string");
+            }
+            if (lua_isstring(L, -2)) {
+                valstr = lua_tostring(L, -2);
+            }
+            else {
+                throw Error(__file__, __LINE__, "Value element of '" + variable + "' in config file must be a string");
+            }
+            lua_pop(L, 2);
+            subtable[keystr] = valstr;
+        }
+
+        return subtable;
+    };
+    //=========================================================================
+
+    /*!
+     * Read a route definition (containing "method", "route", "script" keys)
+     *
+     * @param routetable A table name containing route info
+     * @return Route info
+     */
     const std::vector<LuaRoute> LuaServer::configRoute(const std::string routetable) {
         static struct {
             const char *name;

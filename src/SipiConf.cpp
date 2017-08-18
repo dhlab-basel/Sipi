@@ -28,9 +28,6 @@ namespace Sipi {
 
     SipiConf::SipiConf(shttps::LuaServer &luacfg) {
         userid_str = luacfg.configString("sipi", "userid", "");
-        img_root = luacfg.configString("sipi", "imgroot", ".");
-        subdir_levels = luacfg.configInteger("sipi", "subdir_levels", 0);
-        subdir_excludes = luacfg.configStringList("sipi", "subdir_excludes"); // has no defaults, returns an empty vector if nothing is there
         hostname = luacfg.configString("sipi", "hostname", "localhost");
         port = luacfg.configInteger("sipi", "port", 3333);
 #ifdef SHTTPS_ENABLE_SSL
@@ -38,6 +35,13 @@ namespace Sipi {
         ssl_certificate = luacfg.configString("sipi", "ssl_certificate", "");
         ssl_key = luacfg.configString("sipi", "ssl_key", "");
 #endif
+        img_root = luacfg.configString("sipi", "imgroot", ".");
+        subdir_levels = luacfg.configInteger("sipi", "subdir_levels", 0);
+        subdir_excludes = luacfg.configStringList("sipi", "subdir_excludes"); // has no defaults, returns an empty vector if nothing is there
+        prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
+        jpeg_quality = luacfg.configInteger("sipi", "jeg_quality", 60);
+        scaling_quality = luacfg.configStringTable("sipi", "scaling_quality");
+
         init_script = luacfg.configString("sipi", "initscript", ".");
         std::string cachesize_str = luacfg.configString("sipi", "cachesize", "0");
 
@@ -56,7 +60,6 @@ namespace Sipi {
 
         cache_dir = luacfg.configString("sipi", "cachedir", "");
         cache_hysteresis = luacfg.configFloat("sipi", "cache_hysteresis", 0.1);
-        prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
         keep_alive = luacfg.configInteger("sipi", "keep_alive", 20);
         thumb_size = luacfg.configString("sipi", "thumb_size", "!128,128");
         cache_n_files = luacfg.configInteger("sipi", "cache_nfiles", 0);

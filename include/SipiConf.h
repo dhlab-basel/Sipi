@@ -49,7 +49,9 @@ namespace Sipi {
         std::string img_root; //<! path to root of image repository
         int subdir_levels = -1;
         std::vector<std::string> subdir_excludes;
-        bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it..
+        bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
+        int jpeg_quality;
+        std::map<std::string,std::string> scaling_quality;
         std::string init_script;
         std::string cache_dir;
         size_t cache_size;
@@ -96,6 +98,10 @@ namespace Sipi {
         inline std::string getImgRoot(void) { return img_root; }
 
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
+
+        inline int getJpegQuality(void) { return jpeg_quality; }
+
+        inline std::map<std::string,std::string> getScalingQuality(void) { return scaling_quality; }
 
         inline int getSubdirLevels(void) { return subdir_levels; }
 

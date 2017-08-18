@@ -417,7 +417,9 @@ namespace Sipi {
 
 
     bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                          std::shared_ptr<SipiSize> size, bool force_bps_8) {
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality)
+    {
         int infile;
         //
         // open the input file
@@ -441,7 +443,7 @@ namespace Sipi {
         //
         // Since libjpeg is not thread safe, we have unfortunately use a mutex...
         //
-        std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
+        //std::lock_guard<std::mutex> inlock_mutex_guard(inlock);
 
         struct jpeg_decompress_struct cinfo;
         struct jpeg_error_mgr jerr;
@@ -459,7 +461,6 @@ namespace Sipi {
 
         cinfo.err = jpeg_std_error(&jerr);
         jerr.error_exit = jpegErrorExit;
-
 
         try {
             //jpeg_stdio_src(&cinfo, infile);
@@ -491,6 +492,37 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\"");
         }
 
+        boolean no_cropping = false;
+        if (region == nullptr) no_cropping = true;
+        if ((region != nullptr) && (region->getType()) == SipiRegion::FULL) no_cropping = true;
+
+        size_t nnx, nny;
+        SipiSize::SizeType rtype = SipiSize::FULL;
+        if (size != nullptr) {
+            rtype = size->getType();
+        }
+
+        if (no_cropping) {
+            //
+            // here we prepare tha scaling/reduce stuff...
+            //
+            int reduce = 3; // maximal reduce factor is 3: 1/1, 1/2, 1/4 and 1/8
+            bool redonly = true; // we assume that only a reduce is necessary
+            if ((size != nullptr) && (rtype != SipiSize::FULL)) {
+                size->get_size(cinfo.image_width, cinfo.image_height, nnx, nny, reduce, redonly);
+            }
+            else {
+                reduce = 0;
+            }
+
+            if (reduce < 0) reduce = 0;
+            cinfo.scale_num = 1;
+            cinfo.scale_denom = 1;
+            for (int i = 0; i < reduce; i++) cinfo.scale_denom *= 2;
+        }
+        cinfo.do_fancy_upsampling = false;
+
+
         //
         // getting Metadata
         //
@@ -498,7 +530,6 @@ namespace Sipi {
         unsigned char *icc_buffer = nullptr;
         int icc_buffer_len = 0;
         while (marker) {
-            //fprintf(stderr, "#######################################################################\n");
             if (marker->marker == JPEG_COM) {
                 std::string emdatastr((char *) marker->data, marker->data_length);
                 SipiEssentials se(emdatastr);
@@ -667,28 +698,42 @@ namespace Sipi {
             jpeg_destroy_decompress(&cinfo);
         } catch (JpegError &jpgerr) {
             close(infile);
-            inlock.unlock();
+            //inlock.unlock();
             throw SipiImageError(__file__, __LINE__, "Error reading JPEG file: \"" + filepath + "\": " + jpgerr.what());
         }
         close(infile);
 
+
         //
-        // do some croping...
+        // do some cropping...
         //
-        if ((region != nullptr) && (region->getType()) != SipiRegion::FULL) {
+        if (!no_cropping) { // not no cropping (!!) means "do crop"!
+            //
+            // let's first crop the region (we read the full size image in this case)
+            //
             (void) img->crop(region);
+
+            //
+            // no we scale the region to the desired size
+            //
+            int reduce = -1;
+            bool redonly;
+            (void) size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
         }
 
         //
         // resize/Scale the image if necessary
         //
-        if ((size != NULL) && (size->getType() != SipiSize::FULL)) {
-            size_t nnx, nny;
-            int reduce;
-            bool redonly;
-            SipiSize::SizeType rtype = size->get_size(img->nx, img->ny, nnx, nny, reduce, redonly);
+        if ((size != NULL) && (rtype != SipiSize::FULL)) {
             if (rtype != SipiSize::FULL) {
-                img->scale(nnx, nny);
+                switch (scaling_quality.jpeg) {
+                    case HIGH: img->scale(nnx, nny);
+                        break;
+                    case MEDIUM: img->scaleMedium(nnx, nny);
+                        break;
+                    case LOW: img->scaleFast(nnx, nny);
+                        break;
+                }
             }
         }
 
@@ -787,6 +832,15 @@ namespace Sipi {
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
+
+        //
+        // we have to check if the image has an alpha channel (not supported by JPEG). If
+        // so, we remove it!
+        //
+        if ((img->getNc() > 3) && (img->getNalpha() > 0)) { // we have an alpha channel....
+            for (size_t i = 3; i < (img->getNalpha() + 3); i++) img->removeChan(i);
+        }
+
         //
         // TODO! Support incoming 16 bit images by converting the buffer to 8 bit!
         //

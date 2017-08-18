@@ -510,6 +510,8 @@ int main(int argc, char *argv[]) {
             server.add_lua_globals_func(Sipi::sipiGlobals, &server); // add Lua SImage functions
             server.prefix_as_path(sipiConf.getPrefixAsPath());
             server.dirs_to_exclude(sipiConf.getSubdirExcludes());
+            server.scaling_quality(sipiConf.getScalingQuality());
+            server.jpeg_quality(sipiConf.getJpegQuality());
 
             //
             // cache parameter...
@@ -738,10 +740,6 @@ int main(int argc, char *argv[]) {
                 img.to8bps();
                 //http://www.equasys.de/colorconversion.html
                 img.convertToIcc(Sipi::icc_sRGB, 8);
-
-                if (img.getNalpha() > 0) {
-                    img.removeChan(static_cast<unsigned int>(img.getNc() - 1));
-                }
             }
         } catch (Sipi::SipiImageError &err) {
             std::cerr << err << std::endl;
