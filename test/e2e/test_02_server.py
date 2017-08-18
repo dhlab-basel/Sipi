@@ -161,12 +161,12 @@ class TestServer:
             },
             {
                 "concurrent_requests": 25,
-                "total_requests": 300,
+                "total_requests": 30,
                 "url_path": "/knora/{}/pct:10,10,40,40/full/0/default.jpg".format(filename)
             },
             {
                 "concurrent_requests": 25,
-                "total_requests": 300,
+                "total_requests": 30,
                 "url_path": "/knora/{}/pct:10,10,50,30/full/180/default.jpg".format(filename)
             }
         ]
