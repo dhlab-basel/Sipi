@@ -174,7 +174,7 @@ class TestServer:
         # Start all the ab processes.
 
         for process_info in ab_processes:
-            process_info["process"] = manager.run_ab(process_info["concurrent_requests"], process_info["total_requests"], 60, process_info["url_path"])
+            process_info["process"] = manager.run_ab(process_info["concurrent_requests"], process_info["total_requests"], 300, process_info["url_path"])
 
         # Wait for all the processes to terminate, and get their return codes and output.
 
