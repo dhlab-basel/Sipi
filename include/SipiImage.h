@@ -91,7 +91,7 @@ namespace Sipi {
     /*!
     * This class implements the error handling for the different image formats.
     * It's being derived from the runtime_error so that catching the runtime error
-    * also catched errors withing reading/writing an image format.
+    * also catches errors withing reading/writing an image format.
     */
     //class SipiImageError : public std::runtime_error {
     class SipiImageError {
@@ -156,7 +156,7 @@ namespace Sipi {
     * Base class for all images in the Sipi package.
     * This class implements all the data and handling (methods) associated with
     * images in Sipi. Please note that the map of io-classes (see \ref SipiIO) has to
-    * be instanciated in the SipiImage.cpp! Thus adding a new file format requires that SipiImage.cpp
+    * be instantiated in the SipiImage.cpp! Thus adding a new file format requires that SipiImage.cpp
     * is being modified!
     */
     class SipiImage {
@@ -340,16 +340,16 @@ namespace Sipi {
          * are added to the file header (in case of TIFF as a private tag 65111,
          * in case of J2K as comment box).
          * If the file read already contains a SipiEssentials as embedded metadata,
-         * it is not overwritten, put the embeded and pixel checksums are compared.
+         * it is not overwritten, put the embedded and pixel checksums are compared.
          *
          * \param[in] filepath A string containing the path to the image file
          * \param[in] region Pointer to a SipiRegion which indicates that we
-         *            are only interested in this regeion. The image will be cropped.
+         *            are only interested in this region. The image will be cropped.
          * \param[in] size Pointer to a size object. The image will be scaled accordingly
          * \param[in] htype The checksum method that should be used if the checksum is
          *            being calculated for the first time.
          *
-         * \returns true, if everythin worked. False, if the checksums do not match.
+         * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
         readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
@@ -364,17 +364,17 @@ namespace Sipi {
          * are added to the file header (in case of TIFF as a private tag 65111,
          * in case of J2K as comment box).
          * If the file read already contains a SipiEssentials as embedded metadata,
-         * it is not overwritten, put the embeded and pixel checksums are compared.
+         * it is not overwritten, put the embedded and pixel checksums are compared.
          *
          * \param[in] filepath A string containing the path to the image file
          * \param[in] region Pointer to a SipiRegion which indicates that we
-         *            are only interested in this regeion. The image will be cropped.
+         *            are only interested in this region. The image will be cropped.
          * \param[in] size Pointer to a size object. The image will be scaled accordingly
          * \param[in] origname Original file name
          * \param[in] htype The checksum method that should be used if the checksum is
          *            being calculated for the first time.
          *
-         * \returns true, if everythin worked. False, if the checksums do not match.
+         * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
         readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
@@ -410,7 +410,7 @@ namespace Sipi {
          * - "tif" for TIFF files
          * - "j2k" for JPEG2000 files
          * - "png" for PNG files
-         * \param[in] filepath String containg the path/filename
+         * \param[in] filepath String containing the path/filename
          */
         void write(std::string ftype, std::string filepath, int quality = -1);
 
@@ -459,7 +459,7 @@ namespace Sipi {
         /*!
          * Resize an image using a high speed algorithm which may result in poor image quality
          *
-         * \param[in] nnx New horizonal dimension (width)
+         * \param[in] nnx New horizontal dimension (width)
          * \param[in] nny New vertical dimension (height)
          */
         bool scaleFast(size_t nnx, size_t nny);
@@ -467,7 +467,7 @@ namespace Sipi {
         /*!
          * Resize an image using some balance between speed and quality
          *
-         * \param[in] nnx New horizonal dimension (width)
+         * \param[in] nnx New horizontal dimension (width)
          * \param[in] nny New vertical dimension (height)
          */
         bool scaleMedium(size_t nnx, size_t nny);
@@ -475,7 +475,7 @@ namespace Sipi {
         /*!
          * Resize an image using the best (but slow) algorithm
          *
-         * \param[in] nnx New horizonal dimension (width)
+         * \param[in] nnx New horizontal dimension (width)
          * \param[in] nny New vertical dimension (height)
          */
         bool scale(size_t nnx = 0, size_t nny = 0);
@@ -518,10 +518,10 @@ namespace Sipi {
 
 
         /*!
-         * Calcaulates the difference between 2 images.
+         * Calculates the difference between 2 images.
          *
-         * The differfence between 2 images can conatin (and usually will) negative values.
-         * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+         * The difference between 2 images can contain (and usually will) negative values.
+         * In order to create a standard image, the values at "0" will be lifted to 127 (8-bit images)
          * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
          * absolute values. Thus a new pixelvalue will be calculated as follows:
          * ```
@@ -533,10 +533,10 @@ namespace Sipi {
         SipiImage &operator-=(const SipiImage &rhs);
 
         /*!
-         * Calcaulates the difference between 2 images.
+         * Calculates the difference between 2 images.
          *
-         * The differfence between 2 images can conatin (and usually will) negative values.
-         * In order to create a standard image, the values at "0" will be liftet to 127 (8-Bit images)
+         * The difference between 2 images can contain (and usually will) negative values.
+         * In order to create a standard image, the values at "0" will be lifted to 127 (8-bit images)
          * or 32767. The span will be defined by max(minimum, maximum), where minimum and maximum are
          * absolute values. Thus a new pixelvalue will be calculated as follows:
          * ```
