@@ -246,14 +246,14 @@ CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILE
 #endif()
 
 set(
-        ICC_HEADERS
+        GENERATED_ICC_HEADERS
         ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/YCC709_icc.h
 )
 
 add_custom_command(
-        OUTPUT ${ICC_HEADERS}
+        OUTPUT ${GENERATED_ICC_HEADERS}
         COMMENT "Generating ICC profile includes"
         WORKING_DIRECTORY ${COMMON_INCLUDE_FILES_DIR}
         COMMAND cp ${COMMON_INCLUDE_FILES_DIR}/ICC-Profiles/AdobeRGB1998.icc ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998.icc
@@ -286,57 +286,14 @@ add_custom_command(
 #)
 add_custom_target(
         icc_profiles
-        DEPENDS ${ICC_HEADERS}
+        DEPENDS ${GENERATED_ICC_HEADERS}
 )
-
-#-------------------
-# Test
-#-------------------
-include(CTest)
-
-if (CMAKE_VERSION VERSION_LESS 3.2)
-    set(UPDATE_DISCONNECTED_IF_AVAILABLE "")
-else()
-    set(UPDATE_DISCONNECTED_IF_AVAILABLE "UPDATE_DISCONNECTED 1")
-endif()
-
-include(DownloadProject.cmake)
-download_project(PROJ                googletest
-        GIT_REPOSITORY      https://github.com/google/googletest.git
-        GIT_TAG             master
-        ${UPDATE_DISCONNECTED_IF_AVAILABLE}
-        )
-
-# Prevent GoogleTest from overriding our compiler/linker options
-# when building with Visual Studio
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-
-# When using CMake 2.8.11 or later, header path dependencies
-# are automatically added to the gtest and gmock targets.
-# For earlier CMake versions, we have to explicitly add the
-# required directories to the header search path ourselves.
-if (CMAKE_VERSION VERSION_LESS 2.8.11)
-    include_directories("${gtest_SOURCE_DIR}/include"
-            "${gmock_SOURCE_DIR}/include")
-endif()
-
-# enables cmake's support for testing
-enable_testing()
-
-# need to add the unit test directory containing it's own CMakeLists.txt
-add_subdirectory(test/unit)
-
-
-
 
 link_directories(
         /usr/local/lib
         ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CONFIGURE_LIBDIR}
 )
-
 
 include_directories(
     ${COMMON_INCLUDE_FILES_DIR}
@@ -349,6 +306,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
     /usr/local/include
 )
+
 add_executable(
         sipi
         src/sipi.cpp
@@ -389,7 +347,6 @@ add_dependencies(sipi icc_profiles)
 
 
 
-
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
@@ -402,15 +359,7 @@ if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()
 
-add_custom_target(check
-        DEPENDS sipi
-        COMMAND pytest
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
-# will be run when `make test` is executed
-add_test(NAME all_e2e_tests
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
-        COMMAND pytest)
 
 
 install(TARGETS sipi
@@ -426,3 +375,59 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
         DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+
+#-------------------
+# Test
+#-------------------
+
+# custom target to only run 'e2e' tests
+add_custom_target(check
+        DEPENDS sipi
+        COMMAND pytest
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
+
+# enables running of 'e2e' tests when `make test` is executed
+add_test(NAME all_e2e_tests
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
+        COMMAND pytest)
+
+include(CTest)
+
+if (CMAKE_VERSION VERSION_LESS 3.2)
+    set(UPDATE_DISCONNECTED_IF_AVAILABLE "")
+else()
+    set(UPDATE_DISCONNECTED_IF_AVAILABLE "UPDATE_DISCONNECTED 1")
+endif()
+
+include(DownloadProject.cmake)
+download_project(PROJ                googletest
+        GIT_REPOSITORY      https://github.com/google/googletest.git
+        GIT_TAG             master
+        ${UPDATE_DISCONNECTED_IF_AVAILABLE}
+        )
+
+# Prevent GoogleTest from overriding our compiler/linker options
+# when building with Visual Studio
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
+
+# When using CMake 2.8.11 or later, header path dependencies
+# are automatically added to the gtest and gmock targets.
+# For earlier CMake versions, we have to explicitly add the
+# required directories to the header search path ourselves.
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+    include_directories("${gtest_SOURCE_DIR}/include"
+            "${gmock_SOURCE_DIR}/include")
+endif()
+
+# enables cmake's support for testing
+enable_testing()
+
+# need to add the unit test directory containing it's own CMakeLists.txt
+add_subdirectory(test/unit)
+
+
+
+

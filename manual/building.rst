@@ -286,7 +286,7 @@ the top level of the source tree and type:
 
 ::
 
-    rm -rf build/* lib local extsrcs
+    rm -rf build/* lib local extsrcs include/*_icc.h
 
 
 .. _Kakadu: http://kakadusoftware.com/
