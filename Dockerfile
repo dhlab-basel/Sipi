@@ -7,10 +7,11 @@ COPY . /sipi
 
 # Install and clean-up SIPI.
 RUN cd /sipi/build && \
+    cmake .. && \
+    make && \
     make install && \
-    mkdir /sipi/images && \
-    mkdir /sipi/images/knora && \
-    mkdir /sipi/cache && \
+    mkdir -p /sipi/images/knora && \
+    mkdir -p /sipi/cache && \
     rm -rf /sipi/vendor && \
     rm -rf /sipi/build && \
     rm -rf /sipi/extsrcs
