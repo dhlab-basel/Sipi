@@ -237,6 +237,7 @@ namespace Sipi {
             }
 
             std::string extension = filename.substr(dot_pos + 1);
+            std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower); // convert file extension to lower case (uppercase letters in file extension have to be converted for mime type comparison)
             std::string mime_from_extension = Sipi::SipiImage::mimetypes.at(extension);
 
             if (mime_from_extension != actual_mimetype) {
