@@ -1,3 +1,4 @@
+
 link_directories(
         /usr/local/lib
         ${PROJECT_SOURCE_DIR}/local/lib
@@ -57,6 +58,7 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/shttps/jwt.c ${PROJECT_SOURCE_DIR}/shttps/jwt.h
         ${PROJECT_SOURCE_DIR}/shttps/makeunique.h ${PROJECT_SOURCE_DIR}/src/SipiFilenameHash.cpp ${PROJECT_SOURCE_DIR}/include/SipiFilenameHash.h
 )
+add_dependencies(sipiimage icc_profiles)
 
 target_link_libraries(
         sipiimage
