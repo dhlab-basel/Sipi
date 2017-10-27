@@ -21,7 +21,7 @@ env:
 
 script:
   # decrypt archive containing the kakadu library
-  - openssl aes-256-cbc -K $encrypted_7deda1f68196_key -iv $encrypted_7deda1f68196_iv -in private/private.tar.enc -out private/private.tar -d
+  - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
   - tar xvf private/private.tar
   - mv v7_9-01727L.zip vendor/.
   # run compile and tests inside docker
