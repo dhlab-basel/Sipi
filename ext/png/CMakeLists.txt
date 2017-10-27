@@ -8,7 +8,7 @@ include(ExternalProject)
 ExternalProject_Add(
         project_png
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://sourceforge.net/projects/libpng/files/libpng16/1.6.34/libpng-1.6.34.tar.gz/download
+        URL https://sourceforge.net/projects/libpng/files/libpng16/older-releases/1.6.31/libpng-1.6.31.tar.gz/download
         DOWNLOAD_NAME libpng-latest.tar.gz
         #URL https://sourceforge.net/projects/libpng/files/latest/download?source=files
         SOURCE_DIR ${COMMON_SRCS}/libpng-latest
