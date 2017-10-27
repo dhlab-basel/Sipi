@@ -26,7 +26,7 @@ add_executable(
         ${SRCS}
         ${PROJECT_SOURCE_DIR}/src/SipiConf.cpp ${PROJECT_SOURCE_DIR}/include/SipiConf.h
         ${PROJECT_SOURCE_DIR}/src/SipiError.cpp ${PROJECT_SOURCE_DIR}/include/SipiError.h
-        ${PROJECT_SOURCE_DIR}/include/AdobeRGB1998_icc.h ${PROJECT_SOURCE_DIR}/include/USWebCoatedSWOP_icc.h
+        # ${PROJECT_SOURCE_DIR}/include/AdobeRGB1998_icc.h ${PROJECT_SOURCE_DIR}/include/USWebCoatedSWOP_icc.h
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiIcc.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiIcc.h
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiXmp.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiXmp.h
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiIptc.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiIptc.h

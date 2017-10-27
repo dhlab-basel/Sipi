@@ -225,6 +225,14 @@ Then compile Sipi:
     cmake ..
     make
 
+By default, Sipi is built without optimization and with debug information output.
+To compile Sipi with optimization level 3, run:
+
+::
+
+     cmake .. -DMAKE_DEBUG:BOOL=OFF
+     make
+
 
 *************
 Running Tests
@@ -286,7 +294,7 @@ the top level of the source tree and type:
 
 ::
 
-    rm -rf build/* lib local extsrcs
+    rm -rf build/* lib local extsrcs include/*_icc.h
 
 
 .. _Kakadu: http://kakadusoftware.com/

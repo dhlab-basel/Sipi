@@ -93,7 +93,7 @@ for i, test_data_item in ipairs(mimetype_test_data) do
     table.insert(result, { test_data_item, "OK" })
 end
 
--- Try parsing something that should return an error.
+-- Try parsing a mimetype that should return an error.
 
 local success, parsed_bad_mimetype = server.parse_mimetype(bad_mimetype)
 
