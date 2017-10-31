@@ -674,8 +674,8 @@ namespace Sipi {
             siz.set(Scomponents, 0, 0, (int) img->nc);
             siz.set(Sdims, 0, 0, (int) img->ny);  // Height of first image component
             siz.set(Sdims, 0, 1, (int) img->nx);   // Width of first image component
-            siz.set(Sprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
-            siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
+            siz.set(Nprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
+            siz.set(Nsigned, 0, 0, false); // Image samples are originally unsigned
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
@@ -735,13 +735,14 @@ namespace Sipi {
             codestream.access_siz()->parse_string("Cprecincts={256,256}");
             codestream.access_siz()->parse_string("Cblk={64,64}");
             codestream.access_siz()->parse_string("Cuse_sop=yes");
+
             //codestream.access_siz()->parse_string("Stiles={1024,1024}");
             //codestream.access_siz()->parse_string("ORGgen_plt=yes");
             //codestream.access_siz()->parse_string("ORGtparts=R");
+
             codestream.access_siz()->finalize_all(); // Set up coding defaults
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
-
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
@@ -778,17 +779,18 @@ namespace Sipi {
                         break;
                     }
                     case icc_GRAY_D50: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
+                        //unsigned int icc_len;
+                        //kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                        //jp2_family_colour.init(icc_bytes); // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
+                        jp2_family_colour.init(JP2_sLUM_SPACE);
                         break;
                     }
                     case icc_LUM_D65: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE);
+                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
                         break;
                     }
                     case icc_ROMM_GRAY: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE);
+                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
                         break;
                     }
                     default: {
@@ -814,6 +816,7 @@ namespace Sipi {
                     }
                 }
             }
+
             jp2_family_channels.init(img->nc - img->es.size());
             for (int c = 0; c < img->nc - img->es.size(); c++) jp2_family_channels.set_colour_mapping(c, c);
             for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
