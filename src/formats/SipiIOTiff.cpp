@@ -441,6 +441,8 @@ namespace Sipi {
             done = true;
         }
     }
+    //============================================================================
+
 
     bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
                           std::shared_ptr<SipiSize> size, bool force_bps_8,
@@ -482,6 +484,27 @@ namespace Sipi {
                 img->photo = MINISBLACK;
             } else {
                 img->photo = (PhotometricInterpretation) stmp;
+            }
+
+            //
+            // if we have a palette TIFF with a colormap, it gets complicated. We will have to
+            // read the colormap and later convert the image to RGB, since we do internally
+            // not support palette images.
+            //
+            uint16 *rcm = nullptr, *gcm = nullptr, *bcm = nullptr;
+            int colmap_len = 0;
+            if (img->photo == PALETTE) {
+                if (TIFFGetField(tif, TIFFTAG_COLORMAP, &rcm, &gcm, &bcm) == 0) {
+                    TIFFClose(tif);
+                    std::string msg = "TIFFGetField of TIFFTAG_COLORMAP failed: " + filepath;
+                    throw Sipi::SipiImageError(__file__, __LINE__, msg);
+                }
+                colmap_len = 2;
+                int itmp = 0;
+                while (itmp < img->bps) {
+                    colmap_len *= 2;
+                    itmp++;
+                }
             }
 
             TIFF_GET_FIELD (tif, TIFFTAG_PLANARCONFIG, &planar, PLANARCONFIG_CONTIG);
@@ -806,6 +829,38 @@ namespace Sipi {
             }
 
             TIFFClose(tif);
+
+
+            if (img->photo == PALETTE) {
+                //
+                // ok, we have a palette color image we have to convert to RGB...
+                //
+                uint16 cm_max = 0;
+                for (int i = 0; i < colmap_len; i++) {
+                    if (rcm[i] > cm_max) cm_max = rcm[i];
+                    if (gcm[i] > cm_max) cm_max = gcm[i];
+                    if (bcm[i] > cm_max) cm_max = bcm[i];
+                }
+                uint8 *dataptr = new uint8[3*img->nx*img->ny];
+                if (cm_max < 256) { // we have a colomap with entries form 0 - 255
+                    for (int i = 0; i < img->nx*img->ny; i++) {
+                        dataptr[3*i]     = (uint8) rcm[img->pixels[i]];
+                        dataptr[3*i + 1] = (uint8) gcm[img->pixels[i]];
+                        dataptr[3*i + 2] = (uint8) bcm[img->pixels[i]];
+                    }
+                }
+                else { // we have a colormap with entries > 255, assuming 16 bit
+                    for (int i = 0; i < img->nx*img->ny; i++) {
+                        dataptr[3*i]     = (uint8) (rcm[img->pixels[i]] >> 8);
+                        dataptr[3*i + 1] = (uint8) (gcm[img->pixels[i]] >> 8);
+                        dataptr[3*i + 2] = (uint8) (bcm[img->pixels[i]] >> 8);
+                    }
+                }
+                delete[] img->pixels;
+                img->pixels = dataptr; dataptr = nullptr;
+                img->photo = RGB;
+                img->nc = 3;
+            }
 
             if (img->icc == nullptr) {
                 switch (img->photo) {

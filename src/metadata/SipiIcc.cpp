@@ -124,24 +124,28 @@ namespace Sipi {
                 break;
             }
             case icc_GRAY_D50: {
-                cmsContext context = cmsCreateContext(0, 0);
-                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), cmsBuildGamma(context, 2.2));
+                cmsContext context = cmsCreateContext(nullptr, nullptr);
+                cmsToneCurve *gamma_2_2 = cmsBuildGamma(context, 2.2);
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), gamma_2_2);
+                cmsFreeToneCurve(gamma_2_2);
+                cmsDeleteContext(context);
                 profile_type = icc_GRAY_D50;
                 break;
             }
             case icc_LUM_D65: {
-                cmsContext context = cmsCreateContext(0, 0);
-                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), cmsBuildGamma(context, 2.4));
+                cmsContext context = cmsCreateContext(nullptr, nullptr);
+                cmsToneCurve *gamma_2_4 = cmsBuildGamma(context, 2.4);
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), gamma_2_4);
+                cmsFreeToneCurve(gamma_2_4);
+                cmsDeleteContext(context);
                 profile_type = icc_LUM_D65;
                 break;
             }
             case icc_ROMM_GRAY: {
                 cmsContext context = cmsCreateContext(nullptr, nullptr);
-                if (context == nullptr) std::cerr << "1 +++++++++++++++++++++++" << std::endl;
-                cmsToneCurve* gaga = cmsBuildGamma(context, 1.8);
-                if (gaga == nullptr) std::cerr << "2 +++++++++++++++++++++++" << std::endl;
-                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), gaga);
-                if (icc_profile == nullptr) std::cerr << "3 +++++++++++++++++++++++" << std::endl;
+                cmsToneCurve* gamma_1_8 = cmsBuildGamma(context, 1.8);
+                icc_profile = cmsCreateGrayProfileTHR(context, cmsD50_xyY(), gamma_1_8);
+                cmsFreeToneCurve(gamma_1_8);
                 cmsDeleteContext(context);
                 profile_type = icc_ROMM_GRAY;
                 break;
