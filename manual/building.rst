@@ -225,6 +225,14 @@ Then compile Sipi:
     cmake ..
     make
 
+By default, Sipi is built without optimization and with debug information output.
+To compile Sipi with optimization level 3, run:
+
+::
+
+     cmake .. -DMAKE_DEBUG:BOOL=OFF
+     make
+
 
 *************
 Running Tests

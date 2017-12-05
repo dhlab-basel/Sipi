@@ -6,6 +6,8 @@
 # Trivial example using gtest and gmock. Can be directly added here.
 # To only run this single test, run from inside the build directory (cd test/unit && ./example)
 add_executable(example example.cpp)
+add_dependencies(example icc_profiles)
+
 target_link_libraries(example gtest gmock_main)
 add_test(NAME example_unit_test COMMAND example)
 
