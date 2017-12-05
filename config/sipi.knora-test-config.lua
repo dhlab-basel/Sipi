@@ -192,6 +192,11 @@ routes = {
         method = 'POST',
         route = '/Knora_logout',
         script = 'Knora_logout.lua'
+    },
+    {
+        method = 'POST',
+        route = '/admin_upload',
+        script = 'admin_upload.lua'
     }
 
 }
