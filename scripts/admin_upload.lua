@@ -12,7 +12,7 @@ if not success then
     return -1
 end
 
-newfilename = {}
+files = {}
 for findex,fparam in pairs(server.uploads) do
 
     --
@@ -43,12 +43,14 @@ for findex,fparam in pairs(server.uploads) do
         server.sendStatus(500)
         server.log(errmsg, server.loglevel.error)
         return false
+    else
+        files[findex] = adminpath
     end
 end
 
 answer = {
     status = "OK",
-    path = adminpath
+    files = files
 }
 
 send_success(answer)
