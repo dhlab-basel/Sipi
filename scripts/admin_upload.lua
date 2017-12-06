@@ -44,7 +44,7 @@ for findex,fparam in pairs(server.uploads) do
         server.log(errmsg, server.loglevel.error)
         return false
     else
-        files[findex] = adminpath
+        files[findex] = adminpath:gsub("%./", "/")
     end
 end
 
