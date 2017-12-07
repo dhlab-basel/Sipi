@@ -13,6 +13,8 @@ if not success then
 end
 
 files = {}
+newfilename = {}
+
 for findex,fparam in pairs(server.uploads) do
 
     --
@@ -37,14 +39,18 @@ for findex,fparam in pairs(server.uploads) do
     --
     -- copy the file to admin directory
     --
-    adminpath =  admindir .. fparam["origname"]
+
+    success, uuid62 = server.uuid62()
+    origname = fparam["origname"]:gsub("%s+", "-")
+
+    adminpath =  admindir .. uuid62 .. '-' .. origname
     local success, errmsg = server.copyTmpfile(findex, adminpath)
     if not success then
         server.sendStatus(500)
         server.log(errmsg, server.loglevel.error)
         return false
     else
-        files[findex] = adminpath:gsub("%./", "/")
+        files[findex] = uuid62 .. '-' .. origname
     end
 end
 
