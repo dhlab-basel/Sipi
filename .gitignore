@@ -36,6 +36,7 @@ cache/
 #ignore ICC headers
 *_icc.h
 /images/
+/server/admin/
 icc.zip
 
 
