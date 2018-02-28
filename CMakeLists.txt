@@ -30,7 +30,7 @@ include(CheckIncludeFiles)
 project(sipi)
 
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
-set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
+set(SIPI_RELEASE "Sipi Version v1.2.0 Beta (build ${SIPIDATE})")
 
 #
 # Usually SIPI is compiled with all static libraries
