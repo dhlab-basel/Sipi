@@ -8,6 +8,7 @@ include(ExternalProject)
 ExternalProject_Add(project_xz
     INSTALL_DIR ${COMMON_LOCAL}
     URL http://sourceforge.net/projects/lzmautils/files/xz-5.2.1.tar.gz/download
+    URL_HASH SHA1=6022493efb777ff4e872b63a60be1f1e146f3c0b
     SOURCE_DIR ${COMMON_SRCS}/xz-5.2.1
     CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.1/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
