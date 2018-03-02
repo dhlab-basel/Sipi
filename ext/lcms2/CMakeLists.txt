@@ -7,7 +7,8 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_lcms2
     INSTALL_DIR ${COMMON_LOCAL}
-    URL https://sourceforge.net/projects/lcms/files/lcms/2.8/lcms2-2.8.tar.gz/download
+    URL https://dl.bintray.com/dhlab-basel/thirdparty/lcms2-2.8.tar.gz
+    URL_HASH SHA256=66d02b229d2ea9474e62c2b6cd6720fde946155cd1d0d2bffdab829790a0fb22
     SOURCE_DIR ${COMMON_SRCS}/lcms2-2.8
     CONFIGURE_COMMAND ${COMMON_SRCS}/lcms2-2.8/configure --prefix=${COMMON_LOCAL} --with-jpeg=${COMMON_LOCAL} --with-tiff=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
