@@ -31,6 +31,16 @@ for k,v in pairs(server.header) do
     server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
 end
 server.print("</table>")
+
+server.print("<table>")
+server.print("<tr><th>Field</th><th>Value</th></tr>")
+if server.request then
+    for k,v in pairs(server.request) do
+        server.print("<tr><td>", k, "</td><td>", v, "</td></tr>")
+    end
+end
+server.print("</table>")
+
 server.print("<hr/>")
 server.print("URI: ", server.uri)
 server.print("</body>")
