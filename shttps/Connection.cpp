@@ -160,7 +160,9 @@ namespace shttps {
 
 
     std::string urldecode(const std::string &src, bool form_encoded) {
+
 #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
+
         stringstream outss;
         size_t start = 0;
         size_t pos;
@@ -601,6 +603,10 @@ namespace shttps {
                                     }
 
                                     fieldname = opts["name"];
+                                    if (fieldname[0] == '"' && fieldname[fieldname.size() - 1] == '"') {
+                                        // filename is inside quotes, remove them
+                                        fieldname = fieldname.substr(1, fieldname.size() - 2);
+                                    }
 
                                     if (opts.count("filename") == 1) {
                                         // we have an upload of a file ...
