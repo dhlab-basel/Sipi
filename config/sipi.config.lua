@@ -245,6 +245,11 @@ routes = {
         script = 'test1.lua'
     },
     {
+        method = 'POST',
+        route = '/luaexe/test1',
+        script = 'test1.lua'
+    },
+    {
         method = 'GET',
         route = '/luaexe/test2',
         script = 'test2.lua'
