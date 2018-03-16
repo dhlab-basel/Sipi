@@ -3,24 +3,59 @@
 #
 # all tests can be run from the build directory with `make test`
 
-# Trivial example using gtest and gmock. Can be directly added here.
-# To only run this single test, run from inside the build directory (cd test/unit && ./example)
-add_executable(example example.cpp)
-add_dependencies(example icc_profiles)
+find_package(Threads REQUIRED)
 
-target_link_libraries(example gtest gmock_main)
-add_test(NAME example_unit_test COMMAND example)
+# Enable ExternalProject CMake module
+include(ExternalProject)
+
+# Download and install GoogleTest
+ExternalProject_Add(
+        gtest
+        URL https://github.com/google/googletest/archive/master.zip
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/gtest
+        # Disable install step
+        INSTALL_COMMAND ""
+)
+
+# Get GTest source and binary directories from CMake project
+ExternalProject_Get_Property(gtest source_dir binary_dir)
+
+# Create a libgtest target to be used as a dependency by test programs
+add_library(libgtest IMPORTED STATIC GLOBAL)
+add_dependencies(libgtest gtest)
+
+# Set libgtest properties
+set_target_properties(libgtest PROPERTIES
+        "IMPORTED_LOCATION" "${binary_dir}/googlemock/gtest/libgtest.a"
+        "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+        )
+
+# Create a libgmock target to be used as a dependency by test programs
+add_library(libgmock IMPORTED STATIC GLOBAL)
+add_dependencies(libgmock gtest)
+
+# Set libgmock properties
+set_target_properties(libgmock PROPERTIES
+        "IMPORTED_LOCATION" "${binary_dir}/googlemock/libgmock.a"
+        "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
+        )
+
+# I couldn't make it work with INTERFACE_INCLUDE_DIRECTORIES
+include_directories("${source_dir}/googletest/include"
+        "${source_dir}/googlemock/include")
+
 
 # Configuration parsing and tests
 # To only run this single test, run from inside the build directory '(cd test/unit && ./configuration/configuration)'
 add_subdirectory(configuration)
-add_test(NAME configuration_unit_test
-        WORKING_DIRECTORY
-        COMMAND configuration)
+#add_test(NAME configuration_unit_test
+#        WORKING_DIRECTORY
+#        COMMAND configuration)
 
 # SipiImage tests
 # To only run this single test, run from inside the build directory '(cd test/unit && ./sipiimage/sipiimage)'
 add_subdirectory(sipiimage)
-add_test(NAME sipiimage_unit_test
-        WORKING_DIRECTORY
-        COMMAND sipiimage)
+#add_test(NAME sipiimage_unit_test
+#        WORKING_DIRECTORY
+#        COMMAND sipiimage)
+
