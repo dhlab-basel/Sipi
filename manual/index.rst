@@ -33,6 +33,7 @@ The Sipi Manual
 .. toctree::
    :maxdepth: 2
 
+   0-release-notes/index
    overview.rst
    building.rst
    running.rst
