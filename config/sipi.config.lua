@@ -248,6 +248,41 @@ routes = {
         method = 'GET',
         route = '/luaexe/test2',
         script = 'test2.lua'
+    },
+    {
+        method = 'OPTIONS',
+        route = '/api/resources',
+        script = 'api/options.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/test',
+        script = 'api/playground.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/resources',
+        script = 'api/get.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/download',
+        script = 'api/download.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/resources',
+        script = 'api/post.lua'
+    },
+    {
+        method = 'PUT',
+        route = '/api/resources',
+        script = 'api/put.lua'
+    },
+    {
+        method = 'DELETE',
+        route = '/api/resources',
+        script = 'api/delete.lua'
     }
 
 }
