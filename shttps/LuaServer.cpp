@@ -927,11 +927,12 @@ namespace shttps {
         int top = lua_gettop(L);
 
         for (int i = 1; i <= top; i++) {
-            const char *str = lua_tostring(L, i);
+            size_t len;
+            const char *str = lua_tolstring(L, i, &len);
 
             if (str != nullptr) {
                 try {
-                    conn->send(str, strlen(str));
+                    conn->send(str, len);
                 } catch (int ierr) {
                     lua_settop(L, 0); // clear stack
                     lua_pushboolean(L, false);
