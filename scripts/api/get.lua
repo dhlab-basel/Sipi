@@ -24,15 +24,14 @@ table1 = {}
 element = {}
 elements = {}
 
-local uri = server.uri
-
 -- Find ID from the URL
-i, j = string.find(uri, "api/resources/")
 local id
-if (i ~= nil) and (j ~= nil) then
-    i = tonumber(string.sub(uri, j+1, string.len(uri)))
-    if (i ~= nil) and (type(i)) == "number" then
-        id = i
+startPos, endPos = string.find(server.uri, "api/resources/")
+
+if (startPos ~= nil) and (endPos ~= nil) then
+    local num = tonumber(string.sub(server.uri, endPos+1, string.len(server.uri)))
+    if (num ~= nil) then
+        id = math.floor(num)
     end
 end
 
@@ -64,7 +63,10 @@ else
     local parameters = {}
     if (server.get ~= nil) then
         for key,value in pairs(server.get) do
-            table.insert(parameters, key ..'=' .. '"' .. value .. '"')
+            -- Equal search
+            -- table.insert(parameters, key ..'=' .. '"' .. value .. '"')
+            -- Like search
+            table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
         end
     end
 
@@ -115,4 +117,3 @@ local success, result = server.http("GET", "http://localhost:1024/test3/lena512.
 server.sendHeader('Content-type', 'application/json')
 server.sendStatus(200)
 server.print(jsonstr)
-    
