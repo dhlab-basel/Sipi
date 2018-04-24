@@ -4,7 +4,7 @@ function createID()
     return math.random(10, 1000)
 end
 
-function getQuery(title, date)
+function insertQuery(title, date)
     return 'INSERT INTO pdfObject (title, date) values (("'.. title ..'"), ("'.. date ..'"));'
 end
 
@@ -31,7 +31,7 @@ end
 if server.uploads ~= nil then
 
     local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << getQuery(parameters[1], parameters[2])
+    local qry = db << insertQuery(parameters[1], parameters[2])
     local row = qry()
 
     qry = db << 'SELECT last_insert_rowid()'

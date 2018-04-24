@@ -1,12 +1,12 @@
 print("-------PUT script------")
 
-function getIDQuery(id)
+function selectIDQuery(id)
     return 'SELECT * FROM pdfObject WHERE id = "'.. id .. '"'
 end
 
-function doesExistsQuery(id)
+function isIDValid(id)
     local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << getIDQuery(id)
+    local qry = db << selectIDQuery(id)
     local row = qry()
 
     if row == nil then
@@ -20,7 +20,7 @@ function doesExistsQuery(id)
     end
 end
 
-function putQuery(id, title, date)
+function updateQuery(id, title, date)
     return 'UPDATE pdfObject SET title="'.. title ..'", date="'.. date ..'" WHERE id= "'.. id .. '";'
 end
 
@@ -38,7 +38,7 @@ end
 
 if id ~= nil then
     -- id was found in the uri
-    if doesExistsQuery(id) then
+    if isIDValid(id) then
 
         -- Replaces file
         if server.uploads ~= nil then
@@ -58,7 +58,7 @@ if id ~= nil then
 
         -- Updates data in database
         local db = sqlite("testDB/testData.db", "RW")
-        local qry = db << putQuery(id, "Sherlock Holmes " .. id, "2018")
+        local qry = db << updateQuery(id, "Sherlock Holmes " .. id, "2018")
         local row = qry()
 
         qry = ~qry

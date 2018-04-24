@@ -1,14 +1,14 @@
 print("-------GET script------")
 
-function getAllQuery()
+function selectAllQuery()
     return 'SELECT * FROM pdfObject'
 end
 
-function getIDQuery(id)
+function selectIDQuery(id)
     return 'SELECT * FROM pdfObject WHERE id = "'.. id .. '"'
 end
 
-function getParametersQuery(parameters)
+function selectParametersQuery(parameters)
     return 'SELECT * FROM pdfObject WHERE ' .. parameters
 end
 
@@ -38,7 +38,7 @@ end
 -- Gets data with the given ID
 if id ~= nil then
     local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << getIDQuery(id)
+    local qry = db << selectIDQuery(id)
     local row = qry()
 
     if row ~= nil then
@@ -74,9 +74,9 @@ else
     local qry
 
     if (#parameters ~= 0) then
-        qry = db << getParametersQuery(table.concat(parameters, " AND "))
+        qry = db << selectParametersQuery(table.concat(parameters, " AND "))
     else
-        qry = db << getAllQuery()
+        qry = db << selectAllQuery()
     end
 
     local row = qry()

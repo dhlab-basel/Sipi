@@ -1,6 +1,6 @@
 print("-------DELETE script------")
 
-function getQuery(id)
+function deleteQuery(id)
     return 'DELETE FROM pdfObject WHERE id = "'.. id .. '"'
 end
 
@@ -35,7 +35,7 @@ print(id)
 
 if id ~= nil then
     local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << getQuery(id)
+    local qry = db << deleteQuery(id)
     local row = qry()
 
 
