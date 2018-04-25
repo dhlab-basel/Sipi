@@ -30,20 +30,10 @@ function hasFilePattern(url, filePattern)
 end
 
 function hasIDPattern(url, idPattern)
-    local z = string.match(url, idPattern)
-    if (z~=nil) then
+    if (string.match(url, idPattern) ~= nil) then
         return string.match(url, "%d+")
     else
         return nil
-    end
-end
-
-function hasResourcePattern(url, pattern)
-    local z = string.match(url, pattern)
-    if (z~=nil) then
-        return true
-    else
-        return false
     end
 end
 
@@ -122,7 +112,7 @@ else
         table1 = getData(id, table1)
 
     else
-        if (hasResourcePattern(uri, resourcePattern)) then
+        if (string.match(uri, resourcePattern) ~= nil) then
             print(uri .. " ==> has ressourcePattern")
 
             -- Inserts all the parameters
