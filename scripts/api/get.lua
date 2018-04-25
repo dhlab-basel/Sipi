@@ -20,15 +20,6 @@ function successStatus()
     return "successful"
 end
 
-table1 = {}
-element = {}
-elements = {}
-
-
-local filePattern = "api/resources/%d+/file$"
-local idPattern = "api/resources/%d+$"
-local resourcePattern = "api/resources$"
-
 function hasFilePattern(url, filePattern)
     local i, j = string.find(url, filePattern)
     if (i~=nil) and (j ~= nil) then
@@ -56,6 +47,68 @@ function hasResourcePattern(url, pattern)
     end
 end
 
+function getData(id, table1)
+    local db = sqlite("testDB/testData.db", "RW")
+    local qry = db << selectIDQuery(id)
+    local row = qry()
+
+    if row ~= nil then
+        -- ACHTUNG DIES IST LUA SYNTAKTISCH FALSCH
+        element = {}
+        element["id"] = row[0]
+        element["title"] = row[1]
+        element["date"] = row[2]
+        table1["data"]  = element
+        table1["status"] = successStatus()
+    else
+        table1["data"]  = { element }
+        table1["status"] = noDataStatus()
+    end
+
+    qry = ~qry -- delete query and free prepared statment
+    db = ~db -- delete the database connection
+
+    return table1;
+end
+
+function getAllData(parameters, table1)
+    local db = sqlite("testDB/testData.db", "RW")
+    local qry
+
+    if (#parameters ~= 0) then
+        qry = db << selectParametersQuery(table.concat(parameters, " AND "))
+    else
+        qry = db << selectAllQuery()
+    end
+
+    local row = qry()
+    local elements = {}
+
+    while (row) do
+        table.insert(elements, {["id"] = row[0],["title"]= row[1],["date"]=row[2]})
+        row = qry()
+    end
+
+    table1["data"] =  elements
+
+    if #elements > 0 then
+        table1["status"] = successStatus()
+    else
+        table1["status"] = noDataStatus()
+    end
+
+    qry = ~qry -- delete query and free prepared statment
+    db = ~db -- delete the database connection
+
+    return table1;
+end
+
+local table1 = {}
+
+local filePattern = "api/resources/%d+/file$"
+local idPattern = "api/resources/%d+$"
+local resourcePattern = "api/resources$"
+
 local uri = server.uri
 
 local id = hasFilePattern(uri, filePattern)
@@ -66,24 +119,7 @@ else
     if (id ~= nil) then
         print(uri .. " ==> has IDPattern with = " .. id)
 
-        local db = sqlite("testDB/testData.db", "RW")
-        local qry = db << selectIDQuery(id)
-        local row = qry()
-
-        if row ~= nil then
-            -- ACHTUNG DIES IST LUA SYNTAKTISCH FALSCH
-            element["id"] = row[0]
-            element["title"] = row[1]
-            element["date"] = row[2]
-            table1["data"]  = element
-            table1["status"] = successStatus()
-        else
-            table1["data"]  = { element }
-            table1["status"] = noDataStatus()
-        end
-
-        qry = ~qry -- delete query and free prepared statment
-        db = ~db -- delete the database connection
+        table1 = getData(id, table1)
 
     else
         if (hasResourcePattern(uri, resourcePattern)) then
@@ -100,32 +136,7 @@ else
                 end
             end
 
-            local db = sqlite("testDB/testData.db", "RW")
-            local qry
-
-            if (#parameters ~= 0) then
-                qry = db << selectParametersQuery(table.concat(parameters, " AND "))
-            else
-                qry = db << selectAllQuery()
-            end
-
-            local row = qry()
-
-            while (row) do
-                table.insert(elements, {["id"] = row[0],["title"]= row[1],["date"]=row[2]})
-                row = qry()
-            end
-
-            table1["data"] =  elements
-
-            if #elements > 0 then
-                table1["status"] = successStatus()
-            else
-                table1["status"] = noDataStatus()
-            end
-
-            qry = ~qry -- delete query and free prepared statment
-            db = ~db -- delete the database connection
+            table1 = getAllData(parameters, table1)
 
         else
             print(uri .. " ==> FAIL")
@@ -145,12 +156,6 @@ if not success then
     server.log(jsonstr, server.loglevel.err)
     return false
 end
-
-local success, result = server.http("GET", "http://localhost:1024/test3/lena512.tif/full/full/0/default.jpg");
-
---server.sendHeader('Content-type', 'image/jpeg')
---server.sendStatus(200)
---server.print(result.body)
 
 server.sendHeader('Content-type', 'application/json')
 server.sendStatus(200)

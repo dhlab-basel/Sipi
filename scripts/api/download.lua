@@ -8,7 +8,14 @@ for key,value in pairs(result.header) do
     print(key, value)
 end
 
+-- File reading
+io.input("vogel.jpg")
+s = io.read("*a")
+
 server.setBuffer()
+--server.sendHeader('Content-type', 'application/pdf')
 server.sendHeader('Content-type', 'image/jpeg')
 server.sendStatus(200)
+
 server.print(result.body)
+server.print(s)
