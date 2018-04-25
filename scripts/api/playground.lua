@@ -153,6 +153,13 @@ print(child.title, child.name)
 --    end
 --end
 
+-- File reading
+--io.input("vogel.jpg")
+--s = io.read("*a")
+
+--t = io.open("vogel.jpg", "r")
+--print(t)
+
 server.setBuffer()
 
 server.sendHeader("Content-Type", "text/html")
