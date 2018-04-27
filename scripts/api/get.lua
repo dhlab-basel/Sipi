@@ -93,6 +93,10 @@ function getAllData(parameters, table1)
     return table1;
 end
 
+function getDateRange(date1, date2)
+    return '"' .. date1 .. '" AND "'.. date2 ..'"'
+end
+
 local table1 = {}
 
 local filePattern = "api/resources/%d+/file$"
@@ -119,10 +123,20 @@ else
             local parameters = {}
             if (server.get ~= nil) then
                 for key,value in pairs(server.get) do
+                    if (key == "date") then
+                        local i,j = string.find(value, ":")
+                        if (i~= nil) and (j~= nil) then
+                            value = getDateRange(string.sub(value,1, i-1), string.sub(value,j+1, #value))
+                            table.insert(parameters, key ..' between '  .. value)
+                        else
+                            table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+                        end
+                    else
+                        table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+                    end
                     -- Equal search
                     -- table.insert(parameters, key ..'=' .. '"' .. value .. '"')
                     -- Like search
-                    table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
                 end
             end
 

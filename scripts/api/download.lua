@@ -18,4 +18,4 @@ server.sendHeader('Content-type', 'image/jpeg')
 server.sendStatus(200)
 
 server.print(result.body)
-server.print(s)
+--server.print(s)
