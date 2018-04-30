@@ -102,6 +102,9 @@ regexTable[22] = "api/resources/2.0030/file"
 regexTable[23] = "api/resources/2,345/file"
 regexTable[24] = "api/resources/-0.3/file"
 regexTable[25] = "api/resources/-0,3/file"
+regexTable[26] = "zapi/resources"
+regexTable[27] = "zapi/resources/"
+regexTable[28] = "api/resources?"
 
 local filePattern = "api/resources/%d+/file$"
 local idPattern = "api/resources/%d+$"
@@ -140,6 +143,60 @@ for k,v in pairs(regexTable) do
                 print(v .. "=> FAIL")
             end
         end
+    end
+end
+
+
+regexTable2 = {}
+regexTable2[1]  = ""
+regexTable2[2]  = "a"
+regexTable2[3]  = "1"
+regexTable2[4]  = "sd"
+regexTable2[5]  = "23"
+regexTable2[6]  = "asdfghjlköiuzt"
+regexTable2[7]  = "3264785434253"
+regexTable2[8]  = "2334635232."
+regexTable2[9]  = "*+[]"
+regexTable2[10] = "&"
+regexTable2[11] = "&="
+regexTable2[12] = "&i"
+regexTable2[13] = "&id"
+regexTable2[14] = "&id="
+regexTable2[15] = "&&"
+regexTable2[16] = "&&="
+regexTable2[17] = "&i&"
+regexTable2[18] = "&i&i"
+regexTable2[19] = "&i&i="
+regexTable2[20] = "&id=&id="
+regexTable2[21] = "&id=a&id=a3/a"
+regexTable2[22] = "&id=&&"
+
+pattern = {}
+pattern[1] = "(.+)"
+pattern[2] = "^&(%a+)="
+
+
+--for k,v in pairs(regexTable2) do
+--    if (string.match(v, pattern[3]) ~= nil) then
+--        print(v .. " -> matched")
+--    else
+--        print(v .. " fail")
+--    end
+--end
+
+--for k,v in pairs(regexTable2) do
+--    local i,j = string.find(v, pattern[3])
+--    if (i ~= nil) and (j~= nil)then
+--        print(v .. " -> matched " .. i .. "|" .. j)
+--    else
+--        print(v .. " not working")
+--    end
+--end
+
+bla = "&title=a&er=a&id=2"
+for k,v in pairs(regexTable2) do
+    for word in string.gmatch(v, "&%a+[=]%w*") do
+        print(k, v, word)
     end
 end
 

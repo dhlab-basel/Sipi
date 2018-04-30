@@ -1,5 +1,50 @@
 print("-------GET script------")
 
+function equalParam(name, value)
+    return name .. "='" .. value .. "'"
+end
+
+function notEqualParam(name, value)
+    return name .. "!='" .. value .. "'"
+end
+
+function likeParam(name, value)
+    return name ..' LIKE "%' .. value .. '%"'
+end
+
+function notLikeParam(name, value)
+    return name ..' NOT LIKE "%' .. value .. '%"'
+end
+
+function existsParam(name)
+    return name .. ' IS NOT NULL '
+end
+
+function notExistsParam(name)
+    return name .. ' IS NULL'
+end
+
+function greaterThanParam(name, value)
+    return name .. ' > "' .. value .. '"'
+end
+
+function greaterThanEqualParam(name, value)
+    return name .. ' >= "' .. value .. '"'
+end
+
+function lessThanParam(name, value)
+    return name .. ' < "' .. value .. '"'
+end
+
+function lessThanEqualParam(name, value)
+    return name .. ' <= "' .. value .. '"'
+end
+
+function betweenDatesParam(date1, date2)
+    return 'BETWEEN "' .. date1 .. '" AND "' .. date2 .. '"'
+end
+
+
 function selectAllQuery()
     return 'SELECT * FROM pdfObject'
 end
