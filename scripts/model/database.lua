@@ -7,6 +7,7 @@
 --
 
 dbPath = "testDB/testData.db"
+tableName = "resource"
 
 ----------------- Operator Builders -----------------
 
@@ -65,19 +66,19 @@ end
 ----------------- Query Builders -----------------
 
 function selectAllQuery()
-    return 'SELECT * FROM pdfObject'
+    return 'SELECT * FROM ' .. tableName
 end
 
 function selectIDQuery(id)
-    return 'SELECT * FROM pdfObject WHERE id = "'.. id .. '"'
+    return 'SELECT * FROM ' .. tableName .. ' WHERE id = "'.. id .. '"'
 end
 
 function selectConditionQuery(parameters)
-    return 'SELECT * FROM pdfObject WHERE ' .. parameters
+    return 'SELECT * FROM ' .. tableName .. ' WHERE ' .. parameters
 end
 
 function insertQuery(title, date)
-    return 'INSERT INTO pdfObject (title, date) values (("'.. title ..'"), ("'.. date ..'"));'
+    return 'INSERT INTO ' .. tableName .. ' (title, date) values (("'.. title ..'"), ("'.. date ..'"));'
 end
 
 function lastInsertedQuery()
@@ -85,11 +86,11 @@ function lastInsertedQuery()
 end
 
 function updateQuery(id, title, date)
-    return 'UPDATE pdfObject SET title="'.. title ..'", date="'.. date ..'" WHERE id= "'.. id .. '";'
+    return 'UPDATE ' .. tableName .. ' SET title="'.. title ..'", date="'.. date ..'" WHERE id= "'.. id .. '";'
 end
 
 function deleteQuery(id)
-    return 'DELETE FROM pdfObject WHERE id = "'.. id .. '"'
+    return 'DELETE FROM ' .. tableName .. ' WHERE id = "'.. id .. '"'
 end
 
 ----------------- CRUD Operations -----------------
