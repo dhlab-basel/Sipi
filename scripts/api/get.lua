@@ -1,61 +1,6 @@
 print("-------GET script------")
 
-function equalParam(name, value)
-    return name .. "='" .. value .. "'"
-end
-
-function notEqualParam(name, value)
-    return name .. "!='" .. value .. "'"
-end
-
-function likeParam(name, value)
-    return name ..' LIKE "%' .. value .. '%"'
-end
-
-function notLikeParam(name, value)
-    return name ..' NOT LIKE "%' .. value .. '%"'
-end
-
-function existsParam(name)
-    return name .. ' IS NOT NULL '
-end
-
-function notExistsParam(name)
-    return name .. ' IS NULL'
-end
-
-function greaterThanParam(name, value)
-    return name .. ' > "' .. value .. '"'
-end
-
-function greaterThanEqualParam(name, value)
-    return name .. ' >= "' .. value .. '"'
-end
-
-function lessThanParam(name, value)
-    return name .. ' < "' .. value .. '"'
-end
-
-function lessThanEqualParam(name, value)
-    return name .. ' <= "' .. value .. '"'
-end
-
-function betweenDatesParam(date1, date2)
-    return 'BETWEEN "' .. date1 .. '" AND "' .. date2 .. '"'
-end
-
-
-function selectAllQuery()
-    return 'SELECT * FROM pdfObject'
-end
-
-function selectIDQuery(id)
-    return 'SELECT * FROM pdfObject WHERE id = "'.. id .. '"'
-end
-
-function selectParametersQuery(parameters)
-    return 'SELECT * FROM pdfObject WHERE ' .. parameters
-end
+require "../model/database"
 
 function noDataStatus()
     return "no data were found"
@@ -82,71 +27,13 @@ function hasIDPattern(url, idPattern)
     end
 end
 
-function getData(id, table1)
-    local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << selectIDQuery(id)
-    local row = qry()
-
-    if row ~= nil then
-        -- ACHTUNG DIES IST LUA SYNTAKTISCH FALSCH
-        element = {}
-        element["id"] = row[0]
-        element["title"] = row[1]
-        element["date"] = row[2]
-        table1["data"]  = element
-        table1["status"] = successStatus()
-    else
-        table1["data"]  = { element }
-        table1["status"] = noDataStatus()
-    end
-
-    qry = ~qry -- delete query and free prepared statment
-    db = ~db -- delete the database connection
-
-    return table1;
-end
-
-function getAllData(parameters, table1)
-    local db = sqlite("testDB/testData.db", "RW")
-    local qry
-
-    if (#parameters ~= 0) then
-        qry = db << selectParametersQuery(table.concat(parameters, " AND "))
-    else
-        qry = db << selectAllQuery()
-    end
-
-    local row = qry()
-    local elements = {}
-
-    while (row) do
-        table.insert(elements, {["id"] = row[0],["title"]= row[1],["date"]=row[2]})
-        row = qry()
-    end
-
-    table1["data"] =  elements
-
-    if #elements > 0 then
-        table1["status"] = successStatus()
-    else
-        table1["status"] = noDataStatus()
-    end
-
-    qry = ~qry -- delete query and free prepared statment
-    db = ~db -- delete the database connection
-
-    return table1;
-end
-
-function getDateRange(date1, date2)
-    return '"' .. date1 .. '" AND "'.. date2 ..'"'
-end
 
 local table1 = {}
 
 local filePattern = "api/resources/%d+/file$"
 local idPattern = "api/resources/%d+$"
 local resourcePattern = "api/resources$"
+local searchPattern = "api/resources?search="
 
 local uri = server.uri
 
@@ -158,7 +45,13 @@ else
     if (id ~= nil) then
         print(uri .. " ==> has IDPattern with = " .. id)
 
-        table1 = getData(id, table1)
+        table1["data"] = readData(id)
+
+        if (table1["data"] ~= nil) then
+            table1["status"] = successStatus()
+        else
+            table1["status"] = noDataStatus()
+        end
 
     else
         if (string.match(uri, resourcePattern) ~= nil) then
@@ -168,24 +61,78 @@ else
             local parameters = {}
             if (server.get ~= nil) then
                 for key,value in pairs(server.get) do
-                    if (key == "date") then
-                        local i,j = string.find(value, ":")
-                        if (i~= nil) and (j~= nil) then
-                            value = getDateRange(string.sub(value,1, i-1), string.sub(value,j+1, #value))
-                            table.insert(parameters, key ..' between '  .. value)
+                    local paramName
+                    local a = string.match(key, "%[!?%a+_?%a+%]")
+                    local startPos, endPos = string.find(key, "%[!?%a+_?%a+%]")
+                    if (startPos ~= nil) and (endPos ~= nil) then
+                        paramName = string.sub(key, 1, startPos-1)
+                        print("found | " .. paramName)
+                    else
+                        paramName = key
+                        print("not found | " .. paramName)
+                    end
+                    local i,j = string.find(value, ":")
+                    if (paramName == "date") and (i ~= nil) and (j ~= nil) then
+                        print(i, j)
+                        if (a == nil) then
+                            print("gültige url im date")
                         else
-                            table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+                            print("nicht gültig url im date")
                         end
                     else
-                        table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+                        if (a ~= nil) then
+                            if (a == "[eq]") then
+                                print("EQUAL")
+                            elseif (a == "[!eq]" ) then
+                                print("NOT EQUAL")
+                            elseif (a == "[like]" ) then
+                                print("LIKE")
+                            elseif (a == "[!like]") then
+                                print("NOT LIKE")
+                            elseif (a == "[ex]" ) then
+                                print("EXISTS")
+                            elseif (a == "[!ex]" ) then
+                                print("NOT EXISTS")
+                            elseif (a == "[gt]" ) then
+                                print("GREATER THAN")
+                            elseif (a == "[gt_eq]" ) then
+                                print("GREATER THAN EQUAL")
+                            elseif (a == "[lt]" ) then
+                                print("LESS THAN")
+                            elseif (a == "[lt_eq]" ) then
+                                print("LESS THAN EQUAL")
+                            else
+                                print("Ungültige []")
+                            end
+                        else
+                            print("auch ungültig")
+                        end
                     end
-                    -- Equal search
-                    -- table.insert(parameters, key ..'=' .. '"' .. value .. '"')
-                    -- Like search
+
+--                    if (key == "date") then
+--                        local i,j = string.find(value, ":")
+--                        if (i~= nil) and (j~= nil) then
+--                            value = getDateRange(string.sub(value,1, i-1), string.sub(value,j+1, #value))
+--                            table.insert(parameters, key ..' between '  .. value)
+--                        else
+--                            table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+--                        end
+--                    else
+--                        table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
+--                    end
+--                    -- Equal search
+--                    -- table.insert(parameters, key ..'=' .. '"' .. value .. '"')
+--                    -- Like search
                 end
             end
 
-            table1 = getAllData(parameters, table1)
+            table1["data"] =  readAllData(parameters)
+
+            if #table1["data"] > 0 then
+                table1["status"] = successStatus()
+            else
+                table1["status"] = noDataStatus()
+            end
 
         else
             print(uri .. " ==> FAIL")

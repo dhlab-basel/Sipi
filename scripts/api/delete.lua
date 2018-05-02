@@ -1,12 +1,6 @@
 print("-------DELETE script------")
 
-function deleteQuery(id)
-    return 'DELETE FROM pdfObject WHERE id = "'.. id .. '"'
-end
-
-function noDataStatus()
-    return "no data found"
-end
+require "../model/database"
 
 function successStatus()
     return "successful"
@@ -14,8 +8,7 @@ end
 
 flist = cache.filelist('AT_ASC')
 
-table1 = {}
-element = {}
+table = {}
 
 --local param, value = next(server.get, nil)
 
@@ -31,23 +24,32 @@ if (i ~= nil) and (j ~= nil) then
     end
 end
 
-print(id)
-
-if id ~= nil then
-    local db = sqlite("testDB/testData.db", "RW")
-    local qry = db << deleteQuery(id)
-    local row = qry()
-
-
-    qry = ~qry -- delete query and free prepared statment
-    db = ~db -- delete the database connection
-
-    --table1["status"] = "invalid id"
+-- id was not found it the uri
+if (id == nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(400)
+    return
 end
 
-table1["data"]  = { element }
+-- id not in the database
+if (readData(id) == nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(500)
+    return
+end
 
-local success, jsonstr = server.table_to_json(table1)
+deleteData(id)
+
+-- id still exists and delete failed
+if (readData(id) ~= nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(500)
+    return
+end
+
+table["status"] = successStatus()
+
+local success, jsonstr = server.table_to_json(table)
 if not success then
     server.sendStatus(500)
     server.log(jsonstr, server.loglevel.err)

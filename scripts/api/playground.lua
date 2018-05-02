@@ -193,9 +193,27 @@ pattern[2] = "^&(%a+)="
 --    end
 --end
 
-bla = "&title=a&er=a&id=2"
-for k,v in pairs(regexTable2) do
-    for word in string.gmatch(v, "&%a+[=]%w*") do
+--bla = "&title=a&er=a&id=2"
+--for k,v in pairs(regexTable2) do
+--    for word in string.gmatch(v, "&%a+[=]%w*") do
+--        print(k, v, word)
+--    end
+--end
+
+regexTable3 = {}
+regexTable3[1]  = ""
+regexTable3[2]  = "[]"
+regexTable3[3]  = "[a]"
+regexTable3[4]  = "[!]"
+regexTable3[5]  = "[LIKE]"
+regexTable3[6]  = "[!LIKE]"
+regexTable3[7]  = "[like]"
+regexTable3[8]  = "[!like]"
+
+--pattern3 = "%[[%!?]%a%]"
+pattern3 = "%[!?%a+%]"
+for k,v in pairs(regexTable3) do
+    for word in string.gmatch(v, pattern3) do
         print(k, v, word)
     end
 end
