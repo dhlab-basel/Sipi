@@ -143,7 +143,6 @@ else
     end
 end
 
-
 server.setBuffer()
 
 local success, jsonstr = server.table_to_json(table1)

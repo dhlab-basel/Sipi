@@ -1,30 +1,16 @@
 print("-------DELETE script------")
 
 require "../model/database"
+require "../model/parameter"
 
 function successStatus()
     return "successful"
 end
 
-flist = cache.filelist('AT_ASC')
+-- gets ID from the url
+local id = getIDfromURL()
 
-table = {}
-
---local param, value = next(server.get, nil)
-
-local uri = server.uri
-
--- Find ID from the URL
-i, j = string.find(uri, "api/resources/")
-local id
-if (i ~= nil) and (j ~= nil) then
-    i = tonumber(string.sub(uri, j+1, string.len(uri)))
-    if (i ~= nil) and (type(i)) == "number" then
-        id = i
-    end
-end
-
--- id was not found it the uri
+-- id was not found it the url
 if (id == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(400)
@@ -34,7 +20,7 @@ end
 -- id not in the database
 if (readData(id) == nil) then
     server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(500)
+    server.sendStatus(404)
     return
 end
 
@@ -47,6 +33,7 @@ if (readData(id) ~= nil) then
     return
 end
 
+local table = {}
 table["status"] = successStatus()
 
 local success, jsonstr = server.table_to_json(table)

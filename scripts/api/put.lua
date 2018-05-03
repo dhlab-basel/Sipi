@@ -1,17 +1,10 @@
 print("-------PUT script------")
 
 require "../model/database"
+require "../model/parameter"
 
--- Find ID from the URI
-local id
-startPos, endPos = string.find(server.uri, "api/resources/")
-
-if (startPos ~= nil) and (endPos ~= nil) then
-    local num = tonumber(string.sub(server.uri, endPos+1, string.len(server.uri)))
-    if (num ~= nil) then
-        id = math.floor(num)
-    end
-end
+-- Find ID from the url
+local id = getIDfromURL()
 
 -- id was not found it the uri
 if (id == nil) then
@@ -29,8 +22,8 @@ end
 
 -- Replaces file
 if (server.uploads ~= nil) then
-    for pdfindex,pdfparam in pairs(server.uploads) do
-        print(pdfparam["origname"])
+    for fileIndex, fileParam in pairs(server.uploads) do
+        print(fileParam["origname"])
 
         --    os.rename("bird.jpg", "vogel.jpg")
         --    res = os.remove("vogel 2.jpg")
@@ -38,29 +31,14 @@ if (server.uploads ~= nil) then
 end
 
 -- Get parameters
-local element = {}
-for key,value in pairs(server.post) do
-    if (key == '"date"') then
-        element["date"] = value
-    elseif (key == '"title"') then
-        element["title"] = value
-    else
-        print("fail")
-    end
-end
+local parameters = getParameters()
 
 -- Updates data in database
-updateData(id, element)
+updateData(id, parameters)
 
-table = {}
+-- Reads the data and will be add to the JSON
+local table = {}
 table["data"] = readData(id)
-
--- Check if data has changed
-if (table["data"] ~= nil) and (table["data"]["title"] == element["title"]) and (table["data"]["date"] == element["date"]) then
-    table["status"] = "successful"
-else
-    table["status"] = "unsuccessful"
-end
 
 local success, jsonstr = server.table_to_json(table)
 if not success then

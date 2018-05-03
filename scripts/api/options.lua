@@ -1,13 +1,10 @@
 print("-------OPTIONS  script------")
 
-table = {}
+local table = {}
+local element = {}
 
-element1 = {}
-
-table["subjects"] = { element1 }
+table["data"] = { element }
 table["status"] = "successful"
-
-
 
 local success, jsonstr = server.table_to_json(table)
 if not success then

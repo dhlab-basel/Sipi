@@ -1,30 +1,26 @@
 print("-------POST script------")
 
 require "../model/database"
+require "../model/parameter"
 
-function createID()
-    return math.random(10, 1000)
+local uriPattern = "api/resources$"
+
+-- Checks if url is correct
+if (string.match(server.uri, uriPattern) == nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(400)
+    server.print(jsonstr)
+    return
 end
 
-local newID
+-- Gets parameters
+local parameters = getParameters()
 
--- Get parameters
-local element = {}
-for key,value in pairs(server.post) do
-    if (key == '"date"') then
-        element["date"] = value
-    elseif (key == '"title"') then
-        element["title"] = value
-    else
-        print("fail")
-    end
-end
-
---print(table.concat(parameters, ", "))
-if server.uploads == nil then
+-- Checks if parameters were given
+if (parameters == nil) then
     local table = {}
     table["data"] = { }
-    table["status"] = "no pdf attached"
+    table["status"] = "no parameter given"
 
     local success, jsonstr = server.table_to_json(table)
     if not success then
@@ -34,16 +30,33 @@ if server.uploads == nil then
     end
 
     server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(200)
+    server.sendStatus(400)
     server.print(jsonstr)
     return
 end
 
-newID = createData(element)
+-- Checks if a file was attached
+if (server.uploads == nil) then
+    local table = {}
+    table["data"] = {}
+    table["status"] = "no file attached"
 
-for pdfindex, pdfparam in pairs(server.uploads) do
+    local success, jsonstr = server.table_to_json(table)
+    if not success then
+        server.sendStatus(500)
+        server.log(jsonstr, server.loglevel.err)
+        return false
+    end
 
-    if (pdfparam["filesize"] > 100000) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(400)
+    server.print(jsonstr)
+    return
+end
+
+for fileIndex, fileParam in pairs(server.uploads) do
+
+    if (fileParam["filesize"] > 100000) then
 
         local table = {}
         table["data"] = { }
@@ -63,7 +76,7 @@ for pdfindex, pdfparam in pairs(server.uploads) do
 
     end
 
-    print(pdfparam["origname"])
+    print(fileParam["origname"])
     --    server.print(config.imgroot .. "<br>")
 
     local tmpdir = 'pdf/tmp/'
@@ -89,7 +102,7 @@ for pdfindex, pdfparam in pairs(server.uploads) do
     local tmppath =  tmpdir .. uuid62 .. '.pdf'
     --    server.print(tmppath .. "<br>")
 
-    local success, errmsg = server.copyTmpfile(pdfindex, tmppath)
+    local success, errmsg = server.copyTmpfile(fileIndex, tmppath)
     if not success then
         --        server.print("Not successful<br>")
     else
@@ -98,16 +111,19 @@ for pdfindex, pdfparam in pairs(server.uploads) do
 
 end
 
+local newID = createData(parameters)
 
-table = {}
+local table = {}
 table["data"] = readData(newID)
 
-if (table["data"] ~= nil) and (table["data"]["title"] == element["title"]) and (table["data"]["date"] == element["date"]) then
+-- Tests if data was created in the database
+if (table["data"] ~= nil) and (type(table["data"]["id"]) == "number") then
     table["status"] = "successful"
 else
     table["status"] = "unsuccessful"
 end
 
+print(type(table["data"]["id"]))
 
 local success, jsonstr = server.table_to_json(table)
 if not success then
@@ -115,8 +131,6 @@ if not success then
     server.log(jsonstr, server.loglevel.err)
     return false
 end
-
---print(jsonstr)
 
 server.sendHeader('Content-type', 'application/json')
 server.sendStatus(201)
