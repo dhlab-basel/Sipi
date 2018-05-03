@@ -9,11 +9,23 @@
 dbPath = "testDB/testData.db"
 tableName = "resource"
 
------------------ Operator Builders -----------------
+-------------------------- Operator Builders ----------------------------------
+-------------------------------------------------------------------------------
+-- Builds the EQUAL statement
+-- @param   'name' (string):  name of the parameter
+-- @param   'value' (string):  value of the parameter
+-- @return  (string): statement with EQUAL with the parameter
+-------------------------------------------------------------------------------
 function equal(name, value)
     return name .. "='" .. value .. "'"
 end
 
+-------------------------------------------------------------------------------
+-- Builds the not EQUAL statement
+-- @param   'name' (string):  name of the parameter
+-- @param   'value' (string):  value of the parameter
+-- @return  (string): statement with EQUAL with the parameter
+-------------------------------------------------------------------------------
 function notEqual(name, value)
     return name .. "!='" .. value .. "'"
 end
@@ -62,7 +74,11 @@ function orOperator(parameters)
     return table.concat(parameters, " OR ")
 end
 
------------------ Query Builders -----------------
+---------------------------- Query Builders -----------------------------------
+-------------------------------------------------------------------------------
+-- Builds the SELECT all Query
+-- @return  (string): select query
+-------------------------------------------------------------------------------
 function selectAllQuery()
     return 'SELECT * FROM ' .. tableName
 end
