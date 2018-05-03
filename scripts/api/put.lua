@@ -36,7 +36,7 @@ local parameters = getParameters()
 -- Updates data in database
 updateData(id, parameters)
 
--- Reads the data and will be add to the JSON
+-- Reads the data and will be added to the JSON
 local table = {}
 table["data"] = readData(id)
 
