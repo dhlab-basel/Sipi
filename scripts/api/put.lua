@@ -3,17 +3,17 @@ print("-------PUT script------")
 require "../model/database"
 require "../model/parameter"
 
--- Find ID from the url
-local id = getIDfromURL()
+-- Gets the ID
+local id = getIDfromURL(server.uri)
 
--- id was not found it the uri
+-- ID was not found it the uri
 if (id == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(400)
     return
 end
 
--- id does not exist in the database
+-- ID does not exist in the database
 if (readData(id) == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(404)

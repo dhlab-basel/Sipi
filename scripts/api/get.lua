@@ -1,6 +1,7 @@
 print("-------GET script------")
 
 require "../model/database"
+require "../model/parameter"
 
 function noDataStatus()
     return "no data were found"
@@ -10,38 +11,20 @@ function successStatus()
     return "successful"
 end
 
-function hasFilePattern(url, filePattern)
-    local i, j = string.find(url, filePattern)
-    if (i~=nil) and (j ~= nil) then
-        return string.match(url,"%d+")
-    else
-        return nil
-    end
-end
-
-function hasIDPattern(url, idPattern)
-    if (string.match(url, idPattern) ~= nil) then
-        return string.match(url, "%d+")
-    else
-        return nil
-    end
-end
-
 
 local table1 = {}
 
-local filePattern = "api/resources/%d+/file$"
-local idPattern = "api/resources/%d+$"
+
 local resourcePattern = "api/resources$"
 local searchPattern = "api/resources?search="
 
 local uri = server.uri
 
-local id = hasFilePattern(uri, filePattern)
+local id = getIDofBinaryFile(uri)
 if (id ~= nil) then
     print(uri .. " ==> has FilePattern with = " .. id)
 else
-    id = hasIDPattern(uri, idPattern)
+    id = getIDfromURL(uri)
     if (id ~= nil) then
         print(uri .. " ==> has IDPattern with = " .. id)
 

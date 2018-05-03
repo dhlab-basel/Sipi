@@ -8,7 +8,7 @@ function successStatus()
 end
 
 -- gets ID from the url
-local id = getIDfromURL()
+local id = getIDfromURL(server.uri)
 
 -- id was not found it the url
 if (id == nil) then

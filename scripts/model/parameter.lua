@@ -47,17 +47,35 @@ function getParameters()
     return parameters
 end
 
-function getIDfromURL()
-    local id
-    local startPos, endPos = string.find(server.uri, "api/resources/")
+--function getIDfromURL()
+--    local id
+--    local startPos, endPos = string.find(server.uri, "api/resources/")
+--
+--    if (startPos ~= nil) and (endPos ~= nil) then
+--        local num = tonumber(string.sub(server.uri, endPos+1, string.len(server.uri)))
+--        if (num ~= nil) then
+--            id = math.floor(num)
+--        end
+--    end
+--
+--    return id
+--end
 
-    if (startPos ~= nil) and (endPos ~= nil) then
-        local num = tonumber(string.sub(server.uri, endPos+1, string.len(server.uri)))
-        if (num ~= nil) then
-            id = math.floor(num)
-        end
+function getIDfromURL(url)
+    local idPattern = "api/resources/%d+$"
+    if (string.match(url, idPattern) ~= nil) then
+        return string.match(url, "%d+")
+    else
+        return nil
     end
-
-    return id
 end
 
+function getIDofBinaryFile(url)
+    local filePattern = "api/resources/%d+/file$"
+    local i, j = string.find(url, filePattern)
+    if (i~=nil) and (j ~= nil) then
+        return string.match(url,"%d+")
+    else
+        return nil
+    end
+end
