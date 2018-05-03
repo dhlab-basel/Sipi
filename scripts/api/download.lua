@@ -9,8 +9,8 @@ for key,value in pairs(result.header) do
 end
 
 -- File reading
-io.input("vogel.jpg")
-s = io.read("*a")
+--io.input("vogel.jpg")
+--s = io.read("*a")
 
 server.setBuffer()
 --server.sendHeader('Content-type', 'application/pdf')

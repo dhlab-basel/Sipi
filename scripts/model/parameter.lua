@@ -9,35 +9,35 @@
 function getParameters()
     local parameters = {}
     for key,value in pairs(server.post) do
-        if (key == '"title"') then
+        if (key == 'title') then
             parameters["title"] = value
-        elseif (key == '"creator"') then
+        elseif (key == 'creator') then
             parameters["creator"] = value
-        elseif (key == '"subject"') then
+        elseif (key == 'subject') then
             parameters["subject"] = value
-        elseif (key == '"description"') then
+        elseif (key == 'description') then
             parameters["description"] = value
-        elseif (key == '"publisher"') then
+        elseif (key == 'publisher') then
             parameters["publisher"] = value
-        elseif (key == '"contributor"') then
+        elseif (key == 'contributor') then
             parameters["contributor"] = value
-        elseif (key == '"date"') then
+        elseif (key == 'date') then
             parameters["date"] = value
-        elseif (key == '"type"') then
+        elseif (key == 'type') then
             parameters["type"] = value
-        elseif (key == '"format"') then
+        elseif (key == 'format') then
             parameters["format"] = value
-        elseif (key == '"identifier"') then
+        elseif (key == 'identifier') then
             parameters["identifier"] = value
-        elseif (key == '"source"') then
+        elseif (key == 'source') then
             parameters["source"] = value
-        elseif (key == '"language"') then
+        elseif (key == 'language') then
             parameters["language"] = value
-        elseif (key == '"relation"') then
+        elseif (key == 'relation') then
             parameters["relation"] = value
-        elseif (key == '"coverage"') then
+        elseif (key == 'coverage') then
             parameters["coverage"] = value
-        elseif (key == '"rights"') then
+        elseif (key == 'rights') then
             parameters["rights"] = value
         else
             print("the following key does not match: " .. key)

@@ -187,7 +187,6 @@ function readAllData(parameters)
     local allData = {}
 
     while (row) do
-        print(#row)
         local data = {}
         data["id"] = row[0]
         data["title"] = row[1]
