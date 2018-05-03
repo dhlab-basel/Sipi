@@ -7,9 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_sqlite3
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://www.sqlite.org/2016/sqlite-autoconf-3140200.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/sqlite-autoconf-3140200
-        CONFIGURE_COMMAND ${COMMON_SRCS}/sqlite-autoconf-3140200/configure --enable-fts5  --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
+        URL https://www.sqlite.org/2018/sqlite-autoconf-3220000.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/sqlite-autoconf-3220000
+        CONFIGURE_COMMAND ${COMMON_SRCS}/sqlite-autoconf-3220000/configure --enable-fts5  --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make CFLAGS=-DSQLITE_ENABLE_RTREE=1
         BUILD_IN_SOURCE 1
         )

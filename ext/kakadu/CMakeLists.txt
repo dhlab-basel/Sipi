@@ -10,13 +10,13 @@ message(STATUS ${CONFIGURE_LIBDIR})
 ExternalProject_Add(
         project_kakadu
         INSTALL_DIR ${COMMON_LOCAL}
-        DOWNLOAD_COMMAND unzip -o -d ${COMMON_SRCS} ${COMMON_VENDOR}/v7_A_2-01382N.zip
-        PATCH_COMMAND patch -d ${COMMON_SRCS}/v7_A_2-01382N -p0 < ${COMMON_PATCHES}/${KDU_MAKE}.patch
+        DOWNLOAD_COMMAND unzip -o -d ${COMMON_SRCS} ${COMMON_VENDOR}/v7_A_4-01727L.zip
+        PATCH_COMMAND patch -d ${COMMON_SRCS}/v7_A_4-01727L -p0 < ${COMMON_PATCHES}/${KDU_MAKE}.patch
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND make --directory=${COMMON_SRCS}/v7_A_2-01382N/make/ -f ${KDU_MAKE}
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_2-01382N/lib/${KDU_ARCH} ${CONFIGURE_LIBDIR}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_2-01382N/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_2-01382N/managed/all_includes ${COMMON_LOCAL}/include
+        BUILD_COMMAND make --directory=${COMMON_SRCS}/v7_A_4-01727L/make/ -f ${KDU_MAKE}
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_4-01727L/lib/${KDU_ARCH} ${CONFIGURE_LIBDIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_4-01727L/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_4-01727L/managed/all_includes ${COMMON_LOCAL}/include
 )
 
 ExternalProject_Get_Property(project_kakadu install_dir)

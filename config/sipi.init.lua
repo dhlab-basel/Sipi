@@ -230,16 +230,47 @@ end
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
 function pre_flight(prefix,identifier,cookie)
+    local success, result
+   if prefix == 'imgrep' then
+        local url = 'http://127.0.0.1/salsah/api/iiif/' .. identifier
 
-    --for key, name in pairs(server.header) do
-    --    print(key, " -> ", name)
-    --end
+        if cookie then
+            local cookie_header = { Cookie = cookie }
+            success, result = server.http('GET', url, cookie_header)
+        else
+            success, result = server.http('GET', url)
+        end
 
-
-    if config.prefix_as_path then
-        filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
+       if success then
+            success, response_json = server.json_to_table(result.body)
+            if success then
+                local access = 'deny'
+                if response_json.rights == 'ACCESS' then
+                    access = 'allow'
+                elseif  response_json.rights == 'RESTRICTED' then
+                    if response_json.watermark then
+                        access = 'restrict:watermark=' .. response_json.watermark
+                    else
+                        access = 'restrict'
+                    end
+                end
+                local filepath = response_json.path
+                server.log('access = ' .. access .. ' filepath = ' .. filepath, server.loglevel.LOG_ERR)
+                return access, filepath
+            else
+                server.log("Server.http() failed: " .. response_json, server.loglevel.LOG_ERR)
+                return 'deny'
+            end
+        else
+            server.log("Server.http() failed: " .. result, server.loglevel.LOG_ERR)
+            return 'deny'
+        end
     else
-        filepath = config.imgroot .. '/' .. identifier
+        if config.prefix_as_path then
+            filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
+        else
+            filepath = config.imgroot .. '/' .. identifier
+        end
     end
 
     --db = sqlite('db/test.db', 'RW')

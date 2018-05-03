@@ -3,13 +3,12 @@ project(expat_builder C CXX)
 include(ExternalProject)
 
 ExternalProject_Add(project_expat
-    INSTALL_DIR ${COMMON_LOCAL}
-    URL https://dl.bintray.com/dhlab-basel/thirdparty/expat-2.1.0.tar.gz
-    URL_HASH SHA256=823705472f816df21c8f6aa026dd162b280806838bb55b3432b0fb1fcca7eb86
-    SOURCE_DIR ${COMMON_SRCS}/expat
-    CONFIGURE_COMMAND ${COMMON_SRCS}/expat/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
-    BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
+        INSTALL_DIR ${COMMON_LOCAL}
+        URL https://github.com/libexpat/libexpat/releases/download/R_2_2_5/expat-2.2.5.tar.bz2
+        SOURCE_DIR ${COMMON_SRCS}/expat
+        CONFIGURE_COMMAND ${COMMON_SRCS}/expat/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+        BUILD_COMMAND make
+        BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_expat install_dir)
 if(MAKE_SHARED_SIPI)
