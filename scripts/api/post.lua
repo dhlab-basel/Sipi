@@ -56,11 +56,11 @@ end
 
 for fileIndex, fileParam in pairs(server.uploads) do
 
-    if (fileParam["filesize"] > 100000) then
+    if (fileParam["filesize"] > 600000) then
 
         local table = {}
         table["data"] = { }
-        table["status"] = "pdf too big"
+        table["status"] = "file too big"
 
         local success, jsonstr = server.table_to_json(table)
         if not success then
@@ -77,14 +77,17 @@ for fileIndex, fileParam in pairs(server.uploads) do
     end
 
     print(fileParam["origname"])
-    --    server.print(config.imgroot .. "<br>")
 
-    local tmpdir = 'pdf/tmp/'
+    local strPos, endPos = string.find(fileParam["origname"], "%.")
+    local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(server.uri))
+
+    local tmpdir = 'data/tmp/'
     local success, exists = server.fs.exists(tmpdir)
 
     if not success then
-        --        server.print("success = false")
+        -- Was ist das für ein Fall?
     end
+
     if not exists then
         local success, errmsg = server.fs.mkdir(tmpdir, 511)
         if not success then
@@ -96,17 +99,13 @@ for fileIndex, fileParam in pairs(server.uploads) do
 
     local success, uuid62 = server.uuid62()
     if not success then
-        --        server.print("Not successful <br>")
     end
 
-    local tmppath =  tmpdir .. uuid62 .. '.pdf'
-    --    server.print(tmppath .. "<br>")
+    local tmppath =  tmpdir .. uuid62 .. '.' .. fileEnding
 
     local success, errmsg = server.copyTmpfile(fileIndex, tmppath)
     if not success then
-        --        server.print("Not successful<br>")
     else
-        --        server.print("successful<br>")
     end
 
 end
@@ -122,8 +121,6 @@ if (table["data"] ~= nil) and (type(table["data"]["id"]) == "number") then
 else
     table["status"] = "unsuccessful"
 end
-
-print(type(table["data"]["id"]))
 
 local success, jsonstr = server.table_to_json(table)
 if not success then
