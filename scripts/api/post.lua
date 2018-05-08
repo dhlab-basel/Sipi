@@ -81,7 +81,7 @@ for fileIndex, fileParam in pairs(server.uploads) do
 --    os.execute("cp vogel.jpg kopie.jpg");
 
     local startPos, endPos = string.find(fileParam["origname"], "%.")
-    local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(server.uri))
+    local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(fileParam["origname"]))
 
     local tmpdir = 'data/tmp/'
     local success, exists = server.fs.exists(tmpdir)
