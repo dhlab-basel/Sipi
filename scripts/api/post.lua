@@ -77,8 +77,10 @@ for fileIndex, fileParam in pairs(server.uploads) do
     end
 
     print(fileParam["origname"])
+    -- Copy file (only on unix systems)
+--    os.execute("cp vogel.jpg kopie.jpg");
 
-    local strPos, endPos = string.find(fileParam["origname"], "%.")
+    local startPos, endPos = string.find(fileParam["origname"], "%.")
     local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(server.uri))
 
     local tmpdir = 'data/tmp/'
@@ -101,7 +103,12 @@ for fileIndex, fileParam in pairs(server.uploads) do
     if not success then
     end
 
-    local tmppath =  tmpdir .. uuid62 .. '.' .. fileEnding
+    parameters["filename"] = uuid62
+    parameters["fileextension"] = fileEnding
+    parameters["mimetype"] = fileParam["mimetype"]
+    parameters["filesize"] = fileParam["filesize"]
+
+    local tmppath =  tmpdir .. parameters["filename"] .. '.' .. parameters["fileextension"]
 
     local success, errmsg = server.copyTmpfile(fileIndex, tmppath)
     if not success then

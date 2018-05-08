@@ -231,6 +231,11 @@ end
 --|                           CRUD Operations                               |--
 -------------------------------------------------------------------------------
 
+-------------------------------------------------------------------------------
+-- Creates a new resource in the database
+-- @param   'parameters' (table):  table with name of parameter and value
+-- @return  (string): ID of the created resource
+-------------------------------------------------------------------------------
 function createData(parameters)
     local db = sqlite(dbPath, "RW")
     local qry = db << insertQuery(parameters)
@@ -246,6 +251,11 @@ function createData(parameters)
     return row[0]
 end
 
+-------------------------------------------------------------------------------
+-- Reads a resource from the database
+-- @param   'id' (table): ID of the resource
+-- @return  'data' (table): returns the data with dublin core fields
+-------------------------------------------------------------------------------
 function readData(id)
     local db = sqlite(dbPath, "RW")
     local qry = db << selectIDQuery(id)
@@ -281,6 +291,11 @@ function readData(id)
     return data
 end
 
+-------------------------------------------------------------------------------
+-- Reads all the resources from the database
+-- @param   'parameters' (table): table with name of parameter and value
+-- @return  'data' (table): returns all the data with dublin core fields
+-------------------------------------------------------------------------------
 function readAllData(parameters)
     local db = sqlite(dbPath, "RW")
     local qry
@@ -322,6 +337,11 @@ function readAllData(parameters)
     return allData
 end
 
+-------------------------------------------------------------------------------
+-- Updates a resource from the database
+-- @param   'id' (table): ID of the resource
+-- @param   'parameters' (table): table with name of parameter and value
+-------------------------------------------------------------------------------
 function updateData(id, parameters)
     local db = sqlite(dbPath, "RW")
     local qry = db << updateQuery(id, parameters)
@@ -331,6 +351,10 @@ function updateData(id, parameters)
     db =~ db;
 end
 
+-------------------------------------------------------------------------------
+-- Deletes a resource from the database
+-- @param   'id' (table): ID of the resource
+-------------------------------------------------------------------------------
 function deleteData(id)
     local db = sqlite(dbPath, "RW")
     local qry = db << deleteQuery(id)
