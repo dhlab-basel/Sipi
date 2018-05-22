@@ -281,6 +281,8 @@ function readData(id)
         data["relation"] = row[13]
         data["coverage"] = row[14]
         data["rights"] = row[15]
+        data["filename"] = row[16]
+        data["mimetype"] = row[17]
     end
 
     -- delete query and free prepared statment

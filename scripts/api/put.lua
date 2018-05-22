@@ -2,6 +2,7 @@ print("-------PUT script------")
 
 require "../model/database"
 require "../model/parameter"
+require "../model/file"
 
 -- Gets the ID
 local id = getIDfromURL(server.uri)
@@ -13,25 +14,22 @@ if (id == nil) then
     return
 end
 
--- ID does not exist in the database
-if (readData(id) == nil) then
+-- Gets the data from database
+local data = readData(id)
+
+-- Data does not exist in the database
+if (data == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(404)
     return
 end
 
--- Replaces file
-if (server.uploads ~= nil) then
-    for fileIndex, fileParam in pairs(server.uploads) do
-        print(fileParam["origname"])
-
-        --    os.rename("bird.jpg", "vogel.jpg")
-        --    res = os.remove("vogel 2.jpg")
-    end
-end
-
 -- Get parameters
 local parameters = getParameters()
+
+-- Replaces file
+parameters = uploadFile(parameters)
+os.remove("./data/tmp/" .. data["filename"])
 
 -- Updates data in database
 updateData(id, parameters)

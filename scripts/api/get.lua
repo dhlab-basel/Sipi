@@ -14,15 +14,27 @@ end
 
 local table1 = {}
 
-
 local resourcePattern = "api/resources$"
 local searchPattern = "api/resources?search="
 
 local uri = server.uri
 
 local id = getIDofBinaryFile(uri)
+
 if (id ~= nil) then
-    print(uri .. " ==> has FilePattern with = " .. id)
+    local filename = readData(id)["filename"]
+    local mimetype = readData(id)["mimetype"]
+
+    if (filename ~= nil) and (mimetype ~=nil) then
+        local path = "data/tmp/" .. filename
+        io.input(path)
+        local s = io.read("*a")
+        server.setBuffer()
+        server.sendHeader('Content-type', mimetype)
+        server.sendStatus(200)
+        server.print(s)
+        return
+    end
 else
     id = getIDfromURL(uri)
     if (id ~= nil) then
