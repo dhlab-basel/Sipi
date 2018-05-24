@@ -1,8 +1,8 @@
 print("---- PUT resources script ----")
 
 require "./model/resources"
-require "../model/parameter"
-require "../model/file"
+require "./model/parameter"
+require "./model/file"
 
 -- Gets the ID
 local id = getIDfromURL(server.uri)

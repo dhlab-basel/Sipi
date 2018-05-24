@@ -1,8 +1,8 @@
 print("---- DELETE resources script ----")
 
 require "./model/resources"
-require "../model/parameter"
-require "../model/file"
+require "./model/parameter"
+require "./model/file"
 
 -- gets ID from the url
 local id = getIDfromURL(server.uri)

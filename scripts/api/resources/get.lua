@@ -1,8 +1,8 @@
 print("---- GET resources script ----")
 
 require "./model/resources"
-require "../model/parameter"
-require "../model/file"
+require "./model/parameter"
+require "./model/file"
 
 
 local table1 = {}
