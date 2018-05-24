@@ -55,7 +55,7 @@ if (server.uploads == nil) then
     return
 end
 
-parameters = uploadFile(parameters)
+parameters = createFile(parameters)
 
 local newID = createData(parameters)
 

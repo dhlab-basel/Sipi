@@ -28,8 +28,8 @@ end
 local parameters = getParameters()
 
 -- Replaces file
-parameters = uploadFile(parameters)
-os.remove("./data/tmp/" .. data["filename"])
+parameters = createFile(parameters)
+deleteFile(data["filename"])
 
 -- Updates data in database
 updateData(id, parameters)

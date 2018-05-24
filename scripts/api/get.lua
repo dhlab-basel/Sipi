@@ -2,18 +2,10 @@ print("-------GET script------")
 
 require "../model/database"
 require "../model/parameter"
-
-function noDataStatus()
-    return "no data were found"
-end
-
-function successStatus()
-    return "successful"
-end
+require "../model/file"
 
 
 local table1 = {}
-
 local resourcePattern = "api/resources$"
 local searchPattern = "api/resources?search="
 
@@ -22,18 +14,30 @@ local uri = server.uri
 local id = getIDofBinaryFile(uri)
 
 if (id ~= nil) then
-    local filename = readData(id)["filename"]
-    local mimetype = readData(id)["mimetype"]
+
+    local data = readData(id)
+
+    -- Data does not exist in the database
+    if (data == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(404)
+        return
+    end
+
+    local filename = data["filename"]
+    local mimetype = data["mimetype"]
 
     if (filename ~= nil) and (mimetype ~=nil) then
-        local path = "data/tmp/" .. filename
-        io.input(path)
-        local s = io.read("*a")
-        server.setBuffer()
-        server.sendHeader('Content-type', mimetype)
-        server.sendStatus(200)
-        server.print(s)
-        return
+        local fileContent = readFile(filename)
+        if (fileContent ~= nil) then
+            server.setBuffer()
+            server.sendHeader('Content-type', mimetype)
+            server.sendStatus(200)
+            server.print(fileContent)
+            return
+        else
+            print("failed to read file")
+        end
     end
 else
     id = getIDfromURL(uri)
@@ -43,9 +47,9 @@ else
         table1["data"] = readData(id)
 
         if (table1["data"] ~= nil) then
-            table1["status"] = successStatus()
+            table1["status"] = "successful"
         else
-            table1["status"] = noDataStatus()
+            table1["status"] = "no data were found"
         end
 
     else
@@ -124,9 +128,9 @@ else
             table1["data"] =  readAllData(parameters)
 
             if #table1["data"] > 0 then
-                table1["status"] = successStatus()
+                table1["status"] = "successful"
             else
-                table1["status"] = noDataStatus()
+                table1["status"] = "no data were found"
             end
 
         else

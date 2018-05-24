@@ -1,28 +1,17 @@
 
-function uploadFile(parameters)
+path = "./data/tmp/"
+
+-------------------------------------------------------------------------------
+--|                           CRUD Operations                               |--
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- Creates a file on the file system
+-- @param   'parameters' (table):  table with name of parameter and value
+-- @return  'parameters' (table):  table with added metadata about the file
+-------------------------------------------------------------------------------
+function createFile(parameters)
     for fileIndex, fileParam in pairs(server.uploads) do
-
-        if (fileParam["filesize"] > 600000) then
-            local table = {}
-            table["data"] = { }
-            table["status"] = "file too big"
-
-            local success, jsonstr = server.table_to_json(table)
-            if not success then
-                server.sendStatus(500)
-                server.log(jsonstr, server.loglevel.err)
-                return false
-            end
-
-            server.sendHeader('Content-type', 'application/json')
-            server.sendStatus(413)
-            server.print(jsonstr)
-            return
-        end
-
-        print(fileParam["origname"])
-        -- Copy file (only on unix systems)
-        --    os.execute("cp vogel.jpg kopie.jpg");
 
         local startPos, endPos = string.find(fileParam["origname"], "%.")
         local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(fileParam["origname"]))
@@ -61,7 +50,48 @@ function uploadFile(parameters)
         end
 
         return parameters
+    end
+end
 
+-------------------------------------------------------------------------------
+-- Reads the content of the file
+-- @param   'filename' (string):  name of the file with the file ending
+-- @return  'content': content of the file
+-------------------------------------------------------------------------------
+function readFile(filename)
+    local file = io.open(path .. filename)
+    io.input(file)
+    local content = io.read("*a")
+
+    if (content ~= nil) then
+        print("content is null")
+        -- gibt was zurück
     end
 
+    io.close(file)
+    return content
+end
+
+-------------------------------------------------------------------------------
+-- Updates the file by replacing the old file with the new one from server.uploads
+-- @param   'parameters' (table):  table with name of parameter and value
+-- @param   'filename' (string):  name of the file with the file ending
+-- @return  'parameters' (table):  table with updated data and metadata about the file
+-------------------------------------------------------------------------------
+function updateFile(parameters, filename)
+    parameters = createFile(parameters)
+    deleteFile(filename)
+    return parameters
+end
+
+-------------------------------------------------------------------------------
+-- Deletes the file on the file system
+-- @param   'filename' (string):  name of the file with the file ending
+-------------------------------------------------------------------------------
+function deleteFile(fileName)
+    if (os.remove(path .. fileName)) then
+        print("file deleted")
+    else
+        print("file could not be deleted")
+    end
 end

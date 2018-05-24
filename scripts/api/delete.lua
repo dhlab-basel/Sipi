@@ -2,10 +2,7 @@ print("-------DELETE script------")
 
 require "../model/database"
 require "../model/parameter"
-
-function successStatus()
-    return "successful"
-end
+require "../model/file"
 
 -- gets ID from the url
 local id = getIDfromURL(server.uri)
@@ -17,13 +14,18 @@ if (id == nil) then
     return
 end
 
+-- gets the data with the id
+local data = readData(id)
+
 -- id not in the database
-if (readData(id) == nil) then
+if (data == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(404)
     return
 end
 
+-- deletes file and metadata
+deleteFile(data["filename"])
 deleteData(id)
 
 -- id still exists and delete failed
@@ -34,7 +36,7 @@ if (readData(id) ~= nil) then
 end
 
 local table = {}
-table["status"] = successStatus()
+table["status"] = "successful"
 
 local success, jsonstr = server.table_to_json(table)
 if not success then
