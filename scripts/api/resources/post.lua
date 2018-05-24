@@ -1,8 +1,8 @@
 print("---- POST resources script ----")
 
-require "../model/database"
-require "../model/parameter"
-require "../model/file"
+require "./model/resources"
+require "./model/parameter"
+require "./model/file"
 
 local uriPattern = "api/resources$"
 
@@ -57,10 +57,10 @@ end
 
 parameters = createFile(parameters)
 
-local newID = createData(parameters)
+local newID = createRes(parameters)
 
 local table = {}
-table["data"] = readData(newID)
+table["data"] = readRes(newID)
 
 -- Tests if data was created in the database
 if (table["data"] ~= nil) and (type(table["data"]["id"]) == "number") then

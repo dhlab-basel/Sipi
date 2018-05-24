@@ -1,8 +1,8 @@
 print("---- DELETE resources script ----")
 
-require "./model/database"
-require "./api/model/parameter"
-require "./api/model/file"
+require "./model/resources"
+require "../model/parameter"
+require "../model/file"
 
 -- gets ID from the url
 local id = getIDfromURL(server.uri)
@@ -15,7 +15,7 @@ if (id == nil) then
 end
 
 -- gets the data with the id
-local data = readData(id)
+local data = readRes(id)
 
 -- id not in the database
 if (data == nil) then
@@ -26,10 +26,10 @@ end
 
 -- deletes file and metadata
 deleteFile(data["filename"])
-deleteData(id)
+deleteRes(id)
 
 -- id still exists and delete failed
-if (readData(id) ~= nil) then
+if (readRes(id) ~= nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(500)
     return

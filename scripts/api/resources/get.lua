@@ -1,6 +1,6 @@
 print("---- GET resources script ----")
 
-require "../model/database"
+require "./model/resources"
 require "../model/parameter"
 require "../model/file"
 
@@ -15,7 +15,7 @@ local id = getIDofBinaryFile(uri)
 
 if (id ~= nil) then
 
-    local data = readData(id)
+    local data = readRes(id)
 
     -- Data does not exist in the database
     if (data == nil) then
@@ -44,7 +44,7 @@ else
     if (id ~= nil) then
         print(uri .. " ==> has IDPattern with = " .. id)
 
-        table1["data"] = readData(id)
+        table1["data"] = readRes(id)
 
         if (table1["data"] ~= nil) then
             table1["status"] = "successful"
@@ -125,7 +125,7 @@ else
                 end
             end
 
-            table1["data"] =  readAllData(parameters)
+            table1["data"] =  readAllRes(parameters)
 
             if #table1["data"] > 0 then
                 table1["status"] = "successful"

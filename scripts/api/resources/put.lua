@@ -1,6 +1,6 @@
 print("---- PUT resources script ----")
 
-require "../model/database"
+require "./model/resources"
 require "../model/parameter"
 require "../model/file"
 
@@ -15,7 +15,7 @@ if (id == nil) then
 end
 
 -- Gets the data from database
-local data = readData(id)
+local data = readRes(id)
 
 -- Data does not exist in the database
 if (data == nil) then
@@ -34,11 +34,11 @@ if (server.uploads ~= nil) then
 end
 
 -- Updates data in database
-updateData(id, parameters)
+updateRes(id, parameters)
 
 -- Reads the data and will be added to the JSON
 local table = {}
-table["data"] = readData(id)
+table["data"] = readRes(id)
 
 local success, jsonstr = server.table_to_json(table)
 if not success then
