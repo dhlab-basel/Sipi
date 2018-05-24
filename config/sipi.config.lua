@@ -254,9 +254,10 @@ routes = {
         route = '/luaexe/test2',
         script = 'test2.lua'
     },
+    -- routes for Sipi Plus
     {
         method = 'OPTIONS',
-        route = '/api/resources',
+        route = '/api',
         script = 'api/options.lua'
     },
     {
@@ -266,28 +267,68 @@ routes = {
     },
     {
         method = 'GET',
-        route = '/api/resources',
-        script = 'api/get.lua'
-    },
-    {
-        method = 'GET',
         route = '/api/download',
         script = 'api/download.lua'
     },
     {
+        method = 'GET',
+        route = '/api/collections',
+        script = 'api/collections/get.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/collections',
+        script = 'api/collections/post.lua'
+    },
+    {
+        method = 'PUT',
+        route = '/api/collections',
+        script = 'api/collections/put.lua'
+    },
+    {
+        method = 'DELETE',
+        route = '/api/collections',
+        script = 'api/collections/delete.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/resources',
+        script = 'api/resources/get.lua'
+    },
+    {
         method = 'POST',
         route = '/api/resources',
-        script = 'api/post.lua'
+        script = 'api/resources/post.lua'
     },
     {
         method = 'PUT',
         route = '/api/resources',
-        script = 'api/put.lua'
+        script = 'api/resources/put.lua'
     },
     {
         method = 'DELETE',
         route = '/api/resources',
-        script = 'api/delete.lua'
+        script = 'api/resources/delete.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/search',
+        script = 'api/search/get.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/search',
+        script = 'api/search/post.lua'
+    },
+    {
+        method = 'PUT',
+        route = '/api/search',
+        script = 'api/search/put.lua'
+    },
+    {
+        method = 'DELETE',
+        route = '/api/search',
+        script = 'api/search/delete.lua'
     }
 
 }

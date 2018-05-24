@@ -1,4 +1,4 @@
-print("-------GET script------")
+print("---- GET resources script ----")
 
 require "../model/database"
 require "../model/parameter"

@@ -1,0 +1,1 @@
+print("---- GET search script ----")

@@ -1,4 +1,4 @@
-print("-------POST script------")
+print("---- POST resources script ----")
 
 require "../model/database"
 require "../model/parameter"

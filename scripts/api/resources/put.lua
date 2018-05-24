@@ -1,42 +1,44 @@
-print("-------DELETE script------")
+print("---- PUT resources script ----")
 
 require "../model/database"
 require "../model/parameter"
 require "../model/file"
 
--- gets ID from the url
+-- Gets the ID
 local id = getIDfromURL(server.uri)
 
--- id was not found it the url
+-- ID was not found it the uri
 if (id == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(400)
     return
 end
 
--- gets the data with the id
+-- Gets the data from database
 local data = readData(id)
 
--- id not in the database
+-- Data does not exist in the database
 if (data == nil) then
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(404)
     return
 end
 
--- deletes file and metadata
-deleteFile(data["filename"])
-deleteData(id)
+-- Get parameters
+local parameters = getParameters()
 
--- id still exists and delete failed
-if (readData(id) ~= nil) then
-    server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(500)
-    return
+-- Replaces file
+if (server.uploads ~= nil) then
+    parameters = createFile(parameters)
+    deleteFile(data["filename"])
 end
 
+-- Updates data in database
+updateData(id, parameters)
+
+-- Reads the data and will be added to the JSON
 local table = {}
-table["status"] = "successful"
+table["data"] = readData(id)
 
 local success, jsonstr = server.table_to_json(table)
 if not success then

@@ -1,0 +1,1 @@
+print("---- PUT collections script ----")

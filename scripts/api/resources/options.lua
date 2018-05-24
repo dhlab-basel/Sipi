@@ -1,4 +1,4 @@
-print("---- OPTIONS api script ----")
+print("---- OPTIONS resources script ----")
 
 local table = {}
 local element = {}
