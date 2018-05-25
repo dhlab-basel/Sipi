@@ -1,7 +1,7 @@
 require "./model/query"
 
 dbPath = "testDB/testData.db"
-tableName = "collections"
+tableName = "collection"
 
 -------------------------------------------------------------------------------
 --|                           CRUD Operations                               |--

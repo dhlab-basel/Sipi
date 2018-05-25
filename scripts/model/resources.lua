@@ -57,8 +57,9 @@ function readRes(id)
         data["relation"] = row[13]
         data["coverage"] = row[14]
         data["rights"] = row[15]
-        data["filename"] = row[16]
-        data["mimetype"] = row[17]
+        data["collection_id"] = row[16]
+        data["filename"] = row[17]
+        data["mimetype"] = row[18]
     end
 
     -- delete query and free prepared statment
@@ -105,6 +106,7 @@ function readAllRes(parameters)
         data["relation"] = row[13]
         data["coverage"] = row[14]
         data["rights"] = row[15]
+        data["collection_id"] = row[16]
         table.insert(allData, data)
         row = qry()
     end

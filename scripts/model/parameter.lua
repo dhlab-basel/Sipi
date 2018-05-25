@@ -39,6 +39,8 @@ function getParameters()
             parameters["coverage"] = value
         elseif (key == 'rights') then
             parameters["rights"] = value
+        elseif (key == 'collection_id') then
+            parameters["collection_id"] = value
         else
             print("the following key does not match: " .. key)
         end
