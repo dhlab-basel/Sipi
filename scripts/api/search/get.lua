@@ -1,145 +1,97 @@
 print("---- GET search script ----")
 
 -- dient als hilfe
-require "./model/resources"
+require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
 
 local table1 = {}
-local resourcePattern = "api/resources$"
+local baseURL = "^/api/"
+local searchPattern = baseURL .. "search"
 
 local uri = server.uri
+if (string.match(uri, searchPattern) ~= nil) then
+     -- Inserts all the parameters
+    local parameters = {}
+    if (server.get ~= nil) then
+        for key,value in pairs(server.get) do
+            print(key, value)
+            local paramName, valueName
 
-local id = getIDofBinaryFile(uri)
+            local log = string.match(key, "%[%a+%]" )
+            local startPara, endPara = string.find(key, "%[%a+%]" )
+            if (startPara ~= nil) and (endPara ~= nil) then
+                paramName = string.sub(key, endPara+1, #key)
+                print("found before " .. paramName)
+            else
+                paramName = key
+                print("not found before " .. paramName)
+            end
 
-if (id ~= nil) then
+            local comp = string.match(value, "%[!?%a+_?%a+%]")
+            local startVal, endVal = string.find(value, "%[!?%a+_?%a+%]")
+            if (startVal ~= nil) and (endVal ~= nil) then
+                valueName = string.sub(value, endVal+1, #value)
+                print("found before " .. valueName)
+            else
+                valueName = value
+                print("not found before " .. valueName)
+            end
 
-    local data = readRes(id)
-
-    -- Data does not exist in the database
-    if (data == nil) then
-        server.sendHeader('Content-type', 'application/json')
-        server.sendStatus(404)
-        return
-    end
-
-    local filename = data["filename"]
-    local mimetype = data["mimetype"]
-
-    if (filename ~= nil) and (mimetype ~=nil) then
-        local fileContent = readFile(filename)
-        if (fileContent ~= nil) then
-            server.setBuffer()
-            server.sendHeader('Content-type', mimetype)
-            server.sendStatus(200)
-            server.print(fileContent)
-            return
-        else
-            print("failed to read file")
-        end
-    end
-else
-    id = getIDfromURL(uri)
-    if (id ~= nil) then
-        print(uri .. " ==> has IDPattern with = " .. id)
-
-        table1["data"] = readRes(id)
-
-        if (table1["data"] ~= nil) then
-            table1["status"] = "successful"
-        else
-            table1["status"] = "no data were found"
-        end
-
-    else
-        if (string.match(uri, resourcePattern) ~= nil) then
-            print(uri .. " ==> has ressourcePattern")
-
-            -- Inserts all the parameters
-            local parameters = {}
-            if (server.get ~= nil) then
-                for key,value in pairs(server.get) do
-                    local paramName
-                    local a = string.match(key, "%[!?%a+_?%a+%]")
-                    local startPos, endPos = string.find(key, "%[!?%a+_?%a+%]")
-                    if (startPos ~= nil) and (endPos ~= nil) then
-                        paramName = string.sub(key, 1, startPos-1)
-                        print("found | " .. paramName)
+            local i,j = string.find(value, ":")
+            if (paramName == "date") and (i ~= nil) and (j ~= nil) then
+                print(i, j)
+                if (comp == nil) then
+                    print("gültige url im date")
+                else
+                    print("nicht gültig url im date")
+                end
+            else
+                if (comp ~= nil) then
+                    if (comp == "[eq]") or (comp == "[EQ]") then
+                        print("EQUAL")
+                    elseif (comp == "[!eq]") or (comp == "[!EQ]") then
+                        print("NOT EQUAL")
+                    elseif (comp == "[like]") or (comp == "[LIKE]") then
+                        print("LIKE")
+                    elseif (comp == "[!like]") or (comp == "[!LIKE]") then
+                        print("NOT LIKE")
+                    elseif (comp == "[ex]") or (comp == "[EX]") then
+                        print("EXISTS")
+                    elseif (comp == "[!ex]" ) or (comp == "[!EX]") then
+                        print("NOT EXISTS")
+                    elseif (comp == "[gt]" ) or (comp == "[GT]") then
+                        print("GREATER THAN")
+                    elseif (comp == "[gt_eq]" ) or (comp == "[GT_EQ]") then
+                        print("GREATER THAN EQUAL")
+                    elseif (comp == "[lt]" ) or (comp == "[LT]") then
+                        print("LESS THAN")
+                    elseif (comp == "[lt_eq]" ) or (comp == "[LT_EQ]") then
+                        print("LESS THAN EQUAL")
                     else
-                        paramName = key
-                        print("not found | " .. paramName)
+                        print("Ungültige []")
                     end
-                    local i,j = string.find(value, ":")
-                    if (paramName == "date") and (i ~= nil) and (j ~= nil) then
-                        print(i, j)
-                        if (a == nil) then
-                            print("gültige url im date")
-                        else
-                            print("nicht gültig url im date")
-                        end
-                    else
-                        if (a ~= nil) then
-                            if (a == "[eq]") then
-                                print("EQUAL")
-                            elseif (a == "[!eq]" ) then
-                                print("NOT EQUAL")
-                            elseif (a == "[like]" ) then
-                                print("LIKE")
-                            elseif (a == "[!like]") then
-                                print("NOT LIKE")
-                            elseif (a == "[ex]" ) then
-                                print("EXISTS")
-                            elseif (a == "[!ex]" ) then
-                                print("NOT EXISTS")
-                            elseif (a == "[gt]" ) then
-                                print("GREATER THAN")
-                            elseif (a == "[gt_eq]" ) then
-                                print("GREATER THAN EQUAL")
-                            elseif (a == "[lt]" ) then
-                                print("LESS THAN")
-                            elseif (a == "[lt_eq]" ) then
-                                print("LESS THAN EQUAL")
-                            else
-                                print("Ungültige []")
-                            end
-                        else
-                            print("auch ungültig")
-                        end
-                    end
-
-                    --                    if (key == "date") then
-                    --                        local i,j = string.find(value, ":")
-                    --                        if (i~= nil) and (j~= nil) then
-                    --                            value = getDateRange(string.sub(value,1, i-1), string.sub(value,j+1, #value))
-                    --                            table.insert(parameters, key ..' between '  .. value)
-                    --                        else
-                    --                            table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
-                    --                        end
-                    --                    else
-                    --                        table.insert(parameters, key ..' like ' .. '"%' .. value .. '%"')
-                    --                    end
-                    --                    -- Equal search
-                    --                    -- table.insert(parameters, key ..'=' .. '"' .. value .. '"')
-                    --                    -- Like search
+                else
+                    print("auch ungültig")
                 end
             end
-
-            table1["data"] =  readAllRes(parameters)
-
-            if #table1["data"] > 0 then
-                table1["status"] = "successful"
-            else
-                table1["status"] = "no data were found"
-            end
-
-        else
-            print(uri .. " ==> FAIL")
-
-            server.sendStatus(404)
-            return
         end
     end
+
+    table1["data"] =  readAllRes(parameters)
+
+    if #table1["data"] > 0 then
+        table1["status"] = "successful"
+    else
+        table1["status"] = "no data were found"
+    end
+
+else
+    print(uri .. " ==> FAIL")
+
+    server.sendStatus(404)
+    return
 end
 
 server.setBuffer()

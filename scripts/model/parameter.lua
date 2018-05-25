@@ -64,7 +64,7 @@ end
 --end
 
 function getIDfromURL(url)
-    local idPattern = "api/resources/%d+$"
+    local idPattern = "^/api/resources/%d+$"
     if (string.match(url, idPattern) ~= nil) then
         return string.match(url, "%d+")
     else
@@ -73,7 +73,7 @@ function getIDfromURL(url)
 end
 
 function getIDofBinaryFile(url)
-    local filePattern = "api/resources/%d+/file$"
+    local filePattern = "^/api/resources/%d+/file$"
     local i, j = string.find(url, filePattern)
     if (i~=nil) and (j ~= nil) then
         return string.match(url,"%d+")
