@@ -42,7 +42,7 @@ function readCol(id)
         data = {}
         data["id"] = row[0]
         data["name"] = row[1]
-        data["id_collections"] = row[2]
+        data["collection_id"] = row[2]
         data["isLeaf"] = row[3]
     end
 
@@ -69,7 +69,7 @@ function readAllCol()
         local data = {}
         data["id"] = row[0]
         data["name"] = row[1]
-        data["id_collections"] = row[2]
+        data["collection_id"] = row[2]
         data["isLeaf"] = row[3]
         table.insert(allData, data)
         row = qry()

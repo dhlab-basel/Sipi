@@ -1,6 +1,6 @@
 print("---- DELETE resources script ----")
 
-require "./model/resources"
+require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 

@@ -1,6 +1,6 @@
 print("---- GET collections script ----")
 
-require "./model/collections"
+require "./model/collection"
 
 
 
