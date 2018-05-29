@@ -107,7 +107,6 @@ function readAllRes(parameters)
         for k, p in pairs(param) do
             print(k, p)
         end
-        print(selectConditionQuery(firstCond, tableName))
 
     end
 

@@ -110,7 +110,7 @@ function getResource()
 
     print("4. gefunden: " .. colID .. "| " .. resID)
 
-    table1["data"] = readAllRes(parameters)
+    table1["data"] = readAllRes(parameters)[1]
 
     if (table1["data"] ~= nil) then
         table1["status"] = "successful"
