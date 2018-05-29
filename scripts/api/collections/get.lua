@@ -178,6 +178,7 @@ function getFileResource()
     end
 end
 
+--Maps the url with the corresponding function
 routes = {}
 routes[baseURL .. "/collections$"] = getCollections
 routes[baseURL .. "/collections/%d+$"] = getCollection
@@ -185,6 +186,7 @@ routes[baseURL .. "/collections/%d+/resources$"] = getResources
 routes[baseURL .. "/collections/%d+/resources/%d+$"] = getResource
 routes[baseURL .. "/collections/%d+/resources/%d+/file$"] = getFileResource
 
+--Checks which function should be called
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
         func()
@@ -192,6 +194,6 @@ for route, func in pairs(routes) do
     end
 end
 
---Falls keine Übereinstimmung
+--Sends 404 code in case no url couldn't be mapped
 print("FAIL - nichts gefunden")
 server.sendStatus(404)

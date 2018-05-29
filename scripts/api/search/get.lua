@@ -24,9 +24,21 @@ if (string.match(uri, searchPattern) ~= nil) then
             if (startPara ~= nil) and (endPara ~= nil) then
                 paramName = string.sub(key, endPara+1, #key)
                 print("found before " .. paramName)
+                if (log ~= nil) then
+                    if (log == "[AND]") or (log == "[and]") then
+                        print("AND")
+                    elseif (log == "[OR]") or (log == "[or]") then
+                        print("OR")
+                    else
+                        print("Fail")
+                    end
+                else
+                    print("Ergänzung AND")
+                end
             else
                 paramName = key
                 print("not found before " .. paramName)
+                print("Ergänzung AND")
             end
 
             local comp = string.match(value, "%[!?%a+_?%a+%]")
@@ -73,7 +85,7 @@ if (string.match(uri, searchPattern) ~= nil) then
                         print("Ungültige []")
                     end
                 else
-                    print("auch ungültig")
+                    print("Ergänzung EQUAL")
                 end
             end
         end
