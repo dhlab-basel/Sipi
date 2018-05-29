@@ -77,14 +77,41 @@ end
 -------------------------------------------------------------------------------
 function readAllRes(parameters)
     local db = sqlite(dbPath, "RW")
-    local qry
+    local firstCond = "id!=0"
 
-    if (#parameters ~= 0) then
-        qry = db << selectConditionQuery(andOperator(parameters), tableName)
-    else
-        qry = db << selectAllQuery(tableName)
+    for key, param in pairs(parameters) do
+
+        local query
+        if (param[3] == "EQ") then
+            query = equal(param[2], param[4])
+        elseif (param[3] == "!EQ") then
+            query = notEqual(param[2], param[4])
+        elseif (param[3] == "LIKE") then
+            query = like(param[2], param[4])
+        elseif (param[3] == "!LIKE") then
+            query = notLike(param[2], param[4])
+        elseif (param[3] == "EX") then
+            query = exists(param[2], param[4])
+        elseif (param[3] == "!EX") then
+            query = notExists(param[2], param[4])
+        end
+
+        if (param[1] == "AND") then
+            firstCond = andOperator({firstCond, query})
+        elseif (param[1] == "OR") then
+            firstCond = orOperator({firstCond, query})
+        else
+            print("fail")
+        end
+
+        for k, p in pairs(param) do
+            print(k, p)
+        end
+        print(selectConditionQuery(firstCond, tableName))
+
     end
 
+    local qry = db << selectConditionQuery(firstCond, tableName)
     local row = qry()
     local allData = {}
 
@@ -107,6 +134,8 @@ function readAllRes(parameters)
         data["coverage"] = row[14]
         data["rights"] = row[15]
         data["collection_id"] = row[16]
+        data["filename"] = row[17]
+        data["mimetype"] = row[18]
         table.insert(allData, data)
         row = qry()
     end

@@ -262,16 +262,6 @@ routes = {
     },
     {
         method = 'GET',
-        route = '/api/test',
-        script = 'api/playground.lua'
-    },
-    {
-        method = 'GET',
-        route = '/api/download',
-        script = 'api/download.lua'
-    },
-    {
-        method = 'GET',
         route = '/api/collections',
         script = 'api/collections/get.lua'
     },
@@ -289,6 +279,11 @@ routes = {
         method = 'DELETE',
         route = '/api/collections',
         script = 'api/collections/delete.lua'
+    },
+    {
+        method = 'OPTIONS',
+        route = '/api/collections',
+        script = 'api/collections/options.lua'
     },
     {
         method = 'GET',
@@ -311,6 +306,11 @@ routes = {
         script = 'api/resources/delete.lua'
     },
     {
+        method = 'OPTIONS',
+        route = '/api/resources',
+        script = 'api/resources/options.lua'
+    },
+    {
         method = 'GET',
         route = '/api/search',
         script = 'api/search/get.lua'
@@ -329,6 +329,11 @@ routes = {
         method = 'DELETE',
         route = '/api/search',
         script = 'api/search/delete.lua'
+    },
+    {
+        method = 'OPTIONS',
+        route = '/api/search',
+        script = 'api/search/options.lua'
     }
 
 }

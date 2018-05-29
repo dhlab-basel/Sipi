@@ -11,7 +11,7 @@ function getCollections()
     local table1 = {}
     print("gefunden")
 
-    table1["data"] =  readAllCol()
+    table1["data"] = readAllCol()
 
     if #table1["data"] > 0 then
         table1["status"] = "successful"
@@ -35,7 +35,7 @@ end
 
 function getCollection()
     local table1 = {}
-    local id =  string.match(uri, "%d+")
+    local id = string.match(uri, "%d+")
     print("2. gefunden", id)
 
     table1["data"] = readCol(id)
@@ -62,10 +62,12 @@ end
 
 function getResources()
     local table1 = {}
-    local id =  string.match(uri, "%d+")
-    print("3. gefunden", id)
+    local colID = string.match(uri, "%d+")
+    print("3. gefunden", colID)
 
-    table1["data"] = readAllRes({})
+    local parameter = { "AND", "collection_id", "EQ", colID, nil }
+    local parameters = { parameter }
+    table1["data"] = readAllRes(parameters)
 
     if #table1["data"] > 0 then
         table1["status"] = "successful"
@@ -94,17 +96,21 @@ function getResource()
 
     local i, j = string.find(uri, "/collections/%d+")
     if (i ~= nil) and (j ~= nil) then
-        colID =  string.match(string.sub(uri, i, j),"%d+")
+        colID = string.match(string.sub(uri, i, j), "%d+")
     end
 
     local k, l = string.find(uri, "/resources/%d+")
     if (k ~= nil) and (l ~= nil) then
-        resID =  string.match(string.sub(uri, k, l),"%d+")
+        resID = string.match(string.sub(uri, k, l), "%d+")
     end
 
-    print("4. gefunden: " ..  colID .. "| " .. resID)
+    local p1 = { "AND", "collection_id", "EQ", colID, nil }
+    local p2 = { "AND", "id", "EQ", resID, nil }
+    local parameters = { p1, p2 }
 
-    table1["data"] = readRes(resID)
+    print("4. gefunden: " .. colID .. "| " .. resID)
+
+    table1["data"] = readAllRes(parameters)
 
     if (table1["data"] ~= nil) then
         table1["status"] = "successful"
@@ -132,17 +138,21 @@ function getFileResource()
 
     local i, j = string.find(uri, "/collections/%d+")
     if (i ~= nil) and (j ~= nil) then
-        colID =  string.match(string.sub(uri, i, j),"%d+")
+        colID = string.match(string.sub(uri, i, j), "%d+")
     end
 
     local k, l = string.find(uri, "/resources/%d+")
     if (k ~= nil) and (l ~= nil) then
-        resID =  string.match(string.sub(uri, k, l),"%d+")
+        resID = string.match(string.sub(uri, k, l), "%d+")
     end
 
-    print("4. gefunden: " ..  colID .. "| " .. resID)
+    local p1 = { "AND", "collection_id", "EQ", colID, nil }
+    local p2 = { "AND", "id", "EQ", resID, nil }
+    local parameters = { p1, p2 }
 
-    local data = readRes(resID)
+    print("4. gefunden: " .. colID .. "| " .. resID)
+
+    local data = readAllRes(parameters)[1]
 
     -- Data does not exist in the database
     if (data == nil) then
@@ -175,7 +185,6 @@ routes[baseURL .. "/collections/%d+/resources$"] = getResources
 routes[baseURL .. "/collections/%d+/resources/%d+$"] = getResource
 routes[baseURL .. "/collections/%d+/resources/%d+/file$"] = getFileResource
 
-
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
         func()
@@ -183,6 +192,6 @@ for route, func in pairs(routes) do
     end
 end
 
---Fall 4
+--Falls keine Übereinstimmung
 print("FAIL - nichts gefunden")
 server.sendStatus(404)
