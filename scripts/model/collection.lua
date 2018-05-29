@@ -14,7 +14,7 @@ tableName = "collection"
 -------------------------------------------------------------------------------
 function createCol(parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << insertQuery(parameters, tableName)
+    local qry = db << insertQuery(parameters, "collection")
     local row = qry()
 
     qry = db << lastInsertedQuery()
@@ -33,7 +33,7 @@ end
 -------------------------------------------------------------------------------
 function readCol(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << selectIDQuery(id, tableName)
+    local qry = db << selectIDQuery(id, "collection")
     local row = qry()
     local data
 
@@ -61,7 +61,7 @@ end
 -------------------------------------------------------------------------------
 function readAllCol()
     local db = sqlite(dbPath, "RW")
-    local qry = db << selectAllQuery(tableName)
+    local qry = db << selectAllQuery("collection")
     local row = qry()
     local allData = {}
 
@@ -88,7 +88,7 @@ end
 -------------------------------------------------------------------------------
 function updateCol(id, parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << updateQuery(id, parameters, tableName)
+    local qry = db << updateQuery(id, parameters, "collection")
     local row = qry()
 
     qry =~ qry;
@@ -101,7 +101,7 @@ end
 -------------------------------------------------------------------------------
 function deleteCol(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << deleteQuery(id, tableName)
+    local qry = db << deleteQuery(id, "collection")
     local row = qry()
 
     qry =~ qry;
