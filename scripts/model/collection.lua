@@ -13,6 +13,7 @@ tableName = "collection"
 -- @return  (string): ID of the created collection
 -------------------------------------------------------------------------------
 function createCol(parameters)
+    parameters["isLeaf"] = 1
     local db = sqlite(dbPath, "RW")
     local qry = db << insertQuery(parameters, "collection")
     local row = qry()
@@ -59,9 +60,43 @@ end
 -- @param   'parameters' (table): table with name of parameter and value
 -- @return  'data' (table): returns all the collections
 -------------------------------------------------------------------------------
-function readAllCol()
+function readAllCol(parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << selectAllQuery("collection")
+    local firstCond = "id!=0"
+
+    for key, param in pairs(parameters) do
+
+        for k, p in pairs(param) do
+            print(k,p)
+        end
+
+        local query
+        if (param[3] == "EQ") then
+            query = equal(param[2], param[4])
+        elseif (param[3] == "!EQ") then
+            query = notEqual(param[2], param[4])
+        elseif (param[3] == "LIKE") then
+            query = like(param[2], param[4])
+        elseif (param[3] == "!LIKE") then
+            query = notLike(param[2], param[4])
+        elseif (param[3] == "EX") then
+            query = exists(param[2], param[4])
+        elseif (param[3] == "!EX") then
+            query = notExists(param[2], param[4])
+        end
+
+        if (param[1] == "AND") then
+            firstCond = andOperator({firstCond, query})
+        elseif (param[1] == "OR") then
+            firstCond = orOperator({firstCond, query})
+        else
+            print("fail")
+        end
+
+    end
+
+    print(selectConditionQuery(firstCond, "collection"))
+    local qry = db << selectConditionQuery(firstCond, "collection")
     local row = qry()
     local allData = {}
 

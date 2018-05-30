@@ -104,10 +104,6 @@ function readAllRes(parameters)
             print("fail")
         end
 
-        for k, p in pairs(param) do
-            print(k, p)
-        end
-
     end
 
     local qry = db << selectConditionQuery(firstCond, tableName)

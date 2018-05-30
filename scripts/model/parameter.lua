@@ -6,9 +6,9 @@
 -- To change this template use File | Settings | File Templates.
 --
 
-function getParameters()
+function getResParams(serverParam)
     local parameters = {}
-    for key,value in pairs(server.post) do
+    for key,value in pairs(serverParam) do
         if (key == 'title') then
             parameters["title"] = value
         elseif (key == 'creator') then
@@ -49,6 +49,21 @@ function getParameters()
     return parameters
 end
 
+function getColParams(serverParam)
+    local parameters = {}
+    for key,value in pairs(serverParam) do
+        if (key == 'name') then
+            parameters["name"] = value
+        elseif (key == 'collection_id') then
+            parameters["collection_id"] = value
+        else
+            print("the following key does not match: " .. key)
+        end
+    end
+
+    return parameters
+end
+
 --function getIDfromURL()
 --    local id
 --    local startPos, endPos = string.find(server.uri, "api/resources/")
@@ -63,10 +78,9 @@ end
 --    return id
 --end
 
-function getIDfromURL(url)
-    local idPattern = "^/api/resources/%d+$"
-    if (string.match(url, idPattern) ~= nil) then
-        return string.match(url, "%d+")
+function getID(pattern)
+    if (string.match(server.uri, pattern) ~= nil) then
+        return string.match(server.uri, "%d+")
     else
         return nil
     end

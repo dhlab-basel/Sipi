@@ -15,7 +15,7 @@ if (string.match(server.uri, uriPattern) == nil) then
 end
 
 -- Gets parameters
-local parameters = getParameters()
+local parameters = getResParams(server.post)
 
 -- Checks if parameters were given
 if (parameters == nil) then

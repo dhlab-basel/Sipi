@@ -4,8 +4,8 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
--- Gets the ID
-local id = getIDfromURL(server.uri)
+-- Gets ID from the url
+local id = getID("^/api/resources/%d+$")
 
 -- ID was not found it the uri
 if (id == nil) then
@@ -25,7 +25,7 @@ if (data == nil) then
 end
 
 -- Get parameters
-local parameters = getParameters()
+local parameters = getResParams(server.post)
 
 -- Replaces file
 if (server.uploads ~= nil) then

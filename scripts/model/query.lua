@@ -206,7 +206,6 @@ function updateQuery(id, parameters, tableName)
         else
             table.insert(params, key .. '="' .. value .. '"')
         end
-
     end
 
     return 'UPDATE ' .. tableName .. ' SET ' .. table.concat(params, ", ") .. ' WHERE id= "' .. id .. '";'

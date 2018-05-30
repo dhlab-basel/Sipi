@@ -69,7 +69,7 @@ function getResources()
     local parameters = { parameter }
     table1["data"] = readAllRes(parameters)
 
-    if #table1["data"] > 0 then
+    if (#table1["data"] > 0) then
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
