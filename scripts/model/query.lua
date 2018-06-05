@@ -56,7 +56,7 @@ end
 -- @param   'name' (string):  name of the parameter
 -- @return  (string): IS NOT NULL statement involving the parameter
 -------------------------------------------------------------------------------
-function notNull(name)
+function isNotNull(name)
     return name .. ' IS NOT NULL '
 end
 

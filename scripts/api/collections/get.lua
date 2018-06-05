@@ -11,7 +11,7 @@ function getCollections()
     local table1 = {}
     print("gefunden")
 
-    table1["data"] = readAllCol()
+    table1["data"] = readAllCol({})
 
     if #table1["data"] > 0 then
         table1["status"] = "successful"

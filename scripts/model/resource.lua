@@ -90,18 +90,30 @@ function readAllRes(parameters)
             statement = like(param[2], param[4])
         elseif (param[3] == "!LIKE") then
             statement = notLike(param[2], param[4])
-        elseif (param[3] == "EX") then
-            statement = exists(param[2], param[4])
-        elseif (param[3] == "!EX") then
-            statement = notExists(param[2], param[4])
+        elseif (param[3] == "NULL") then
+            statement = isNull(param[2])
+        elseif (param[3] == "!NULL") then
+            statement = isNotNull(param[2])
+        elseif (param[3] == "GT") then
+            statement = greaterThan(param[2], param[4])
+        elseif (param[3] == "GT_EQ") then
+            statement = greaterThanEqual(param[2], param[4])
+        elseif (param[3] == "LT") then
+            statement = lessThan(param[2], param[4])
+        elseif (param[3] == "LT_EQ") then
+            statement = lessThanEqual(param[2], param[4])
+        elseif (param[3] == "BETWEEN") then
+            statement = betweenDates(param[4], param[5])
         end
 
-        if (param[1] == "AND") then
+        if (key == 1) then
             trivialCond = andOperator({trivialCond, statement})
-        elseif (param[1] == "OR") then
-            trivialCond = orOperator({trivialCond, statement})
         else
-            print("fail")
+            if (param[1] == "AND") then
+                trivialCond = andOperator({trivialCond, statement})
+            elseif (param[1] == "OR") then
+                trivialCond = orOperator({trivialCond, statement})
+            end
         end
 
     end

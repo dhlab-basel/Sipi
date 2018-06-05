@@ -1,89 +1,131 @@
 print("---- GET search script ----")
 
--- dient als hilfe
 require "./model/resource"
 require "./model/parameter"
 require "./model/file"
+require "./model/query"
 
 function startSearching()
     local table1 = {}
+
     -- Evaluation of the parameters
     local parameters = {}
     if (server.get ~= nil) then
-        print("Parameter is there")
+
         for key,value in pairs(server.get) do
             print(key, value)
-            local paramName, valueName
+            local p1, p2, p3, p4, p5
 
-            local log = string.match(key, "%[%a+%]" )
-            local startPara, endPara = string.find(key, "%[%a+%]" )
-            if (startPara ~= nil) and (endPara ~= nil) then
-                paramName = string.sub(key, endPara+1, #key)
-                print("found before " .. paramName)
-                if (log ~= nil) then
+            -- Evaluates the logical operator
+            local log = string.match(key, "%[.*%]")
+            print(log)
+            if (log ~= nil) then
+                local startPara, endPara = string.find(key, "%[.*%]")
+                if (startPara ~= nil) and (endPara ~= nil) then
+                    p2 = string.sub(key, endPara+1, #key)
                     if (log == "[AND]") or (log == "[and]") then
-                        print("AND")
+                        p1 = "AND"
                     elseif (log == "[OR]") or (log == "[or]") then
-                        print("OR")
+                        p1 = "OR"
                     else
-                        print("Fail")
+                        server.sendHeader('Content-type', 'application/json')
+                        server.sendStatus(400)
+                        return
                     end
                 else
-                    print("Ergänzung AND")
+                    server.sendHeader('Content-type', 'application/json')
+                    server.sendStatus(500)
+                    return
                 end
             else
-                paramName = key
-                print("not found before " .. paramName)
-                print("Ergänzung AND")
+                p1 = "AND"
+                p2 = key
             end
 
-            local comp = string.match(value, "%[!?%a+_?%a+%]")
-            local startVal, endVal = string.find(value, "%[!?%a+_?%a+%]")
-            if (startVal ~= nil) and (endVal ~= nil) then
-                valueName = string.sub(value, endVal+1, #value)
-                print("found before " .. valueName)
-            else
-                valueName = value
-                print("not found before " .. valueName)
-            end
-
-            local i,j = string.find(value, ":")
-            if (paramName == "date") and (i ~= nil) and (j ~= nil) then
-                print(i, j)
-                if (comp == nil) then
-                    print("gültige url im date")
+            -- Evaluates the comparison operator
+            local comp = string.match(value, "%[.*%]")
+            print(comp)
+            if (comp ~= nil) then
+                local startVal, endVal = string.find(value, "%[.*%]")
+                if (startVal ~= nil) and (endVal ~= nil) then
+                    p4 = string.sub(value, endVal+1, #value)
                 else
-                    print("nicht gültig url im date")
+                    server.sendHeader('Content-type', 'application/json')
+                    server.sendStatus(500)
+                    return
+                end
+            else
+                p3 = "EQ"
+                p4 = value
+            end
+
+            if (p2 == "date") then
+                local i,j = string.find(value, ":")
+                if (i ~= nil) and (j ~= nil) then
+                    if (comp == nil) then
+                        print("gültige url im date")
+                        p3 = "BETWEEN"
+                        p4 = string.sub(value, 1, j-1)
+                        p5 = string.sub(value, j+1, #value)
+                    else
+                        server.sendHeader('Content-type', 'application/json')
+                        server.sendStatus(400)
+                        return
+                    end
+                else
+                    if (comp ~= nil) then
+                        if (comp == "[eq]") or (comp == "[EQ]") then
+                            p3 = "EQ"
+                        elseif (comp == "[!eq]") or (comp == "[!EQ]") then
+                            p3 = "!EQ"
+                        elseif (comp == "[null]") or (comp == "[NULL]") then
+                            p3 = "NULL"
+                        elseif (comp == "[!null]" ) or (comp == "[!NULL]") then
+                            p3 = "!NULL"
+                        elseif (comp == "[gt]" ) or (comp == "[GT]") then
+                            p3 = "GT"
+                        elseif (comp == "[gt_eq]" ) or (comp == "[GT_EQ]") then
+                            p3 = "GT_EQ"
+                        elseif (comp == "[lt]" ) or (comp == "[LT]") then
+                            p3 = "LT"
+                        elseif (comp == "[lt_eq]" ) or (comp == "[LT_EQ]") then
+                            p3 = "LT_EQ"
+                        else
+                            server.sendHeader('Content-type', 'application/json')
+                            server.sendStatus(400)
+                            return
+                        end
+                    end
                 end
             else
                 if (comp ~= nil) then
                     if (comp == "[eq]") or (comp == "[EQ]") then
-                        print("EQUAL")
+                        p3 = "EQ"
                     elseif (comp == "[!eq]") or (comp == "[!EQ]") then
-                        print("NOT EQUAL")
+                        p3 = "!EQ"
                     elseif (comp == "[like]") or (comp == "[LIKE]") then
-                        print("LIKE")
+                        p3 = "LIKE"
                     elseif (comp == "[!like]") or (comp == "[!LIKE]") then
-                        print("NOT LIKE")
-                    elseif (comp == "[ex]") or (comp == "[EX]") then
-                        print("EXISTS")
-                    elseif (comp == "[!ex]" ) or (comp == "[!EX]") then
-                        print("NOT EXISTS")
-                    elseif (comp == "[gt]" ) or (comp == "[GT]") then
-                        print("GREATER THAN")
-                    elseif (comp == "[gt_eq]" ) or (comp == "[GT_EQ]") then
-                        print("GREATER THAN EQUAL")
-                    elseif (comp == "[lt]" ) or (comp == "[LT]") then
-                        print("LESS THAN")
-                    elseif (comp == "[lt_eq]" ) or (comp == "[LT_EQ]") then
-                        print("LESS THAN EQUAL")
+                        p3 = "!LIKE"
+                    elseif (comp == "[null]") or (comp == "[NULL]") then
+                        p3 = "NULL"
+                    elseif (comp == "[!null]" ) or (comp == "[!NULL]") then
+                        p3 = "!NULL"
                     else
-                        print("Ungültige []")
+                        server.sendHeader('Content-type', 'application/json')
+                        server.sendStatus(400)
+                        return
                     end
-                else
-                    print("Ergänzung EQUAL")
                 end
             end
+
+            local parameter = { p1, p2, p3, p4, p5 }
+            table.insert(parameters, parameter)
+
+            for j,k in pairs(parameter) do
+                print(j, k)
+            end
+
         end
     end
 
