@@ -77,36 +77,36 @@ end
 -------------------------------------------------------------------------------
 function readAllRes(parameters)
     local db = sqlite(dbPath, "RW")
-    local firstCond = "id!=0"
+    local trivialCond = "id!=0"
 
     for key, param in pairs(parameters) do
 
-        local query
+        local statement
         if (param[3] == "EQ") then
-            query = equal(param[2], param[4])
+            statement = equal(param[2], param[4])
         elseif (param[3] == "!EQ") then
-            query = notEqual(param[2], param[4])
+            statement = notEqual(param[2], param[4])
         elseif (param[3] == "LIKE") then
-            query = like(param[2], param[4])
+            statement = like(param[2], param[4])
         elseif (param[3] == "!LIKE") then
-            query = notLike(param[2], param[4])
+            statement = notLike(param[2], param[4])
         elseif (param[3] == "EX") then
-            query = exists(param[2], param[4])
+            statement = exists(param[2], param[4])
         elseif (param[3] == "!EX") then
-            query = notExists(param[2], param[4])
+            statement = notExists(param[2], param[4])
         end
 
         if (param[1] == "AND") then
-            firstCond = andOperator({firstCond, query})
+            trivialCond = andOperator({trivialCond, statement})
         elseif (param[1] == "OR") then
-            firstCond = orOperator({firstCond, query})
+            trivialCond = orOperator({trivialCond, statement})
         else
             print("fail")
         end
 
     end
 
-    local qry = db << selectConditionQuery(firstCond, tableName)
+    local qry = db << selectConditionQuery(trivialCond, tableName)
     local row = qry()
     local allData = {}
 
