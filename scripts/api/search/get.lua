@@ -5,16 +5,12 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
-
-local table1 = {}
-local baseURL = "^/api/"
-local searchPattern = baseURL .. "search"
-
-local uri = server.uri
-if (string.match(uri, searchPattern) ~= nil) then
-     -- Inserts all the parameters
+function startSearching()
+    local table1 = {}
+    -- Evaluation of the parameters
     local parameters = {}
     if (server.get ~= nil) then
+        print("Parameter is there")
         for key,value in pairs(server.get) do
             print(key, value)
             local paramName, valueName
@@ -99,22 +95,33 @@ if (string.match(uri, searchPattern) ~= nil) then
         table1["status"] = "no data were found"
     end
 
-else
-    print(uri .. " ==> FAIL")
+    server.setBuffer()
 
-    server.sendStatus(404)
-    return
+    local success, jsonstr = server.table_to_json(table1)
+    if not success then
+        server.sendStatus(500)
+        server.log(jsonstr, server.loglevel.err)
+        return false
+    end
+
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(200)
+    server.print(jsonstr)
+
 end
 
-server.setBuffer()
+local baseURL = "^/api/"
+local uri = server.uri
 
-local success, jsonstr = server.table_to_json(table1)
-if not success then
-    server.sendStatus(500)
-    server.log(jsonstr, server.loglevel.err)
-    return false
+local routes = {}
+routes[baseURL .. "search$"] = startSearching
+
+for route, func in pairs(routes) do
+    if (string.match(uri, route) ~= nil) then
+        func()
+        return
+    end
 end
 
-server.sendHeader('Content-type', 'application/json')
-server.sendStatus(200)
-server.print(jsonstr)
+print(uri .. " ==> FAIL")
+server.sendStatus(404)

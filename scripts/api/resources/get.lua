@@ -101,7 +101,6 @@ for route, func in pairs(routes) do
     end
 end
 
-
---Fall 4
+--Fail case
 print("FAIL - nichts gefunden")
 server.sendStatus(404)

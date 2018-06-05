@@ -42,8 +42,7 @@ end
 
 -- Checks if there is any resources attached
 local parameter = { "AND", "collection_id", "EQ", id, nil }
-local parameters = { parameter }
-local resources = readAllRes(parameters)
+local resources = readAllRes({ parameter })
 
 if (#resources > 0) then
     print("Resources attached")
@@ -56,8 +55,7 @@ end
 local parentID = readCol(id)['collection_id']
 local p1 = { "AND", "collection_id", "EQ", parentID, nil }
 local p2 = { "AND", "id", "!EQ", id, nil }
-local params = { p1, p2 }
-local siblings = readAllCol(params)
+local siblings = readAllCol({ p1, p2 })
 
 deleteCol(id)
 

@@ -31,21 +31,20 @@ local newParentID = parameters["collection_id"]
 
 -- Check if newParentID exists
 if (readCol(newParentID) == nil) then
-    print("No parent ID")
+    print("Parent ID does not exist")
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(404)
     return
 end
 
--- Corrects the isLeaf of parent
+-- Corrects the isLeaf of both parent
 if (newParentID ~= nil) and (newParentID ~= oldParentID) then
     -- Get all the sibling of the new collection
     local p1 = { "AND", "collection_id", "EQ", newParentID, nil }
-    local params = { p1 }
-    local siblings = readAllCol(params)
+    local newSiblings = readAllCol({ p1 })
 
-    -- Correct isLeaf of the new parent
-    if (#siblings == 0) then
+    -- Corrects isLeaf of the new parent
+    if (#newSiblings == 0) then
         local param = {}
         param["isLeaf"] = 0
         updateCol(newParentID, param)
@@ -54,11 +53,10 @@ if (newParentID ~= nil) and (newParentID ~= oldParentID) then
     -- Get all the sibling of the old collection
     local p2 = { "AND", "collection_id", "EQ", oldParentID, nil }
     local p3 = { "AND", "id", "!EQ", id, nil }
-    local params2 = { p2, p3 }
-    local siblings2 = readAllCol(params2)
+    local oldSiblings = readAllCol({ p2, p3 })
 
     -- Correct isLeaf of the old parent
-    if (#siblings == 0) then
+    if (#oldSiblings == 0) then
         local param2 = {}
         param2["isLeaf"] = 1
         updateCol(oldParentID, param2)

@@ -62,13 +62,8 @@ function readFile(filename)
     local file = io.open(path .. filename)
     io.input(file)
     local content = io.read("*a")
-
-    if (content ~= nil) then
-        print("content is null")
-        -- gibt was zurück
-    end
-
     io.close(file)
+
     return content
 end
 
