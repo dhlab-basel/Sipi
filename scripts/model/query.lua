@@ -3,13 +3,13 @@
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
--- Builds the EQUAL statement
+-- Builds the EQUAL statement which is case insensitive
 -- @param   'name' (string):  name of the parameter
 -- @param   'value' (string):  value of the parameter
 -- @return  (string): EQUAL statement involving the parameter
 -------------------------------------------------------------------------------
 function equal(name, value)
-    return name .. "='" .. value .. "'"
+    return name .. "='" .. value .. "' COLLATE NOCASE"
 end
 
 -------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ end
 -- @return  (string): Not EQUAL statement involving the parameter
 -------------------------------------------------------------------------------
 function notEqual(name, value)
-    return name .. "!='" .. value .. "'"
+    return name .. "!='" .. value .. "' COLLATE NOCASE"
 end
 
 -------------------------------------------------------------------------------
@@ -102,12 +102,13 @@ end
 
 -------------------------------------------------------------------------------
 -- Builds the BETWEEN statement
+-- @param   'name' (string):  name of the parameter
 -- @param   'date1' (string):  start date
 -- @param   'date2' (string):  end date
 -- @return  (string): BETWEEN the dates statement
 -------------------------------------------------------------------------------
-function betweenDates(date1, date2)
-    return 'BETWEEN "' .. date1 .. '" AND "' .. date2 .. '"'
+function betweenDates(name, date1, date2)
+    return name .. ' BETWEEN "' .. date1 .. '" AND "' .. date2 .. '"'
 end
 
 -------------------------------------------------------------------------------

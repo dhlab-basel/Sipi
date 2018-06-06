@@ -103,7 +103,7 @@ function readAllRes(parameters)
         elseif (param[3] == "LT_EQ") then
             statement = lessThanEqual(param[2], param[4])
         elseif (param[3] == "BETWEEN") then
-            statement = betweenDates(param[4], param[5])
+            statement = betweenDates(param[2], param[4], param[5])
         end
 
         if (key == 1) then
