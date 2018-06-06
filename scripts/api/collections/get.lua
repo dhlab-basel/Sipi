@@ -9,8 +9,6 @@ uri = server.uri
 
 function getCollections()
     local table1 = {}
-    print("gefunden")
-
     table1["data"] = readAllCol({})
 
     if #table1["data"] > 0 then
@@ -36,8 +34,6 @@ end
 function getCollection()
     local table1 = {}
     local id = string.match(uri, "%d+")
-    print("2. gefunden", id)
-
     table1["data"] = readCol(id)
 
     if (table1["data"] ~= nil) then
@@ -63,7 +59,6 @@ end
 function getResources()
     local table1 = {}
     local colID = string.match(uri, "%d+")
-    print("3. gefunden", colID)
 
     local parameter = { "AND", "collection_id", "EQ", colID, nil }
     local parameters = { parameter }
@@ -108,8 +103,6 @@ function getResource()
     local p2 = { "AND", "id", "EQ", resID, nil }
     local parameters = { p1, p2 }
 
-    print("4. gefunden: " .. colID .. "| " .. resID)
-
     table1["data"] = readAllRes(parameters)[1]
 
     if (table1["data"] ~= nil) then
@@ -149,8 +142,6 @@ function getFileResource()
     local p1 = { "AND", "collection_id", "EQ", colID, nil }
     local p2 = { "AND", "id", "EQ", resID, nil }
     local parameters = { p1, p2 }
-
-    print("4. gefunden: " .. colID .. "| " .. resID)
 
     local data = readAllRes(parameters)[1]
 
