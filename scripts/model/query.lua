@@ -13,7 +13,7 @@ function equal(name, value)
 end
 
 -------------------------------------------------------------------------------
--- Builds the not EQUAL statement
+-- Builds the not EQUAL statement which is case insensitive
 -- @param   'name' (string):  name of the parameter
 -- @param   'value' (string):  value of the parameter
 -- @return  (string): Not EQUAL statement involving the parameter
