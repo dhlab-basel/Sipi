@@ -11,7 +11,7 @@ function getCollections()
     local table1 = {}
     table1["data"] = readAllCol({})
 
-    if #table1["data"] > 0 then
+    if (#table1["data"] > 0) then
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
@@ -85,7 +85,6 @@ function getResources()
 end
 
 function getResource()
-    local table1 = {}
     local colID
     local resID
 
@@ -103,6 +102,7 @@ function getResource()
     local p2 = { "AND", "id", "EQ", resID, nil }
     local parameters = { p1, p2 }
 
+    local table1 = {}
     table1["data"] = readAllRes(parameters)[1]
 
     if (table1["data"] ~= nil) then
