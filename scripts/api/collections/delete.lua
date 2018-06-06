@@ -74,7 +74,6 @@ if (#siblings == 0) then
 end
 
 local table = {}
-table["data"] = collections
 table["status"] = "successful"
 
 local success, jsonstr = server.table_to_json(table)
