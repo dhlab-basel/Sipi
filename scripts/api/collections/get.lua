@@ -60,7 +60,7 @@ function getResources()
     local table1 = {}
     local colID = string.match(uri, "%d+")
 
-    local parameter = { "AND", "collection_id", "EQ", colID, nil }
+    local parameter = { "collection_id", "EQ", colID, nil }
     local parameters = { parameter }
     table1["data"] = readAllRes(parameters)
 
@@ -98,8 +98,8 @@ function getResource()
         resID = string.match(string.sub(uri, k, l), "%d+")
     end
 
-    local p1 = { "AND", "collection_id", "EQ", colID, nil }
-    local p2 = { "AND", "id", "EQ", resID, nil }
+    local p1 = { "collection_id", "EQ", colID, nil }
+    local p2 = { "id", "EQ", resID, nil }
     local parameters = { p1, p2 }
 
     local table1 = {}
@@ -139,8 +139,8 @@ function getFileResource()
         resID = string.match(string.sub(uri, k, l), "%d+")
     end
 
-    local p1 = { "AND", "collection_id", "EQ", colID, nil }
-    local p2 = { "AND", "id", "EQ", resID, nil }
+    local p1 = { "collection_id", "EQ", colID, nil }
+    local p2 = { "id", "EQ", resID, nil }
     local parameters = { p1, p2 }
 
     local data = readAllRes(parameters)[1]

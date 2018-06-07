@@ -5,74 +5,49 @@ require "./model/parameter"
 require "./model/file"
 require "./model/query"
 
-function getLogicalOperator(key)
-    local p1, p2, errCode
-    local log = string.match(key, "%[.*%]")
-    if (log ~= nil) then
-        local startPara, endPara = string.find(key, "%[.*%]")
-        if (startPara ~= nil) and (endPara ~= nil) then
-            p2 = string.sub(key, endPara+1, #key)
-            if (log == "[AND]") or (log == "[and]") then
-                p1 = "AND"
-            elseif (log == "[OR]") or (log == "[or]") then
-                p1 = "OR"
-            else
-                errCode = 400
-            end
-        else
-            errCode = 500
-        end
-    else
-        p1 = "AND"
-        p2 = key
-    end
-
-    return p1, p2, errCode
-end
-
-function getComparisonOperator(value, paramName)
-    local p3, p4, p5, errMsg
+function structureParam(value, paramName)
+    local p2, p3, p4, errMsg
     local comp = string.match(value, "%[.*%]")
     if (comp ~= nil) then
         local startVal, endVal = string.find(value, "%[.*%]")
         if (startVal ~= nil) and (endVal ~= nil) then
-            p4 = string.sub(value, endVal+1, #value)
+            p3 = string.sub(value, endVal+1, #value)
         else
             errMsg = 500
         end
     else
-        p3 = "EQ"
-        p4 = value
+        p2 = "EQ"
+        p3 = value
     end
 
     if (paramName == "date") then
         local i,j = string.find(value, ":")
         if (i ~= nil) and (j ~= nil) then
             if (comp == nil) then
-                p3 = "BETWEEN"
-                p4 = string.sub(value, 1, j-1)
-                p5 = string.sub(value, j+1, #value)
+                p2 = "BETWEEN"
+                p3 = string.sub(value, 1, j-1)
+                p4 = string.sub(value, j+1, #value)
             else
                 errMsg = 400
             end
         else
             if (comp ~= nil) then
                 if (comp == "[eq]") or (comp == "[EQ]") then
-                    p3 = "EQ"
+                    p2 = "EQ"
                 elseif (comp == "[!eq]") or (comp == "[!EQ]") then
-                    p3 = "!EQ"
+                    p2 = "!EQ"
                 elseif (comp == "[null]") or (comp == "[NULL]") then
-                    p3 = "NULL"
+                    p2 = "NULL"
                 elseif (comp == "[!null]" ) or (comp == "[!NULL]") then
-                    p3 = "!NULL"
+                    p2 = "!NULL"
                 elseif (comp == "[gt]" ) or (comp == "[GT]") then
-                    p3 = "GT"
+                    p2 = "GT"
                 elseif (comp == "[gt_eq]" ) or (comp == "[GT_EQ]") then
-                    p3 = "GT_EQ"
+                    p2 = "GT_EQ"
                 elseif (comp == "[lt]" ) or (comp == "[LT]") then
-                    p3 = "LT"
+                    p2 = "LT"
                 elseif (comp == "[lt_eq]" ) or (comp == "[LT_EQ]") then
-                    p3 = "LT_EQ"
+                    p2 = "LT_EQ"
                 else
                     errMsg = 400
                 end
@@ -81,46 +56,37 @@ function getComparisonOperator(value, paramName)
     else
         if (comp ~= nil) then
             if (comp == "[eq]") or (comp == "[EQ]") then
-                p3 = "EQ"
+                p2 = "EQ"
             elseif (comp == "[!eq]") or (comp == "[!EQ]") then
-                p3 = "!EQ"
+                p2 = "!EQ"
             elseif (comp == "[like]") or (comp == "[LIKE]") then
-                p3 = "LIKE"
+                p2 = "LIKE"
             elseif (comp == "[!like]") or (comp == "[!LIKE]") then
-                p3 = "!LIKE"
+                p2 = "!LIKE"
             elseif (comp == "[null]") or (comp == "[NULL]") then
-                p3 = "NULL"
+                p2 = "NULL"
             elseif (comp == "[!null]" ) or (comp == "[!NULL]") then
-                p3 = "!NULL"
+                p2 = "!NULL"
             else
                 errMsg = 400
             end
         end
     end
 
-    return p3, p4, p5, errMsg
+    return paramName, p2, p3, p4, errMsg
 end
 
 function startSearching()
 
-    -- Evaluation of the parameters
     local parameters = {}
     if (server.get ~= nil) then
 
         for key,value in pairs(server.get) do
-            local p1, p2, p3, p4, p5, errMsg
 
-            -- Evaluates the logical operator
-            p1, p2, errMsg = getLogicalOperator(key)
+            -- Hier prüfen of key richtig ist und keine Sonderzeichen enthält
 
-            if (errMsg ~= nil) then
-                server.sendHeader('Content-type', 'application/json')
-                server.sendStatus(errMsg)
-                return
-            end
-
-            -- Evaluates the comparison operator
-            p3, p4, p5, errMsg = getComparisonOperator(value, p2)
+            -- Evaluates the parameters
+            local p1, p2, p3, p4, errMsg = structureParam(value, key)
 
             if (errMsg ~= nil) then
                 server.sendHeader('Content-type', 'application/json')
@@ -128,7 +94,7 @@ function startSearching()
                 return
             end
 
-            local parameter = { p1, p2, p3, p4, p5 }
+            local parameter = { p1, p2, p3, p4 }
             table.insert(parameters, parameter)
 
             for j,k in pairs(parameter) do

@@ -82,40 +82,36 @@ function readAllRes(parameters)
     for key, param in pairs(parameters) do
 
         local statement
-        if (param[3] == "EQ") then
-            statement = equal(param[2], param[4])
-        elseif (param[3] == "!EQ") then
-            statement = notEqual(param[2], param[4])
-        elseif (param[3] == "LIKE") then
-            statement = like(param[2], param[4])
-        elseif (param[3] == "!LIKE") then
-            statement = notLike(param[2], param[4])
-        elseif (param[3] == "NULL") then
-            statement = isNull(param[2])
-        elseif (param[3] == "!NULL") then
-            statement = isNotNull(param[2])
-        elseif (param[3] == "GT") then
-            statement = greaterThan(param[2], param[4])
-        elseif (param[3] == "GT_EQ") then
-            statement = greaterThanEqual(param[2], param[4])
-        elseif (param[3] == "LT") then
-            statement = lessThan(param[2], param[4])
-        elseif (param[3] == "LT_EQ") then
-            statement = lessThanEqual(param[2], param[4])
-        elseif (param[3] == "BETWEEN") then
-            statement = betweenDates(param[2], param[4], param[5])
+        local paramName = param[1]
+        local compOp = param[2]
+        local value1 = param[3]
+        local value2 = param[4]
+
+        if (compOp == "EQ") then
+            statement = equal(paramName, value1)
+        elseif (compOp == "!EQ") then
+            statement = notEqual(paramName, value1)
+        elseif (compOp == "LIKE") then
+            statement = like(paramName, value1)
+        elseif (compOp == "!LIKE") then
+            statement = notLike(paramName, value1)
+        elseif (compOp == "NULL") then
+            statement = isNull(paramName)
+        elseif (compOp == "!NULL") then
+            statement = isNotNull(paramName)
+        elseif (compOp == "GT") then
+            statement = greaterThan(paramName, value1)
+        elseif (compOp == "GT_EQ") then
+            statement = greaterThanEqual(paramName, value1)
+        elseif (compOp == "LT") then
+            statement = lessThan(paramName, value1)
+        elseif (compOp == "LT_EQ") then
+            statement = lessThanEqual(paramName, value1)
+        elseif (compOp == "BETWEEN") then
+            statement = betweenDates(paramName, value1, value2)
         end
 
-        if (key == 1) then
-            trivialCond = andOperator({trivialCond, statement})
-        else
-            if (param[1] == "AND") then
-                trivialCond = andOperator({trivialCond, statement})
-            elseif (param[1] == "OR") then
-                trivialCond = orOperator({trivialCond, statement})
-            end
-        end
-
+        trivialCond = andOperator({trivialCond, statement})
     end
 
     local qry = db << selectConditionQuery(trivialCond, tableName)
