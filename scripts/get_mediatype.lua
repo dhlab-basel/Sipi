@@ -29,7 +29,7 @@ IMAGE = "image"
 
 APPLICATION_XML = "application/xml"
 TEXT_XML = "text/xml"
-PLAIN_TEXT = "plain/text"
+TEXT_PLAIN = "text/plain"
 
 -------------------------------------------------------------------------------
 -- This function is called from the route to determine the media type (image, text file) of a given file.
@@ -41,7 +41,7 @@ PLAIN_TEXT = "plain/text"
 -------------------------------------------------------------------------------
 function get_mediatype(mimetype)
 
-    if mimetype == APPLICATION_XML or mimetype == TEXT_XML or mimetype == PLAIN_TEXT then
+    if mimetype == APPLICATION_XML or mimetype == TEXT_XML or mimetype == TEXT_PLAIN then
         return TEXT
 
     elseif mimetype == "image/jp2" or mimetype == "image/tiff" or mimetype == "image/png" or mimetype == "image/jpeg" then
@@ -73,5 +73,9 @@ function check_file_extension(mimetype, filename)
 
         -- valid extensions are: xml, xsl (XSLT), and .xsd (XML Schema)
         return ext == ".xml" or ext == ".xsl" or ext == ".xsd"
+    elseif (mimetype == TEXT_PLAIN) then
+        local ext = string.sub(filename, -4)
+
+        return ext == ".txt"
     end
 end
