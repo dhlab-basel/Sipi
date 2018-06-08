@@ -38,6 +38,10 @@ class TestServer:
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
 
+    def test_lua_scripts(self, manager):
+        """call Lua functions for mediatype handling"""
+        manager.expect_status_code("/test_mediatype", 200)
+
     def test_knora_session_parsing(self, manager):
         """call Lua function that gets the Knora session id from the cookie header sent to Sipi"""
         manager.expect_status_code("/test_knora_session_cookie", 200)
