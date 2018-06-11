@@ -41,7 +41,7 @@ end
 -- Corrects the isLeaf of both parent
 if (newParentID ~= nil) and (newParentID ~= oldParentID) then
     -- Get all the sibling of the new collection
-    local p1 = { "AND", "collection_id", "EQ", newParentID, nil }
+    local p1 = { "collection_id", "EQ", newParentID, nil }
     local newSiblings = readAllCol({ p1 })
 
     -- Corrects isLeaf of the new parent
@@ -52,8 +52,8 @@ if (newParentID ~= nil) and (newParentID ~= oldParentID) then
     end
 
     -- Get all the sibling of the old collection
-    local p2 = { "AND", "collection_id", "EQ", oldParentID, nil }
-    local p3 = { "AND", "id", "!EQ", id, nil }
+    local p2 = { "collection_id", "EQ", oldParentID, nil }
+    local p3 = { "id", "!EQ", id, nil }
     local oldSiblings = readAllCol({ p2, p3 })
 
     -- Correct isLeaf of the old parent

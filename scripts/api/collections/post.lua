@@ -16,6 +16,15 @@ end
 
 -- Gets parameters
 local parameters = getColParams(server.post)
+local parent = parameters["collection_id"]
+
+-- Check if parent exists
+if (readCol(parent) == nil) then
+    print("Parent ID does not exist")
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(404)
+    return
+end
 
 -- Checks if parameters were given
 if (parameters == nil) then

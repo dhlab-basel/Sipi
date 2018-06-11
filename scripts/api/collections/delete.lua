@@ -35,14 +35,14 @@ end
 
 -- Checks if collection is a leaf
 if (data["isLeaf"] == 0) then
-    print("Is a leaf")
+    print("Is not a leaf")
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(403)
     return
 end
 
 -- Checks if there is any resources attached
-local parameter = { "AND", "collection_id", "EQ", id, nil }
+local parameter = { "collection_id", "EQ", id, nil }
 local resources = readAllRes({ parameter })
 
 if (#resources > 0) then
@@ -54,8 +54,8 @@ end
 
 -- Get all the sibling of the collection
 local parentID = readCol(id)['collection_id']
-local p1 = { "AND", "collection_id", "EQ", parentID, nil }
-local p2 = { "AND", "id", "!EQ", id, nil }
+local p1 = { "collection_id", "EQ", parentID, nil }
+local p2 = { "id", "!EQ", id, nil }
 local siblings = readAllCol({ p1, p2 })
 
 deleteCol(id)
