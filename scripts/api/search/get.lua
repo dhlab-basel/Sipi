@@ -7,6 +7,15 @@ require "./model/file"
 require "./model/query"
 
 -- Function definitions
+function fullSearch()
+    print("full search")
+    if (server.get ~= nil) then
+        for key,value in pairs(server.get) do
+            print(key, value)
+        end
+    end
+end
+
 function structureParam(value, paramName)
     local p2, p3, p4, errMsg
     local comp = string.match(value, "%[.*%]")
@@ -78,7 +87,7 @@ function structureParam(value, paramName)
     return paramName, p2, p3, p4, errMsg
 end
 
-function startSearching()
+function extendedSearch()
 
     local parameters = {}
     if (server.get ~= nil) then
@@ -134,7 +143,9 @@ local baseURL = "^/api/"
 local uri = server.uri
 
 local routes = {}
-routes[baseURL .. "search$"] = startSearching
+routes[baseURL .. "search$"] = fullSearch
+routes[baseURL .. "search/full$"] = fullSearch
+routes[baseURL .. "search/extended$"] = extendedSearch
 
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
