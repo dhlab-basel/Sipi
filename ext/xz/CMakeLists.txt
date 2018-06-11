@@ -7,9 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_xz
     INSTALL_DIR ${COMMON_LOCAL}
-    URL https://tukaani.org/xz/xz-5.2.3.tar.gz
-    SOURCE_DIR ${COMMON_SRCS}/xz-5.2.3
-    CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.3/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+    URL https://tukaani.org/xz/xz-5.2.4.tar.gz
+    SOURCE_DIR ${COMMON_SRCS}/xz-5.2.4
+    CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.4/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

@@ -769,12 +769,18 @@ namespace Sipi {
                         break;
                     }
                     case icc_RGB: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
+//                        std::cerr << "Passed " << __LINE__ << std::endl;
+//                        unsigned int icc_len;
+//                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+//                        std::cerr << "Passed " << __LINE__ << std::endl;
+//                        jp2_family_colour.init(icc_bytes);
+//                        std::cerr << "Passed " << __LINE__ << std::endl;
+                        std::cerr << *(img->icc);
+                        jp2_family_colour.init(JP2_sRGB_SPACE);
                         break;
                     }
                     case icc_CYMK_standard: {
+                        std::cerr << "Passed " << __LINE__ << std::endl;
                         jp2_family_colour.init(JP2_CMYK_SPACE);
                         break;
                     }

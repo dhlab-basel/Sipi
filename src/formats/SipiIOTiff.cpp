@@ -649,7 +649,8 @@ namespace Sipi {
 
             unsigned int icc_len;
             unsigned char *icc_buf;
-            float *whitepoint = nullptr;
+            float *whitepoint_ti = nullptr;
+            float whitepoint[2];
 
             if (1 == TIFFGetField(tif, TIFFTAG_ICCPROFILE, &icc_len, &icc_buf)) {
                 try {
@@ -657,7 +658,9 @@ namespace Sipi {
                 } catch (SipiError &err) {
                     syslog(LOG_ERR, "%s", err.to_string().c_str());
                 }
-            } else if (1 == TIFFGetField(tif, TIFFTAG_WHITEPOINT, &whitepoint)) {
+            } else if (1 == TIFFGetField(tif, TIFFTAG_WHITEPOINT, &whitepoint_ti)) {
+                whitepoint[0] = whitepoint_ti[0];
+                whitepoint[1] = whitepoint_ti[1];
                 //
                 // Wow, we have TIFF colormetry..... Who is still using this???
                 //
@@ -683,7 +686,7 @@ namespace Sipi {
                     primaries[5] = 0.0600;
                 }
 
-                unsigned short *tfunc, *tfunc_ti = new unsigned short[3 * (1 << img->bps)];
+                unsigned short *tfunc= new unsigned short[3 * (1 << img->bps)], *tfunc_ti ;
                 unsigned int tfunc_len, tfunc_len_ti;
 
                 if (1 == TIFFGetField(tif, TIFFTAG_TRANSFERFUNCTION, &tfunc_len_ti, &tfunc_ti)) {

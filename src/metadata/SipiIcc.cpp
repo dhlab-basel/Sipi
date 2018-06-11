@@ -158,7 +158,7 @@ namespace Sipi {
         cmsCIExyY white_point;
         white_point.x = white_point_p[0];
         white_point.y = white_point_p[1];
-        white_point.Y = 1.0;
+        //white_point.Y = 1.0;
 
         cmsCIExyYTRIPLE primaries;
         primaries.Red.x = primaries_p[0];
@@ -344,27 +344,118 @@ namespace Sipi {
         unsigned int len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         auto buf = shttps::make_unique<char[]>(len);
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoDescription, cmsNoLanguage, cmsNoCountry, buf.get(), len);
-        outstr << "ICC-Description : " << buf.get() << std::endl;
+        outstr << "ICC-Description   : " << buf.get() << std::endl;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = shttps::make_unique<char[]>(len);
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoManufacturer, cmsNoLanguage, cmsNoCountry, buf.get(), len);
-        outstr << "ICC-Manufacturer: " << buf.get() << std::endl;
+        outstr << "ICC-Manufacturer  : " << buf.get() << std::endl;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = shttps::make_unique<char[]>(len);
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoModel, cmsNoLanguage, cmsNoCountry, buf.get(), len);
-        outstr << "ICC-Model       : " << buf.get() << std::endl;
+        outstr << "ICC-Model         : " << buf.get() << std::endl;
 
         len = cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, nullptr, 0);
         buf = shttps::make_unique<char[]>(len);
         cmsGetProfileInfoASCII(rhs.icc_profile, cmsInfoCopyright, cmsNoLanguage, cmsNoCountry, buf.get(), len);
-        outstr << "ICC-Copyright   : " << buf.get() << std::endl;
+        outstr << "ICC-Copyright     : " << buf.get() << std::endl;
 
         struct tm datetime;
         if (cmsGetHeaderCreationDateTime(rhs.icc_profile, &datetime)) {
-            outstr << "ICC-Date    : " << asctime(&datetime) << std::endl;
+            outstr << "ICC-Date          : " << asctime(&datetime);
         }
+
+        cmsProfileClassSignature sig = cmsGetDeviceClass(rhs.icc_profile);
+        outstr << "ICC profile class : ";
+        switch (sig) {
+            case 0x73636E72: outstr << "cmsSigInputClass"; break;
+            case 0x6D6E7472: outstr << "cmsSigDisplayClass"; break;
+            case 0x70727472: outstr << "cmsSigOutputClass"; break;
+            case 0x6C696E6B: outstr << "cmsSigLinkClass"; break;
+            case 0x61627374: outstr << "cmsSigAbstractClass"; break;
+            case 0x73706163: outstr << "cmsSigColorSpaceClass"; break;
+            case 0x6e6d636c: outstr << "cmsSigInputClass"; break;
+            default: outstr << "unknown";
+        }
+        outstr << std::endl;
+
+        cmsFloat64Number version = cmsGetProfileVersion(rhs.icc_profile);
+        outstr << "ICC Version       : " << version << std::endl;
+
+        outstr << "ICC Matrix shaper : ";
+        if (cmsIsMatrixShaper(rhs.icc_profile)) {
+            outstr << "yes" << std::endl;
+        }
+        else {
+            outstr << "no" << std::endl;
+        }
+        cmsColorSpaceSignature csig = cmsGetPCS(rhs.icc_profile);
+        outstr << "ICC color space sigature : ";
+        switch (csig) {
+            case 0x58595A20: outstr << "cmsSigXYZData"; break;
+            case 0x4C616220: outstr << "cmsSigLabData"; break;
+            case 0x4C757620: outstr << "cmsSigLuvData"; break;
+            case 0x59436272: outstr << "cmsSigYCbCrData"; break;
+            case 0x59787920: outstr << "cmsSigYxyData"; break;
+            case 0x52474220: outstr << "cmsSigRgbData"; break;
+            case 0x47524159: outstr << "cmsSigGrayData"; break;
+            case 0x48535620: outstr << "cmsSigHsvData"; break;
+            case 0x484C5320: outstr << "cmsSigHlsData"; break;
+            case 0x434D594B: outstr << "cmsSigCmykData"; break;
+            case 0x434D5920: outstr << "cmsSigCmyData"; break;
+            case 0x4D434831: outstr << "cmsSigMCH1Data"; break;
+            case 0x4D434832: outstr << "cmsSigMCH2Data"; break;
+            case 0x4D434833: outstr << "cmsSigMCH3Data"; break;
+            case 0x4D434834: outstr << "cmsSigMCH4Data"; break;
+            case 0x4D434835: outstr << "cmsSigMCH5Data"; break;
+            case 0x4D434836: outstr << "cmsSigMCH6Data"; break;
+            case 0x4D434837: outstr << "cmsSigMCH7Data"; break;
+            case 0x4D434838: outstr << "cmsSigMCH8Data"; break;
+            case 0x4D434839: outstr << "cmsSigMCH9Data"; break;
+            case 0x4D43483A: outstr << "cmsSigMCHAData"; break;
+            case 0x4D43483B: outstr << "cmsSigMCHBData"; break;
+            case 0x4D43483C: outstr << "cmsSigMCHCData"; break;
+            case 0x4D43483D: outstr << "cmsSigMCHDData"; break;
+            case 0x4D43483E: outstr << "cmsSigMCHEData"; break;
+            case 0x4D43483F: outstr << "cmsSigMCHFData"; break;
+            case 0x6e6d636c: outstr << "cmsSigNamedData"; break;
+            case 0x31434C52: outstr << "cmsSig1colorData"; break;
+            case 0x32434C52: outstr << "cmsSig2colorData"; break;
+            case 0x33434C52: outstr << "cmsSig3colorData"; break;
+            case 0x34434C52: outstr << "cmsSig4colorData"; break;
+            case 0x35434C52: outstr << "cmsSig5colorData"; break;
+            case 0x36434C52: outstr << "cmsSig6colorData"; break;
+            case 0x37434C52: outstr << "cmsSig7colorData"; break;
+            case 0x38434C52: outstr << "cmsSig8colorData"; break;
+            case 0x39434C52: outstr << "cmsSig9colorData"; break;
+            case 0x41434C52: outstr << "cmsSig10colorData"; break;
+            case 0x42434C52: outstr << "cmsSig11colorData"; break;
+            case 0x43434C52: outstr << "cmsSig12colorData"; break;
+            case 0x44434C52: outstr << "cmsSig13colorData"; break;
+            case 0x45434C52: outstr << "cmsSig14colorData"; break;
+            case 0x46434C52: outstr << "cmsSig15colorData"; break;
+            case 0x4C75764B: outstr << "cmsSigLuvKData"; break;
+            default: outstr << "unknown";
+        }
+        outstr << std::endl;
+
+        cmsUInt32Number intent = cmsGetHeaderRenderingIntent(rhs.icc_profile);
+        outstr << "ICC rendering intent : ";
+        switch (intent) {
+            case 0: outstr << "INTENT_PERCEPTUAL"; break;
+            case 1: outstr << "INTENT_RELATIVE_COLORIMETRIC"; break;
+            case 2: outstr << "INTENT_SATURATION"; break;
+            case 3: outstr << "INTENT_ABSOLUTE_COLORIMETRIC"; break;
+            case 10: outstr << "INTENT_PRESERVE_K_ONLY_PERCEPTUAL"; break;
+            case 11: outstr << "INTENT_PRESERVE_K_ONLY_RELATIVE_COLORIMETRIC"; break;
+            case 12: outstr << "INTENT_PRESERVE_K_ONLY_SATURATION"; break;
+            case 13: outstr << "INTENT_PRESERVE_K_PLANE_PERCEPTUAL"; break;
+            case 14: outstr << "INTENT_PRESERVE_K_PLANE_RELATIVE_COLORIMETRIC"; break;
+            case 15: outstr << "INTENT_PRESERVE_K_PLANE_SATURATION"; break;
+            default: outstr << "unknown";
+        }
+        outstr << std::endl;
         return outstr;
     }
 
