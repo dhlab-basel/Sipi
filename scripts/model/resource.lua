@@ -47,7 +47,7 @@ function readRes(id)
         data["subject"] = row[3]
         data["description"] = row[4]
         data["publisher"] = row[5]
-        data["constributor"] = row[6]
+        data["contributor"] = row[6]
         data["date"] = row[7]
         data["type"] = row[8]
         data["format"] = row[9]
@@ -57,9 +57,10 @@ function readRes(id)
         data["relation"] = row[13]
         data["coverage"] = row[14]
         data["rights"] = row[15]
-        data["collection_id"] = row[16]
+        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
         data["filename"] = row[17]
         data["mimetype"] = row[18]
+        data["url"] = "/api/resources/".. row[0] .."/file"
     end
 
     -- delete query and free prepared statment
@@ -126,7 +127,7 @@ function readAllRes(parameters)
         data["subject"] = row[3]
         data["description"] = row[4]
         data["publisher"] = row[5]
-        data["constributor"] = row[6]
+        data["contributor"] = row[6]
         data["date"] = row[7]
         data["type"] = row[8]
         data["format"] = row[9]
@@ -136,9 +137,67 @@ function readAllRes(parameters)
         data["relation"] = row[13]
         data["coverage"] = row[14]
         data["rights"] = row[15]
-        data["collection_id"] = row[16]
+        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
         data["filename"] = row[17]
         data["mimetype"] = row[18]
+        data["url"] = "/api/resources/".. row[0] .."/file"
+        table.insert(allData, data)
+        row = qry()
+    end
+
+    qry =~ qry;
+    db =~ db;
+
+    return allData
+end
+
+-------------------------------------------------------------------------------
+-- Reads all the resources from the database with a full text search
+-- @param   'searchword' (string): word which should be looked for in all the column
+-- @return  'data' (table): returns all the data with dublin core fields
+-------------------------------------------------------------------------------
+function readAllResFullText(searchword)
+    local db = sqlite(dbPath, "RW")
+    local trivialCond = "id==0"
+    local statement
+
+    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "date", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
+
+    if (searchword ~= nil) and (searchword ~= "") then
+        for k, paramName in pairs(parameters) do
+            statement = like(paramName, searchword)
+            trivialCond = orOperator({trivialCond, statement})
+        end
+    else
+        trivialCond = "id!=0"
+    end
+
+    local qry = db << selectConditionQuery(trivialCond, tableName)
+    local row = qry()
+    local allData = {}
+
+    while (row) do
+        local data = {}
+        data["id"] = row[0]
+        data["title"] = row[1]
+        data["creator"] = row[2]
+        data["subject"] = row[3]
+        data["description"] = row[4]
+        data["publisher"] = row[5]
+        data["contributor"] = row[6]
+        data["date"] = row[7]
+        data["type"] = row[8]
+        data["format"] = row[9]
+        data["identifier"] = row[10]
+        data["source"] = row[11]
+        data["language"] = row[12]
+        data["relation"] = row[13]
+        data["coverage"] = row[14]
+        data["rights"] = row[15]
+        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
+        data["filename"] = row[17]
+        data["mimetype"] = row[18]
+        data["url"] = "/api/resources/".. row[0] .."/file"
         table.insert(allData, data)
         row = qry()
     end

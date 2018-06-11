@@ -43,7 +43,7 @@ function readCol(id)
         data = {}
         data["id"] = row[0]
         data["name"] = row[1]
-        data["collection_id"] = row[2]
+        data["collection_id"] =  { ["id"] = row[2], ["url"] = "/api/collections/" .. row[2]}
         data["isLeaf"] = row[3]
     end
 
@@ -107,7 +107,7 @@ function readAllCol(parameters)
         local data = {}
         data["id"] = row[0]
         data["name"] = row[1]
-        data["collection_id"] = row[2]
+        data["collection_id"] =  { ["id"] = row[2], ["url"] = "/api/collections/" .. row[2]}
         data["isLeaf"] = row[3]
         table.insert(allData, data)
         row = qry()

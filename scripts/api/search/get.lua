@@ -7,13 +7,58 @@ require "./model/file"
 require "./model/query"
 
 -- Function definitions
-function fullSearch()
-    print("full search")
-    if (server.get ~= nil) then
-        for key,value in pairs(server.get) do
-            print(key, value)
+function getSearchword(parameters)
+    local found = 0
+    local searchword, errMsg
+
+    if (parameters ~= nil) then
+        for key,value in pairs(parameters) do
+            if (key == "searchword") and (found == 0)then
+                searchword = value
+                found = 1
+            else
+                errMsg = 404
+            end
         end
+    else
+        searchword = ""
     end
+
+    return searchword, errMsg
+end
+
+function fullSearch()
+    local searchword, errMsg
+
+    searchword, errMsg = getSearchword(server.get)
+
+    if (errMsg ~= nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(errMsg)
+        return
+    end
+
+    local table1 = {}
+    table1["data"] = readAllResFullText(searchword)
+
+    if #table1["data"] > 0 then
+        table1["status"] = "successful"
+    else
+        table1["status"] = "no data were found"
+    end
+
+    server.setBuffer()
+
+    local success, jsonstr = server.table_to_json(table1)
+    if not success then
+        server.sendStatus(500)
+        server.log(jsonstr, server.loglevel.err)
+        return false
+    end
+
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(200)
+    server.print(jsonstr)
 end
 
 function structureParam(value, paramName)

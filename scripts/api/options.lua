@@ -15,6 +15,6 @@ end
 
 server.setBuffer()
 server.sendHeader('Content-type', 'application/json')
-server.sendHeader('Access-Control-Request-Method', 'OPTIONS, GET, POST, PUT, DELETE')
+server.sendHeader('Access-Control-Request-Method', 'OPTIONS')
 server.sendStatus(200)
 server.print(jsonstr)
