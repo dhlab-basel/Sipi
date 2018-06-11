@@ -33,8 +33,7 @@ jobs:
         # run compile and tests inside docker
         - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake .."
         - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; make"
-        - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; make test"
-        - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; make check"
+        - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; ctest --verbose"
 
     - stage: publish
       script:
