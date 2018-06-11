@@ -1,5 +1,6 @@
 print("---- PUT collections script ----")
 
+-- Required external script files
 require "./model/parameter"
 require "./model/collection"
 

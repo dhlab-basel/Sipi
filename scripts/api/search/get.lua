@@ -1,10 +1,12 @@
 print("---- GET search script ----")
 
+-- Required external script files
 require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 require "./model/query"
 
+-- Function definitions
 function structureParam(value, paramName)
     local p2, p3, p4, errMsg
     local comp = string.match(value, "%[.*%]")
@@ -127,6 +129,7 @@ function startSearching()
 
 end
 
+-- Checking of the url and appling the appropriate function
 local baseURL = "^/api/"
 local uri = server.uri
 
@@ -140,5 +143,5 @@ for route, func in pairs(routes) do
     end
 end
 
-print(uri .. " ==> FAIL")
+-- Fails if no url matches
 server.sendStatus(404)

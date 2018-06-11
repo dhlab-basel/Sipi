@@ -1,12 +1,11 @@
 print("---- GET resources script ----")
 
+-- Required external script files
 require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
-baseURL = "^/api"
-uri = server.uri
-
+-- Function definitions
 function getResources()
     local table1 = {}
     print("gefunden")
@@ -89,6 +88,10 @@ function getFileResource()
     end
 end
 
+-- Checking of the url and appling the appropriate function
+baseURL = "^/api"
+uri = server.uri
+
 routes = {}
 routes[baseURL .. "/resources$"] = getResources
 routes[baseURL .. "/resources/%d+$"] = getResource
@@ -101,6 +104,5 @@ for route, func in pairs(routes) do
     end
 end
 
---Fail case
-print("FAIL - nichts gefunden")
+-- Fails if no url matches
 server.sendStatus(404)

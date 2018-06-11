@@ -1,5 +1,6 @@
 print("---- PUT resources script ----")
 
+-- Required external script files
 require "./model/resource"
 require "./model/parameter"
 require "./model/file"

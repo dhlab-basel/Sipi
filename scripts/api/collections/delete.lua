@@ -1,5 +1,6 @@
 print("---- DELETE collections script ----")
 
+-- Required external script files
 require "./model/parameter"
 require "./model/collection"
 require "./model/resource"

@@ -1,12 +1,11 @@
 print("---- GET collections script ----")
 
+-- Required external script files
 require "./model/collection"
 require "./model/resource"
 require "./model/file"
 
-baseURL = "^/api"
-uri = server.uri
-
+-- Function definitions
 function getCollections()
     local table1 = {}
     table1["data"] = readAllCol({})
@@ -169,7 +168,10 @@ function getFileResource()
     end
 end
 
---Maps the url with the corresponding function
+-- Checking of the url and appling the appropriate function
+baseURL = "^/api"
+uri = server.uri
+
 routes = {}
 routes[baseURL .. "/collections$"] = getCollections
 routes[baseURL .. "/collections/%d+$"] = getCollection
@@ -177,7 +179,6 @@ routes[baseURL .. "/collections/%d+/resources$"] = getResources
 routes[baseURL .. "/collections/%d+/resources/%d+$"] = getResource
 routes[baseURL .. "/collections/%d+/resources/%d+/file$"] = getFileResource
 
---Checks which function should be called
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
         func()
@@ -185,6 +186,5 @@ for route, func in pairs(routes) do
     end
 end
 
---Sends 404 code in case no url couldn't be mapped
-print("FAIL - nichts gefunden")
+-- Fails if no url matches
 server.sendStatus(404)
