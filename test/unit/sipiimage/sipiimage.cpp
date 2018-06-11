@@ -9,8 +9,8 @@ inline bool exists_file(const std::string &name) {
     return (stat(name.c_str(), &buffer) == 0);
 }
 
-std::string leavesSmallWithAlpha = "../../../test/_test_data/images/knora/Leaves-small-alpha.tif";
-std::string leavesSmallNoAlpha = "../../../test/_test_data/images/knora/Leaves-small-no-alpha.tif";
+std::string leavesSmallWithAlpha = "../../../../test/_test_data/images/knora/Leaves-small-alpha.tif";
+std::string leavesSmallNoAlpha = "../../../../test/_test_data/images/knora/Leaves-small-no-alpha.tif";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -29,7 +29,7 @@ TEST(Sipiimage, ConvertTiffWithAlphaToJPG)
 
     ASSERT_NO_THROW(img->read(leavesSmallWithAlpha, region, size));
 
-    ASSERT_NO_THROW(img->write("jpg", "../../../test/_test_data/images/thumbs/Leaves-small-with-alpha.jpg"));
+    ASSERT_NO_THROW(img->write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-with-alpha.jpg"));
 }
 
 // Convert Tiff with no alpha channel to JPG
@@ -43,5 +43,5 @@ TEST(Sipiimage, ConvertTiffWithNoAlphaToJPG)
 
     ASSERT_NO_THROW(img->read(leavesSmallNoAlpha, region, size));
 
-    ASSERT_NO_THROW(img->write("jpg", "../../../test/_test_data/images/thumbs/Leaves-small-no-alpha.jpg"));
+    ASSERT_NO_THROW(img->write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-no-alpha.jpg"));
 }
