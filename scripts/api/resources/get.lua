@@ -8,7 +8,6 @@ require "./model/file"
 -- Function definitions
 function getResources()
     local table1 = {}
-    print("gefunden")
 
     table1["data"] = readAllRes({})
 
@@ -35,7 +34,6 @@ end
 function getResource()
     local table1 = {}
     local id = string.match(uri, "%d+")
-    print("2. gefunden", id)
 
     table1["data"] = readRes(id)
 
@@ -61,7 +59,6 @@ end
 
 function getFileResource()
     local id = string.match(uri, "%d+")
-    print("3. gefunden", id)
     local data = readRes(id)
 
     -- Data does not exist in the database
