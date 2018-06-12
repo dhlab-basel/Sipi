@@ -744,6 +744,40 @@ namespace Sipi {
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
 
+            //
+            // get resolution tag from exif if existent: From kakadu:
+            // Sets the vertical resolution in high resolution canvas grid points per metre.
+            // If for_display is true, this is the desired display resolution; oherwise, it
+            // is the capture resolution. There is no need to explicitly specify either of these
+            // resolutions. If no resolution is specified the relevant box will not be written
+            // in the JP2/JPX file, except when a non-unity aspect ratio is selected.
+            // In the latter case, a desired display resolution box will be created, having a
+            // default vertical display resolution of one grid-point per metre.
+            //
+            if (img->exif != nullptr) {
+                float res_x = 72., res_y = 72.;
+                int unit = 2; // RESUNIT_INCH
+                if (img->exif->getValByKey("Exif.Image.XResolution", res_x) &&
+                    img->exif->getValByKey("Exif.Image.YResolution", res_y)) {
+                    (void) img->exif->getValByKey("Exif.Image.ResolutionUnit", unit);
+                    switch (unit) {
+                        case 1: break; // RESUNIT_NONE
+                        case 2: { // RESUNIT_INCH
+                            res_x = res_x*100./2.51;
+                            res_y = res_y*100./2.51;
+                            break;
+                        }
+                        case 3: { // RESUNIT_CENTIMETER
+                            res_x = res_x*100.;
+                            res_y = res_y*100.;
+                        }
+                    }
+                    jp2_family_resolution.init(res_y / res_x);
+                    jp2_family_resolution.set_resolution(res_x, false);
+                }
+            }
+
+            std::cerr << "#" << __LINE__ << std::endl;
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
@@ -769,19 +803,17 @@ namespace Sipi {
                         jp2_family_colour.init(icc_bytes);
                         break;
                     }
-                    case icc_RGB: {
+                    case icc_RGB: { // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
 //                        std::cerr << "Passed " << __LINE__ << std::endl;
 //                        unsigned int icc_len;
 //                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
 //                        std::cerr << "Passed " << __LINE__ << std::endl;
 //                        jp2_family_colour.init(icc_bytes);
 //                        std::cerr << "Passed " << __LINE__ << std::endl;
-                        std::cerr << *(img->icc);
                         jp2_family_colour.init(JP2_sRGB_SPACE);
                         break;
                     }
                     case icc_CYMK_standard: {
-                        std::cerr << "Passed " << __LINE__ << std::endl;
                         jp2_family_colour.init(JP2_CMYK_SPACE);
                         break;
                     }
@@ -822,16 +854,28 @@ namespace Sipi {
                     }
                 }
             }
-
             jp2_family_channels.init(img->nc - img->es.size());
             for (int c = 0; c < img->nc - img->es.size(); c++) {
                 jp2_family_channels.set_colour_mapping(c, c);
             }
+            if (img->es.size() > 0) {
+                if (img->es.size() == 1) {
+                    for (int c = 0; c < img->nc - img->es.size(); c++) {
+                        jp2_family_channels.set_opacity_mapping(c, img->nc - img->es.size());
+                    }
+                }
+                else if (img->es.size() == (img->nc - img->es.size())) {
+                    for (int c = 0; c < img->nc - img->es.size(); c++) {
+                        jp2_family_channels.set_opacity_mapping(c, img->nc - img->es.size() + c);
+                    }
+                }
+            }
+            /*
             for (int c = 0; c < img->es.size(); c++) {
                 jp2_family_channels.set_opacity_mapping(img->nc - img->es.size() + c, img->nc - img->es.size() + c);
             }
+             */
             jpx_out.write_headers();
-
             if (img->iptc != nullptr) {
                 unsigned int iptc_len = 0;
                 kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
@@ -872,11 +916,20 @@ namespace Sipi {
                 env_ref = &env;
             }
 
-
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
-            compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, img->nc, false, env_ref);
-
+            compressor.start(codestream,
+                             8,       // num_layer_specs
+                             nullptr, // layer_sizes
+                             nullptr, // layer_slopes
+                             0,       // min_slope_threshold
+                             false,   // no_prediction
+                             true,    //force_precise [YES]
+                             true,    // record_layer_info_in_comment
+                             0.0,     // size_tolerance
+                             img->nc, // num_components
+                             false,   // want_fastest [NO]
+                             env_ref);
             int *stripe_heights = new int[img->nc];
             for (size_t i = 0; i < img->nc; i++) {
                 stripe_heights[i] = img->ny;
@@ -900,7 +953,6 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
             compressor.finish(0, NULL, NULL, env_ref);
-
             // Finally, cleanup
             codestream.destroy(); // All done: simple as that.
             output->close(); // Not really necessary here.
@@ -908,7 +960,6 @@ namespace Sipi {
             if (jp2_ultimate_tgt.exists()) {
                 jp2_ultimate_tgt.close();
             }
-
             delete[] stripe_heights;
             if (img->bps == 16) {
                 delete[] precisions;

@@ -171,6 +171,26 @@ namespace Sipi {
         img->bps = png_get_bit_depth(png_ptr, info_ptr);
         img->nc = png_get_channels(png_ptr, info_ptr);
 
+        png_uint_32 res_x, res_y;
+        int unit_type;
+        if (png_get_pHYs(png_ptr, info_ptr, &res_x, &res_y, &unit_type)) {
+            img->exif = std::make_shared<SipiExif>();
+            float fres_x, fres_y;
+            if (unit_type == PNG_RESOLUTION_METER) {
+                fres_x = res_x / 39.37007874015748;
+                fres_y = res_y / 39.37007874015748;
+            }
+            else {
+                fres_x = res_x;
+                fres_y = res_y;
+            }
+            img->exif->addKeyVal("Exif.Image.XResolution", fres_x);
+            img->exif->addKeyVal("Exif.Image.YResolution", fres_x);
+            img->exif->addKeyVal("Exif.Image.ResolutionUnit", 2); // DPI
+        }
+
+
+
         int colortype = png_get_color_type(png_ptr, info_ptr);
 
         switch (colortype) {
