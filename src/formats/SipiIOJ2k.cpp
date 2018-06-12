@@ -743,6 +743,7 @@ namespace Sipi {
             codestream.access_siz()->finalize_all(); // Set up coding defaults
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
+
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
@@ -805,7 +806,6 @@ namespace Sipi {
                         jp2_family_colour.init(icc_bytes);
                     }
                 }
-
             } else {
                 switch (img->nc - img->es.size()) {
                     case 1: {
@@ -824,8 +824,12 @@ namespace Sipi {
             }
 
             jp2_family_channels.init(img->nc - img->es.size());
-            for (int c = 0; c < img->nc - img->es.size(); c++) jp2_family_channels.set_colour_mapping(c, c);
-            for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
+            for (int c = 0; c < img->nc - img->es.size(); c++) {
+                jp2_family_channels.set_colour_mapping(c, c);
+            }
+            for (int c = 0; c < img->es.size(); c++) {
+                jp2_family_channels.set_opacity_mapping(img->nc - img->es.size() + c, img->nc - img->es.size() + c);
+            }
             jpx_out.write_headers();
 
             if (img->iptc != nullptr) {
@@ -871,8 +875,7 @@ namespace Sipi {
 
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
-            //compressor.start(codestream);
-            compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, 0, false, env_ref);
+            compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, img->nc, false, env_ref);
 
             int *stripe_heights = new int[img->nc];
             for (size_t i = 0; i < img->nc; i++) {
@@ -881,7 +884,6 @@ namespace Sipi {
 
             int *precisions;
             bool *is_signed;
-
             if (img->bps == 16) {
                 kdu_int16 *buf = (kdu_int16 *) img->pixels;
                 precisions = new int[img->nc];
@@ -897,7 +899,7 @@ namespace Sipi {
             } else {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
-            compressor.finish();
+            compressor.finish(0, NULL, NULL, env_ref);
 
             // Finally, cleanup
             codestream.destroy(); // All done: simple as that.
