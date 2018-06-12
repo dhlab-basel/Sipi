@@ -280,7 +280,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                                                                                           "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted configuration file in Lua\n"
                                                                                                           "USAGE (server): sipi [options]\n"
                                                                                                           "USAGE (image converter): sipi [options] -f fileIn fileout \n"
-                                                                                                          "USAGE (image diff): sipi --Compare file1 --Compare file2 oor sipi --C file1 -C file2 \n\n"},
+                                                                                                          "USAGE (image diff): sipi --Compare file1 --Compare file2 or sipi -C file1 -C file2 \n\n"},
                                     {0,          0, nullptr, nullptr,      0,                     nullptr}};
 
 //small function to check if file exist
@@ -376,6 +376,7 @@ int main(int argc, char *argv[]) {
                 return EXIT_FAILURE;
             }
         }
+        std::cout << "comparing files: " << infname1 << " and " << infname2 << std::endl;
 
         if (!exists_file(infname1)) {
             std::cerr << "File not found: " << infname1 << std::endl;
@@ -397,6 +398,13 @@ int main(int argc, char *argv[]) {
         if (!result) {
             img1 -= img2;
             img1.write("tif", "diff.tif");
+        }
+
+        if (result) {
+            std::cerr << "Files identical!" << std::endl;
+        }
+        else {
+            std::cerr << "Files differ! - See diff.tif" << std::endl;
         }
 
         return (result) ? 0 : -1;

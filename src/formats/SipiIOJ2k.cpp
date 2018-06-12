@@ -777,7 +777,6 @@ namespace Sipi {
                 }
             }
 
-            std::cerr << "#" << __LINE__ << std::endl;
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 switch (icc_type) {
