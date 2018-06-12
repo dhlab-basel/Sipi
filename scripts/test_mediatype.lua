@@ -72,7 +72,7 @@ for i, test_data_item in ipairs(mediatype_test_data) do
     local mediatype = get_mediatype(test_data_item.received)
 
     if (mediatype ~= test_data_item.expected) then
-        send_error(400, "Could not determine correct mediatype for " .. test_data_item.received .. ", got " .. tostring(mediatype))
+        send_error(500, "Could not determine correct mediatype for " .. test_data_item.received .. ", got " .. tostring(mediatype))
     end
 
     table.insert(result, { test_data_item, "OK" })
@@ -126,7 +126,7 @@ for i, test_data_item in ipairs(file_extension_test_data) do
     local check = check_file_extension(test_data_item.received1, test_data_item.received2)
 
     if (check ~= test_data_item.expected) then
-        send_error(400, "Could not correctly check consistency between mimetype and file extension for " .. test_data_item.received1 .. ", "..  test_data_item.received2)
+        send_error(500, "Could not correctly check consistency between mimetype and file extension for " .. test_data_item.received1 .. ", "..  test_data_item.received2)
     end
 
     table.insert(result, { test_data_item, "OK" })
