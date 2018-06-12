@@ -57,10 +57,10 @@ end
 -- be handled successfully.
 --
 -- Parameters:
---     'result' (table):  HTTP status code to returned to the client
+--     'result' (table):  message to be returned to the client.
 --
 -- Returns:
---    a JSON string that represents the table 'result'
+--    a JSON string that represents the data contained in the table 'result'.
 -------------------------------------------------------------------------------
 function send_success(result)
     if type(result) == "table" then
@@ -79,6 +79,6 @@ function send_success(result)
             print(">>>3 ", errormsg)
         end
     else
-        send_error()
+        send_error(500, "scripts/send_response.lua:send_success: Expected the param 'result' to be of type table, but " .. type(result) .. " given")
     end
 end
