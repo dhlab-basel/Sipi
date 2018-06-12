@@ -170,6 +170,11 @@ routes = {
     },
     {
         method = 'GET',
+        route = '/test_mediatype',
+        script = 'test_mediatype.lua'
+    },
+    {
+        method = 'GET',
         route = '/test_knora_session_cookie',
         script = 'test_knora_session_cookie.lua'
     }
