@@ -36,7 +36,7 @@ function createFile(parameters)
         if not success then
         end
 
-        -- print(uuid62 .. '_' .. string.gsub(parameters['title'], " ", "-"))
+        print(uuid62 .. '_' .. string.gsub(parameters['title'], " ", "-"))
 
         parameters["filename"] = uuid62 .. '.' .. fileEnding
         parameters["mimetype"] = fileParam["mimetype"]
