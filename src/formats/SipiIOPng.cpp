@@ -192,7 +192,6 @@ namespace Sipi {
 
 
         int colortype = png_get_color_type(png_ptr, info_ptr);
-
         switch (colortype) {
             case PNG_COLOR_TYPE_GRAY: { // implies nc = 1, (bit depths 1, 2, 4, 8, 16)
                 img->photo = MINISBLACK;
@@ -215,18 +214,19 @@ namespace Sipi {
                 break;
             }
 
-            case PNG_COLOR_TYPE_RGB_ALPHA: { // implies nc = 4, (bit_depths 8, 16)
+            case PNG_COLOR_TYPE_RGBA: { // implies nc = 4, (bit_depths 8, 16)
                 img->photo = RGB;
                 img->es.push_back(ASSOCALPHA);
                 break;
             }
         }
 
-        if (png_get_valid(png_ptr, info_ptr, PNG_INFO_sRGB) != 0) {
+        int srgb_intent;
+        if (png_get_sRGB(png_ptr, info_ptr, &srgb_intent) != 0) {
             img->icc = std::make_shared<SipiIcc>(icc_sRGB);
         } else {
             png_charp name;
-            int compression_type;
+            int compression_type = PNG_COMPRESSION_TYPE_BASE;
             png_bytep profile;
             png_uint_32 proflen;
             if (png_get_iCCP(png_ptr, info_ptr, &name, &compression_type, &profile, &proflen) != 0) {
@@ -284,7 +284,15 @@ namespace Sipi {
             img->photo = RGB;
         }
 
+        if (img->bps == 16) {
+            unsigned short *tmp = (unsigned short *) buffer;
+            for (int i = 0; i < img->nx*img->ny*img->nc; i++) {
+                tmp[i] = ntohs(tmp[i]);
+            }
+            img->pixels = buffer;
+        }
         img->pixels = buffer;
+
         delete[] row_pointers;
         fclose(infile);
 
