@@ -329,7 +329,8 @@ needs to be installed on the system.
 
 ::
 
-    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake ..; make; ctest --verbose" // building and running all tests
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make" // building
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose" // building and running all tests
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html" // make html documentation
 
 Since we mount the current source directory into the docker continer, all build artifacts can be accessed as if the build would have been performed
