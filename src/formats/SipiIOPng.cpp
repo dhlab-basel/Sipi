@@ -489,12 +489,22 @@ namespace Sipi {
         //
         // ICC profile handfling is special...
         //
+        SipiEssentials es = img->essential_metadata();
         unsigned char *icc_buf;
+        if ((img->icc != nullptr) || es.use_icc()) {
 
-        if (img->icc != nullptr) {
             unsigned int len;
-            icc_buf = img->icc->iccBytes(len);
-            png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf, len);
+            try {
+                if (es.use_icc()) {
+                    icc_buf = es.icc_profile(len);
+                }
+                else {
+                    icc_buf = img->icc->iccBytes(len);
+                }
+                png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf, len);
+            } catch (SipiError &err) {
+                std::cerr << err << std::endl;
+            }
         }
 
         PngTextPtr chunk_ptr(4);
@@ -503,31 +513,23 @@ namespace Sipi {
         // other metadata comes here
         //
 
-        unsigned char *exif_buf = nullptr;
-
+        std::vector<unsigned char> exif_buf;
         if (img->exif) {
-            unsigned int len;
-            exif_buf = img->exif->exifBytes(len);
-            chunk_ptr.add_zTXt(exif_tag, (char *) exif_buf, len);
+            exif_buf = img->exif->exifBytes();
+            chunk_ptr.add_zTXt(exif_tag, (char *) exif_buf.data(), exif_buf.size());
         }
 
-        unsigned char *iptc_buf = nullptr;
-
+        std::vector<unsigned char> iptc_buf;
         if (img->iptc) {
-            unsigned int len;
-            iptc_buf = img->iptc->iptcBytes(len);
-            chunk_ptr.add_zTXt(iptc_tag, (char *) iptc_buf, len);
+            iptc_buf = img->iptc->iptcBytes();
+            chunk_ptr.add_zTXt(iptc_tag, (char *) iptc_buf.data(), iptc_buf.size());
         }
 
-        char *xmp_buf = nullptr;
-
+        std::string xmp_buf;
         if (img->xmp != nullptr) {
-            unsigned int len;
-            xmp_buf = img->xmp->xmpBytes(len);
-            chunk_ptr.add_iTXt(xmp_tag, xmp_buf, len);
+            xmp_buf = img->xmp->xmpBytes();
+            chunk_ptr.add_iTXt(xmp_tag, (char *) xmp_buf.data(), xmp_buf.size());
         }
-
-        SipiEssentials es = img->essential_metadata();
 
         if (es.is_set()) {
             std::string esstr = es;
@@ -537,7 +539,6 @@ namespace Sipi {
             sipi_buf[512] = '\0';
             chunk_ptr.add_iTXt(sipi_tag, sipi_buf, len);
         }
-
 
         if (chunk_ptr.num() > 0) {
             png_set_text(png_ptr, info_ptr, chunk_ptr.ptr(), chunk_ptr.num());
@@ -565,11 +566,6 @@ namespace Sipi {
         png_free(png_ptr, row_pointers);
 
         png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
-
-        if (icc_buf != nullptr) delete[] icc_buf;
-        if (exif_buf != nullptr) delete[] exif_buf;
-        if (iptc_buf != nullptr) delete[] iptc_buf;
-        if (xmp_buf != nullptr) delete[] xmp_buf;
 
         if (outfile != nullptr) fclose(outfile);
     }

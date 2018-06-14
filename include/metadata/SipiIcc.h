@@ -27,6 +27,7 @@
 #define __sipi_icc_h
 
 #include <string>
+#include <vector>
 
 #include <stdio.h>
 #include <limits.h>
@@ -121,10 +122,16 @@ namespace Sipi {
 
         /*!
          * Get the blob containing the ICC profile
-         * \param[out] len Length of the buffer returned
-         * \returns Buffer containing the binary ICC profile
+         * @param[out] len Length of the buffer returned
+         * @returns Buffer containing the binary ICC profile
          */
         unsigned char *iccBytes(unsigned int &len);
+
+        /*!
+         * Get the blob containing the ICC profile as std::vector
+         * @return std:vector containing the binary ICC profile
+         */
+        std::vector<unsigned char> iccBytes();
 
         /*!
          * Retireve the littleCMS profile

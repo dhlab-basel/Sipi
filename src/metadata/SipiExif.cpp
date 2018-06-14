@@ -85,6 +85,19 @@ namespace Sipi {
     }
     //============================================================================
 
+    std::vector<unsigned char> SipiExif::exifBytes(void) {
+        unsigned int len = 0;
+        unsigned char *buf = exifBytes(len);
+        std::vector<unsigned char> data;
+        if (buf != nullptr) {
+            data.reserve(len);
+            for (int i = 0; i < len; i++) data.push_back(buf[i]);
+            delete[] buf;
+        }
+        return data;
+    }
+    //============================================================================
+
     Exiv2::Rational SipiExif::toRational(float f) {
         int numerator;
         int denominator;

@@ -1127,15 +1127,20 @@ namespace Sipi {
             }
         }
 
-        if ((img->icc != nullptr) & (!(img->skip_metadata & SKIP_ICC))) {
-            unsigned int len;
-            const unsigned char *buf;
+        SipiEssentials es = img->essential_metadata();
 
+        if (((img->icc != nullptr) || es.use_icc()) & (!(img->skip_metadata & SKIP_ICC))) {
+            std::vector<unsigned char> buf;
             try {
-                buf = img->icc->iccBytes(len);
+                if (es.use_icc()) {
+                    buf = es.icc_profile();
+                }
+                else {
+                    buf = img->icc->iccBytes();
+                }
 
-                if (len > 0) {
-                    TIFFSetField(tif, TIFFTAG_ICCPROFILE, len, buf);
+                if (buf.size() > 0) {
+                    TIFFSetField(tif, TIFFTAG_ICCPROFILE, buf.size(), buf.data());
                 }
             } catch (SipiError &err) {
                 syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -1146,17 +1151,11 @@ namespace Sipi {
         // write IPTC data, if available
         //
         if ((img->iptc != nullptr) & (!(img->skip_metadata & SKIP_IPTC))) {
-            unsigned int len;
-            unsigned char *buf;
-
             try {
-                buf = img->iptc->iptcBytes(len);
-
-                if (len > 0) {
-                    TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, len, buf);
+                std::vector<unsigned char> buf = img->iptc->iptcBytes();
+                if (buf.size() > 0) {
+                    TIFFSetField(tif, TIFFTAG_RICHTIFFIPTC, buf.size(), buf.data());
                 }
-
-                delete[] buf;
             } catch (SipiError &err) {
                 syslog(LOG_ERR, "%s", err.to_string().c_str());
             }
@@ -1167,14 +1166,10 @@ namespace Sipi {
         // write XMP data
         //
         if ((img->xmp != nullptr) & (!(img->skip_metadata & SKIP_XMP))) {
-            unsigned int len;
-            const char *buf;
-
             try {
-                buf = img->xmp->xmpBytes(len);
-
-                if (len > 0) {
-                    TIFFSetField(tif, TIFFTAG_XMLPACKET, len, buf);
+                std::string buf = img->xmp->xmpBytes();
+                if (!buf.empty() > 0) {
+                    TIFFSetField(tif, TIFFTAG_XMLPACKET, buf.size(), buf.c_str());
                 }
             } catch (SipiError &err) {
                 syslog(LOG_ERR, "%s", err.to_string().c_str());
@@ -1184,9 +1179,6 @@ namespace Sipi {
         //
         // Custom tag for SipiEssential metadata
         //
-
-        SipiEssentials es = img->essential_metadata();
-
         if (es.is_set()) {
             std::string emdata = es;
             TIFFSetField(tif, TIFFTAG_SIPIMETA, emdata.c_str());

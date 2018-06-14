@@ -441,7 +441,6 @@ int main(int argc, char *argv[]) {
             //store the config option in a SipiConf obj
             Sipi::SipiConf sipiConf(luacfg);
 
-
             //
             // here we check the levels... and migrate if necessary
             //

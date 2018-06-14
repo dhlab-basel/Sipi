@@ -714,17 +714,6 @@ namespace Sipi {
 
             codestream.create(&siz, output);
 
-            //
-            // Custom tag for SipiEssential metadata
-            //
-            SipiEssentials es = img->essential_metadata();
-            if (es.is_set()) {
-                std::string esstr = es;
-                std::string emdata = "SIPI:" + esstr;
-                kdu_codestream_comment comment = codestream.add_comment();
-                comment.put_text(emdata.c_str());
-            }
-
             // Set up any specific coding parameters and finalize them.
 
             codestream.access_siz()->parse_string("Creversible=yes");
@@ -776,6 +765,11 @@ namespace Sipi {
                 }
             }
 
+            //
+            // we need the essenation metaqdata in order to preserve unsupported ICC profiles
+            //
+            SipiEssentials es = img->essential_metadata();
+
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 try {
@@ -819,10 +813,12 @@ namespace Sipi {
                             break;
                         }
                         case icc_LUM_D65: {
+                            if (es.is_set()) es.use_icc(true);
                             jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
                             break;
                         }
                         case icc_ROMM_GRAY: {
+                            if (es.is_set()) es.use_icc(true);
                             jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
                             break;
                         }
@@ -834,6 +830,7 @@ namespace Sipi {
                     }
                 }
                 catch (kdu_exception e) {
+                    if (es.is_set()) es.use_icc(true);
                     switch (img->nc - img->es.size()) {
                         case 1: {
                             jp2_family_colour.init(JP2_sLUM_SPACE);
@@ -865,6 +862,18 @@ namespace Sipi {
                     }
                 }
             }
+
+            //
+            // Custom tag for SipiEssential metadata
+            //
+            if (es.is_set()) {
+                std::string esstr = es;
+                std::string emdata = "SIPI:" + esstr;
+                kdu_codestream_comment comment = codestream.add_comment();
+                comment.put_text(emdata.c_str());
+            }
+
+
             jp2_family_channels.init(img->nc - img->es.size());
             for (int c = 0; c < img->nc - img->es.size(); c++) {
                 jp2_family_channels.set_colour_mapping(c, c);
@@ -888,28 +897,25 @@ namespace Sipi {
              */
             jpx_out.write_headers();
             if (img->iptc != nullptr) {
-                unsigned int iptc_len = 0;
-                kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
-                write_iptc_box(&jp2_ultimate_tgt, iptc_buf, iptc_len);
+                std::vector<unsigned char> iptc_buf = img->iptc->iptcBytes();
+                write_iptc_box(&jp2_ultimate_tgt, iptc_buf.data(), iptc_buf.size());
             }
 
             //
             // write EXIF here
             //
             if (img->exif != nullptr) {
-                unsigned int exif_len = 0;
-                kdu_byte *exif_buf = img->exif->exifBytes(exif_len);
-                write_exif_box(&jp2_ultimate_tgt, exif_buf, exif_len);
+                std::vector<unsigned char> exif_buf = img->exif->exifBytes();
+                write_exif_box(&jp2_ultimate_tgt, exif_buf.data(), exif_buf.size());
             }
 
             //
             // write XMP data here
             //
             if (img->xmp != nullptr) {
-                unsigned int len = 0;
-                const char *xmp_buf = img->xmp->xmpBytes(len);
-                if (len > 0) {
-                    write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
+                std::string xmp_buf = img->xmp->xmpBytes();
+                if (!xmp_buf.empty()) {
+                    write_xmp_box(&jp2_ultimate_tgt, xmp_buf.c_str());
                 }
             }
 

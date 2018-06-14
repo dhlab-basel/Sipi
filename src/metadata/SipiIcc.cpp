@@ -222,6 +222,18 @@ namespace Sipi {
         return buf;
     }
 
+    std::vector<unsigned char> SipiIcc::iccBytes() {
+        unsigned int len = 0;
+        unsigned char *buf = iccBytes(len);
+        std::vector<unsigned char> data;
+        if (buf != nullptr) {
+            data.reserve(len);
+            for (int i = 0; i < len; i++) data.push_back(buf[i]);
+            delete[] buf;
+        }
+        return data;
+    }
+
     cmsHPROFILE SipiIcc::getIccProfile()  const {
         return icc_profile;
     }
