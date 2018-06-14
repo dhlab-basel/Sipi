@@ -69,11 +69,11 @@ namespace Sipi {
         * \param[in] data_chksum The actual checksum of the internal image data
         */
         inline SipiEssentials(const std::string &origname_p, const std::string &mimetype_p,
-                              shttps::HashType hash_type_p, const std::string &data_chksum_p) : _origname(origname_p),
-                                                                                                _mimetype(mimetype_p),
-                                                                                                _hash_type(hash_type_p),
-                                                                                                _data_chksum(
-                                                                                                        data_chksum_p) { _is_set = true; }
+                              shttps::HashType hash_type_p, const std::string &data_chksum_p) :
+                _origname(origname_p),
+                _mimetype(mimetype_p),
+                _hash_type(hash_type_p),
+                _data_chksum(data_chksum_p) { _is_set = true; }
 
         /*!
         * Constructor taking a serialized packet (as string)
