@@ -725,7 +725,6 @@ namespace Sipi {
                 comment.put_text(emdata.c_str());
             }
 
-
             // Set up any specific coding parameters and finalize them.
 
             codestream.access_siz()->parse_string("Creversible=yes");
@@ -779,62 +778,75 @@ namespace Sipi {
 
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
-                switch (icc_type) {
-                    case icc_undefined: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
+                try {
+                    switch (icc_type) {
+                        case icc_undefined: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_unknown: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_sRGB: {
+                            jp2_family_colour.init(JP2_sRGB_SPACE);
+                            break;
+                        }
+                        case icc_AdobeRGB: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_RGB: { // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_CYMK_standard: {
+                            jp2_family_colour.init(JP2_CMYK_SPACE);
+                            break;
+                        }
+                        case icc_GRAY_D50: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes); // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
+                            break;
+                        }
+                        case icc_LUM_D65: {
+                            jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
+                            break;
+                        }
+                        case icc_ROMM_GRAY: {
+                            jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
+                            break;
+                        }
+                        default: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                        }
                     }
-                    case icc_unknown: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_sRGB: {
-                        jp2_family_colour.init(JP2_sRGB_SPACE);
-                        break;
-                    }
-                    case icc_AdobeRGB: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_RGB: { // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
-//                        std::cerr << "Passed " << __LINE__ << std::endl;
-//                        unsigned int icc_len;
-//                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-//                        std::cerr << "Passed " << __LINE__ << std::endl;
-//                        jp2_family_colour.init(icc_bytes);
-//                        std::cerr << "Passed " << __LINE__ << std::endl;
-                        jp2_family_colour.init(JP2_sRGB_SPACE);
-                        break;
-                    }
-                    case icc_CYMK_standard: {
-                        jp2_family_colour.init(JP2_CMYK_SPACE);
-                        break;
-                    }
-                    case icc_GRAY_D50: {
-                        //unsigned int icc_len;
-                        //kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        //jp2_family_colour.init(icc_bytes); // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
-                        jp2_family_colour.init(JP2_sLUM_SPACE);
-                        break;
-                    }
-                    case icc_LUM_D65: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
-                        break;
-                    }
-                    case icc_ROMM_GRAY: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
-                        break;
-                    }
-                    default: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
+                }
+                catch (kdu_exception e) {
+                    switch (img->nc - img->es.size()) {
+                        case 1: {
+                            jp2_family_colour.init(JP2_sLUM_SPACE);
+                            break;
+                        }
+                        case 3: {
+                            jp2_family_colour.init(JP2_sRGB_SPACE);
+                            break;
+                        }
+                        case 4: {
+                            jp2_family_colour.init(JP2_CMYK_SPACE);
+                            break;
+                        }
                     }
                 }
             } else {
