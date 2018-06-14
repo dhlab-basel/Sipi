@@ -208,6 +208,12 @@ Then:
     sudo pip3.5 install iiif_validator
 
 
+Docker
+======
+
+We provide a docker image based on Ubuntu LTS releases, containing all dependencies: https://hub.docker.com/r/dhlabbasel/sipi-base/
+
+
 *************************
 Compiling the Source Code
 *************************
@@ -242,8 +248,9 @@ You can run the automated tests in the ``build`` directory like this:
 
 ::
 
-    make test // will run all tests
-    make check // will run only e2e tests
+    make test // will run all tests (minimum output)
+    ctest --verbose // will run all tests (detailed output)
+    make check // will run only e2e tests (detailed output)
 
 
 *******************************************
@@ -310,3 +317,20 @@ the top level of the source tree and type:
 .. _devtoolset-4: https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/
 .. _Apache ab: https://httpd.apache.org/docs/2.4/programs/ab.html
 .. _ImageMagick: http://www.imagemagick.org/
+
+
+**********************
+Building inside Docker
+**********************
+
+All that was described before, can also be done by using docker. All commands need
+to be executed from inside the source directory (and not ``build`` the build directory). Also, Docker
+needs to be installed on the system.
+
+::
+
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake ..; make; ctest --verbose" // building and running all tests
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html" // make html documentation
+
+Since we mount the current source directory into the docker continer, all build artifacts can be accessed as if the build would have been performed
+without docker.
