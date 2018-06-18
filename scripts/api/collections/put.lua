@@ -27,8 +27,10 @@ end
 -- Gets parameters
 local parameters = getColParams(server.post)
 
-local oldParentID = data["collection_id"]
+local oldParentID = data["collection_id"]["id"]
 local newParentID = parameters["collection_id"]
+
+print(oldParentID, newParentID, parameters["collection_id"])
 
 -- Check if newParentID exists
 if (readCol(newParentID) == nil) then

@@ -53,7 +53,7 @@ if (#resources > 0) then
 end
 
 -- Get all the sibling of the collection
-local parentID = readCol(id)['collection_id']
+local parentID = readCol(id)['collection_id']["id"]
 local p1 = { "collection_id", "EQ", parentID, nil }
 local p2 = { "id", "!EQ", id, nil }
 local siblings = readAllCol({ p1, p2 })
