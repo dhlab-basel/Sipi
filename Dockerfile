@@ -20,4 +20,4 @@ EXPOSE 1024
 
 ENTRYPOINT [ "/sipi/local/bin/sipi" ]
 
-CMD ["--config=/sipi/config/sipi.knora-docker-config.lua"]
+CMD ["--config=/sipi/config/sipi.config.lua"]
