@@ -76,6 +76,8 @@ function getFileResource()
         if (fileContent ~= nil) then
             server.setBuffer()
             server.sendHeader('Content-type', mimetype)
+            server.sendHeader('Content-Disposition', "attachment; filename='fname.ext'")
+            server.sendHeader('Names', 'Garfield')
             server.sendStatus(200)
             server.print(fileContent)
             return
