@@ -150,6 +150,13 @@ namespace Sipi {
                 profile_type = icc_ROMM_GRAY;
                 break;
             }
+            case icc_LAB: {
+                cmsContext context = cmsCreateContext(nullptr, nullptr);
+                icc_profile = cmsCreateLab4Profile(NULL);
+                cmsDeleteContext(context);
+                profile_type = icc_LAB;
+                break;
+            }
         }
     }
 

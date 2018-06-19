@@ -443,7 +443,6 @@ namespace Sipi {
     }
     //============================================================================
 
-
     bool SipiIOTiff::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
                           std::shared_ptr<SipiSize> size, bool force_bps_8,
                           ScalingQuality scaling_quality) {
@@ -893,6 +892,11 @@ namespace Sipi {
                     case RGB: {
                         img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
+                    }
+
+                    case CIELAB: {
+                       img->icc = std::make_shared<SipiIcc>(icc_LAB);
+                       break;
                     }
 
                     default: {

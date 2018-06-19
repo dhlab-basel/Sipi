@@ -458,6 +458,11 @@ namespace Sipi {
                         img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
+                    case kdu_supp::JP2_CIELab_SPACE: {
+                        img->photo = CIELAB;
+                        img->icc = std::make_shared<SipiIcc>(icc_LAB);
+                        break;
+                    }
                     case 100: {
                         img->photo = MINISBLACK;
                         img->icc = std::make_shared<SipiIcc>(icc_ROMM_GRAY);
@@ -563,6 +568,21 @@ namespace Sipi {
         if (img->photo == YCBCR) {
             img->convertYCC2RGB();
             img->photo = RGB;
+        }
+
+        if (img->photo == CIELAB) {
+            for (int y = 0; y < img->ny; y++) {
+                for (int x = 0; x < img->nx; x++) {
+                    union {
+                        unsigned char u;
+                        signed char s;
+                    } v;
+                    v.s = img->pixels[img->nc*(y*img->nx + x) + 1] - 128;
+                    img->pixels[img->nc*(y*img->nx + x) + 1] = v.u;
+                    v.s = img->pixels[img->nc*(y*img->nx + x) + 2] - 128;
+                    img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
+                }
+            }
         }
 
         if ((size != nullptr) && (!redonly)) {
@@ -822,7 +842,27 @@ namespace Sipi {
                             jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
                             break;
                         }
+                        case icc_LAB: {
+                            //
+                            // we have to convert to JOEG2000 standard
+                            //
+                            for (int y = 0; y < img->ny; y++) {
+                                for (int x = 0; x < img->nx; x++) {
+                                    union {
+                                        unsigned char u;
+                                        signed char s;
+                                    } v;
+                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 1];
+                                    img->pixels[img->nc*(y*img->nx + x) + 1] = 128 + v.s; //lround(128.*v.s / 85.) + 128;
+                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 2];
+                                    img->pixels[img->nc*(y*img->nx + x) + 2] = 128 + v.s;
+                                }
+                            }
+                            jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 8, 255, 128, 8, 255, 128, 8);
+                            break;
+                        };
                         default: {
+                            std::cerr << "-------------------------------" << std::endl;
                             unsigned int icc_len;
                             kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                             jp2_family_colour.init(icc_bytes);
@@ -830,6 +870,7 @@ namespace Sipi {
                     }
                 }
                 catch (kdu_exception e) {
+                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!! PUT ICC IN ESSENTIAL !!!!!!" << std::endl;
                     if (es.is_set()) es.use_icc(true);
                     switch (img->nc - img->es.size()) {
                         case 1: {
@@ -847,6 +888,7 @@ namespace Sipi {
                     }
                 }
             } else {
+                std::cerr << "???????????????????????" << std::endl;
                 switch (img->nc - img->es.size()) {
                     case 1: {
                         jp2_family_colour.init(JP2_sLUM_SPACE);
