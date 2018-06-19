@@ -18,6 +18,8 @@ RUN cd /sipi/build && \
 
 EXPOSE 1024
 
+WORKDIR /sipi
+
 ENTRYPOINT [ "/sipi/local/bin/sipi" ]
 
 CMD ["--config=/sipi/config/sipi.config.lua"]
