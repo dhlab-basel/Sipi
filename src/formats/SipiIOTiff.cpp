@@ -1093,6 +1093,8 @@ namespace Sipi {
                     img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
                 }
             }
+            //delete img->icc; we don't want to add the ICC profile in this case (doesn't make sense!)
+            img->icc = nullptr;
         }
 
         TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);

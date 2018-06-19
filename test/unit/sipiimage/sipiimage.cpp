@@ -120,6 +120,9 @@ TEST(Sipiimage, CIELabConversion)
     ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/cielab.jpx"));
     ASSERT_NO_THROW(img2.read("../../../../test/_test_data/images/unit/cielab.jpx"));
     ASSERT_NO_THROW(img2.write("tif", "../../../../test/_test_data/images/unit/cielab_2.tif"));
+
+    // now test if conversion back to TIFF gives an identical image
+    EXPECT_TRUE(image_identical(cielab, "../../../../test/_test_data/images/unit/cielab_2.tif"));
     ASSERT_NO_THROW(img3.read("../../../../test/_test_data/images/unit/cielab.jpx"));
     ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/cielab.png"));
 }
