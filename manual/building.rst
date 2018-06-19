@@ -167,7 +167,7 @@ Prerequisites for building Sipi without its automated test framework:
 
 ::
 
-    sudo yum -y install cmake
+    sudo yum -y install cmake3
     sudo yum -y install readline-devel
     sudo yum -y install doxygen
     sudo yum -y install patch
