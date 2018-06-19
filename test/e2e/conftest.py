@@ -57,7 +57,8 @@ class SipiTestManager:
         with open(os.path.abspath("config.ini")) as config_file:
             self.config.read_file(config_file)
 
-        self.sipi_working_dir = os.path.abspath("../..")
+        test_config = self.config["Test"]
+        self.sipi_working_dir = os.path.abspath(test_config["working-dir"])
 
         # Ensure Sipi doesn't use caching in tests.
         sipi_cache_dir = os.path.join(self.sipi_working_dir, "cache")
@@ -67,9 +68,10 @@ class SipiTestManager:
             pass
 
         sipi_config = self.config["Sipi"]
+        self.sipi_executable = os.path.abspath(sipi_config["sipi-executable"])
         self.sipi_config_file = sipi_config["config-file"]
-        self.sipi_command = "build/sipi --config config/{}".format(self.sipi_config_file)
-        self.data_dir = os.path.abspath(self.config["Test"]["data-dir"])
+        self.sipi_command = "{} --config config/{}".format(self.sipi_executable, self.sipi_config_file)
+        self.data_dir = os.path.abspath(test_config["data-dir"])
         self.sipi_port = sipi_config["port"]
         self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
         self.sipi_base_url = "http://127.0.0.1:{}".format(self.sipi_port)
@@ -80,7 +82,7 @@ class SipiTestManager:
         self.sipi_process = None
         self.sipi_started = False
         self.sipi_took_too_long = False
-        self.sipi_convert_command = "build/sipi --file {} --format {} {}" # Braces will be replaced by actual arguments. See https://pyformat.info for details on string formatting.
+        self.sipi_convert_command = "{} --file {} --format {} {}" # Braces will be replaced by actual arguments. See https://pyformat.info for details on string formatting.
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -117,9 +119,11 @@ class SipiTestManager:
 
         # Remove any Sipi log file from a previous run.
         try:
-            os.remove(self.sipi_config_file)
+            os.remove(self.sipi_log_file)
         except OSError:
             pass
+
+        print(self.sipi_command)
 
         # Start a Sipi process and capture its output.
         sipi_args = shlex.split(self.sipi_command)
@@ -277,7 +281,7 @@ class SipiTestManager:
             target_file_path: the absolute path of the target file.
             target_file_format: jpx, jpg, tif, or png.
         """
-        convert_process_args = shlex.split(self.sipi_convert_command.format(source_file_path, target_file_format, target_file_path))
+        convert_process_args = shlex.split(self.sipi_convert_command.format(self.sipi_executable, source_file_path, target_file_format, target_file_path))
         convert_process = subprocess.run(convert_process_args,
             cwd=self.sipi_working_dir,
             stdout=subprocess.PIPE,

@@ -46,7 +46,7 @@ sipi = {
     -- expected to be urlencoded. Both will be decoded. That is, "/" will be recoignized and expanded
     -- in the final path the image file!
     --
-    imgroot = './test/_test_data/images', -- directory for Knora Sipi integration testing
+    imgroot = './images', -- directory for Knora Sipi integration testing
 
     --
     -- If FALSE, the prefix is not used to build the path to the image files
@@ -56,7 +56,7 @@ sipi = {
     --
     -- Lua script which is executed on initialization of the Lua interpreter
     --
-    initscript = './config/sipi.init-no-knora-test.lua',
+    initscript = './config/sipi.init-knora.lua',
 
     --
     -- path to the caching directory
@@ -132,11 +132,6 @@ sipi = {
     loglevel = "TRACE",
 }
 
-fileserver = {
-    docroot = './server',
-    wwwroute = '/server'
-}
-
 --
 -- here we define routes that are handled by lua scripts. A route is a defined url:
 -- http://<server-DNS>/<route>
@@ -167,6 +162,20 @@ routes = {
         method = 'POST',
         route = '/Knora_logout',
         script = 'Knora_logout.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_functions',
+        script = 'test_functions.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_mediatype',
+        script = 'test_mediatype.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_knora_session_cookie',
+        script = 'test_knora_session_cookie.lua'
     }
-
 }
