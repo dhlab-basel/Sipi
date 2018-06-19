@@ -22,6 +22,7 @@ std::string leavesSmallWithAlpha = "../../../../test/_test_data/images/knora/Lea
 std::string leavesSmallNoAlpha = "../../../../test/_test_data/images/knora/Leaves-small-no-alpha.tif";
 std::string png16bit = "../../../../test/_test_data/images/knora/png_16bit.png";
 std::string leaves8tif = "../../../../test/_test_data/images/knora/Leaves8.tif";
+std::string cielab = "../../../../test/_test_data/images/unit/cielab.tif";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -29,6 +30,7 @@ TEST(Sipiimage, CheckIfTestImagesCanBeFound)
     EXPECT_TRUE(exists_file(leavesSmallWithAlpha));
     EXPECT_TRUE(exists_file(leavesSmallNoAlpha));
     EXPECT_TRUE(exists_file(png16bit));
+    EXPECT_TRUE(exists_file(cielab));
 }
 
 TEST(Sipiimage, ImageComparison)
@@ -106,4 +108,16 @@ TEST(Sipiimage, ConvertPng16BitToJpg)
     ASSERT_NO_THROW(img1.read(png16bit));
 
     ASSERT_NO_THROW(img1.write("jpg", "../../../../test/_test_data/images/knora/png_16bit.jpg"));
+}
+
+TEST(Sipiimage, CIELabConversion)
+{
+    Sipi::SipiImage img1;
+    Sipi::SipiImage img2;
+
+    ASSERT_NO_THROW(img1.read(cielab));
+    ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/cielab.jpx"));
+    ASSERT_NO_THROW(img2.read("../../../../test/_test_data/images/unit/cielab.jpx"));
+    ASSERT_NO_THROW(img2.write("tif", "../../../../test/_test_data/images/unit/cielab_2.tif"));
+    EXPECT_TRUE(image_identical(cielab, "../../../../test/_test_data/images/unit/cielab_2.tif"));
 }
