@@ -41,7 +41,7 @@ Prerequisites
 
 To build Sipi from source code, you must have Kakadu_, a JPEG 2000 development
 toolkit that is not provided with Sipi and must be licensed separately.
-The Kakadu source code archive ``v7_9-01727L.zip`` must be placed in the
+The Kakadu source code archive ``v7_A_4-01727L.zip`` must be placed in the
 ``vendor`` subdirectory of the source tree before building Sipi.
 
 Sipi's build process requires CMake_, a C++ compiler that supports the C++11
