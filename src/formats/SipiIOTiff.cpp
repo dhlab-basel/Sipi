@@ -895,8 +895,23 @@ namespace Sipi {
                     }
 
                     case CIELAB: {
-                       img->icc = std::make_shared<SipiIcc>(icc_LAB);
-                       break;
+                        //
+                        // we have to convert to JPEG2000/littleCMS standard
+                        //
+                        for (int y = 0; y < img->ny; y++) {
+                            for (int x = 0; x < img->nx; x++) {
+                                union {
+                                    unsigned char u;
+                                    signed char s;
+                                } v;
+                                v.u = img->pixels[img->nc*(y*img->nx + x) + 1];
+                                img->pixels[img->nc*(y*img->nx + x) + 1] = 128 + v.s; //lround(128.*v.s / 85.) + 128;
+                                v.u = img->pixels[img->nc*(y*img->nx + x) + 2];
+                                img->pixels[img->nc*(y*img->nx + x) + 2] = 128 + v.s;
+                            }
+                        }
+                        img->icc = std::make_shared<SipiIcc>(icc_LAB);
+                        break;
                     }
 
                     default: {
@@ -1060,8 +1075,24 @@ namespace Sipi {
             } else {
                 TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16) img->bps);
             }
-        } else {
+        }
+        else {
             TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, (uint16) img->bps);
+        }
+
+        if (img->photo == PhotometricInterpretation::CIELAB) {
+            for (int y = 0; y < img->ny; y++) {
+                for (int x = 0; x < img->nx; x++) {
+                    union {
+                        unsigned char u;
+                        signed char s;
+                    } v;
+                    v.s = img->pixels[img->nc*(y*img->nx + x) + 1] - 128;
+                    img->pixels[img->nc*(y*img->nx + x) + 1] = v.u;
+                    v.s = img->pixels[img->nc*(y*img->nx + x) + 2] - 128;
+                    img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
+                }
+            }
         }
 
         TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, img->nc);

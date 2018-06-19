@@ -570,21 +570,6 @@ namespace Sipi {
             img->photo = RGB;
         }
 
-        if (img->photo == CIELAB) {
-            for (int y = 0; y < img->ny; y++) {
-                for (int x = 0; x < img->nx; x++) {
-                    union {
-                        unsigned char u;
-                        signed char s;
-                    } v;
-                    v.s = img->pixels[img->nc*(y*img->nx + x) + 1] - 128;
-                    img->pixels[img->nc*(y*img->nx + x) + 1] = v.u;
-                    v.s = img->pixels[img->nc*(y*img->nx + x) + 2] - 128;
-                    img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
-                }
-            }
-        }
-
         if ((size != nullptr) && (!redonly)) {
             switch (scaling_quality.jk2) {
                 case HIGH: img->scale(nnx, nny);
@@ -843,21 +828,6 @@ namespace Sipi {
                             break;
                         }
                         case icc_LAB: {
-                            //
-                            // we have to convert to JOEG2000 standard
-                            //
-                            for (int y = 0; y < img->ny; y++) {
-                                for (int x = 0; x < img->nx; x++) {
-                                    union {
-                                        unsigned char u;
-                                        signed char s;
-                                    } v;
-                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 1];
-                                    img->pixels[img->nc*(y*img->nx + x) + 1] = 128 + v.s; //lround(128.*v.s / 85.) + 128;
-                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 2];
-                                    img->pixels[img->nc*(y*img->nx + x) + 2] = 128 + v.s;
-                                }
-                            }
                             jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 8, 255, 128, 8, 255, 128, 8);
                             break;
                         };

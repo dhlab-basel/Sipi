@@ -25,6 +25,7 @@
 #include <arpa/inet.h>
 
 #include <string>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <cstdio>
@@ -120,6 +121,14 @@ namespace Sipi {
     }
     //=============================================
 
+    void sipi_error_fn(png_structp png_ptr, png_const_charp error_msg) {
+        std::cerr << "************!!!!**************" << std::endl;
+        throw Sipi::SipiError(__file__, __LINE__, error_msg);
+    }
+
+    void sipi_warning_fn(png_structp png_ptr, png_const_charp warning_msg) {
+
+    }
 
     bool SipiIOPng::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
                          std::shared_ptr<SipiSize> size, bool force_bps_8,
@@ -145,7 +154,7 @@ namespace Sipi {
             return FALSE; // it's not a PNG file
         }
 
-        if ((png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) nullptr, (png_error_ptr) nullptr,
+        if ((png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) nullptr, sipi_error_fn,
                                               (png_error_ptr) nullptr)) == nullptr) {
             fclose(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath +
@@ -427,7 +436,7 @@ namespace Sipi {
         FILE *outfile = nullptr;
         png_structp png_ptr;
 
-        if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
+        if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, sipi_error_fn, nullptr))) {
             throw SipiImageError(__file__, __LINE__,
                                  "Error writing PNG file \"" + filepath + "\": png_create_write_struct failed !");
         }
@@ -490,18 +499,19 @@ namespace Sipi {
         // ICC profile handfling is special...
         //
         SipiEssentials es = img->essential_metadata();
-        unsigned char *icc_buf;
         if ((img->icc != nullptr) || es.use_icc()) {
-
-            unsigned int len;
+            if ((img->icc != nullptr) && (img->icc->getProfileType() == icc_LAB)) {
+                img->convertToIcc(Sipi::icc_sRGB, 8);
+            }
+            std::vector<unsigned char> icc_buf;
             try {
                 if (es.use_icc()) {
-                    icc_buf = es.icc_profile(len);
+                    icc_buf = es.icc_profile();
                 }
                 else {
-                    icc_buf = img->icc->iccBytes(len);
+                    icc_buf = img->icc->iccBytes();
                 }
-                png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf, len);
+                png_set_iCCP(png_ptr, info_ptr, "ICC", PNG_COMPRESSION_TYPE_BASE, icc_buf.data(), icc_buf.size());
             } catch (SipiError &err) {
                 std::cerr << err << std::endl;
             }
