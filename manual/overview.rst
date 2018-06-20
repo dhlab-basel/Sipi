@@ -49,8 +49,8 @@ In addition, a simple webserver is integrated. The server is able to serve most
 common file types. In addition Lua scripts and embedded Lua (i.e., Lua
 embedded into HTML pages using the tags <lua>…</lua> are supported.
 
-Sipi can also be used from the command line to convert images to/from TIFF, JPEG2000,
-JPEG and PNG formats. For all these conversion, Sipi tries to preserve all embedded
+Sipi can also be used from the command line to convert images to/from TIFF_, `JPEG 2000`_,
+JPEG_ and PNG_ formats. For all these conversion, Sipi tries to preserve all embedded
 metadata such as IPTC_, EXIF_, XMP_ and ICC_ color profiles. However, due to the limitations
 of some file formats, it cannot be guaranteed that all metadata and ICC profiles are
 preserved. `JPEG 2000`_ does not allow all types of ICC_ profiles. Unsupported profile types
