@@ -23,6 +23,7 @@ std::string leavesSmallNoAlpha = "../../../../test/_test_data/images/knora/Leave
 std::string png16bit = "../../../../test/_test_data/images/knora/png_16bit.png";
 std::string leaves8tif = "../../../../test/_test_data/images/knora/Leaves8.tif";
 std::string cielab = "../../../../test/_test_data/images/unit/cielab.tif";
+std::string cmyk = "../../../../test/_test_data/images/unit/cmyk.tif";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -31,6 +32,7 @@ TEST(Sipiimage, CheckIfTestImagesCanBeFound)
     EXPECT_TRUE(exists_file(leavesSmallNoAlpha));
     EXPECT_TRUE(exists_file(png16bit));
     EXPECT_TRUE(exists_file(cielab));
+    EXPECT_TRUE(exists_file(cmyk));
 }
 
 TEST(Sipiimage, ImageComparison)
@@ -110,7 +112,7 @@ TEST(Sipiimage, ConvertPng16BitToJpg)
     ASSERT_NO_THROW(img1.write("jpg", "../../../../test/_test_data/images/knora/png_16bit.jpg"));
 }
 
-TEST(Sipiimage, CIELabConversion)
+TEST(Sipiimage, CIELab_Conversion)
 {
     Sipi::SipiImage img1;
     Sipi::SipiImage img2;
@@ -125,4 +127,24 @@ TEST(Sipiimage, CIELabConversion)
     EXPECT_TRUE(image_identical(cielab, "../../../../test/_test_data/images/unit/cielab_2.tif"));
     ASSERT_NO_THROW(img3.read("../../../../test/_test_data/images/unit/cielab.jpx"));
     ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/cielab.png"));
+}
+
+TEST(Sipiimage, CMYK_Conversion)
+{
+    Sipi::SipiImage img1;
+    Sipi::SipiImage img2;
+    Sipi::SipiImage img3;
+    Sipi::SipiImage img4;
+
+    ASSERT_NO_THROW(img1.read(cmyk));
+    ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/_cmyk.jpx"));
+    ASSERT_NO_THROW(img2.read("../../../../test/_test_data/images/unit/_cmyk.jpx"));
+    ASSERT_NO_THROW(img2.write("tif", "../../../../test/_test_data/images/unit/_cmyk_2.tif"));
+
+    // now test if conversion back to TIFF gives an identical image
+    EXPECT_TRUE(image_identical(cmyk, "../../../../test/_test_data/images/unit/_cmyk_2.tif"));
+    ASSERT_NO_THROW(img3.read("../../../../test/_test_data/images/unit/_cmyk.jpx"));
+    ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/_cmyk.png"));
+    ASSERT_NO_THROW(img4.read("../../../../test/_test_data/images/unit/_cmyk.jpx"));
+    ASSERT_NO_THROW(img4.write("jpg", "../../../../test/_test_data/images/unit/_cmyk.jpg"));
 }

@@ -487,7 +487,14 @@ namespace Sipi {
             color_type = PNG_COLOR_TYPE_RGB;
         } else if ((img->nc == 4) && (img->es.size() == 1)) { // RGB + ALPHA
             color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-        } else {
+        }
+        else if (img->nc == 4) {
+            img->convertToIcc(icc_sRGB, 8);
+            color_type = PNG_COLOR_TYPE_RGB;
+            img->nc = 3;
+            img->bps = 8;
+        }
+        else {
             throw SipiImageError(__file__, __LINE__,
                                  "Error writing PNG file \"" + filepath + "\": cannot handle number of channels () !");
         }
