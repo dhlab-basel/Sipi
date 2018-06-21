@@ -1327,8 +1327,11 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Cannot read watermark file " + wmfilename);
         }
 
-        float *xlut = new float[nx];
-        float *ylut = new float[ny];
+        auto xlut = shttps::make_unique<float[]>(nx);
+        auto ylut = shttps::make_unique<float[]>(ny);
+
+        //float *xlut = new float[nx];
+        //float *ylut = new float[ny];
 
         for (size_t i = 0; i < nx; i++) {
             xlut[i] = (float) (wm_nx * i) / (float) nx;
@@ -1389,8 +1392,9 @@ namespace Sipi {
             new_rhs = new SipiImage(rhs);
             new_rhs->scale(nx, ny);
         }
+        auto diffbuf = shttps::make_unique<int[]>(nx * ny * nc);
 
-        int *diffbuf = new int[nx * ny * nc];
+        //int *diffbuf = new int[nx * ny * nc];
 
         switch (bps) {
             case 8: {
@@ -1430,7 +1434,7 @@ namespace Sipi {
             }
 
             default: {
-                delete[] diffbuf;
+                //delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1481,7 +1485,7 @@ namespace Sipi {
             }
 
             default: {
-                delete[] diffbuf;
+                //delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1519,7 +1523,8 @@ namespace Sipi {
             new_rhs->scale(nx, ny);
         }
 
-        int *diffbuf = new int[nx * ny * nc];
+        auto diffbuf = shttps::make_unique<int[]>(nx * ny * nc);
+        //int *diffbuf = new int[nx * ny * nc];
 
         switch (bps) {
             case 8: {
@@ -1558,7 +1563,7 @@ namespace Sipi {
             }
 
             default: {
-                delete[] diffbuf;
+                //delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1604,7 +1609,7 @@ namespace Sipi {
             }
 
             default: {
-                delete[] diffbuf;
+                //delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }

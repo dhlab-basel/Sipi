@@ -246,7 +246,7 @@ namespace shttps {
      */
     LuaServer::LuaServer() {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -258,7 +258,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -274,7 +274,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(const std::string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -306,7 +306,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode, const std::string &lua_scriptdir) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
