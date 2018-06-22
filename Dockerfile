@@ -18,4 +18,6 @@ RUN cd /sipi/build && \
 
 EXPOSE 1024
 
+WORKDIR /sipi
+
 CMD ["/sipi/local/bin/sipi", "--config=/sipi/config/sipi.knora-docker-config.lua"]
