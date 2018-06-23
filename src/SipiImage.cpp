@@ -523,6 +523,11 @@ namespace Sipi {
                 break;
             }
 
+            case icc_LAB: {
+                photo = CIELAB;
+                break;
+            }
+
             default: {
                 // do nothing at the moment
             }

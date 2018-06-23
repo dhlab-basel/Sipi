@@ -833,6 +833,7 @@ namespace Sipi {
 
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
+        if (img->bps == 16) img->to8bps();
 
         //
         // we have to check if the image has an alpha channel (not supported by JPEG). If
@@ -921,6 +922,7 @@ namespace Sipi {
                 img->convertToIcc(Sipi::icc_sRGB, 8);
                 cinfo.in_color_space = JCS_RGB;
                 cinfo.jpeg_color_space = JCS_RGB;
+                break;
             }
             default: {
                 throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace: " + std::to_string(img->photo));
@@ -929,7 +931,6 @@ namespace Sipi {
         cinfo.progressive_mode = TRUE;
         cinfo.write_Adobe_marker = TRUE;
         cinfo.write_JFIF_header = TRUE;
-
         try {
             jpeg_set_defaults(&cinfo);
             jpeg_set_quality(&cinfo, quality, TRUE /* TRUE, then limit to baseline-JPEG values */);
