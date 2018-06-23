@@ -917,6 +917,11 @@ namespace Sipi {
                 cinfo.jpeg_color_space = JCS_YCbCr;
                 break;
             }
+            case CIELAB: {
+                img->convertToIcc(Sipi::icc_sRGB, 8);
+                cinfo.in_color_space = JCS_RGB;
+                cinfo.jpeg_color_space = JCS_RGB;
+            }
             default: {
                 throw SipiImageError(__file__, __LINE__, "Unsupported JPEG colorspace: " + std::to_string(img->photo));
             }

@@ -629,7 +629,6 @@ namespace Sipi {
             //
             // read xmp header
             //
-
             int xmp_length;
             char *xmp_content = nullptr;
 
@@ -832,7 +831,6 @@ namespace Sipi {
 
             TIFFClose(tif);
 
-
             if (img->photo == PALETTE) {
                 //
                 // ok, we have a palette color image we have to convert to RGB...
@@ -898,17 +896,38 @@ namespace Sipi {
                         //
                         // we have to convert to JPEG2000/littleCMS standard
                         //
-                        for (int y = 0; y < img->ny; y++) {
-                            for (int x = 0; x < img->nx; x++) {
-                                union {
-                                    unsigned char u;
-                                    signed char s;
-                                } v;
-                                v.u = img->pixels[img->nc*(y*img->nx + x) + 1];
-                                img->pixels[img->nc*(y*img->nx + x) + 1] = 128 + v.s; //lround(128.*v.s / 85.) + 128;
-                                v.u = img->pixels[img->nc*(y*img->nx + x) + 2];
-                                img->pixels[img->nc*(y*img->nx + x) + 2] = 128 + v.s;
+                        if (img->bps == 8) {
+                            for (int y = 0; y < img->ny; y++) {
+                                for (int x = 0; x < img->nx; x++) {
+                                    union {
+                                        unsigned char u;
+                                        signed char s;
+                                    } v;
+                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 1];
+                                    img->pixels[img->nc*(y*img->nx + x) + 1] = 128 + v.s;
+                                    v.u = img->pixels[img->nc*(y*img->nx + x) + 2];
+                                    img->pixels[img->nc*(y*img->nx + x) + 2] = 128 + v.s;
+                                }
                             }
+                        }
+                        else if (img->bps == 16) {
+                            unsigned  short *data = (unsigned short *) img->pixels;
+                            for (int y = 0; y < img->ny; y++) {
+                                for (int x = 0; x < img->nx; x++) {
+                                    union {
+                                        unsigned short u;
+                                        signed short s;
+                                    } v;
+                                    v.u = data[img->nc*(y*img->nx + x) + 1];
+                                    data[img->nc*(y*img->nx + x) + 1] = 32768 + v.s;
+                                    v.u = data[img->nc*(y*img->nx + x) + 2];
+                                    data[img->nc*(y*img->nx + x) + 2] = 32768 + v.s;
+                                }
+                            }
+                        }
+                        else {
+                            throw Sipi::SipiImageError(__file__, __LINE__, "Unsupported bits per sample (" +
+                                                                           std::to_string(img->bps) + ")");
                         }
                         img->icc = std::make_shared<SipiIcc>(icc_LAB);
                         break;
@@ -1081,18 +1100,40 @@ namespace Sipi {
         }
 
         if (img->photo == PhotometricInterpretation::CIELAB) {
-            for (int y = 0; y < img->ny; y++) {
-                for (int x = 0; x < img->nx; x++) {
-                    union {
-                        unsigned char u;
-                        signed char s;
-                    } v;
-                    v.s = img->pixels[img->nc*(y*img->nx + x) + 1] - 128;
-                    img->pixels[img->nc*(y*img->nx + x) + 1] = v.u;
-                    v.s = img->pixels[img->nc*(y*img->nx + x) + 2] - 128;
-                    img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
+            if (img->bps == 8) {
+                for (int y = 0; y < img->ny; y++) {
+                    for (int x = 0; x < img->nx; x++) {
+                        union {
+                            unsigned char u;
+                            signed char s;
+                        } v;
+                        v.s = img->pixels[img->nc*(y*img->nx + x) + 1] - 128;
+                        img->pixels[img->nc*(y*img->nx + x) + 1] = v.u;
+                        v.s = img->pixels[img->nc*(y*img->nx + x) + 2] - 128;
+                        img->pixels[img->nc*(y*img->nx + x) + 2] = v.u;
+                    }
                 }
             }
+            else if (img->bps == 16) {
+                for (int y = 0; y < img->ny; y++) {
+                    for (int x = 0; x < img->nx; x++) {
+                        unsigned short *data = (unsigned short *) img->pixels;
+                        union {
+                            unsigned short u;
+                            signed short s;
+                        } v;
+                        v.s = data[img->nc*(y*img->nx + x) + 1] - 32768;
+                        data[img->nc*(y*img->nx + x) + 1] = v.u;
+                        v.s = data[img->nc*(y*img->nx + x) + 2] - 32768;
+                        data[img->nc*(y*img->nx + x) + 2] = v.u;
+                    }
+                }
+            }
+            else {
+                throw Sipi::SipiImageError(__file__, __LINE__, "Unsupported bits per sample (" +
+                                                               std::to_string(img->bps) + ")");
+            }
+
             //delete img->icc; we don't want to add the ICC profile in this case (doesn't make sense!)
             img->icc = nullptr;
         }

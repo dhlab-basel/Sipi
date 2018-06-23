@@ -200,8 +200,6 @@ namespace Sipi {
             img->exif->addKeyVal("Exif.Image.ResolutionUnit", 2); // DPI
         }
 
-
-
         int colortype = png_get_color_type(png_ptr, info_ptr);
         switch (colortype) {
             case PNG_COLOR_TYPE_GRAY: { // implies nc = 1, (bit depths 1, 2, 4, 8, 16)
@@ -508,7 +506,7 @@ namespace Sipi {
         SipiEssentials es = img->essential_metadata();
         if ((img->icc != nullptr) || es.use_icc()) {
             if ((img->icc != nullptr) && (img->icc->getProfileType() == icc_LAB)) {
-                img->convertToIcc(Sipi::icc_sRGB, 8);
+                img->convertToIcc(Sipi::icc_sRGB, img->bps);
             }
             std::vector<unsigned char> icc_buf;
             try {

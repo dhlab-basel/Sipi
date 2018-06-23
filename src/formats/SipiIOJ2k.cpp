@@ -679,8 +679,8 @@ namespace Sipi {
             siz.set(Scomponents, 0, 0, (int) img->nc);
             siz.set(Sdims, 0, 0, (int) img->ny);  // Height of first image component
             siz.set(Sdims, 0, 1, (int) img->nx);   // Width of first image component
-            siz.set(Nprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
-            siz.set(Nsigned, 0, 0, false); // Image samples are originally unsigned
+            siz.set(Sprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
+            siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
@@ -828,7 +828,15 @@ namespace Sipi {
                             break;
                         }
                         case icc_LAB: {
-                            jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 8, 255, 128, 8, 255, 128, 8);
+                            if (img->bps == 8) {
+                                jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 8, 255, 128, 8, 255, 128, 8);
+                            }
+                            else {
+                                //
+                                // very strange parameters – was experimentally found
+                                //
+                                jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 16, 255, 32767, 16, 255, 32767, 16);
+                            }
                             break;
                         };
                         default: {

@@ -1392,9 +1392,8 @@ namespace Sipi {
             new_rhs = new SipiImage(rhs);
             new_rhs->scale(nx, ny);
         }
-        auto diffbuf = shttps::make_unique<int[]>(nx * ny * nc);
 
-        //int *diffbuf = new int[nx * ny * nc];
+        int *diffbuf = new int[nx * ny * nc];
 
         switch (bps) {
             case 8: {
@@ -1434,7 +1433,7 @@ namespace Sipi {
             }
 
             default: {
-                //delete[] diffbuf;
+                delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1485,7 +1484,7 @@ namespace Sipi {
             }
 
             default: {
-                //delete[] diffbuf;
+                delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1493,6 +1492,7 @@ namespace Sipi {
 
         if (new_rhs != nullptr) delete new_rhs;
 
+        delete[] diffbuf;
         return *this;
     }
 
@@ -1523,8 +1523,7 @@ namespace Sipi {
             new_rhs->scale(nx, ny);
         }
 
-        auto diffbuf = shttps::make_unique<int[]>(nx * ny * nc);
-        //int *diffbuf = new int[nx * ny * nc];
+        int *diffbuf = new int[nx * ny * nc];
 
         switch (bps) {
             case 8: {
@@ -1563,7 +1562,7 @@ namespace Sipi {
             }
 
             default: {
-                //delete[] diffbuf;
+                delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
@@ -1609,11 +1608,13 @@ namespace Sipi {
             }
 
             default: {
-                //delete[] diffbuf;
+                delete[] diffbuf;
                 if (new_rhs != nullptr) delete new_rhs;
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
+
+        delete[] diffbuf;
 
         return *this;
     }
