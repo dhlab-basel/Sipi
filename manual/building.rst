@@ -329,6 +329,7 @@ needs to be installed on the system.
 
 ::
 
+    docker image rm --force dhlabbasel/sipi-base:18.04 // deletes cached image and needs only to be used when newer image is available on dockerhub
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make" // building
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose" // building and running all tests
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html" // make html documentation
