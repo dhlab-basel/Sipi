@@ -24,6 +24,7 @@ std::string png16bit = "../../../../test/_test_data/images/knora/png_16bit.png";
 std::string leaves8tif = "../../../../test/_test_data/images/knora/Leaves8.tif";
 std::string cielab = "../../../../test/_test_data/images/unit/cielab.tif";
 std::string cmyk = "../../../../test/_test_data/images/unit/cmyk.tif";
+std::string cielab16 = "../../../../test/_test_data/images/unit/CIELab16.tif";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -127,6 +128,26 @@ TEST(Sipiimage, CIELab_Conversion)
     EXPECT_TRUE(image_identical(cielab, "../../../../test/_test_data/images/unit/cielab_2.tif"));
     ASSERT_NO_THROW(img3.read("../../../../test/_test_data/images/unit/cielab.jpx"));
     ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/cielab.png"));
+}
+
+TEST(Sipiimage, CIELab16_Conversion)
+{
+    Sipi::SipiImage img1;
+    Sipi::SipiImage img2;
+    Sipi::SipiImage img3;
+    Sipi::SipiImage img4;
+
+    ASSERT_NO_THROW(img1.read(cielab16));
+    ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/CIELab16.jpx"));
+    ASSERT_NO_THROW(img2.read("../../../../test/_test_data/images/unit/CIELab16.jpx"));
+    ASSERT_NO_THROW(img2.write("tif", "../../../../test/_test_data/images/unit/CIELab_2.tif"));
+
+    // now test if conversion back to TIFF gives an identical image
+    EXPECT_TRUE(image_identical(cielab16, "../../../../test/_test_data/images/unit/CIELab_2.tif"));
+    ASSERT_NO_THROW(img3.read("../../../../test/_test_data/images/unit/CIELab16.jpx"));
+    ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/CIELab16.png"));
+    ASSERT_NO_THROW(img4.read("../../../../test/_test_data/images/unit/CIELab16.jpx"));
+    ASSERT_NO_THROW(img4.write("jpg", "../../../../test/_test_data/images/unit/CIELab16.jpg"));
 }
 
 TEST(Sipiimage, CMYK_Conversion)
