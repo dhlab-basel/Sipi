@@ -840,7 +840,6 @@ namespace Sipi {
                             break;
                         };
                         default: {
-                            std::cerr << "-------------------------------" << std::endl;
                             unsigned int icc_len;
                             kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
                             jp2_family_colour.init(icc_bytes);
@@ -848,7 +847,6 @@ namespace Sipi {
                     }
                 }
                 catch (kdu_exception e) {
-                    std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!! PUT ICC IN ESSENTIAL !!!!!!" << std::endl;
                     if (es.is_set()) es.use_icc(true);
                     switch (img->nc - img->es.size()) {
                         case 1: {
@@ -866,7 +864,6 @@ namespace Sipi {
                     }
                 }
             } else {
-                std::cerr << "???????????????????????" << std::endl;
                 switch (img->nc - img->es.size()) {
                     case 1: {
                         jp2_family_colour.init(JP2_sLUM_SPACE);

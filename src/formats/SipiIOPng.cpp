@@ -122,7 +122,6 @@ namespace Sipi {
     //=============================================
 
     void sipi_error_fn(png_structp png_ptr, png_const_charp error_msg) {
-        std::cerr << "************!!!!**************" << std::endl;
         throw Sipi::SipiError(__file__, __LINE__, error_msg);
     }
 
@@ -139,7 +138,6 @@ namespace Sipi {
         png_structp png_ptr;
         png_infop info_ptr;
         png_infop end_info;
-
         //
         // open the input file
         //
@@ -153,26 +151,22 @@ namespace Sipi {
             fclose(infile);
             return FALSE; // it's not a PNG file
         }
-
         if ((png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, (png_voidp) nullptr, sipi_error_fn,
                                               (png_error_ptr) nullptr)) == nullptr) {
             fclose(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath +
                                                      "\": Could not allocate mempry fpr png_structp !");
         }
-
         if ((info_ptr = png_create_info_struct(png_ptr)) == nullptr) {
             fclose(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath +
                                                      "\": Could not allocate mempry fpr png_infop !");
         }
-
         if ((end_info = png_create_info_struct(png_ptr)) == nullptr) {
             fclose(infile);
             throw SipiImageError(__file__, __LINE__, "Error reading PNG file \"" + filepath +
                                                      "\": Could not allocate mempry fpr png_infop !");
         }
-
         png_init_io(png_ptr, infile);
         png_set_sig_bytes(png_ptr, 8);
         png_read_info(png_ptr, info_ptr);
@@ -242,7 +236,6 @@ namespace Sipi {
                 img->icc = std::make_shared<SipiIcc>((unsigned char *) profile, (int) proflen);
             }
         }
-
         png_text *png_texts;
         int num_comments = png_get_text(png_ptr, info_ptr, &png_texts, nullptr);
 
@@ -298,7 +291,6 @@ namespace Sipi {
             for (int i = 0; i < img->nx*img->ny*img->nc; i++) {
                 tmp[i] = ntohs(tmp[i]);
             }
-            img->pixels = buffer;
         }
         img->pixels = buffer;
 
@@ -333,7 +325,6 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, "Cannot convert to 8 Bits(sample");
             }
         }
-
         return true;
     };
 
