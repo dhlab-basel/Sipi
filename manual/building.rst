@@ -44,7 +44,7 @@ toolkit that is not provided with Sipi and must be licensed separately.
 The Kakadu source code archive ``v7_A_4-01727L.zip`` must be placed in the
 ``vendor`` subdirectory of the source tree before building Sipi.
 
-Sipi's build process requires CMake_, a C++ compiler that supports the C++11
+Sipi's build process requires CMake_ (minimal Version 3.0.0), a C++ compiler that supports the C++11
 standard (such as GCC_ or clang_), and several libraries that are readily
 available on supported platforms. The test framework requires `Python 3`_,
 (version 3.5 or later), `Apache ab`_ (which is assumed to be installed by default
