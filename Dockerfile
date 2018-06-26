@@ -17,6 +17,11 @@ RUN cd /sipi/build && \
     rm -rf /sipi/build && \
     rm -rf /sipi/extsrcs
 
+# Make sure that there is really no dynamic linkage
+RUN ldd /sipi/local/bin/sipi
+
+# Make sure that there are no unresolved symbols left (list should be empty)
+RUN nm /sipi/local/bin/sipi | grep " U "
 
 # starting second stage
 FROM ubuntu:18.04
