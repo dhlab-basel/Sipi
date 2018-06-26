@@ -30,7 +30,7 @@ include(CheckIncludeFiles)
 project(sipi)
 
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
-set(SIPI_RELEASE "Sipi Version 1.0 Beta (build ${SIPIDATE})")
+set(SIPI_RELEASE "Sipi Version v1.2.0 Beta (build ${SIPIDATE})")
 
 #
 # Usually SIPI is compiled with all static libraries
@@ -70,6 +70,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
     SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE FILEPATH "openssl")
+    SET(OPENSSL_USE_STATIC_LIBS ON)
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     message(STATUS "Compiling for Linux64...")
     message(STATUS ${CMAKE_SYSTEM_NAME})

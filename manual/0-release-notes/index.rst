@@ -1,6 +1,6 @@
 .. Copyright © 2017 Lukas Rosenthaler, Andrea Bianco, Benjamin Geer,
    Tobias Schweizer, and Ivan Subotic.
-   
+
    This file is part of Sipi.
 
    Sipi is free software: you can redistribute it and/or modify
@@ -24,26 +24,13 @@
    You should have received a copy of the GNU Affero General Public
    License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
-.. highlight:: none
-
-+++++++++++++++
-The Sipi Manual
-+++++++++++++++
++++++++++++++
+Release Notes
++++++++++++++
 
 .. toctree::
    :maxdepth: 2
 
-   0-release-notes/index
-   overview.rst
-   building.rst
-   running.rst
-   lua.rst
-   developing.rst
+   v1.2.0
+   v1.3.0
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

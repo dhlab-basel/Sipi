@@ -38,6 +38,10 @@ class TestServer:
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
 
+    def test_lua_scripts(self, manager):
+        """call Lua functions for mediatype handling"""
+        manager.expect_status_code("/test_mediatype", 200)
+
     def test_knora_session_parsing(self, manager):
         """call Lua function that gets the Knora session id from the cookie header sent to Sipi"""
         manager.expect_status_code("/test_knora_session_cookie", 200)
@@ -89,49 +93,6 @@ class TestServer:
 
         filename_full = response_json["filename_full"]
         filename_thumb = response_json["filename_thumb"]
-
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
-
-
-    def test_lausanne_thumbnail_noalpha(self, manager):
-        """create thumbnail with Lausanne file - no alpha"""
-        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-no-alpha.tif"), "image/tiff")
-        # print("\n==>>" + str(response_json))
-        filename = response_json["filename"]
-        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
-
-        # given the temporary filename, create the file
-        params = {
-            "filename": filename,
-            "originalfilename": "Leaves-small-no-alpha.tif",
-            "originalmimetype": "image/tiff"
-        }
-
-        response_json2 = manager.post_request("/convert_from_file", params)
-        filename_full = response_json2["filename_full"]
-        filename_thumb = response_json2["filename_thumb"]
-
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
-
-    def test_lausanne_thumbnail_alpha(self, manager):
-        """create thumbnail with Lausanne file - with alpha"""
-        response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves-small-alpha.tif"), "image/tiff")
-        # print("\n==>>" + str(response_json))
-        filename = response_json["filename"]
-        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
-
-        # given the temporary filename, create the file
-        params = {
-            "filename": filename,
-            "originalfilename": "Leaves-small-alpha.tif",
-            "originalmimetype": "image/tiff"
-        }
-
-        response_json2 = manager.post_request("/convert_from_file", params)
-        filename_full = response_json2["filename_full"]
-        filename_thumb = response_json2["filename_thumb"]
 
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)

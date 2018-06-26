@@ -19,18 +19,31 @@ env:
     - secure: ZEjIXow+plBGsZyjWqytSHHGCacAAD6Gdj+NmFK+JDdL4F9i2ndhDl8pcaunr6PHQWXgzyNWt9YOauQWGuiUSwIyJBkkSzC1KRCZXQR/ZxrJEk9vSFcYHHTPCJgDNViiqo0l1gNYcP/Po/EpE6Fljs4JLveFh/zmetRHKE0vAvc5tfeDjXXRoEQ4CYF1yycWF21mCHg493UVK67FR+3XAeNi7of9ZIT4iGmxUH+9Htd5srhkdDTTJqqwEe1Ql5EJ3LW5+Ssj8fRDNr7vgTnLz9wb8Wv9Ez3/q2Fukv1VIB4rWTMmUERxzWkxyu05tK2DYOFrSN8LQdJVu+pzRl0qHmQSITwekCq974Bav89BvkoEb7xT0kbCwZOLswqVBt+jLOBRLBUmlZn7REkRGcBEHNhIR82q4hVS7aZHeLIx8QGYoREKKKKVcvEr+LxucqvsO6RbGtkeqUjOmv4q8qzWrewGuzS5J+NmI9V7h3QWGyDVU/cdKf6lyo9nmnZ8YmUp5xeKwaiL1yfO7K16jxYnNQvfnPc+3VmiX8Wb8PRAxUysmY2fCQJIyMsSSSNaHv7dA0AJFRqOeZDzaPHN5zOHS8mvSBou4Sq878R97poFkU5k9PWFkQ0pc+fSh07L1wClMosqd2qpxEypFxWV5DkQKZk3gF+mnrsvrKoKcy1CB68= # DOCKER_PASS
     - REPO=dhlabbasel/sipi
 
-script:
-  # decrypt archive containing the kakadu library
-  - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
-  # run compile and tests inside docker
-  - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make test; make check"
+stages:
+  - test
+  - name: publish # generally, only publish if we are on 'develop' or tagged
+    if: branch = develop OR tag IS present
 
-after_success:
-  # login into docker hub, build image, and push but only when on the "develop" branch
-  - docker login -u $DOCKER_USER -p $DOCKER_PASS
-  - if [ "$TRAVIS_BRANCH" = "develop" ]; then docker build -t $REPO:develop . ; fi
-  - if [ "$TRAVIS_BRANCH" = "develop" ]; then docker tag $REPO:develop $REPO:latest ; fi
-  - if [ "$TRAVIS_BRANCH" = "develop" ]; then docker push $REPO ; fi
+jobs:
+  include:
+    - stage: test
+      script:
+        # decrypt archive containing the kakadu library
+        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
+        # run compile and tests inside docker
+        - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make test; make check"
+
+    - stage: publish
+      script:
+        # decrypt archive containing the kakadu library
+        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
+        # login into docker hub, build image, and push but only when on the "develop" branch or tagged
+        # when on 'develop' then $TRAVIS_BRANCH = develop
+        # when on 'tag' then $TRAVIS_BRANCH = tag, e.g., v1.2.0
+        - docker login -u $DOCKER_USER -p $DOCKER_PASS
+        - docker build -t $REPO:$TRAVIS_BRANCH .
+        - docker tag $REPO:$TRAVIS_BRANCH $REPO:latest
+        - docker push $REPO
 
 notifications:
   slack:
