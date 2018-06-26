@@ -38,6 +38,9 @@ set(SIPI_RELEASE "Sipi Version v1.2.0 Beta (build ${SIPIDATE})")
 option(MAKE_SHARED_SIPI "Create sipi using all shared libraries" OFF)
 option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 
+# Static linker flags
+SET(GCC_STATIC_LINK_FLAGS "-static -static-libgcc -static-libstdc++")
+
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
@@ -91,6 +94,7 @@ else()
     SET(BUILD_SHARED_LIBRARIES OFF)
     if(NOT CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 #        SET(CMAKE_EXE_LINKER_FLAGS "-static")
+        SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${GCC_STATIC_LINK_FLAGS}" )
     endif()
 endif()
 

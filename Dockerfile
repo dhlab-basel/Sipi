@@ -1,5 +1,5 @@
 # first stage does the building
-FROM dhlabbasel/sipi-base:latest as build-stage
+FROM dhlabbasel/sipi-base:18.04 as build-stage
 
 MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
 
@@ -17,8 +17,9 @@ RUN cd /sipi/build && \
     rm -rf /sipi/build && \
     rm -rf /sipi/extsrcs
 
+
 # starting second stage
-FROM ubuntu:17.04
+FROM ubuntu:18.04
 
 RUN \
     mkdir -p /sipi/images/knora && \
@@ -35,9 +36,9 @@ COPY --from=build-stage /sipi/certificate /sipi/certificate
 COPY --from=build-stage /usr/local/lib /usr/local/lib
 COPY --from=build-stage /usr/local/include /usr/local/include
 
-RUN ldconfig
-
 EXPOSE 1024
+
+WORKDIR /sipi
 
 ENTRYPOINT [ "/sipi/local/bin/sipi" ]
 
