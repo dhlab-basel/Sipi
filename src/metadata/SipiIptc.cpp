@@ -47,6 +47,19 @@ namespace Sipi {
     }
     //============================================================================
 
+    std::vector<unsigned char> SipiIptc::iptcBytes(void) {
+        unsigned int len = 0;
+        unsigned char *buf = iptcBytes(len);
+        std::vector<unsigned char> data;
+        if (buf != nullptr) {
+            data.reserve(len);
+            for (int i = 0; i < len; i++) data.push_back(buf[i]);
+            delete[] buf;
+        }
+        return data;
+    }
+    //============================================================================
+
     std::ostream &operator<< (std::ostream &outstr, SipiIptc &rhs) {
         Exiv2::IptcData::iterator end = rhs.iptcData.end();
         for (Exiv2::IptcData::iterator md = rhs.iptcData.begin(); md != end; ++md) {

@@ -208,8 +208,9 @@ namespace shttps {
             char_array_4[i++] = encoded_string[in_];
             in_++;
             if (i == 4) {
-                for (i = 0; i < 4; i++)
+                for (i = 0; i < 4; i++) {
                     char_array_4[i] = base64_chars.find(char_array_4[i]);
+                }
 
                 char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
                 char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
@@ -245,7 +246,7 @@ namespace shttps {
      */
     LuaServer::LuaServer() {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -257,7 +258,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -273,7 +274,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(const std::string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -305,7 +306,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode, const std::string &lua_scriptdir) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -926,11 +927,12 @@ namespace shttps {
         int top = lua_gettop(L);
 
         for (int i = 1; i <= top; i++) {
-            const char *str = lua_tostring(L, i);
+            size_t len;
+            const char *str = lua_tolstring(L, i, &len);
 
             if (str != nullptr) {
                 try {
-                    conn->send(str, strlen(str));
+                    conn->send(str, len);
                 } catch (int ierr) {
                     lua_settop(L, 0); // clear stack
                     lua_pushboolean(L, false);

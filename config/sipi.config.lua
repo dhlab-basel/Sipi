@@ -191,7 +191,7 @@ sipi = {
     --
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "ERROR",
+    loglevel = "DEBUG",
 }
 
 admin = {
@@ -241,6 +241,11 @@ routes = {
     },
     {
         method = 'GET',
+        route = '/luaexe/test1',
+        script = 'test1.lua'
+    },
+    {
+        method = 'POST',
         route = '/luaexe/test1',
         script = 'test1.lua'
     },

@@ -22,6 +22,7 @@
  */
 #include <iostream>
 #include <string>
+#include <vector>
 #include <cmath>
 //#include <memory>
 #include <climits>
@@ -297,7 +298,11 @@ namespace Sipi {
             std::string checksum = internal_hash.hash();
             std::string origname = shttps::getFileName(filepath);
             std::string mimetype = shttps::Parsing::getFileMimetype(filepath).first;
-            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum);
+            std::vector<unsigned char> iccprofile;
+            if (icc != nullptr) {
+                iccprofile = icc->iccBytes();
+            }
+            SipiEssentials emdata(origname, mimetype, shttps::HashType::sha256, checksum, iccprofile);
             essential_metadata(emdata);
         } else {
             shttps::Hash internal_hash(emdata.hash_type());
@@ -515,6 +520,11 @@ namespace Sipi {
 
             case icc_CYMK_standard: {
                 photo = SEPARATED;
+                break;
+            }
+
+            case icc_LAB: {
+                photo = CIELAB;
                 break;
             }
 
@@ -1322,8 +1332,11 @@ namespace Sipi {
             throw SipiImageError(__file__, __LINE__, "Cannot read watermark file " + wmfilename);
         }
 
-        float *xlut = new float[nx];
-        float *ylut = new float[ny];
+        auto xlut = shttps::make_unique<float[]>(nx);
+        auto ylut = shttps::make_unique<float[]>(ny);
+
+        //float *xlut = new float[nx];
+        //float *ylut = new float[ny];
 
         for (size_t i = 0; i < nx; i++) {
             xlut[i] = (float) (wm_nx * i) / (float) nx;
@@ -1484,6 +1497,7 @@ namespace Sipi {
 
         if (new_rhs != nullptr) delete new_rhs;
 
+        delete[] diffbuf;
         return *this;
     }
 
@@ -1604,6 +1618,8 @@ namespace Sipi {
                 throw SipiImageError(__file__, __LINE__, "Bits per pixels not supported");
             }
         }
+
+        delete[] diffbuf;
 
         return *this;
     }

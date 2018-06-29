@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(
         project_png
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://dl.bintray.com/dhlab-basel/thirdparty/libpng-1.6.32.tar.gz
-        URL_HASH SHA256=1a8ae5c8eafad895cc3fce78fbcb6fdef663b8eb8375f04616e6496360093abb
+        URL https://dl.bintray.com/dhlab-basel/thirdparty/libpng-1.6.34.tar.gz
+        URL_HASH SHA256=574623a4901a9969080ab4a2df9437026c8a87150dfd5c235e28c94b212964a7
         DOWNLOAD_NAME libpng-latest.tar.gz
         #URL https://sourceforge.net/projects/libpng/files/latest/download?source=files
         SOURCE_DIR ${COMMON_SRCS}/libpng-latest

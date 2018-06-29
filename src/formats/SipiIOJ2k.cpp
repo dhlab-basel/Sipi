@@ -458,6 +458,11 @@ namespace Sipi {
                         img->icc = std::make_shared<SipiIcc>(icc_sRGB);
                         break;
                     }
+                    case kdu_supp::JP2_CIELab_SPACE: {
+                        img->photo = CIELAB;
+                        img->icc = std::make_shared<SipiIcc>(icc_LAB);
+                        break;
+                    }
                     case 100: {
                         img->photo = MINISBLACK;
                         img->icc = std::make_shared<SipiIcc>(icc_ROMM_GRAY);
@@ -674,8 +679,8 @@ namespace Sipi {
             siz.set(Scomponents, 0, 0, (int) img->nc);
             siz.set(Sdims, 0, 0, (int) img->ny);  // Height of first image component
             siz.set(Sdims, 0, 1, (int) img->nx);   // Width of first image component
-            siz.set(Nprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
-            siz.set(Nsigned, 0, 0, false); // Image samples are originally unsigned
+            siz.set(Sprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
+            siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
@@ -714,18 +719,6 @@ namespace Sipi {
 
             codestream.create(&siz, output);
 
-            //
-            // Custom tag for SipiEssential metadata
-            //
-            SipiEssentials es = img->essential_metadata();
-            if (es.is_set()) {
-                std::string esstr = es;
-                std::string emdata = "SIPI:" + esstr;
-                kdu_codestream_comment comment = codestream.add_comment();
-                comment.put_text(emdata.c_str());
-            }
-
-
             // Set up any specific coding parameters and finalize them.
 
             codestream.access_siz()->parse_string("Creversible=yes");
@@ -743,63 +736,133 @@ namespace Sipi {
             codestream.access_siz()->finalize_all(); // Set up coding defaults
 
             jp2_family_dimensions.init(&siz); // initalize dimension box
+
+            //
+            // get resolution tag from exif if existent: From kakadu:
+            // Sets the vertical resolution in high resolution canvas grid points per metre.
+            // If for_display is true, this is the desired display resolution; oherwise, it
+            // is the capture resolution. There is no need to explicitly specify either of these
+            // resolutions. If no resolution is specified the relevant box will not be written
+            // in the JP2/JPX file, except when a non-unity aspect ratio is selected.
+            // In the latter case, a desired display resolution box will be created, having a
+            // default vertical display resolution of one grid-point per metre.
+            //
+            if (img->exif != nullptr) {
+                float res_x = 72., res_y = 72.;
+                int unit = 2; // RESUNIT_INCH
+                if (img->exif->getValByKey("Exif.Image.XResolution", res_x) &&
+                    img->exif->getValByKey("Exif.Image.YResolution", res_y)) {
+                    (void) img->exif->getValByKey("Exif.Image.ResolutionUnit", unit);
+                    switch (unit) {
+                        case 1: break; // RESUNIT_NONE
+                        case 2: { // RESUNIT_INCH
+                            res_x = res_x*100./2.51;
+                            res_y = res_y*100./2.51;
+                            break;
+                        }
+                        case 3: { // RESUNIT_CENTIMETER
+                            res_x = res_x*100.;
+                            res_y = res_y*100.;
+                        }
+                    }
+                    jp2_family_resolution.init(res_y / res_x);
+                    jp2_family_resolution.set_resolution(res_x, false);
+                }
+            }
+
+            //
+            // we need the essenation metaqdata in order to preserve unsupported ICC profiles
+            //
+            SipiEssentials es = img->essential_metadata();
+
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
-                switch (icc_type) {
-                    case icc_undefined: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_unknown: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_sRGB: {
-                        jp2_family_colour.init(JP2_sRGB_SPACE);
-                        break;
-                    }
-                    case icc_AdobeRGB: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_RGB: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
-                        break;
-                    }
-                    case icc_CYMK_standard: {
-                        jp2_family_colour.init(JP2_CMYK_SPACE);
-                        break;
-                    }
-                    case icc_GRAY_D50: {
-                        //unsigned int icc_len;
-                        //kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        //jp2_family_colour.init(icc_bytes); // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
-                        jp2_family_colour.init(JP2_sLUM_SPACE);
-                        break;
-                    }
-                    case icc_LUM_D65: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
-                        break;
-                    }
-                    case icc_ROMM_GRAY: {
-                        jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
-                        break;
-                    }
-                    default: {
-                        unsigned int icc_len;
-                        kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
-                        jp2_family_colour.init(icc_bytes);
+                try {
+                    switch (icc_type) {
+                        case icc_undefined: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_unknown: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_sRGB: {
+                            jp2_family_colour.init(JP2_sRGB_SPACE);
+                            break;
+                        }
+                        case icc_AdobeRGB: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_RGB: { // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                            break;
+                        }
+                        case icc_CYMK_standard: {
+                            jp2_family_colour.init(JP2_CMYK_SPACE);
+                            break;
+                        }
+                        case icc_GRAY_D50: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes); // TODO: DOES NOT WORK AS EXPECTED!!!!! Fallback below
+                            break;
+                        }
+                        case icc_LUM_D65: {
+                            if (es.is_set()) es.use_icc(true);
+                            jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
+                            break;
+                        }
+                        case icc_ROMM_GRAY: {
+                            if (es.is_set()) es.use_icc(true);
+                            jp2_family_colour.init(JP2_sLUM_SPACE); // TODO: just a fallback
+                            break;
+                        }
+                        case icc_LAB: {
+                            if (img->bps == 8) {
+                                jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 8, 255, 128, 8, 255, 128, 8);
+                            }
+                            else {
+                                //
+                                // very strange parameters – was experimentally found
+                                //
+                                jp2_family_colour.init(JP2_CIELab_SPACE, 100, 0, 16, 255, 32767, 16, 255, 32767, 16);
+                            }
+                            break;
+                        };
+                        default: {
+                            unsigned int icc_len;
+                            kdu_byte *icc_bytes = (kdu_byte *) img->icc->iccBytes(icc_len);
+                            jp2_family_colour.init(icc_bytes);
+                        }
                     }
                 }
-
+                catch (kdu_exception e) {
+                    if (es.is_set()) es.use_icc(true);
+                    switch (img->nc - img->es.size()) {
+                        case 1: {
+                            jp2_family_colour.init(JP2_sLUM_SPACE);
+                            break;
+                        }
+                        case 3: {
+                            jp2_family_colour.init(JP2_sRGB_SPACE);
+                            break;
+                        }
+                        case 4: {
+                            jp2_family_colour.init(JP2_CMYK_SPACE);
+                            break;
+                        }
+                    }
+                }
             } else {
                 switch (img->nc - img->es.size()) {
                     case 1: {
@@ -817,34 +880,59 @@ namespace Sipi {
                 }
             }
 
-            jp2_family_channels.init(img->nc - img->es.size());
-            for (int c = 0; c < img->nc - img->es.size(); c++) jp2_family_channels.set_colour_mapping(c, c);
-            for (int c = 0; c < img->es.size(); c++) jp2_family_channels.set_opacity_mapping(img->nc + c, img->nc + c);
-            jpx_out.write_headers();
+            //
+            // Custom tag for SipiEssential metadata
+            //
+            if (es.is_set()) {
+                std::string esstr = es;
+                std::string emdata = "SIPI:" + esstr;
+                kdu_codestream_comment comment = codestream.add_comment();
+                comment.put_text(emdata.c_str());
+            }
 
+
+            jp2_family_channels.init(img->nc - img->es.size());
+            for (int c = 0; c < img->nc - img->es.size(); c++) {
+                jp2_family_channels.set_colour_mapping(c, c);
+            }
+            if (img->es.size() > 0) {
+                if (img->es.size() == 1) {
+                    for (int c = 0; c < img->nc - img->es.size(); c++) {
+                        jp2_family_channels.set_opacity_mapping(c, img->nc - img->es.size());
+                    }
+                }
+                else if (img->es.size() == (img->nc - img->es.size())) {
+                    for (int c = 0; c < img->nc - img->es.size(); c++) {
+                        jp2_family_channels.set_opacity_mapping(c, img->nc - img->es.size() + c);
+                    }
+                }
+            }
+            /*
+            for (int c = 0; c < img->es.size(); c++) {
+                jp2_family_channels.set_opacity_mapping(img->nc - img->es.size() + c, img->nc - img->es.size() + c);
+            }
+             */
+            jpx_out.write_headers();
             if (img->iptc != nullptr) {
-                unsigned int iptc_len = 0;
-                kdu_byte *iptc_buf = img->iptc->iptcBytes(iptc_len);
-                write_iptc_box(&jp2_ultimate_tgt, iptc_buf, iptc_len);
+                std::vector<unsigned char> iptc_buf = img->iptc->iptcBytes();
+                write_iptc_box(&jp2_ultimate_tgt, iptc_buf.data(), iptc_buf.size());
             }
 
             //
             // write EXIF here
             //
             if (img->exif != nullptr) {
-                unsigned int exif_len = 0;
-                kdu_byte *exif_buf = img->exif->exifBytes(exif_len);
-                write_exif_box(&jp2_ultimate_tgt, exif_buf, exif_len);
+                std::vector<unsigned char> exif_buf = img->exif->exifBytes();
+                write_exif_box(&jp2_ultimate_tgt, exif_buf.data(), exif_buf.size());
             }
 
             //
             // write XMP data here
             //
             if (img->xmp != nullptr) {
-                unsigned int len = 0;
-                const char *xmp_buf = img->xmp->xmpBytes(len);
-                if (len > 0) {
-                    write_xmp_box(&jp2_ultimate_tgt, xmp_buf);
+                std::string xmp_buf = img->xmp->xmpBytes();
+                if (!xmp_buf.empty()) {
+                    write_xmp_box(&jp2_ultimate_tgt, xmp_buf.c_str());
                 }
             }
 
@@ -862,12 +950,20 @@ namespace Sipi {
                 env_ref = &env;
             }
 
-
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
-            //compressor.start(codestream);
-            compressor.start(codestream, 0, nullptr, nullptr, 0, false, false, true, 0.0, 0, false, env_ref);
-
+            compressor.start(codestream,
+                             8,       // num_layer_specs
+                             nullptr, // layer_sizes
+                             nullptr, // layer_slopes
+                             0,       // min_slope_threshold
+                             false,   // no_prediction
+                             true,    //force_precise [YES]
+                             true,    // record_layer_info_in_comment
+                             0.0,     // size_tolerance
+                             img->nc, // num_components
+                             false,   // want_fastest [NO]
+                             env_ref);
             int *stripe_heights = new int[img->nc];
             for (size_t i = 0; i < img->nc; i++) {
                 stripe_heights[i] = img->ny;
@@ -875,7 +971,6 @@ namespace Sipi {
 
             int *precisions;
             bool *is_signed;
-
             if (img->bps == 16) {
                 kdu_int16 *buf = (kdu_int16 *) img->pixels;
                 precisions = new int[img->nc];
@@ -891,8 +986,7 @@ namespace Sipi {
             } else {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
-            compressor.finish();
-
+            compressor.finish(0, NULL, NULL, env_ref);
             // Finally, cleanup
             codestream.destroy(); // All done: simple as that.
             output->close(); // Not really necessary here.
@@ -900,7 +994,6 @@ namespace Sipi {
             if (jp2_ultimate_tgt.exists()) {
                 jp2_ultimate_tgt.close();
             }
-
             delete[] stripe_heights;
             if (img->bps == 16) {
                 delete[] precisions;

@@ -7,10 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_xz
     INSTALL_DIR ${COMMON_LOCAL}
-    URL https://dl.bintray.com/dhlab-basel/thirdparty/xz-5.2.1.tar.gz
-    URL_HASH SHA256=b918b6648076e74f8d7ae19db5ee663df800049e187259faf5eb997a7b974681
-    SOURCE_DIR ${COMMON_SRCS}/xz-5.2.1
-    CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.1/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+    URL https://tukaani.org/xz/xz-5.2.4.tar.gz
+    SOURCE_DIR ${COMMON_SRCS}/xz-5.2.4
+    CONFIGURE_COMMAND ${COMMON_SRCS}/xz-5.2.4/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
     BUILD_IN_SOURCE 1
 )

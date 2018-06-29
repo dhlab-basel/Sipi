@@ -29,14 +29,14 @@ jobs:
     - stage: test
       script:
         # decrypt archive containing the kakadu library
-        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
+        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_4-01727L.zip.enc -out vendor/v7_A_4-01727L.zip -d
         # run compile and tests inside docker
-        - docker run -v $PWD:/sipi dhlabbasel/sipi-base /bin/sh -c "cd /sipi/build; cmake ..; make; make test; make check"
+        - docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
 
     - stage: publish
       script:
         # decrypt archive containing the kakadu library
-        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_2-01382N.zip.enc -out vendor/v7_A_2-01382N.zip -d
+        - openssl aes-256-cbc -K $encrypted_53935862068b_key -iv $encrypted_53935862068b_iv -in vendor/v7_A_4-01727L.zip.enc -out vendor/v7_A_4-01727L.zip -d
         # login into docker hub, build image, and push but only when on the "develop" branch or tagged
         # when on 'develop' then $TRAVIS_BRANCH = develop
         # when on 'tag' then $TRAVIS_BRANCH = tag, e.g., v1.2.0
