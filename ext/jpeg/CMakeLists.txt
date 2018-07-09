@@ -7,7 +7,8 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_jpeg
     INSTALL_DIR ${COMMON_LOCAL}
-    URL http://www.ijg.org/files/jpegsrc.v9c.tar.gz
+    URL https://dl.bintray.com/dhlab-basel/thirdparty/jpegsrc.v9c.tar.gz
+    URL_HASH SHA256=650250979303a649e21f87b5ccd02672af1ea6954b911342ea491f351ceb7122
     SOURCE_DIR ${COMMON_SRCS}/libjpeg-v9c
     CONFIGURE_COMMAND ${COMMON_SRCS}/libjpeg-v9c/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR}
     BUILD_COMMAND make
