@@ -55,6 +55,36 @@ function getCollection()
     server.print(jsonstr)
 end
 
+function getChildrenCollections()
+    local table1 = {}
+    local colID = string.match(uri, "%d+")
+
+    local parameter1 = { "collection_id", "EQ", colID, nil }
+    local parameter2 = { "id", "!EQ", colID, nil}
+    local parameters = { parameter1, parameter2 }
+
+    table1["data"] = readAllCol(parameters)
+
+    if (#table1["data"] > 0) then
+        table1["status"] = "successful"
+    else
+        table1["status"] = "no data were found"
+    end
+
+    server.setBuffer()
+
+    local success, jsonstr = server.table_to_json(table1)
+    if not success then
+        server.sendStatus(500)
+        server.log(jsonstr, server.loglevel.err)
+        return false
+    end
+
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(200)
+    server.print(jsonstr)
+end
+
 function getResources()
     local table1 = {}
     local colID = string.match(uri, "%d+")
@@ -178,6 +208,7 @@ routes[baseURL .. "/collections/%d+$"] = getCollection
 routes[baseURL .. "/collections/%d+/resources$"] = getResources
 routes[baseURL .. "/collections/%d+/resources/%d+$"] = getResource
 routes[baseURL .. "/collections/%d+/resources/%d+/file$"] = getFileResource
+routes[baseURL .. "/collections/%d+/collections$"] = getChildrenCollections
 
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
