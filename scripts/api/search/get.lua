@@ -45,6 +45,7 @@ function fullSearch()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
@@ -166,6 +167,7 @@ function extendedSearch()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
