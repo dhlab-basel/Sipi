@@ -25,6 +25,7 @@ std::string leaves8tif = "../../../../test/_test_data/images/knora/Leaves8.tif";
 std::string cielab = "../../../../test/_test_data/images/unit/cielab.tif";
 std::string cmyk = "../../../../test/_test_data/images/unit/cmyk.tif";
 std::string cielab16 = "../../../../test/_test_data/images/unit/CIELab16.tif";
+std::string palette = "../../../../test/_test_data/images/unit/palette.tif";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -34,6 +35,7 @@ TEST(Sipiimage, CheckIfTestImagesCanBeFound)
     EXPECT_TRUE(exists_file(png16bit));
     EXPECT_TRUE(exists_file(cielab));
     EXPECT_TRUE(exists_file(cmyk));
+    EXPECT_TRUE(exists_file(palette));
 }
 
 TEST(Sipiimage, ImageComparison)
@@ -168,4 +170,11 @@ TEST(Sipiimage, CMYK_Conversion)
     ASSERT_NO_THROW(img3.write("png", "../../../../test/_test_data/images/unit/_cmyk.png"));
     ASSERT_NO_THROW(img4.read("../../../../test/_test_data/images/unit/_cmyk.jpx"));
     ASSERT_NO_THROW(img4.write("jpg", "../../../../test/_test_data/images/unit/_cmyk.jpg"));
+}
+
+TEST(Sipiimage, PALETTE_Conversion)
+{
+    Sipi::SipiImage img1;
+    ASSERT_NO_THROW(img1.read(palette));
+    ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/_palette.jpx"));
 }
