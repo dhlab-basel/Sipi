@@ -1,7 +1,7 @@
 require "./model/query"
 
 dbPath = "testDB/testData.db"
-tableName = "resource"
+resTable = "resource"
 
 -------------------------------------------------------------------------------
 --|                           CRUD Operations                               |--
@@ -14,7 +14,7 @@ tableName = "resource"
 -------------------------------------------------------------------------------
 function createRes(parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << insertQuery(parameters, tableName)
+    local qry = db << insertQuery(parameters, resTable)
     local row = qry()
 
     qry = db << lastInsertedQuery()
@@ -34,33 +34,12 @@ end
 -------------------------------------------------------------------------------
 function readRes(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << selectIDQuery(id, tableName)
+    local qry = db << selectIDQuery(id, resTable)
     local row = qry()
     local data
 
     if (row ~= nil) then
-        -- ACHTUNG: "row[0]" IST EIGENTLICH LUA-SYNTAKTISCH FALSCH
-        data = {}
-        data["id"] = row[0]
-        data["title"] = row[1]
-        data["creator"] = row[2]
-        data["subject"] = row[3]
-        data["description"] = row[4]
-        data["publisher"] = row[5]
-        data["contributor"] = row[6]
-        data["date"] = row[7]
-        data["type"] = row[8]
-        data["format"] = row[9]
-        data["identifier"] = row[10]
-        data["source"] = row[11]
-        data["language"] = row[12]
-        data["relation"] = row[13]
-        data["coverage"] = row[14]
-        data["rights"] = row[15]
-        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
-        data["filename"] = row[17]
-        data["mimetype"] = row[18]
-        data["url"] = "/api/resources/".. row[0] .."/file"
+        data = getDataFormat(row)
     end
 
     -- delete query and free prepared statment
@@ -115,33 +94,12 @@ function readAllRes(parameters)
         trivialCond = andOperator({trivialCond, statement})
     end
 
-    local qry = db << selectConditionQuery(trivialCond, tableName)
+    local qry = db << selectConditionQuery(trivialCond, resTable)
     local row = qry()
     local allData = {}
 
     while (row) do
-        local data = {}
-        data["id"] = row[0]
-        data["title"] = row[1]
-        data["creator"] = row[2]
-        data["subject"] = row[3]
-        data["description"] = row[4]
-        data["publisher"] = row[5]
-        data["contributor"] = row[6]
-        data["date"] = row[7]
-        data["type"] = row[8]
-        data["format"] = row[9]
-        data["identifier"] = row[10]
-        data["source"] = row[11]
-        data["language"] = row[12]
-        data["relation"] = row[13]
-        data["coverage"] = row[14]
-        data["rights"] = row[15]
-        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
-        data["filename"] = row[17]
-        data["mimetype"] = row[18]
-        data["url"] = "/api/resources/".. row[0] .."/file"
-        table.insert(allData, data)
+        table.insert(allData, getDataFormat(row))
         row = qry()
     end
 
@@ -172,33 +130,12 @@ function readAllResFullText(searchword)
         trivialCond = "id!=0"
     end
 
-    local qry = db << selectConditionQuery(trivialCond, tableName)
+    local qry = db << selectConditionQuery(trivialCond, resTable)
     local row = qry()
     local allData = {}
 
     while (row) do
-        local data = {}
-        data["id"] = row[0]
-        data["title"] = row[1]
-        data["creator"] = row[2]
-        data["subject"] = row[3]
-        data["description"] = row[4]
-        data["publisher"] = row[5]
-        data["contributor"] = row[6]
-        data["date"] = row[7]
-        data["type"] = row[8]
-        data["format"] = row[9]
-        data["identifier"] = row[10]
-        data["source"] = row[11]
-        data["language"] = row[12]
-        data["relation"] = row[13]
-        data["coverage"] = row[14]
-        data["rights"] = row[15]
-        data["collection_id"] =  { ["id"] = row[16], ["url"] = "/api/collections/" .. row[16]}
-        data["filename"] = row[17]
-        data["mimetype"] = row[18]
-        data["url"] = "/api/resources/".. row[0] .."/file"
-        table.insert(allData, data)
+        table.insert(allData, getDataFormat(row))
         row = qry()
     end
 
@@ -215,7 +152,7 @@ end
 -------------------------------------------------------------------------------
 function updateRes(id, parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << updateQuery(id, parameters, tableName)
+    local qry = db << updateQuery(id, parameters, resTable)
     local row = qry()
 
     qry =~ qry;
@@ -228,9 +165,46 @@ end
 -------------------------------------------------------------------------------
 function deleteRes(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << deleteQuery(id, tableName)
+    local qry = db << deleteQuery(id, resTable)
     local row = qry()
 
     qry =~ qry;
     db =~ db;
+end
+
+-------------------------------------------------------------------------------
+--|                            Internal Function                            |--
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+-- Gets the data from sqlite into a table
+-- @param   'row' (table): row of the sqlite database of a resource
+-- @return  'data' (table): returns the data with dublin core fields
+-------------------------------------------------------------------------------
+function getDataFormat(row)
+    local data = {}
+    -- ACHTUNG: "row[0]" IST EIGENTLICH LUA-SYNTAKTISCH FALSCH
+    data["id"] = row[0]
+    data["title"] = row[1]
+    data["creator"] = row[2]
+    data["subject"] = row[3]
+    data["description"] = row[4]
+    data["publisher"] = row[5]
+    data["contributor"] = row[6]
+    data["date_start"] = row[7]
+    data["date_end"] = row[8]
+    data["type"] = row[9]
+    data["format"] = row[10]
+    data["identifier"] = row[11]
+    data["source"] = row[12]
+    data["language"] = row[13]
+    data["relation"] = row[14]
+    data["coverage"] = row[15]
+    data["rights"] = row[16]
+    data["collection_id"] =  { ["id"] = row[17], ["url"] = "/api/collections/" .. row[17]}
+    data["filename"] = row[18]
+    data["mimetype"] = row[19]
+    data["url"] = "/api/resources/".. row[0] .."/file"
+
+    return data
 end

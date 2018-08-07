@@ -1,7 +1,7 @@
 require "./model/query"
 
 dbPath = "testDB/testData.db"
-tableName = "collection"
+colTable = "collection"
 
 -------------------------------------------------------------------------------
 --|                           CRUD Operations                               |--
@@ -15,7 +15,7 @@ tableName = "collection"
 function createCol(parameters)
     parameters["isLeaf"] = 1
     local db = sqlite(dbPath, "RW")
-    local qry = db << insertQuery(parameters, "collection")
+    local qry = db << insertQuery(parameters, colTable)
     local row = qry()
 
     qry = db << lastInsertedQuery()
@@ -34,7 +34,7 @@ end
 -------------------------------------------------------------------------------
 function readCol(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << selectIDQuery(id, "collection")
+    local qry = db << selectIDQuery(id, colTable)
     local row = qry()
     local data
 
@@ -99,7 +99,7 @@ function readAllCol(parameters)
         trivialCond = andOperator({trivialCond, statement})
     end
 
-    local qry = db << selectConditionQuery(trivialCond, "collection")
+    local qry = db << selectConditionQuery(trivialCond, colTable)
     local row = qry()
     local allData = {}
 
@@ -126,7 +126,7 @@ end
 -------------------------------------------------------------------------------
 function updateCol(id, parameters)
     local db = sqlite(dbPath, "RW")
-    local qry = db << updateQuery(id, parameters, "collection")
+    local qry = db << updateQuery(id, parameters, colTable)
     local row = qry()
 
     qry =~ qry;
@@ -139,7 +139,7 @@ end
 -------------------------------------------------------------------------------
 function deleteCol(id)
     local db = sqlite(dbPath, "RW")
-    local qry = db << deleteQuery(id, "collection")
+    local qry = db << deleteQuery(id, colTable)
     local row = qry()
 
     qry =~ qry;

@@ -14,6 +14,7 @@ function getCollections()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
@@ -39,6 +40,7 @@ function getCollection()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
@@ -69,6 +71,7 @@ function getChildrenCollections()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
@@ -97,6 +100,7 @@ function getResources()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()
@@ -138,6 +142,7 @@ function getResource()
         table1["status"] = "successful"
     else
         table1["status"] = "no data were found"
+        table1["data"] = {{}}
     end
 
     server.setBuffer()

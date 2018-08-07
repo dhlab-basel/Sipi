@@ -21,10 +21,10 @@ function getResParams(serverParam)
             parameters["publisher"] = value
         elseif (key == 'contributor') then
             parameters["contributor"] = value
-        elseif (key == 'date') then
-            parameters["date"] = value
-        elseif (key == 'type') then
-            parameters["type"] = value
+        elseif (key == 'date_start') then
+            parameters["date_start"] = value
+        elseif (key == 'date_end') then
+            parameters["date_end"] = value
         elseif (key == 'format') then
             parameters["format"] = value
         elseif (key == 'identifier') then

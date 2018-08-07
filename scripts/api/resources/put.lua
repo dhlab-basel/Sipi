@@ -4,6 +4,7 @@ print("---- PUT resources script ----")
 require "./model/resource"
 require "./model/parameter"
 require "./model/file"
+require "./model/collection"
 
 -- Gets ID from the url
 local id = getID("^/api/resources/%d+$")
@@ -27,6 +28,16 @@ end
 
 -- Get parameters
 local parameters = getResParams(server.post)
+
+-- Get collection
+local collection = readCol(parameters["collection_id"])
+
+-- Checks if collection exists
+if (collection == nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(404)
+    return
+end
 
 -- Replaces file
 if (server.uploads ~= nil) then
