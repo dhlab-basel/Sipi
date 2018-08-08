@@ -119,7 +119,7 @@ function readAllResFullText(searchword)
     local trivialCond = "id==0"
     local statement
 
-    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "date", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
+    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "date_start", "date_end", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
 
     if (searchword ~= nil) and (searchword ~= "") then
         for k, paramName in pairs(parameters) do
