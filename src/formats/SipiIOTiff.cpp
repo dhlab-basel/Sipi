@@ -490,19 +490,33 @@ namespace Sipi {
             // read the colormap and later convert the image to RGB, since we do internally
             // not support palette images.
             //
-            uint16 *rcm = nullptr, *gcm = nullptr, *bcm = nullptr;
+
+
+            std::vector<uint16> rcm;
+            std::vector<uint16> gcm;
+            std::vector<uint16> bcm;
+
             int colmap_len = 0;
             if (img->photo == PALETTE) {
-                if (TIFFGetField(tif, TIFFTAG_COLORMAP, &rcm, &gcm, &bcm) == 0) {
+                uint16 *_rcm = nullptr, *_gcm = nullptr, *_bcm = nullptr;
+                if (TIFFGetField(tif, TIFFTAG_COLORMAP, &_rcm, &_gcm, &_bcm) == 0) {
                     TIFFClose(tif);
                     std::string msg = "TIFFGetField of TIFFTAG_COLORMAP failed: " + filepath;
                     throw Sipi::SipiImageError(__file__, __LINE__, msg);
                 }
-                colmap_len = 2;
+                colmap_len = 1;
                 int itmp = 0;
                 while (itmp < img->bps) {
                     colmap_len *= 2;
                     itmp++;
+                }
+                rcm.reserve(colmap_len);
+                gcm.reserve(colmap_len);
+                bcm.reserve(colmap_len);
+                for (int ii = 0; ii < colmap_len; ii++) {
+                    rcm[ii] = _rcm[ii];
+                    gcm[ii] = _gcm[ii];
+                    bcm[ii] = _bcm[ii];
                 }
             }
 
@@ -818,8 +832,8 @@ namespace Sipi {
 
                 delete[] dataptr;
             }
-
             TIFFClose(tif);
+
             if (img->photo == PALETTE) {
                 //
                 // ok, we have a palette color image we have to convert to RGB...
@@ -831,7 +845,7 @@ namespace Sipi {
                     if (bcm[i] > cm_max) cm_max = bcm[i];
                 }
                 uint8 *dataptr = new uint8[3*img->nx*img->ny];
-                if (cm_max < 256) { // we have a colomap with entries form 0 - 255
+                if (cm_max <= 256) { // we have a colomap with entries form 0 - 255
                     for (int i = 0; i < img->nx*img->ny; i++) {
                         dataptr[3*i]     = (uint8) rcm[img->pixels[i]];
                         dataptr[3*i + 1] = (uint8) gcm[img->pixels[i]];
