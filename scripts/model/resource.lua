@@ -67,32 +67,83 @@ function readAllRes(parameters)
         local value1 = param[3]
         local value2 = param[4]
 
-        if (compOp == "EQ") then
-            statement = equal(paramName, value1)
-        elseif (compOp == "!EQ") then
-            statement = notEqual(paramName, value1)
-        elseif (compOp == "LIKE") then
-            statement = like(paramName, value1)
-        elseif (compOp == "!LIKE") then
-            statement = notLike(paramName, value1)
-        elseif (compOp == "NULL") then
-            statement = isNull(paramName)
-        elseif (compOp == "!NULL") then
-            statement = isNotNull(paramName)
-        elseif (compOp == "GT") then
-            statement = greaterThan(paramName, value1)
-        elseif (compOp == "GT_EQ") then
-            statement = greaterThanEqual(paramName, value1)
-        elseif (compOp == "LT") then
-            statement = lessThan(paramName, value1)
-        elseif (compOp == "LT_EQ") then
-            statement = lessThanEqual(paramName, value1)
-        elseif (compOp == "BETWEEN") then
-            statement = betweenDates(paramName, value1, value2)
+        if (param[1] == "date") then
+            print("date found")
+            if (compOp == "EQ") then
+                local s1 = equal(paramName, value1)
+                local s2 = equal(paramName, value1)
+                statement = "(" .. andOperator({s1, s2}) .. ")"
+            elseif (compOp == "LIKE") then
+                -- For exact year
+                local s1 = equal("date_start", value1)
+                local s2 = equal("date_end", value1)
+                local statement1 = "(" .. andOperator({s1, s2}) .. ")"
+
+                -- For period
+                local s3 = greaterThanEqual(value1, "date_start")
+                local s4 = lessThanEqual(value1, "date_end")
+                local statement2 = "(" .. andOperator({s3, s4}) .. ")"
+
+                statement = orOperator({statement1, statement2})
+            elseif (compOp == "NULL") then
+                local s1 = isNull("date_start")
+                local s2 = isNull("date_end")
+                statement = "(" .. andOperator({s1, s2}) .. ")"
+            elseif (compOp == "!NULL") then
+                local s1 = isNotNull("date_start")
+                local s2 = isNotNull("date_end")
+                statement = "(" .. andOperator({s1, s2}) .. ")"
+            elseif (compOp == "GT") then
+                local s1 = greaterThan("date_start", value1)
+                local s2 = greaterThan("date_end", value1)
+                statement = "(" .. orOperator({s1, s2}) .. ")"
+            elseif (compOp == "GT_EQ") then
+                local s1 = greaterThanEqual("date_start", value1)
+                local s2 = greaterThanEqual("date_end", value1)
+                statement = "(" .. orOperator({s1, s2}) .. ")"
+            elseif (compOp == "LT") then
+                local s1 = lessThan("date_start", value1)
+                local s2 = lessThan("date_end", value1)
+                statement = "(" .. orOperator({s1, s2}) .. ")"
+            elseif (compOp == "LT_EQ") then
+                local s1 = lessThanEqual("date_start", value1)
+                local s2 = lessThanEqual("date_end", value1)
+                statement = "(" .. orOperator({s1, s2}) .. ")"
+            elseif (compOp == "BETWEEN") then
+                -- For exact year and period, that have only one overlap
+                local s1 = betweenDates("date_start", value1, value2)
+                local s2 = betweenDates("date_end", value1, value2)
+
+                local statement1 = "(" .. orOperator({s1, s2}) .. ")"
+
+                -- For period that are within the between values
+                local s3 = lessThanEqual("date_start", value1)
+                local s4 = greaterThanEqual("date_end", value2)
+
+                local statement2 = "(" .. andOperator({s3, s4}) .. ")"
+                statement = orOperator({statement1, statement2})
+            end
+
+        else
+            if (compOp == "EQ") then
+                statement = equal(paramName, value1)
+            elseif (compOp == "!EQ") then
+                statement = notEqual(paramName, value1)
+            elseif (compOp == "LIKE") then
+                statement = like(paramName, value1)
+            elseif (compOp == "!LIKE") then
+                statement = notLike(paramName, value1)
+            elseif (compOp == "NULL") then
+                statement = isNull(paramName)
+            elseif (compOp == "!NULL") then
+                statement = isNotNull(paramName)
+            end
         end
 
         trivialCond = andOperator({trivialCond, statement})
     end
+
+    print(selectConditionQuery(trivialCond, resTable))
 
     local qry = db << selectConditionQuery(trivialCond, resTable)
     local row = qry()

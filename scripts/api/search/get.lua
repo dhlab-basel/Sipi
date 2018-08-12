@@ -65,6 +65,7 @@ end
 function structureParam(value, paramName)
     local p2, p3, p4, errMsg
     local comp = string.match(value, "%[.*%]")
+
     if (comp ~= nil) then
         local startVal, endVal = string.find(value, "%[.*%]")
         if (startVal ~= nil) and (endVal ~= nil) then
@@ -91,8 +92,8 @@ function structureParam(value, paramName)
             if (comp ~= nil) then
                 if (comp == "[eq]") or (comp == "[EQ]") then
                     p2 = "EQ"
-                elseif (comp == "[!eq]") or (comp == "[!EQ]") then
-                    p2 = "!EQ"
+                elseif (comp == "[like]") or (comp == "[LIKE]") then
+                    p2 = "LIKE"
                 elseif (comp == "[null]") or (comp == "[NULL]") then
                     p2 = "NULL"
                 elseif (comp == "[!null]" ) or (comp == "[!NULL]") then
