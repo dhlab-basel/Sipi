@@ -119,13 +119,19 @@ function readAllResFullText(searchword)
     local trivialCond = "id==0"
     local statement
 
-    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "date_start", "date_end", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
+    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
 
     if (searchword ~= nil) and (searchword ~= "") then
         for k, paramName in pairs(parameters) do
             statement = like(paramName, searchword)
             trivialCond = orOperator({trivialCond, statement})
         end
+
+        -- Search statement in time period
+        local s1 = greaterThanEqual(searchword, "date_start")
+        local s2 = lessThanEqual(searchword, "date_end")
+        statement = "(" .. andOperator({s1, s2}) .. ")"
+        trivialCond = orOperator({trivialCond, statement})
     else
         trivialCond = "id!=0"
     end
