@@ -178,14 +178,18 @@ function readAllResFullText(searchword)
             trivialCond = orOperator({trivialCond, statement})
         end
 
-        -- Search statement in time period
-        local s1 = greaterThanEqual(searchword, "date_start")
-        local s2 = lessThanEqual(searchword, "date_end")
-        statement = "(" .. andOperator({s1, s2}) .. ")"
-        trivialCond = orOperator({trivialCond, statement})
+        -- Search statement in time period if searchword is number
+        if (tonumber(searchword) ~= nil) then
+            local s1 = greaterThanEqual(searchword, "date_start")
+            local s2 = lessThanEqual(searchword, "date_end")
+            statement = "(" .. andOperator({s1, s2}) .. ")"
+            trivialCond = orOperator({trivialCond, statement})
+        end
     else
         trivialCond = "id!=0"
     end
+
+    print(selectConditionQuery(trivialCond, resTable))
 
     local qry = db << selectConditionQuery(trivialCond, resTable)
     local row = qry()
