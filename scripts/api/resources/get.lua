@@ -5,6 +5,27 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
+function generateFileName(data)
+    local year, title, identifier, ending, dump, errMsg
+
+    if (data["date_start"] == data["date_end"]) then
+        year = data["date_start"]
+    else
+        year = data["date_start"] .. "-" .. data["date_end"]
+    end
+
+    title, dump = string.gsub(data["title"], " ", "-")
+
+    local startVal, endVal = string.find(data["filename"], "%.")
+    if (startVal ~= nil) and (endVal ~= nil) then
+        ending = string.sub(data["filename"], endVal+1, #data["filename"])
+    else
+        errMsg = 500
+    end
+
+    return year .. "_" .. title .. "." .. ending, errMsg
+end
+
 -- Function definitions
 function getResources()
     local table1 = {}
@@ -70,23 +91,39 @@ function getFileResource()
         return
     end
 
-    local filename = data["filename"]
+    local serverFilename = data["filename"]
     local mimetype = data["mimetype"]
 
-    if (filename ~= nil) and (mimetype ~= nil) then
-        local fileContent = readFile(filename)
-        if (fileContent ~= nil) then
-            server.setBuffer()
-            server.sendHeader('Content-type', mimetype)
-            server.sendHeader('Content-Disposition', "attachment; filename='fname.ext'")
-            server.sendHeader('Names', 'Garfield')
-            server.sendStatus(200)
-            server.print(fileContent)
-            return
-        else
-            print("failed to read file")
-        end
+    if (serverFilename == nil) or (mimetype == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(500)
+        print("no file attached to resource")
+        return
     end
+
+    local newFileName, errMsg = generateFileName(data)
+
+    if (errMsg ~= nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(errMsg)
+        return
+    end
+
+    local fileContent = readFile(serverFilename)
+
+    if (fileContent == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(500)
+        print("failed to read file")
+        return
+    end
+
+    server.setBuffer()
+    server.sendHeader('Content-type', mimetype)
+    server.sendHeader('Content-Disposition', "attachment; filename=" .. newFileName)
+    server.sendStatus(200)
+    server.print(fileContent)
+    return
 end
 
 -- Checking of the url and appling the appropriate function
