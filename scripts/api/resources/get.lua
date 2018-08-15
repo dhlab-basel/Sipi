@@ -119,6 +119,7 @@ function getFileResource()
     end
 
     server.setBuffer()
+    server.sendHeader('Access-Control-Expose-Headers','Content-Disposition');
     server.sendHeader('Content-type', mimetype)
     server.sendHeader('Content-Disposition', "attachment; filename=" .. newFileName)
     server.sendStatus(200)
