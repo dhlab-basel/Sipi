@@ -17,13 +17,13 @@ if (string.match(server.uri, uriPattern) == nil) then
 end
 
 -- Gets parameters
-local parameters = getResParams(server.post)
+local parameters, errMsg = getResParams(server.post)
 
 -- Checks if parameters were given
-if ((parameters == nil) or (parameters["title"] == nil) or (parameters["collection_id"] == nil)) then
+if (errMsg ~= nil) then
     local table = {}
     table["data"] = { }
-    table["status"] = "no parameter given"
+    table["status"] = "not all parameters given"
 
     local success, jsonstr = server.table_to_json(table)
     if not success then
@@ -33,7 +33,7 @@ if ((parameters == nil) or (parameters["title"] == nil) or (parameters["collecti
     end
 
     server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(400)
+    server.sendStatus(errMsg)
     server.print(jsonstr)
     return
 end

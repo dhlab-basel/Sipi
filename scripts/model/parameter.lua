@@ -8,45 +8,38 @@
 
 function getResParams(serverParam)
     local parameters = {}
-    for key,value in pairs(serverParam) do
-        if (key == 'title') then
-            parameters["title"] = value
-        elseif (key == 'creator') then
-            parameters["creator"] = value
-        elseif (key == 'subject') then
-            parameters["subject"] = value
-        elseif (key == 'description') then
-            parameters["description"] = value
-        elseif (key == 'publisher') then
-            parameters["publisher"] = value
-        elseif (key == 'contributor') then
-            parameters["contributor"] = value
-        elseif (key == 'date_start') then
-            parameters["date_start"] = value
-        elseif (key == 'date_end') then
-            parameters["date_end"] = value
-        elseif (key == 'format') then
-            parameters["format"] = value
-        elseif (key == 'identifier') then
-            parameters["identifier"] = value
-        elseif (key == 'source') then
-            parameters["source"] = value
-        elseif (key == 'language') then
-            parameters["language"] = value
-        elseif (key == 'relation') then
-            parameters["relation"] = value
-        elseif (key == 'coverage') then
-            parameters["coverage"] = value
-        elseif (key == 'rights') then
-            parameters["rights"] = value
-        elseif (key == 'collection_id') then
-            parameters["collection_id"] = value
+    local errMsg
+
+    local parameterList = {
+        "title",
+        "creator",
+        "subject",
+        "description",
+        "publisher",
+        "contributor",
+        "date_start",
+        "date_end",
+        "format",
+        "identifier",
+        "source",
+        "language",
+        "relation",
+        "coverage",
+        "rights",
+        "collection_id"
+    }
+
+    -- Checks if all parameters are in the serverParams and allocates them to data structure
+    for key, value in pairs(parameterList) do
+        if (serverParam[value] ~= nil) then
+            parameters[value] = serverParam[value]
         else
-            print("the following key does not match: " .. key)
+            print("parameter is missing: " .. value)
+            errMsg = 400
         end
     end
 
-    return parameters
+    return parameters, errMsg
 end
 
 function getColParams(serverParam)

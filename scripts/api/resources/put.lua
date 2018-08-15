@@ -27,7 +27,14 @@ if (data == nil) then
 end
 
 -- Get parameters
-local parameters = getResParams(server.post)
+local parameters, errMsg = getResParams(server.post)
+
+-- Checks if all params are included
+if (errMsg ~= nil) then
+    server.sendHeader('Content-type', 'application/json')
+    server.sendStatus(404)
+    return
+end
 
 -- Get collection
 local collection = readCol(parameters["collection_id"])
