@@ -15,13 +15,13 @@ if (string.match(server.uri, uriPattern) == nil) then
     return
 end
 
-local parameters = getColParams(server.post)
+local parameters, errMsg = getColParams(server.post)
 
 -- Checks if parameters were given
-if ((parameters == nil) or (parameters["name"] == nil) or (parameters["collection_id"] == nil)) then
+if (errMsg ~= nil) then
     local table = {}
     table["data"] = { }
-    table["status"] = "no parameter given"
+    table["status"] = "not all parameters given"
 
     local success, jsonstr = server.table_to_json(table)
     if not success then
@@ -31,7 +31,7 @@ if ((parameters == nil) or (parameters["name"] == nil) or (parameters["collectio
     end
 
     server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(400)
+    server.sendStatus(errMsg)
     server.print(jsonstr)
     return
 end
