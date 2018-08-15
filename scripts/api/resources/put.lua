@@ -32,7 +32,7 @@ local parameters, errMsg = getResParams(server.post)
 -- Checks if all params are included
 if (errMsg ~= nil) then
     server.sendHeader('Content-type', 'application/json')
-    server.sendStatus(404)
+    server.sendStatus(errMsg)
     return
 end
 

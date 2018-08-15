@@ -10,7 +10,7 @@ function getResParams(serverParam)
     local parameters = {}
     local errMsg
 
-    local parameterList = {
+    local resParamList = {
         "title",
         "creator",
         "subject",
@@ -30,7 +30,7 @@ function getResParams(serverParam)
     }
 
     -- Checks if all parameters are in the serverParams and allocates them to data structure
-    for key, value in pairs(parameterList) do
+    for key, value in pairs(resParamList) do
         if (serverParam[value] ~= nil) then
             parameters[value] = serverParam[value]
         else
@@ -44,17 +44,23 @@ end
 
 function getColParams(serverParam)
     local parameters = {}
-    for key,value in pairs(serverParam) do
-        if (key == 'name') then
-            parameters["name"] = value
-        elseif (key == 'collection_id') then
-            parameters["collection_id"] = value
+    local errMsg
+
+    local colParamList = {
+        "name",
+        "collection_id"
+    }
+
+    for key,value in pairs(colParamList) do
+        if (serverParam[value] ~= nil) then
+            parameters[value] = serverParam[value]
         else
-            print("the following key does not match: " .. key)
+            print("parameter is missing: " .. value)
+            errMsg = 400
         end
     end
 
-    return parameters
+    return parameters, errMsg
 end
 
 --function getIDfromURL()
