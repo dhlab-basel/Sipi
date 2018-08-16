@@ -5,27 +5,6 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
-function generateFileName(data)
-    local year, title, identifier, ending, dump, errMsg
-
-    if (data["date_start"] == data["date_end"]) then
-        year = data["date_start"]
-    else
-        year = data["date_start"] .. "-" .. data["date_end"]
-    end
-
-    title, dump = string.gsub(data["title"], " ", "-")
-
-    local startVal, endVal = string.find(data["filename"], "%.")
-    if (startVal ~= nil) and (endVal ~= nil) then
-        ending = string.sub(data["filename"], endVal+1, #data["filename"])
-    else
-        errMsg = 500
-    end
-
-    return year .. "_" .. title .. "." .. ending, errMsg
-end
-
 -- Function definitions
 function getResources()
     local table1 = {}

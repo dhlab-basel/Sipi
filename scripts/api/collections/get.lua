@@ -186,21 +186,64 @@ function getFileResource()
         return
     end
 
-    local filename = data["filename"]
+--    local filename = data["filename"]
+--    local mimetype = data["mimetype"]
+--
+--    if (filename ~= nil) and (mimetype ~= nil) then
+--        local fileContent = readFile(filename)
+--        if (fileContent ~= nil) then
+--            server.setBuffer()
+--            server.sendHeader('Content-type', mimetype)
+--            server.sendStatus(200)
+--            server.print(fileContent)
+--            return
+--        else
+--            print("failed to read file")
+--        end
+--    end
+
+    local serverFilename = data["filename"]
     local mimetype = data["mimetype"]
 
-    if (filename ~= nil) and (mimetype ~= nil) then
-        local fileContent = readFile(filename)
-        if (fileContent ~= nil) then
-            server.setBuffer()
-            server.sendHeader('Content-type', mimetype)
-            server.sendStatus(200)
-            server.print(fileContent)
-            return
-        else
-            print("failed to read file")
-        end
+    if (serverFilename == nil) or (mimetype == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(500)
+        print("no file infos in data base found")
+        return
     end
+
+    local newFileName, errMsg = generateFileName(data)
+
+    if (errMsg ~= nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(errMsg)
+        print("filename on serverside is invalid")
+        return
+    end
+
+    local fileContent, errMsg = readFile(serverFilename)
+
+    if (errMsg ~= nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(errMsg)
+        print("file or path does not exist")
+        return
+    end
+
+    if (fileContent == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(500)
+        print("failed to read file")
+        return
+    end
+
+    server.setBuffer()
+    server.sendHeader('Access-Control-Expose-Headers','Content-Disposition');
+    server.sendHeader('Content-type', mimetype)
+    server.sendHeader('Content-Disposition', "attachment; filename=" .. newFileName)
+    server.sendStatus(200)
+    server.print(fileContent)
+    return
 end
 
 -- Checking of the url and appling the appropriate function
