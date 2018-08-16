@@ -88,6 +88,7 @@ function getFileResource()
     if (data == nil) then
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(404)
+        print("no resource found in database")
         return
     end
 
@@ -97,7 +98,7 @@ function getFileResource()
     if (serverFilename == nil) or (mimetype == nil) then
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(500)
-        print("no file attached to resource")
+        print("no file infos in data base found")
         return
     end
 
@@ -106,10 +107,18 @@ function getFileResource()
     if (errMsg ~= nil) then
         server.sendHeader('Content-type', 'application/json')
         server.sendStatus(errMsg)
+        print("filename on serverside is invalid")
         return
     end
 
-    local fileContent = readFile(serverFilename)
+    local fileContent, errMsg = readFile(serverFilename)
+
+    if (errMsg ~= nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(errMsg)
+        print("file or path does not exist")
+        return
+    end
 
     if (fileContent == nil) then
         server.sendHeader('Content-type', 'application/json')

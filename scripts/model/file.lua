@@ -58,14 +58,21 @@ end
 -- Reads the content of the file
 -- @param   'filename' (string):  name of the file with the file ending
 -- @return  'content': content of the file
+-- @return  'errMsg': Error if file does not exists
 -------------------------------------------------------------------------------
 function readFile(filename)
+    local content, errMsg
     local file = io.open(path .. filename)
-    io.input(file)
-    local content = io.read("*a")
-    io.close(file)
 
-    return content
+    if (file) then
+        io.input(file)
+        content = io.read("*a")
+        io.close(file)
+    else
+        errMsg = 500
+    end
+
+    return content, errMsg
 end
 
 -------------------------------------------------------------------------------
