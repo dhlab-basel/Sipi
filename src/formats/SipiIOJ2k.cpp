@@ -442,7 +442,19 @@ namespace Sipi {
                         break;
                     }
                     case kdu_supp::JP2_iccANY_SPACE: {
-                        img->photo = RGB;
+                        if (numcol == 1) {
+                            img->photo = MINISBLACK;
+                        }
+                        else if (numcol == 3) {
+                            img->photo = RGB;
+                        }
+                        else if (numcol == 4) {
+                            img->photo = SEPARATED;
+                        }
+                        else {
+                            syslog(LOG_ERR, "Unsupported number of colors: %d", numcol);
+                            throw SipiImageError(__file__, __LINE__, "Unsupported number of colors: " + std::to_string(numcol));
+                        }
                         int icc_len;
                         const unsigned char *icc_buf = colinfo.get_icc_profile(&icc_len);
                         img->icc = std::make_shared<SipiIcc>(icc_buf, icc_len);

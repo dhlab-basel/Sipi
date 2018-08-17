@@ -26,6 +26,7 @@ std::string cielab = "../../../../test/_test_data/images/unit/cielab.tif";
 std::string cmyk = "../../../../test/_test_data/images/unit/cmyk.tif";
 std::string cielab16 = "../../../../test/_test_data/images/unit/CIELab16.tif";
 std::string palette = "../../../../test/_test_data/images/unit/palette.tif";
+std::string grayicc = "../../../../test/_test_data/images/unit/gray_with_icc.jp2";
 
 // Check if configuration file can be found
 TEST(Sipiimage, CheckIfTestImagesCanBeFound)
@@ -36,6 +37,7 @@ TEST(Sipiimage, CheckIfTestImagesCanBeFound)
     EXPECT_TRUE(exists_file(cielab));
     EXPECT_TRUE(exists_file(cmyk));
     EXPECT_TRUE(exists_file(palette));
+    EXPECT_TRUE(exists_file(grayicc));
 }
 
 TEST(Sipiimage, ImageComparison)
@@ -177,4 +179,11 @@ TEST(Sipiimage, PALETTE_Conversion)
     Sipi::SipiImage img1;
     ASSERT_NO_THROW(img1.read(palette));
     ASSERT_NO_THROW(img1.write("jpx", "../../../../test/_test_data/images/unit/_palette.jpx"));
+}
+
+TEST(Sipiimage, GRAYICC_Conversion)
+{
+    Sipi::SipiImage img;
+    ASSERT_NO_THROW(img.read(grayicc));
+    ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/unit/_grayicc.jpg"));
 }
