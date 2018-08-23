@@ -117,7 +117,5 @@ if not success then
 end
 
 server.sendHeader('Content-type', 'application/json')
---server.sendHeader('Access-Control-Allow-Origin', '*')
---server.sendHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, DELETE')
 server.sendStatus(201)
 server.print(jsonstr)

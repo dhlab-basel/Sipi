@@ -68,7 +68,6 @@ function readAllRes(parameters)
         local value2 = param[4]
 
         if (param[1] == "date") then
-            print("date found")
             if (compOp == "EQ") then
                 local s1 = equal(paramName, value1)
                 local s2 = equal(paramName, value1)
@@ -124,6 +123,8 @@ function readAllRes(parameters)
                 statement = orOperator({statement1, statement2})
             end
 
+            -- Search in collection -> CROSS JOIN
+
         else
             if (compOp == "EQ") then
                 statement = equal(paramName, value1)
@@ -170,7 +171,7 @@ function readAllResFullText(searchword)
     local trivialCond = "id==0"
     local statement
 
-    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "collection_id", "filename", "mimetype"}
+    local parameters = {"title", "creator", "subject", "description", "publisher", "contributor", "type", "format", "identifier", "source", "language", "relation", "coverage", "rights", "filename", "mimetype"}
 
     if (searchword ~= nil) and (searchword ~= "") then
         for k, paramName in pairs(parameters) do
@@ -185,6 +186,9 @@ function readAllResFullText(searchword)
             statement = "(" .. andOperator({s1, s2}) .. ")"
             trivialCond = orOperator({trivialCond, statement})
         end
+
+        -- Search in collection -> CROSS JOIN
+
     else
         trivialCond = "id!=0"
     end

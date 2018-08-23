@@ -37,7 +37,7 @@ end
 local oldParentID = data["collection_id"]["id"]
 local newParentID = parameters["collection_id"]
 
-print(oldParentID, newParentID, parameters["collection_id"])
+print(oldParentID, newParentID)
 
 -- Check if newParentID exists
 if (readCol(newParentID) == nil) then
