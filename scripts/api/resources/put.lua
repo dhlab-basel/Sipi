@@ -48,8 +48,7 @@ end
 
 -- Replaces file
 if (server.uploads ~= nil) then
-    parameters = createFile(parameters)
-    deleteFile(data["filename"])
+    parameters = updateFile(parameters, data["filename"])
 end
 
 -- Updates data in database

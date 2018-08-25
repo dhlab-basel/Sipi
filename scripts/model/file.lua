@@ -109,7 +109,6 @@ end
 -- @return  (string): generated file name
 -- @return  (errMsg): error if file name could not be generated
 -------------------------------------------------------------------------------
-
 function generateFileName(data)
     local year, title, identifier, ending, dump, errMsg
 
