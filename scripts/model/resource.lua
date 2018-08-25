@@ -269,6 +269,7 @@ function getDataFormat(row)
     data["collection_id"] =  { ["id"] = row[17], ["url"] = "/api/collections/" .. row[17]}
     data["filename"] = row[18]
     data["mimetype"] = row[19]
+    data["filesize"] = row[20]
     data["url"] = "/api/resources/".. row[0] .."/file"
 
     return data
