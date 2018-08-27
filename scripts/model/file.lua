@@ -123,6 +123,7 @@ function generateFileName(data)
     title, dump = string.gsub(title, "ä", "ae")
     title, dump = string.gsub(title, "ö", "oe")
     title, dump = string.gsub(title, "ü", "ue")
+    title = title:sub(1,1):upper()..title:sub(2)
 
     local startVal, endVal = string.find(data["filename"], "%.")
     if (startVal ~= nil) and (endVal ~= nil) then
