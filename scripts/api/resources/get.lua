@@ -5,31 +5,8 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
-function isXmlAccepted()
-    -- Checks if only xml is accepted in header
-    for key, value in pairs(server.header) do
-        if (key == "accept") then
-
-            -- MimeType pattern for xml
-            local xmlPattern1 = "^text/xml$"
-            local xmlPattern2 = "^application/xml$"
-
-            -- Searching for pattern in value of accept
-            local i, j = string.find(value, xmlPattern1)
-            local k, l = string.find(value, xmlPattern2)
-
-            return (((i~=nil) and (j ~= nil)) or ((k~=nil) and (l~=nil)))
-        end
-    end
-end
-
-function sendDublinCoreXML()
-    server.setBuffer()
-    server.sendHeader("Content-Type", "text/xml")
-    server.print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
-    server.print("<resource>")
-    server.print("<name>Zebra</name>")
-    server.print("</resource>")
+function getXMLContent(data)
+    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<resource><name>Zebra</name></resource>"
 end
 
 -- Function definitions
@@ -72,12 +49,6 @@ function getResource()
         return
     else
         table1["status"] = "successful"
-    end
-
-    -- returns XML response if it accepted in header
-    if (isXmlAccepted()) then
-        sendDublinCoreXML(table1["data"])
-        return
     end
 
     server.setBuffer()
@@ -150,6 +121,40 @@ function getFileResource()
     return
 end
 
+function getMetaDataFileResource()
+    local id = string.match(uri, "%d+")
+    local data = readRes(id)
+
+    -- Data does not exist in the database
+    if (data == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(404)
+        print("no resource found in database")
+        return
+    end
+
+    local newFileName, errMsg = generateFileName(data)
+
+    if (errMsg ~= nil) then
+        newFileName = "metadata.xml"
+    else
+        local startVal, endVal = string.find(newFileName, "%.")
+        if (startVal ~= nil) and (endVal ~= nil) then
+            newFileName = string.sub(newFileName, 0, endVal) .. "xml"
+        end
+    end
+
+    local fileContent = getXMLContent(data)
+
+    server.setBuffer()
+    server.sendHeader('Access-Control-Expose-Headers','Content-Disposition');
+    server.sendHeader('Content-type', 'text/xml')
+    server.sendHeader('Content-Disposition', "attachment; filename=" .. newFileName)
+    server.sendStatus(200)
+    server.print(fileContent)
+    return
+end
+
 -- Checking of the url and appling the appropriate function
 baseURL = "^/api"
 uri = server.uri
@@ -158,6 +163,7 @@ routes = {}
 routes[baseURL .. "/resources$"] = getResources
 routes[baseURL .. "/resources/%d+$"] = getResource
 routes[baseURL .. "/resources/%d+/file$"] = getFileResource
+routes[baseURL .. "/resources/%d+/metadata"] = getMetaDataFileResource
 
 for route, func in pairs(routes) do
     if (string.match(uri, route) ~= nil) then
