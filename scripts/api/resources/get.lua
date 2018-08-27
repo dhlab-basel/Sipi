@@ -5,6 +5,33 @@ require "./model/resource"
 require "./model/parameter"
 require "./model/file"
 
+function isXmlAccepted()
+    -- Checks if only xml is accepted in header
+    for key, value in pairs(server.header) do
+        if (key == "accept") then
+
+            -- MimeType pattern for xml
+            local xmlPattern1 = "^text/xml$"
+            local xmlPattern2 = "^application/xml$"
+
+            -- Searching for pattern in value of accept
+            local i, j = string.find(value, xmlPattern1)
+            local k, l = string.find(value, xmlPattern2)
+
+            return (((i~=nil) and (j ~= nil)) or ((k~=nil) and (l~=nil)))
+        end
+    end
+end
+
+function sendDublinCoreXML()
+    server.setBuffer()
+    server.sendHeader("Content-Type", "text/xml")
+    server.print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+    server.print("<resource>")
+    server.print("<name>Zebra</name>")
+    server.print("</resource>")
+end
+
 -- Function definitions
 function getResources()
     local table1 = {}
@@ -38,11 +65,19 @@ function getResource()
 
     table1["data"] = readRes(id)
 
-    if (table1["data"] ~= nil) then
-        table1["status"] = "successful"
+    if (table1["data"] == nil) then
+        server.sendHeader('Content-type', 'application/json')
+        server.sendStatus(404)
+        print("no data was found")
+        return
     else
-        table1["status"] = "no data were found"
-        table1["data"] = {{}}
+        table1["status"] = "successful"
+    end
+
+    -- returns XML response if it accepted in header
+    if (isXmlAccepted()) then
+        sendDublinCoreXML(table1["data"])
+        return
     end
 
     server.setBuffer()
