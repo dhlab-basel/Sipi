@@ -6,7 +6,46 @@ require "./model/parameter"
 require "./model/file"
 
 function getXMLContent(data)
-    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<resource><name>Zebra</name></resource>"
+    local content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" .. "\n" .. "<metadata>" .. "\n"
+    local paramList = {
+        "title",
+        "creator",
+        "subject",
+        "description",
+        "publisher",
+        "contributor",
+        "date",
+        "format",
+        "identifier",
+        "source",
+        "language",
+        "relation",
+        "coverage",
+        "rights"
+    }
+
+    local temp
+    for key, value in pairs(paramList) do
+        if (value == "date") then
+            if ((data["date_start"] ~= nil) and (data["date_end"] ~= nil)) then
+                print(type(data["date_end"]))
+                if ((data["date_start"] == data["date_end"])) then
+                    temp = content .. "\t" .. "<dc:".. value .. ">" .. data["date_start"]  .. "</dc:" .. value .. ">" .. "\n"
+                else
+                    temp = content .. "\t" .. "<dc:".. value .. ">start=" .. data["date_start"]  .. ";end=".. data["date_end"] .. "</dc:" .. value .. ">" .. "\n"
+                end
+            else
+                temp = content .. "\t" .. "<dc:".. value .. "></dc:" .. value .. ">" .. "\n"
+            end
+        elseif (data[value] ~= nil) then
+            temp = content .. "\t" .. "<dc:".. value .. ">" .. data[value]  .. "</dc:" .. value .. ">" .. "\n"
+        else
+            temp = content .. "\t" .. "<dc:".. value .. "></dc:" .. value .. ">" .. "\n"
+        end
+        content = temp
+    end
+
+    return content .. "\b" .. "</metadata>"
 end
 
 -- Function definitions
