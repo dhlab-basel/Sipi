@@ -119,6 +119,7 @@ function generateFileName(data)
     end
 
     title, dump = string.gsub(data["title"], " ", "-")
+    title, dump = string.gsub(title, "%.", "")
 
     local startVal, endVal = string.find(data["filename"], "%.")
     if (startVal ~= nil) and (endVal ~= nil) then
