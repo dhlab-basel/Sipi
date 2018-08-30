@@ -1,6 +1,6 @@
 require "./model/query"
 
-dbPath = "testDB/testData.db"
+dbPath = "testDB/test_stga.db"
 resTable = "resource"
 
 -------------------------------------------------------------------------------
