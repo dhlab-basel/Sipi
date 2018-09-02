@@ -261,6 +261,11 @@ routes = {
         script = 'api/options.lua'
     },
     {
+        method = 'POST',
+        route = '/api/login',
+        script = 'api/login/post.lua'
+    },
+    {
         method = 'GET',
         route = '/api/collections',
         script = 'api/collections/get.lua'
