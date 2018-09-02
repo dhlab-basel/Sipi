@@ -1,5 +1,18 @@
 print("---- POST login script ----")
 
+--local success, auth = server.requireAuth()
+--
+--print(success, auth)
+--
+--if not success then
+--    server.sendStatus(501)
+--    server.print("error in getting authentication scheme!")
+--end
+--
+--for key, value in pairs(auth) do
+--    print(key,value)
+--end
+
 local name = "admin"
 local pw = "1234"
 
