@@ -98,10 +98,6 @@ function getResource()
         table1["data"]["generated_filename"] = newFileName
     end
 
-    for key, value in pairs(table1["data"]) do
-        print(key, value)
-    end
-
     server.setBuffer()
 
     local success, jsonstr = server.table_to_json(table1)
