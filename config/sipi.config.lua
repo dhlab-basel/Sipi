@@ -30,7 +30,7 @@ sipi = {
     -- Indicate the hostname (DNS-name), under which the SIPI server is being addressed
     --
     hostname = 'localhost',
-    
+
     --
     -- port number the server is listening to. If SIPI is running on a dedicated system, this should
     -- be set to 80
@@ -41,7 +41,7 @@ sipi = {
     -- If compiled with SSL support, the port the server is listening for secure connections.
     -- If SIPI is running on a dedicated system, this should be set to 443
     --
-    ssl_port = 1025,
+    --- ssl_port = 1025,
 
     --
     -- Number of threads to use
@@ -168,12 +168,12 @@ sipi = {
     -- # openssl req -new -key key.pem -out csr.pem
     -- #openssl req -x509 -days 365 -key key.pem -in csr.pem -out certificate.pem
     --
-    ssl_certificate = './certificate/certificate.pem',
+    -- ssl_certificate = './certificate/certificate.pem',
 
     --
     -- If compiled with SSL support, the path to the key file (see above to create)
     --
-    ssl_key = './certificate/key.pem',
+    -- ssl_key = './certificate/key.pem',
 
 
     --
