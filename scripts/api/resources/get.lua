@@ -90,6 +90,18 @@ function getResource()
         table1["status"] = "successful"
     end
 
+    local newFileName, errMsg = generateFileName(table1["data"])
+
+    if (errMsg ~= nil) then
+        table1["data"]["generated_filename"] = table1["data"]["title"]
+    else
+        table1["data"]["generated_filename"] = newFileName
+    end
+
+    for key, value in pairs(table1["data"]) do
+        print(key, value)
+    end
+
     server.setBuffer()
 
     local success, jsonstr = server.table_to_json(table1)
