@@ -1,5 +1,5 @@
 
-path = "./data/tmp/"
+path = "./data/"
 
 -------------------------------------------------------------------------------
 --|                           CRUD Operations                               |--
@@ -16,15 +16,15 @@ function createFile(parameters)
         local startPos, endPos = string.find(fileParam["origname"], "%.")
         local fileEnding = string.sub(fileParam["origname"], endPos+1, string.len(fileParam["origname"]))
 
-        local tmpdir = 'data/tmp/'
-        local success, exists = server.fs.exists(tmpdir)
+        local fileDir = 'data/'
+        local success, exists = server.fs.exists(fileDir)
 
         if not success then
             -- Was ist das für ein Fall?
         end
 
         if not exists then
-            local success, errmsg = server.fs.mkdir(tmpdir, 511)
+            local success, errmsg = server.fs.mkdir(fileDir, 511)
             if not success then
                 --            server.print("<br> Directory couldn't be created <br>")
             end
@@ -43,7 +43,7 @@ function createFile(parameters)
         parameters["mimetype"] = fileParam["mimetype"]
         parameters["filesize"] = fileParam["filesize"]
 
-        local tmppath =  tmpdir .. parameters["filename"]
+        local tmppath =  fileDir .. parameters["filename"]
 
         local success, errmsg = server.copyTmpfile(fileIndex, tmppath)
         if not success then
