@@ -473,8 +473,13 @@ namespace shttps {
                 _method = GET;
             } else if (method_in == "HEAD") {
                 _method = HEAD;
-            } else if (method_in == "POST") {
-                _method = POST;
+            } else if ((method_in == "POST") || (method_in == "PUT")) {
+                if (method_in == "POST") {
+                    _method = POST;
+                } else {
+                    _method = PUT;
+                }
+
                 vector<string> content_type_opts = process_header_value(header_in["content-type"]);
                 if (content_type_opts[0] == "application/x-www-form-urlencoded") {
                     char *bodybuf = nullptr;
@@ -834,12 +839,8 @@ namespace shttps {
                 } else {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
-            } else if ((method_in == "PUT") || (method_in == "DELETE")) {
-                if (method_in == "DELETE") {
-                    _method = DELETE;
-                } else {
-                    _method = PUT;
-                }
+            } else if (method_in == "DELETE") {
+                _method = DELETE;
 
                 vector<string> content_type_opts = process_header_value(header_in["content-type"]);
 
