@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 #include "../../../shttps/LuaServer.h"
 #include "../../../include/SipiConf.h"
