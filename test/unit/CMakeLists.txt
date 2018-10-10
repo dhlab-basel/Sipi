@@ -26,7 +26,7 @@ add_dependencies(libgtest gtest)
 
 # Set libgtest properties
 set_target_properties(libgtest PROPERTIES
-        "IMPORTED_LOCATION" "${binary_dir}/googlemock/gtest/libgtest.a"
+        "IMPORTED_LOCATION" "${binary_dir}/googletest/libgtest.a"
         "IMPORTED_LINK_INTERFACE_LIBRARIES" "${CMAKE_THREAD_LIBS_INIT}"
         )
 
