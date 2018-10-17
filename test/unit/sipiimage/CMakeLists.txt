@@ -62,8 +62,7 @@ add_dependencies(sipiimage icc_profiles)
 
 target_link_libraries(
         sipiimage
-        libgtest
-        libgmock)
+        libgtest)
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(sipiimage ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)

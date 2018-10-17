@@ -41,8 +41,7 @@ add_executable(
 
 target_link_libraries(
         configuration
-        libgtest
-        libgmock)
+        libgtest)
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(configuration ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
