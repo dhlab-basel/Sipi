@@ -1007,9 +1007,9 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiIOTiff::getDim(std::string filepath, size_t &width, size_t &height) {
+    SipiImgInfo SipiIOTiff::getDim(std::string filepath) {
         TIFF *tif;
-
+        SipiImgInfo info;
         if (nullptr != (tif = TIFFOpen(filepath.c_str(), "r"))) {
             //
             // OK, it's a TIFF file
@@ -1023,7 +1023,7 @@ namespace Sipi {
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
 
-            width = tmp_width;
+            info.width = (size_t) tmp_width;
             unsigned int tmp_height;
 
             if (TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &tmp_height) == 0) {
@@ -1031,13 +1031,20 @@ namespace Sipi {
                 std::string msg = "TIFFGetField of TIFFTAG_IMAGELENGTH failed: " + filepath;
                 throw Sipi::SipiImageError(__file__, __LINE__, msg);
             }
+            info.height = tmp_height;
+            info.success = SipiImgInfo::DIMS;
 
-            height = tmp_height;
+            char *emdatastr;
+            if (1 == TIFFGetField(tif, TIFFTAG_SIPIMETA, &emdatastr)) {
+                SipiEssentials se(emdatastr);
+                info.mimetype = se.mimetype();
+                info.origname = se.origname();
+                info.success = SipiImgInfo::ALL;
+            }
+
             TIFFClose(tif);
-            return true;
         }
-
-        return false;
+        return info;
     }
     //============================================================================
 

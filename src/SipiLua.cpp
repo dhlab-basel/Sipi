@@ -536,9 +536,19 @@ namespace Sipi {
         if (lua_isstring(L, 1)) {
             const char *imgpath = lua_tostring(L, 1);
             SipiImage img;
+            SipiImgInfo info;
             try {
-                img.getDim(imgpath, nx, ny);
-            } catch (SipiImageError &err) {
+                info = img.getDim(imgpath);
+            }
+            catch (InfoError e) {
+                lua_pop(L, top);
+                lua_pushboolean(L, false);
+                std::stringstream ss;
+                ss << "SipiImage.dims(): Couldn't get dimensions";
+                lua_pushstring(L, ss.str().c_str());
+                return 2;
+            }
+            catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 std::stringstream ss;
@@ -546,6 +556,8 @@ namespace Sipi {
                 lua_pushstring(L, ss.str().c_str());
                 return 2;
             }
+            nx = info.width;
+            ny = info.height;
         } else {
             SImage *img = checkSImage(L, 1);
             if (img == nullptr) {

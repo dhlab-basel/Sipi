@@ -52,6 +52,27 @@ static const char __file__[] = __FILE__;
 namespace Sipi {
     static std::mutex inlock;
 
+    inline bool getbyte(int &c, FILE *f) {
+        if ((c = getc(f)) == EOF) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    inline bool getword(int &c, FILE *f) {
+        int cc_ = 0;
+        int dd_ = 0;
+        if (((cc_ = getc(f)) == EOF) || ((dd_ = getc(f)) == EOF)) {
+            return false;
+        }
+        else {
+            c = (cc_ << 8) + dd_;
+            return true;
+        }
+    }
+
     /*!
      * Special exception within the JPEG routines which can be caught separately
      */
@@ -750,36 +771,53 @@ namespace Sipi {
                               (a) = (cc_<<8) + (dd_); \
                           } while(0)
 
-    bool SipiIOJpeg::getDim(std::string filepath, size_t &width, size_t &height) {
+
+    SipiImgInfo SipiIOJpeg::getDim(std::string filepath) {
         // portions derived from IJG code */
 
         FILE *infile;
+        SipiImgInfo info;
+
         //
         // open the input file
         //
         if ((infile = fopen(filepath.c_str(), "rb")) == nullptr) {
             // inlock.unlock();
-            return false;
+            info.success = SipiImgInfo::FAILURE;
+            return info;
         }
 
         int marker = 0;
         int dummy = 0;
         if (getc(infile) != 0xFF || getc(infile) != 0xD8) {
             fclose(infile);
-            return false; // wrong magic number
+            info.success = SipiImgInfo::FAILURE;
+            return info;
         }
         for (;;) {
             int discarded_bytes = 0;
-            readbyte(marker, infile);
+            if (!getbyte(marker, infile)) {
+                info.success = SipiImgInfo::FAILURE;
+                return info;
+            }
             while (marker != 0xFF) {
                 discarded_bytes++;
-                readbyte(marker, infile);
+                if (!getbyte(marker, infile)) {
+                    info.success = SipiImgInfo::FAILURE;
+                    return info;
+                }
             }
-            do readbyte(marker, infile); while (marker == 0xFF);
+            do {
+                if (!getbyte(marker, infile)) {
+                    info.success = SipiImgInfo::FAILURE;
+                    return info;
+                }
+            } while (marker == 0xFF);
 
             if (discarded_bytes != 0) {
                 fclose(infile);
-                return false;
+                info.success = SipiImgInfo::FAILURE;
+                return info;
             }
 
             switch (marker) {
@@ -796,38 +834,64 @@ namespace Sipi {
                 case 0xCD:
                 case 0xCE:
                 case 0xCF: {
-                    readword(dummy, infile);    /* usual parameter length count */
-                    readbyte(dummy, infile);
-                    unsigned int tmp_height;
-                    readword(tmp_height, infile);
-                    height = tmp_height;
-                    unsigned int tmp_width;
-                    readword(tmp_width, infile);
-                    width = tmp_width;
-                    readbyte(dummy, infile);
+                    if (!getword(dummy, infile)) { /* usual parameter length count */
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
+                    if (!getbyte(dummy, infile)) {
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
+                    int tmp_height;
+                    if (!getword(tmp_height, infile)) {
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
+                    info.height = tmp_height;
+                    int tmp_width;
+                    if (!getword(tmp_width, infile)) {
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
+                    info.width = tmp_width;
+                    info.success = SipiImgInfo::DIMS;
+                    if (!getbyte(dummy, infile)) {
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
                     fclose(infile);
-                    return true;
+                    return info;
                 }
                 case 0xDA:
                 case 0xD9:
                     fclose(infile);
-                    return false;
+                    info.success = SipiImgInfo::FAILURE;
+                    return info;
                 default: {
                     int length;
-                    readword(length, infile);
+                    if (!getword(length, infile)) {
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
+                    }
                     if (length < 2) {
                         fclose(infile);
-                        return false;
+                        info.success = SipiImgInfo::FAILURE;
+                        return info;
                     }
                     length -= 2;
                     while (length > 0) {
-                        readbyte(dummy, infile);
+                        if (!getbyte(dummy, infile)) {
+                            info.success = SipiImgInfo::FAILURE;
+                            return info;
+                        }
                         length--;
                     }
                 }
-                    break;
+                break;
             }
         }
+        info.success = SipiImgInfo::FAILURE;
+        return info;
     }
     //============================================================================
 

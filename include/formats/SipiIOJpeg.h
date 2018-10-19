@@ -39,6 +39,8 @@ namespace Sipi {
         void parse_photoshop(SipiImage *img, char *data, int length);
 
     public:
+        virtual ~SipiIOJpeg() {};
+
         /*!
          * Method used to read an image file
          *
@@ -59,7 +61,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        bool getDim(std::string filepath, size_t &width, size_t &height);
+        Sipi::SipiImgInfo getDim(std::string filepath);
 
 
         /*!

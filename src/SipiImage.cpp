@@ -342,34 +342,37 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::getDim(std::string filepath, size_t &width, size_t &height) {
+    SipiImgInfo SipiImage::getDim(std::string filepath) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
         std::string _fext;
 
-        bool got_file = false;
+
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
 
+        SipiImgInfo info;
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[std::string("tif")]->getDim(filepath, width, height);
+            info = io[std::string("tif")]->getDim(filepath);
         } else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[std::string("jpg")]->getDim(filepath, width, height);
+            info = io[std::string("jpg")]->getDim(filepath);
         } else if (_fext == "png") {
-            got_file = io[std::string("png")]->getDim(filepath, width, height);
+            info = io[std::string("png")]->getDim(filepath);
         } else if ((_fext == "jp2") || (_fext == "jpx")) {
-            got_file = io[std::string("jpx")]->getDim(filepath, width, height);
+            info = io[std::string("jpx")]->getDim(filepath);
         }
 
-        if (!got_file) {
+        if (info.success == SipiImgInfo::FAILURE) {
             for (auto const &iterator : io) {
-                if ((got_file = iterator.second->getDim(filepath, width, height))) break;
+                info = iterator.second->getDim(filepath);
+                if (info.success != SipiImgInfo::FAILURE) break;
             }
         }
 
-        if (!got_file) {
+        if (info.success == SipiImgInfo::FAILURE) {
             throw SipiImageError(__file__, __LINE__, "Could not read file " + filepath);
         }
+        return info;
     }
     //============================================================================
 

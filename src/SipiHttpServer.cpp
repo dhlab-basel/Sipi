@@ -261,57 +261,24 @@ namespace Sipi {
         // Return the permission code and file path, if any, as a std::pair.
         return std::make_pair(permission, infile);
     }
+    //=========================================================================
 
+    enum AccessError {PRE_FLIGHT_DENY,  FILE_ACCESS_DENY};
 
-    static void iiif_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
-                               std::vector<std::string> &params, const std::string &imgroot, bool prefix_as_path) {
-        conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
-        const std::string contenttype = conn_obj.header("accept");
-
-        conn_obj.header("Access-Control-Allow-Origin", "*");
-        /*
-        string infile; // path to file to convert and serve
-        if (params[iiif_prefix] == salsah_prefix) {
-
-            Salsah salsah;
-            try {
-                salsah = Salsah(&conn_obj, params[iiif_identifier]);
-            } catch (Sipi::SipiError &err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
-                return;
-            }
-
-            infile = salsah.getFilepath();
-
-            if (salsah.getRights() < Salsah::RESOURCE_ACCESS_VIEW_RESTRICTED) {
-                send_error(conn_obj, Connection::FORBIDDEN, "No right to view image");
-                return;
-            }
-        }
-        else {
-            infile = imgroot + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
-        }
-        */
-
-
-        //
-        // here we start the lua script which checks for permissions
-        //
-
-        std::string permission;
+    static std::string check_file_access(
+            Connection &conn_obj,
+            SipiHttpServer *serv,
+            shttps::LuaServer &luaserver,
+            std::vector<std::string> &params,
+            bool prefix_as_path) {
         std::string infile;
 
         if (luaserver.luaFunctionExists(pre_flight_func_name)) {
             std::pair<std::string, std::string> pre_flight_return_values;
 
-            try {
-                pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params);
-            } catch (SipiError &err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
-                return;
-            }
+            pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params); // may throw SipiError
 
-            permission = pre_flight_return_values.first;
+            std::string permission = pre_flight_return_values.first;
             infile = pre_flight_return_values.second;
 
             //
@@ -327,7 +294,7 @@ namespace Sipi {
                     }
                 }
                 if (use_subdirs) {
-                    size_t ppos = infile.rfind("/");
+                    size_t ppos = infile.rfind('/');
                     if ((ppos != std::string::npos) && (ppos < (infile.size() - 1))) {
                         std::string dirpart = infile.substr(0, ppos);
                         std::string filepart = infile.substr(ppos + 1);
@@ -338,8 +305,7 @@ namespace Sipi {
             }
 
             if (permission != "allow") {
-                send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
-                return;
+                throw PRE_FLIGHT_DENY;
             }
         } else {
             SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
@@ -362,14 +328,49 @@ namespace Sipi {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
         }
-
         //
         // test if we have access to the file
         //
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
-            send_error(conn_obj, Connection::BAD_REQUEST, "File not readable");
+            throw FILE_ACCESS_DENY;
+        }
+
+        return infile;
+    }
+    //=========================================================================
+
+    static void iiif_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
+                               std::vector<std::string> &params, bool prefix_as_path) {
+        conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
+        const std::string contenttype = conn_obj.header("accept");
+
+        conn_obj.header("Access-Control-Allow-Origin", "*");
+        //
+        // here we start the lua script which checks for permissions
+        //
+
+        //std::string permission;
+        std::string infile;
+        try {
+            infile = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
+        }
+        catch(AccessError x) {
+            switch (x) {
+                case PRE_FLIGHT_DENY: {
+                    send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
+                    return;
+                }
+                case FILE_ACCESS_DENY: {
+                    send_error(conn_obj, Connection::BAD_REQUEST, "File not readable");
+                    return;
+                }
+            }
+        }
+        catch (SipiError &err) {
+            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
             return;
         }
+
 
         if (!contenttype.empty() && (contenttype == "application/ld+json")) {
             conn_obj.header("Content-Type", "application/ld+json");
@@ -399,12 +400,20 @@ namespace Sipi {
 
         if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
             Sipi::SipiImage tmpimg;
+            Sipi::SipiImgInfo info;
             try {
-                tmpimg.getDim(infile, width, height);
-            } catch (SipiImageError &err) {
+                info = tmpimg.getDim(infile);
+            }
+            catch (SipiImageError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
                 return;
             }
+            if (info.success == SipiImgInfo::FAILURE) {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
+                return;
+            }
+            width = info.width;
+            height = info.height;
         }
 
         json_object_set_new(root, "width", json_integer(width));
@@ -466,6 +475,82 @@ namespace Sipi {
         json_decref(root);
 
         syslog(LOG_INFO, "info.json created from: %s", infile.c_str());
+    }
+    //=========================================================================
+
+    static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
+                               std::vector<std::string> &params, bool prefix_as_path) {
+        conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
+        const std::string contenttype = conn_obj.header("accept");
+
+        conn_obj.header("Access-Control-Allow-Origin", "*");
+        //
+        // here we start the lua script which checks for permissions
+        //
+
+        //std::string permission;
+        std::string infile;
+        try {
+            infile = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
+        }
+        catch(AccessError x) {
+            switch (x) {
+                case PRE_FLIGHT_DENY: {
+                    send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
+                    return;
+                }
+                case FILE_ACCESS_DENY: {
+                    send_error(conn_obj, Connection::BAD_REQUEST, "File not readable");
+                    return;
+                }
+            }
+        }
+        catch (SipiError &err) {
+            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+            return;
+        }
+
+
+        conn_obj.header("Content-Type", "application/json");
+
+        json_t *root = json_object();
+        int width, height;
+
+        //
+        // get cache info
+        //
+        std::shared_ptr<SipiCache> cache = serv->cache();
+
+        Sipi::SipiImage tmpimg;
+        Sipi::SipiImgInfo info;
+        try {
+            info = tmpimg.getDim(infile);
+        }
+        catch (SipiImageError &err) {
+            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+            return;
+        }
+        if (info.success == SipiImgInfo::FAILURE) {
+            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
+            return;
+        }
+        width = info.width;
+        height = info.height;
+
+        json_object_set_new(root, "width", json_integer(width));
+        json_object_set_new(root, "height", json_integer(height));
+        if (info.success == SipiImgInfo::ALL) {
+            json_object_set_new(root, "mimetype", json_string(info.mimetype.c_str()));
+            json_object_set_new(root, "origname", json_string(info.origname.c_str()));
+        }
+        char *json_str = json_dumps(root, JSON_INDENT(3));
+        conn_obj.sendAndFlush(json_str, strlen(json_str));
+        free(json_str);
+
+        // TODO: and all the other CJSON obj?
+        json_decref(root);
+
+        syslog(LOG_INFO, "knora.json created from: %s", infile.c_str());
     }
     //=========================================================================
 
@@ -706,7 +791,12 @@ namespace Sipi {
         // we have a request for the info json
         //
         if (params[iiif_region] == "info.json") {
-            iiif_send_info(conn_obj, serv, luaserver, params, serv->imgroot(), prefix_as_path);
+            iiif_send_info(conn_obj, serv, luaserver, params, prefix_as_path);
+            return;
+        }
+
+        if (params[iiif_region] == "knora.json") {
+            knora_send_info(conn_obj, serv, luaserver, params, prefix_as_path);
             return;
         }
 
@@ -965,12 +1055,19 @@ namespace Sipi {
             //
             if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h)) {
                 Sipi::SipiImage tmpimg;
+                Sipi::SipiImgInfo info;
                 try {
-                    tmpimg.getDim(infile, img_w, img_h);
+                    info = tmpimg.getDim(infile);
                 } catch (SipiImageError &err) {
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
                     return;
                 }
+                if (info.success == SipiImgInfo::FAILURE) {
+                    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Couldn't get image dimensions!");
+                    return;
+                }
+                img_w = info.width;
+                img_h = info.height;
             }
 
             size_t tmp_r_w, tmp_r_h;

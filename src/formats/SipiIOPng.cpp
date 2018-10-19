@@ -331,21 +331,23 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    bool SipiIOPng::getDim(std::string filepath, size_t &width, size_t &height) {
+    SipiImgInfo SipiIOPng::getDim(std::string filepath) {
         FILE *infile;
+        SipiImgInfo info;
         unsigned char header[8];
 
         //
         // open the input file
         //
         if ((infile = fopen(filepath.c_str(), "rb")) == nullptr) {
-            return FALSE;
+            info.success = SipiImgInfo::FAILURE;
+            return info;
         }
         fread(header, 1, 8, infile);
         if (png_sig_cmp(header, 0, 8) != 0) {
             fclose(infile);
-            return FALSE; // it's not a PNG file
-        }
+            info.success = SipiImgInfo::FAILURE;
+            return info;        }
 
         png_structp png_ptr;
         png_infop info_ptr;
@@ -371,15 +373,14 @@ namespace Sipi {
         png_init_io(png_ptr, infile);
         png_set_sig_bytes(png_ptr, 8);
 
-
-        width = png_get_image_width(png_ptr, info_ptr);
-        height = png_get_image_height(png_ptr, info_ptr);
+        info.width = png_get_image_width(png_ptr, info_ptr);
+        info.height = png_get_image_height(png_ptr, info_ptr);
+        info.success = SipiImgInfo::DIMS;
 
         png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
 
-        return true;
+        return info;
     }
-
     /*==========================================================================*/
 
 

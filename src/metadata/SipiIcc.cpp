@@ -432,12 +432,14 @@ namespace Sipi {
             case 0x4D434837: outstr << "cmsSigMCH7Data"; break;
             case 0x4D434838: outstr << "cmsSigMCH8Data"; break;
             case 0x4D434839: outstr << "cmsSigMCH9Data"; break;
+            /*
             case 0x4D43483A: outstr << "cmsSigMCHAData"; break;
             case 0x4D43483B: outstr << "cmsSigMCHBData"; break;
             case 0x4D43483C: outstr << "cmsSigMCHCData"; break;
             case 0x4D43483D: outstr << "cmsSigMCHDData"; break;
             case 0x4D43483E: outstr << "cmsSigMCHEData"; break;
             case 0x4D43483F: outstr << "cmsSigMCHFData"; break;
+             */
             case 0x6e6d636c: outstr << "cmsSigNamedData"; break;
             case 0x31434C52: outstr << "cmsSig1colorData"; break;
             case 0x32434C52: outstr << "cmsSig2colorData"; break;
