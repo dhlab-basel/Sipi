@@ -65,7 +65,7 @@ end
         -- internal in-memory representation independent of the original
         -- image format.
         --
-        success, tmpimgref = SipiImage.new(tmppath)
+        success, tmpimgref = SipiImage.new(tmppath, {original = imgparam["origname"], hash = "sha256"})
         if not success then
             server.sendStatus(500)
             server.log(gaga, server.loglevel.error)
@@ -87,7 +87,7 @@ end
 
         filename = config.imgroot .. '/' .. newfilepath
 
-        local status, errmsg = myimg[imgindex]:write(filename, {original = imgparam["origname"], hash = "sha256"})
+        local status, errmsg = myimg[imgindex]:write(filename)
         if not status then
             server.print('Error converting image to j2k: ', errmsg)
         end
