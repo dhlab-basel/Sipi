@@ -481,7 +481,6 @@ namespace Sipi {
     static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
                                std::vector<std::string> &params, bool prefix_as_path) {
         conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
-        const std::string contenttype = conn_obj.header("accept");
 
         conn_obj.header("Access-Control-Allow-Origin", "*");
         //

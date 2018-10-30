@@ -540,7 +540,7 @@ namespace Sipi {
             try {
                 info = img.getDim(imgpath);
             }
-            catch (InfoError e) {
+            catch (InfoError &e) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 std::stringstream ss;

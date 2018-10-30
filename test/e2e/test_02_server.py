@@ -109,7 +109,7 @@ class TestServer:
 
         assert response_json == expected_result
 
-    def test_json_info_validateion(self, manager):
+    def test_json_info_validation(self, manager):
         """pass the info.json request tests"""
         expected_result = {
             "@context": "http://iiif.io/api/image/2/context.json",
