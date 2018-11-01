@@ -97,27 +97,32 @@ class TestServer:
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
 
-    @classmethod
-    def test_knora_info_validation(cls, manager):
+    def test_knora_info_validation(self, manager):
         """pass the knora.json request tests"""
+
         expected_result = {
             "width": 512,
             "height": 512,
             "origname": "lena512.tif",
             "mimetype": "image/tiff"
         }
-        response_json = manager.get_json("/knora/lena512.jp2/knora.json")
+
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        filename = response_json["filename"]
+        manager.expect_status_code("/images/{}/full/full/0/default.jpg".format(filename), 200)
+
+        response_json = manager.get_json("/images/{}/knora.json".format(filename))
 
         if not response_json == expected_result:
             raise AssertionError()
         return
 
-    @classmethod
-    def test_json_info_validation(cls, manager):
+    def test_json_info_validation(self, manager):
         """pass the info.json request tests"""
+
         expected_result = {
             "@context": "http://iiif.io/api/image/2/context.json",
-            "@id": "http://127.0.0.1:1024/knora/lena512.jp2",
+            "@id": "http://127.0.0.1:1024/images/lena512.jp2",
             "protocol": "http://iiif.io/api/image",
             "width": 512,
             "height": 512,
@@ -164,8 +169,16 @@ class TestServer:
                 }
             ]
         }
-        response_json = manager.get_json("/knora/lena512.jp2/info.json")
 
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        filename = response_json["filename"]
+
+
+        manager.expect_status_code("/images/{}/full/full/0/default.jpg".format(filename), 200)
+
+        response_json = manager.get_json("/images/{}/info.json".format(filename))
+
+        expected_result["@id"] = "http://127.0.0.1:1024/images/{}".format(filename)
         if not response_json == expected_result:
             raise AssertionError()
         return
