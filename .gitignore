@@ -42,3 +42,4 @@ icc.zip
 
 # ignore test results
 /Testing
+/test/nginx/logs/error.log

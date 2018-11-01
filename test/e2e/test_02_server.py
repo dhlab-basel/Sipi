@@ -97,7 +97,8 @@ class TestServer:
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
 
-    def test_knora_info_validation(self, manager):
+    @classmethod
+    def test_knora_info_validation(cls, manager):
         """pass the knora.json request tests"""
         expected_result = {
             "width": 512,
@@ -107,9 +108,12 @@ class TestServer:
         }
         response_json = manager.get_json("/knora/lena512.jp2/knora.json")
 
-        assert response_json == expected_result
+        if not response_json == expected_result:
+            raise AssertionError()
+        return
 
-    def test_json_info_validation(self, manager):
+    @classmethod
+    def test_json_info_validation(cls, manager):
         """pass the info.json request tests"""
         expected_result = {
             "@context": "http://iiif.io/api/image/2/context.json",
@@ -162,7 +166,9 @@ class TestServer:
         }
         response_json = manager.get_json("/knora/lena512.jp2/info.json")
 
-        assert response_json == expected_result
+        if not response_json == expected_result:
+            raise AssertionError()
+        return
 
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""

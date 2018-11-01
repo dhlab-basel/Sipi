@@ -180,7 +180,7 @@ sipi = {
     -- The secret for generating JWT's (JSON Web Tokens) (exactly 42 characters)
     --
     jwt_secret = 'UP 4888, nice 4-8-4 steam engine',
-    --            12345678901234567890123456789012
+    --            123456789012345678901234567890123456789012
 
     --
     -- Name of the logfile (a ".txt" is added...) !!! Currently not used, since logging
@@ -253,6 +253,11 @@ routes = {
         method = 'GET',
         route = '/luaexe/test2',
         script = 'test2.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/upload',
+        script = 'upload.lua'
     }
 
 }
