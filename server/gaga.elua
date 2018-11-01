@@ -1,0 +1,9 @@
+<html>
+    <head>
+        <title>GAGA</title>
+    </head>
+    <body>
+    docroot=<lua>server.print(server.docroot)</lua><br/>
+    systime=<lua>server.print(server.systime())</lua><br/>
+    </body>
+</html>

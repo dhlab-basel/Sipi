@@ -29,6 +29,7 @@
 #include <string>
 #include <cstring>      // Needed for memset
 #include <chrono>
+#include <cerrno>
 
 //#include <sys/types.h>
 #include <sys/stat.h>
@@ -454,6 +455,46 @@ namespace shttps {
     //=========================================================================
 
     /*!
+    * Returns the modificatiojn time of a given filepath (in s since epoch)
+    * LUA: server.fs.ftype("path")
+    * RETURNS: integer with seconds since epoch of last modification
+    */
+    static int lua_fs_modtime(lua_State *L) {
+        struct stat s;
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.modtime()': parameter missing");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.modtime()': filename is not a string");
+            return 2;
+        }
+
+        const char *filename = lua_tostring(L, 1);
+        lua_settop(L, 0); // clear stack
+
+        if (stat(filename, &s) != 0) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, strerror(errno));
+            return 2;
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushinteger(L, (lua_Integer) s.st_mtime);
+
+        return 2;
+    }
+    //=========================================================================
+
+    /*!
      * check if a file is readable
      * LUA: server.fs.is_readable(filepath)
      */
@@ -654,7 +695,7 @@ namespace shttps {
     //=========================================================================
 
     /*!
-     * Creates a new directory
+     * Deletes a directory
      * LUA: server.fs.rmdir(dirname)
      */
     static int lua_fs_rmdir(lua_State *L) {
@@ -808,7 +849,55 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+    * Moves a file from one location to another.
+    *
+    * LUA: server.fs.mvFile(source, target)
+    *
+    */
+    static int lua_fs_mvfile(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 2) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'lua_fs_mvfile(from,to)': not enough parameters");
+            return 2;
+        }
+
+        std::string infile = lua_tostring(L, 1);
+        std::string outfile = lua_tostring(L, 2);
+        lua_pop(L, top); // clear stack
+
+        if (std::rename(infile.c_str(), outfile.c_str())) {
+            //an error occured
+            switch (errno) {
+                case EACCES: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': no permission!");
+                    return 2;
+                }
+                case EXDEV: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': move across file systems not allowd!");
+                    return 2;
+                }
+                default: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': error moving file!");
+                    return 2;
+                }
+            }
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+        return 2;
+    }
+    //=========================================================================
+
     static const luaL_Reg fs_methods[] = {{"ftype",         lua_fs_ftype},
+                                          {"modtime",       lua_fs_modtime},
                                           {"is_readable",   lua_fs_is_readable},
                                           {"is_writeable",  lua_fs_is_writeable},
                                           {"is_executable", lua_fs_is_executable},
@@ -819,6 +908,7 @@ namespace shttps {
                                           {"getcwd",        lua_fs_getcwd},
                                           {"chdir",         lua_fs_chdir},
                                           {"copyFile",      lua_fs_copyfile},
+                                          {"moveFile",      lua_fs_mvfile},
                                           {0,               0}};
     //=========================================================================
 
@@ -2151,6 +2241,14 @@ namespace shttps {
         }
     }
 
+    static int lua_systime(lua_State *L) {
+        lua_settop(L, 0); // clear stack
+
+        std::time_t result = std::time(nullptr);
+        lua_pushinteger(L, (lua_Integer) result);
+        return 1;
+    }
+
     void LuaServer::setLuaPath(const std::string &path) {
         lua_getglobal(L, "package");
         lua_getfield(L, -1, "path"); // get field "path" from table at top of stack (-1)
@@ -2439,6 +2537,10 @@ namespace shttps {
 
         lua_pushstring(L, "requireAuth"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_require_auth); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "systime"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_systime); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
 #ifdef SHTTPS_ENABLE_SSL

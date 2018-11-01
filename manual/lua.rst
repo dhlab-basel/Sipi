@@ -131,11 +131,21 @@ server.fs.ftype
 
 ::
 
-    success, filetype = server.fs.ftype("path")
+    success, filetype = server.fs.ftype(filepath)
 
 Checks the filetype of a given filepath. Returns either ``true, filetype``
 (one of ``"FILE"``, ``"DIRECTORY"``, ``"CHARDEV"``, ``"BLOCKDEV"``,
 ``"LINK"``, ``"SOCKET"`` or ``"UNKNOWN"``) or ``false, errormsg``.
+
+server.fs.modtime
+=================
+
+::
+
+    success, modtime = server.fs.modtime(filepath)
+
+Retrieves the last modification date of a file in seconds since epoch UTC. Returns
+either ``true``, ``modtime`` or ``false``, ``errormsg``.
 
 server.fs.is_readable
 =====================
@@ -227,6 +237,26 @@ server.fs.chdir
 
 Change working directory. Returns ``true, olddir`` on success or ``false,
 errormsg`` on failure.
+
+server.fs.copyFile
+==================
+
+::
+
+    success, errormsg = server.fs.copyFile(source, destination)
+
+Copies a file from source to destination. Returns ``true, nil``on success
+or ``false, errormsg`` on failure.
+
+server.fs.moveFile
+==================
+
+::
+
+    success, errormsg = server.fs.moveFile(from, to)
+
+Moves a file. The move connot cross filesystem boundaries! ``true, nil``on success
+or ``false, errormsg`` on failure.
 
 server.uuid
 ===========
@@ -511,6 +541,15 @@ function is used to copy the file to another location where it can be
 retrieved later. Returns ``true, nil`` on success or ``false, errormsg`` on
 failure.
 
+server.systime
+==============
+
+::
+
+    systime = server.systime()
+
+Returns the current system time on the server in seconds since epoch.
+
 server.log
 ==========
 
@@ -544,6 +583,7 @@ Sipi Variables Available to Lua Scripts
 - ``server.get``: a table of GET request parameters.
 - ``server.post``: a table of POST request parameters.
 - ``server.request``: all request parameters.
+- ``server.docroot``: Root of the normal HTTP-server directory (as given in the SIPI config file)
 - ``server.uploads``: an array of upload parameters, one per file. Each one is a table containing:
    - ``fieldname``: the name of the form field.
    - ``origname``: the original filename.
