@@ -81,6 +81,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     --
     success, tmpimgref = SipiImage.new(tmppath, {original = imgparam["origname"], hash = "sha256"})
     if not success then
+        server.fs.unlink(tmppath)
         server.sendStatus(500)
         server.log(gaga, server.loglevel.error)
         return false
@@ -89,16 +90,16 @@ for imgindex,imgparam in pairs(server.uploads) do
     myimg[imgindex] = tmpimgref
 
     filename = imgparam["origname"]
-    n1, n2 = string.find(filename, '.', 1, true)
-    newfilename[imgindex] = config.imgroot .. '/images/' .. uuid62 .. '.jp2'
+    filebody = filename:match("(.+)%..+")
+    newfilename[imgindex] = "_" .. filebody .. '.jp2'
 
     if server.secure then
         protocol = 'https://'
     else
         protocol = 'http://'
     end
-    iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/' .. uuid62 .. '.jp2'
-    iiifurls["filename"] = uuid62 .. '.jp2'
+    iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/unit/' ..newfilename[imgindex]
+    iiifurls["filename"] = newfilename[imgindex]
 
     --
     -- here we add the subdirs that are necessary if Sipi is configured to use subdirs
@@ -110,7 +111,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         return false
     end
 
-    fullfilepath = config.imgroot .. '/images/' .. newfilepath
+    fullfilepath = config.imgroot .. '/unit/' .. newfilepath
 
     local status, errmsg = myimg[imgindex]:write(fullfilepath)
     if not status then
@@ -125,6 +126,5 @@ for imgindex,imgparam in pairs(server.uploads) do
     end
 
 end
-
 
 send_success(iiifurls)

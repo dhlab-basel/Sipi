@@ -109,9 +109,9 @@ class TestServer:
 
         response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
         filename = response_json["filename"]
-        manager.expect_status_code("/images/{}/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
 
-        response_json = manager.get_json("/images/{}/knora.json".format(filename))
+        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
 
         if not response_json == expected_result:
             raise AssertionError()
@@ -174,11 +174,11 @@ class TestServer:
         filename = response_json["filename"]
 
 
-        manager.expect_status_code("/images/{}/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
 
-        response_json = manager.get_json("/images/{}/info.json".format(filename))
+        response_json = manager.get_json("/unit/{}/info.json".format(filename))
 
-        expected_result["@id"] = "http://127.0.0.1:1024/images/{}".format(filename)
+        expected_result["@id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
         if not response_json == expected_result:
             raise AssertionError()
         return
