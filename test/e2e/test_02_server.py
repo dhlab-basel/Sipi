@@ -113,9 +113,7 @@ class TestServer:
 
         response_json = manager.get_json("/unit/{}/knora.json".format(filename))
 
-        if not response_json == expected_result:
-            raise AssertionError()
-        return
+        assert response_json == expected_result
 
     def test_json_info_validation(self, manager):
         """pass the info.json request tests"""
@@ -179,9 +177,7 @@ class TestServer:
         response_json = manager.get_json("/unit/{}/info.json".format(filename))
 
         expected_result["@id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
-        if not response_json == expected_result:
-            raise AssertionError()
-        return
+        assert response_json == expected_result
 
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
