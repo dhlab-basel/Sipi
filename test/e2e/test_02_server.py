@@ -20,6 +20,11 @@
 # License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+from pathlib import Path
+import os
+import os.path
+import time
+import datetime
 
 # Tests basic functionality of the Sipi server.
 
@@ -37,6 +42,24 @@ class TestServer:
     def test_lua_functions(self, manager):
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
+
+    def test_clean_tempdir(self, manager):
+        """remove old temporary files"""
+        temp_dir = manager.sipi_working_dir + "/images/tmp"
+
+        file_to_leave = Path(temp_dir + "/test_ok.jp2")
+        file_to_leave.touch()
+
+        file_to_delete = Path(temp_dir + "/test_old.jp2")
+        file_to_delete.touch()
+        date = datetime.datetime(year=2016, month=1, day=1)
+        mod_time = time.mktime(date.timetuple())
+        os.utime(file_to_delete, (mod_time, mod_time))
+
+        manager.expect_status_code("/test_clean_tempdir", 200)
+
+        assert file_to_leave.exists()
+        assert not file_to_delete.exists()
 
     def test_lua_scripts(self, manager):
         """call Lua functions for mediatype handling"""
@@ -170,7 +193,6 @@ class TestServer:
 
         response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
         filename = response_json["filename"]
-
 
         manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
 

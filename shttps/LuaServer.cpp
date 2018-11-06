@@ -38,6 +38,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <syslog.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "curl/curl.h"
 #include "Global.h"
@@ -400,7 +402,7 @@ namespace shttps {
     /*!
      * Checks the filetype of a given filepath
      * LUA: server.fs.ftype("path")
-     * RETURNS: "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
+     * @return "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
      */
     static int lua_fs_ftype(lua_State *L) {
         struct stat s;
@@ -455,9 +457,9 @@ namespace shttps {
     //=========================================================================
 
     /*!
-    * Returns the modificatiojn time of a given filepath (in s since epoch)
-    * LUA: server.fs.ftype("path")
-    * RETURNS: integer with seconds since epoch of last modification
+    * Returns the modification time of a given filepath (in s since epoch)
+    * LUA: server.fs.modtime("path")
+    * @return integer with seconds since epoch of last modification
     */
     static int lua_fs_modtime(lua_State *L) {
         struct stat s;
@@ -489,6 +491,67 @@ namespace shttps {
 
         lua_pushboolean(L, true);
         lua_pushinteger(L, (lua_Integer) s.st_mtime);
+
+        return 2;
+    }
+    //=========================================================================
+
+    /*!
+     * Returns a table of the names of the files in the specified directory.
+     * LUA: server.fs.readdir("path")
+     * @return a table of filenames in the directory.
+     */
+    static int lua_fs_readdir(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.readdir()': parameter missing");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.readdir()': path is not a string");
+            return 2;
+        }
+
+        const char *path = lua_tostring(L, 1);
+        lua_settop(L, 0); // clear stack
+
+        DIR* dir_ptr = opendir(path);
+
+        if (dir_ptr == nullptr) {
+            std::stringstream ss;
+            ss << strerror(errno) << ": " << path;
+            lua_pushboolean(L, false);
+            lua_pushstring(L, ss.str().c_str());
+            return 2;
+        }
+
+        struct dirent *dirent_ptr;
+        std::vector<std::string> filenames;
+
+        while ((dirent_ptr = readdir(dir_ptr)) != nullptr) {
+            filenames.emplace_back(dirent_ptr->d_name);
+        }
+
+        closedir(dir_ptr);
+        lua_pushboolean(L, true); // we assume success
+
+        lua_createtable(L, 0, 0);
+        int table_index = 1;
+        std::vector<std::string>::const_iterator filename_iter = filenames.begin();
+
+        while (filename_iter != filenames.end()) {
+            lua_pushinteger(L, table_index);
+            lua_pushstring(L, (*filename_iter).c_str());
+            lua_rawset(L, -3);
+            ++filename_iter;
+            ++table_index;
+        }
 
         return 2;
     }
@@ -679,7 +742,7 @@ namespace shttps {
         }
 
         const char *dirname = lua_tostring(L, 1);
-        mode_t mode = static_cast<mode_t>(lua_tointeger(L, 2));
+        auto mode = static_cast<mode_t>(lua_tointeger(L, 2));
         lua_settop(L, 0); // clear stack
 
         if (mkdir(dirname, mode) != 0) {
@@ -898,6 +961,7 @@ namespace shttps {
 
     static const luaL_Reg fs_methods[] = {{"ftype",         lua_fs_ftype},
                                           {"modtime",       lua_fs_modtime},
+                                          {"readdir",       lua_fs_readdir},
                                           {"is_readable",   lua_fs_is_readable},
                                           {"is_writeable",  lua_fs_is_writeable},
                                           {"is_executable", lua_fs_is_executable},

@@ -192,6 +192,11 @@ sipi = {
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
     loglevel = "DEBUG",
+
+    --
+    -- The maximum allowed age of temporary files (in seconds) before they are deleted. Defaults to one day.
+    --
+    max_temp_file_age = 86400
 }
 
 admin = {

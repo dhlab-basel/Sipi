@@ -45,14 +45,14 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, exists = server.fs.exists(tmpdir)
     if not success then
         server.sendStatus(500)
-        server.log(exists, server.loglevel.error)
+        server.log(exists, server.loglevel.LOG_ERR)
         return false
     end
     if not exists then
         local success, errmsg = server.fs.mkdir(tmpdir, 511)
         if not success then
             server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
+            server.log(errmsg, server.loglevel.LOG_ERR)
             return false
         end
     end
@@ -63,14 +63,14 @@ for imgindex,imgparam in pairs(server.uploads) do
     local success, uuid62 = server.uuid62()
     if not success then
         server.sendStatus(500)
-        server.log(uuid62, server.loglevel.error)
+        server.log(uuid62, server.loglevel.LOG_ERR)
         return false
     end
     tmppath =  tmpdir .. uuid62
     local success, errmsg = server.copyTmpfile(imgindex, tmppath)
     if not success then
         server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
+        server.log(errmsg, server.loglevel.LOG_ERR)
         return false
     end
 
@@ -83,7 +83,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     if not success then
         server.fs.unlink(tmppath)
         server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(gaga, server.loglevel.LOG_ERR)
         return false
     end
 
@@ -107,7 +107,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     success, newfilepath = helper.filename_hash(newfilename[imgindex]);
     if not success then
         server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(gaga, server.loglevel.LOG_ERR)
         return false
     end
 
@@ -121,7 +121,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     success, errmsg = server.fs.unlink(tmppath)
     if not success then
         server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
+        server.log(errmsg, server.loglevel.LOG_ERR)
         return false
     end
 

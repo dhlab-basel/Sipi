@@ -47,6 +47,7 @@ namespace Sipi {
         std::string ssl_key;
 #endif
         std::string img_root; //<! path to root of image repository
+        int max_temp_file_age;
         int subdir_levels = -1;
         std::vector<std::string> subdir_excludes;
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
@@ -96,6 +97,8 @@ namespace Sipi {
 #endif
 
         inline std::string getImgRoot(void) { return img_root; }
+
+        inline int getMaxTempFileAge(void) { return max_temp_file_age; }
 
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
 

@@ -126,7 +126,7 @@ fullImgName = baseName .. '.jpx'
 success, newFilePath = helper.filename_hash(fullImgName);
 if not success then
     server.sendStatus(500)
-    server.log(gaga, server.loglevel.error)
+    server.log(gaga, server.loglevel.LOG_ERR)
     return false
 end
 
@@ -159,7 +159,7 @@ thumbImgName = baseName .. '.jpg'
 success, newThumbPath = helper.filename_hash(thumbImgName);
 if not success then
     server.sendStatus(500)
-    server.log(gaga, server.loglevel.error)
+    server.log(gaga, server.loglevel.LOG_ERR)
     return false
 end
 

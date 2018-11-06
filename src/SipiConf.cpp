@@ -36,6 +36,7 @@ namespace Sipi {
         ssl_key = luacfg.configString("sipi", "ssl_key", "");
 #endif
         img_root = luacfg.configString("sipi", "imgroot", ".");
+        max_temp_file_age = luacfg.configInteger("sipi", "max_temp_file_age", 86400);
         subdir_levels = luacfg.configInteger("sipi", "subdir_levels", 0);
         subdir_excludes = luacfg.configStringList("sipi", "subdir_excludes"); // has no defaults, returns an empty vector if nothing is there
         prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
