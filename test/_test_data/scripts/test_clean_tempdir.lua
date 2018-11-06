@@ -29,10 +29,16 @@ if not success then
     return
 end
 
-clean_tempdir()
+success = clean_tempdir()
 
-response = {
-    result = "OK"
-}
+if success then
+    local response = {
+        result = "OK"
+    }
 
-send_success(response)
+    send_success(response)
+    return
+else
+    send_error(500, "clean_tempdir failed")
+    return
+end
