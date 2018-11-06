@@ -46,6 +46,7 @@ class TestServer:
     def test_clean_tempdir(self, manager):
         """remove old temporary files"""
         temp_dir = manager.sipi_working_dir + "/images/tmp"
+        os.makedirs(temp_dir, exist_ok=True)
 
         file_to_leave = Path(temp_dir + "/test_ok.jp2")
         file_to_leave.touch()
