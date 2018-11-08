@@ -104,7 +104,7 @@ containing the Knora session ID.
 File uploads to SIPI
 ***************************************
 Using Lua it is possible to create an upload function for image files. See the
-scripts ``upload.elua``and ``do-upload.elua`` in the server directory
+scripts ``upload.elua`` and ``do-upload.elua`` in the server directory
 
 
 ***************************************
@@ -227,6 +227,17 @@ server.fs.getcwd
 
 Gets the current working directory. Returns ``true, current_dir`` on success
 or ``false, errormsg`` on failure.
+
+server.fs.readdir
+=================
+
+::
+
+    success, filenames = server.fs.readdir(dirname)
+
+
+Gets the names of the files in a directory. Note that this includes ``.`` and ``..``.
+Returns ``true, table`` on success or ``false, errormsg`` on failure.
 
 server.fs.chdir
 ===============
@@ -602,10 +613,10 @@ helper.filename_hash
 
     success, filepath = helper.filename_hash(fileid)
 
-if ``subdir_levels``(see configuration file) is > 0, recursive subdirectories named
+if ``subdir_levels`` (see configuration file) is > 0, recursive subdirectories named
 'A', 'B',.., 'Z' are used to split the image files across multiple directories. A simple
 hash-algorithm is being used. This function returns a filepath with the subdirectories
-prepended, e.g `gaga.jp2`` becomes ``C/W/gaga.jpg``
+prepended, e.g ``gaga.jp2`` becomes ``C/W/gaga.jpg``
 
 Example:
 
@@ -614,7 +625,7 @@ Example:
         success, newfilepath = helper.filename_hash(newfilename[imgindex]);
         if not success then
             server.sendStatus(500)
-            server.log(gaga, server.loglevel.error)
+            server.log(gaga, server.loglevel.LOG_ERR)
             return false
         end
 

@@ -484,15 +484,15 @@ namespace shttps {
             ll = LOG_INFO;
         } else if (_loglevel == "NOTICE") {
             ll = LOG_NOTICE;
-        } else if (_loglevel == "WARN") {
+        } else if (_loglevel == "WARNING") {
             ll = LOG_WARNING;
-        } else if (_loglevel == "ERROR") {
+        } else if (_loglevel == "ERR") {
             ll = LOG_ERR;
-        } else if (_loglevel == "CRITICAL") {
+        } else if (_loglevel == "CRIT") {
             ll = LOG_CRIT;
         } else if (_loglevel == "ALERT") {
             ll = LOG_ALERT;
-        } else if (_loglevel == "EMER") {
+        } else if (_loglevel == "EMERG") {
             ll = LOG_EMERG;
         } else {
             ll = LOG_ERR;
