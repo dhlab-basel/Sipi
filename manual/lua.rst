@@ -592,7 +592,7 @@ Sipi Variables Available to Lua Scripts
 - ``server.header``: a table containing all the HTTP request headers (in lowercase).
 - ``server.cookies``: a table of the cookies that were sent with the request.
 - ``server.get``: a table of GET request parameters.
-- ``server.post``: a table of POST request parameters.
+- ``server.post``: a table of POST or PUT request parameters.
 - ``server.request``: all request parameters.
 - ``server.docroot``: Root of the normal HTTP-server directory (as given in the SIPI config file)
 - ``server.uploads``: an array of upload parameters, one per file. Each one is a table containing:
