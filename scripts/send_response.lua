@@ -49,6 +49,10 @@ function send_error(status, msg)
         print(errormsg)
     end
 
+    -- If this is an internal server error, log it.
+    if http_status // 100 == 5 then
+        server.log(msg, server.loglevel.LOG_ERR)
+    end
 end
 -------------------------------------------------------------------------------
 

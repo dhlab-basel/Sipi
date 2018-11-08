@@ -539,8 +539,8 @@ namespace Sipi {
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
         if (info.success == SipiImgInfo::ALL) {
-            json_object_set_new(root, "mimetype", json_string(info.mimetype.c_str()));
-            json_object_set_new(root, "origname", json_string(info.origname.c_str()));
+            json_object_set_new(root, "originalMimeType", json_string(info.mimetype.c_str()));
+            json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
         }
         char *json_str = json_dumps(root, JSON_INDENT(3));
         conn_obj.sendAndFlush(json_str, strlen(json_str));

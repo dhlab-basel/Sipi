@@ -613,10 +613,10 @@ helper.filename_hash
 
     success, filepath = helper.filename_hash(fileid)
 
-if ``subdir_levels``(see configuration file) is > 0, recursive subdirectories named
+if ``subdir_levels`` (see configuration file) is > 0, recursive subdirectories named
 'A', 'B',.., 'Z' are used to split the image files across multiple directories. A simple
 hash-algorithm is being used. This function returns a filepath with the subdirectories
-prepended, e.g `gaga.jp2`` becomes ``C/W/gaga.jpg``
+prepended, e.g ``gaga.jp2`` becomes ``C/W/gaga.jpg``
 
 Example:
 
