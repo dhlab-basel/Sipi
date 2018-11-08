@@ -127,8 +127,8 @@ class TestServer:
         expected_result = {
             "width": 512,
             "height": 512,
-            "origname": "lena512.tif",
-            "mimetype": "image/tiff"
+            "originalFilename": "lena512.tif",
+            "originalMimeType": "image/tiff"
         }
 
         response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
