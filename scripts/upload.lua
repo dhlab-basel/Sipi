@@ -32,95 +32,40 @@ function table.contains(table, element)
   return false
 end
 
-
-if server.request == nil or server.request["token"] == nil then
-    send_error(400, "token missing")
-    return -1
-end
-
-token = server.request["token"]
-
-success, tokendata = server.decode_jwt(token)
-if not success then
-    send_error(401, "Token not valid!")
-    return -1
-end
-
 myimg = {}
 newfilename = {}
 iiifurls = {}
 
+
 for imgindex,imgparam in pairs(server.uploads) do
-
-    --
-    -- check if tmporary directory is available under image root, if not, create it
-    --
-    tmpdir = config.imgroot .. '/tmp/'
-    local success, exists = server.fs.exists(tmpdir)
-    if not success then
-        server.sendStatus(500)
-        server.log(exists, server.loglevel.error)
-        return false
-    end
-    if not exists then
-        local success, errmsg = server.fs.mkdir(tmpdir, 511)
-        if not success then
-            server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
-            return false
-        end
-    end
-
-    --
-    -- copy the file to a safe place
-    --
-    local success, uuid62 = server.uuid62()
-    if not success then
-        server.sendStatus(500)
-        server.log(uuid62, server.loglevel.error)
-        return false
-    end
-    tmppath =  tmpdir .. uuid62
-    local success, errmsg = server.copyTmpfile(imgindex, tmppath)
-    if not success then
-        server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
-        return false
-    end
-
     --
     -- create a new Lua image object. This reads the image into an
     -- internal in-memory representation independent of the original
     -- image format.
     --
-    success, tmpimgref = SipiImage.new(tmppath, {original = imgparam["origname"], hash = "sha256"})
+    success, myimg[imgindex] = SipiImage.from_upload(imgindex)
     if not success then
-        server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(myimg[imgindex], server.loglevel.error)
+        send_error(500, myimg[imgindex])
         return false
     end
 
-    myimg[imgindex] = tmpimgref
-
-    filename = imgparam["origname"]
-    n1, n2 = string.find(filename, '.', 1, true)
-    newfilename[imgindex] = config.imgroot .. '/' .. uuid62 .. '.jp2'
+    newfilename[imgindex] = imgparam["origname"]:match "(.+)%..+" .. '.jp2'
 
     if server.secure then
         protocol = 'https://'
     else
         protocol = 'http://'
     end
-    iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/' .. uuid62 .. '.jp2'
-    iiifurls["filename"] = uuid62 .. '.jp2'
+    iiifurls[newfilename[imgindex]] = protocol .. server.host .. '/images/' .. newfilename[imgindex]
+    iiifurls["filename"] = newfilename[imgindex]
 
     --
     -- here we add the subdirs that are necessary if Sipi is configured to use subdirs
     --
     success, newfilepath = helper.filename_hash(newfilename[imgindex]);
     if not success then
-        server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        send_error(500, newfilepath)
         return false
     end
 
@@ -130,15 +75,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     if not status then
         server.print('Error converting image to j2k: ', filename, ' ** ', errmsg)
     end
-
-    success, errmsg = server.fs.unlink(tmppath)
-    if not success then
-        server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
-        return false
-    end
-
 end
-
 
 send_success(iiifurls)

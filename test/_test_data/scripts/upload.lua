@@ -37,40 +37,13 @@ newfilename = {}
 iiifurls = {}
 
 for imgindex,imgparam in pairs(server.uploads) do
-
-    --
-    -- check if tmporary directory is available under image root, if not, create it
-    --
-    tmpdir = config.imgroot .. '/tmp/'
-    local success, exists = server.fs.exists(tmpdir)
-    if not success then
-        server.sendStatus(500)
-        server.log(exists, server.loglevel.error)
-        return false
-    end
-    if not exists then
-        local success, errmsg = server.fs.mkdir(tmpdir, 511)
-        if not success then
-            server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
-            return false
-        end
-    end
-
     --
     -- copy the file to a safe place
     --
     local success, uuid62 = server.uuid62()
     if not success then
-        server.sendStatus(500)
         server.log(uuid62, server.loglevel.error)
-        return false
-    end
-    tmppath =  tmpdir .. uuid62
-    local success, errmsg = server.copyTmpfile(imgindex, tmppath)
-    if not success then
-        server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
+        send_error(500, uuid62)
         return false
     end
 
@@ -79,15 +52,12 @@ for imgindex,imgparam in pairs(server.uploads) do
     -- internal in-memory representation independent of the original
     -- image format.
     --
-    success, tmpimgref = SipiImage.new(tmppath, {original = imgparam["origname"], hash = "sha256"})
+    success, myimg[imgindex] = SipiImage.from_upload(imgindex)
     if not success then
-        server.fs.unlink(tmppath)
-        server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(myimg[imgindex], server.loglevel.error)
+        send_error(500, myimg[imgindex])
         return false
     end
-
-    myimg[imgindex] = tmpimgref
 
     filename = imgparam["origname"]
     filebody = filename:match("(.+)%..+")
@@ -106,8 +76,8 @@ for imgindex,imgparam in pairs(server.uploads) do
     --
     success, newfilepath = helper.filename_hash(newfilename[imgindex]);
     if not success then
-        server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(newfilepath, server.loglevel.error)
+        server.sendStatus(500, newfilepath)
         return false
     end
 
@@ -116,13 +86,6 @@ for imgindex,imgparam in pairs(server.uploads) do
     local status, errmsg = myimg[imgindex]:write(fullfilepath)
     if not status then
         server.print('Error converting image to j2k: ', filename, ' ** ', errmsg)
-    end
-
-    success, errmsg = server.fs.unlink(tmppath)
-    if not success then
-        server.sendStatus(500)
-        server.log(errmsg, server.loglevel.error)
-        return false
     end
 
 end
