@@ -187,5 +187,10 @@ routes = {
         method = 'POST',
         route = '/api/upload',
         script = 'upload.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_mimetype_func',
+        script = 'test_mimetype_func.lua'
     }
 }

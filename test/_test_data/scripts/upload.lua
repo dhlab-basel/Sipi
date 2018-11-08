@@ -38,7 +38,7 @@ iiifurls = {}
 
 for imgindex,imgparam in pairs(server.uploads) do
     --
-    -- copy the file to a safe place
+    -- generate a UUID
     --
     local success, uuid62 = server.uuid62()
     if not success then
@@ -81,8 +81,14 @@ for imgindex,imgparam in pairs(server.uploads) do
         return false
     end
 
+    --
+    -- Create the destination path
+    --
     fullfilepath = config.imgroot .. '/unit/' .. newfilepath
 
+    --
+    -- write the file to the destination
+    --
     local status, errmsg = myimg[imgindex]:write(fullfilepath)
     if not status then
         server.print('Error converting image to j2k: ', filename, ' ** ', errmsg)
