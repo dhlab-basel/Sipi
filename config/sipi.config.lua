@@ -264,5 +264,4 @@ routes = {
         route = '/api/upload',
         script = 'upload.lua'
     }
-
 }

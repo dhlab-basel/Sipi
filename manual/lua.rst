@@ -104,7 +104,8 @@ containing the Knora session ID.
 File uploads to SIPI
 ***************************************
 Using Lua it is possible to create an upload function for image files. See the
-scripts ``upload.elua`` and ``do-upload.elua`` in the server directory
+scripts ``upload.elua`` and ``do-upload.elua`` in the server directory, or
+``upload.lua`` in the scripts directory.
 
 
 ***************************************
@@ -422,7 +423,7 @@ server.sendStatus
 
 ::
 
-    server.sendStatus()
+    server.sendStatus(code)
 
 Sends an HTTP status code. This function is always successful and returns nothing.
 
@@ -456,6 +457,20 @@ server.decode_jwt
 
 Decodes a `JSON Web Token`_ (JWT) and returns its content as table. Returns
 ``true, table`` on success or ``false, errormsg`` on failure.
+
+server.file_mimetype
+====================
+
+::
+
+    success, table = server.file_mimetype(path)
+    success, table = server.file_mimetype(index)
+
+Determines the mimetype of a file. The first form is used if the file path is known.
+The second form can be used for uploads by passing the file index. It returns ``true, table``
+on success or ``false, errormsg`` on failure. The table has 2 members:
+- ``mimetype``
+- ``charset``
 
 server.requireAuth
 ==================
@@ -582,6 +597,28 @@ Writes a message to syslog_. Severity levels are:
 ***************************************
 Sipi Variables Available to Lua Scripts
 ***************************************
+- ``config.hostname``: Hostname where SIPI runs on
+- ``config.port``: Portnumber where SIPI communicates (non SSL)
+- ``config.sslport``: Portnumber for SSL connections of SIPI
+- ``config.imgroot``: Root directory for IIIF-served images
+- ``config.docroot``: Root directory for WEB-Server
+- ``config.max_temp_file_age``: maximum age of temporary files
+- ``config.prefix_as_path``: ``true``if the prefix should be used as internal path image directories
+- ``config.init_script``: Path to initialization script
+- ``config.scriptdir``: Path to script directory
+- ``config.cache_dir``: Path to cache directory for iIIF served images
+- ``config.cache_size``: Maximal size of cache
+- ``config.cache_n_files``: Maximal number of files in cache
+- ``config.cache_hysteresis``: Amount fo data to be purged if cache reaches maximum size
+- ``config.keep_alive``: keep alive time
+- ``config.thumb_size``: Default thumbnail image size
+- ``config.n_threads``: Number of threads SIPI uses
+- ``config.max_post_size``: Maximal size of POST data allowed
+- ``config.tmpdir``: Temporary directory to store uploads
+- ``config.knora_path``: Path to knora REST API (only for SIPI used with Knora)
+- ``config.knora_port``: Port that the Knora API uses
+- ``config.adminuser``: Name of admin user
+- ``config.password``: Password of admin user (use with caution)!
 
 - ``server.has_openssl``: ``true`` if OpenSSL is available.
 - ``server.secure``: ``true`` if the connection was made over HTTPS.
@@ -594,7 +631,6 @@ Sipi Variables Available to Lua Scripts
 - ``server.get``: a table of GET request parameters.
 - ``server.post``: a table of POST or PUT request parameters.
 - ``server.request``: all request parameters.
-- ``server.docroot``: Root of the normal HTTP-server directory (as given in the SIPI config file)
 - ``server.uploads``: an array of upload parameters, one per file. Each one is a table containing:
    - ``fieldname``: the name of the form field.
    - ``origname``: the original filename.
@@ -641,11 +677,17 @@ There is an image object implemented which allows to manipulate and convert imag
 SipiImage.new(filename)
 =========================
 
-The simple form is:
+The simple forms are:
 
 ::
 
         img = SipiImage.new("filename")
+        img = SipiImage.new(index)
+
+The first variant opens a file given by "filename", the second variant
+opens an uploaded file directly using the integer index to the uploaded
+files. In case of an uploaded file, the original filename and the pixel hash
+as well as the original mimetype are saved in an extra file header record.
 
 The more complex form is as follows:
 

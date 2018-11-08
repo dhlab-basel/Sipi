@@ -38,12 +38,29 @@ iiifurls = {}
 
 
 for imgindex,imgparam in pairs(server.uploads) do
+    success, mimeinfo = server.file_mimetype(imgindex)
+    if not success then
+        send_error(500, mimeinfo)
+        return false
+    end
+
+    if mimeinfo['mimetype'] == 'application/pdf' then
+        newfilename = config.docroot .. '/' .. imgparam["origname"]
+        success, errormsg = server.fs.moveFile(imgindex, newfilename)
+        if not success then
+            send_error(500, errormsg)
+            return false
+        end
+        send_success({ name = imgparam["origname"] })
+        return true
+    end
+
     --
     -- create a new Lua image object. This reads the image into an
     -- internal in-memory representation independent of the original
     -- image format.
     --
-    success, myimg[imgindex] = SipiImage.from_upload(imgindex)
+    success, myimg[imgindex] = SipiImage.new(imgindex)
     if not success then
         server.log(myimg[imgindex], server.loglevel.error)
         send_error(500, myimg[imgindex])

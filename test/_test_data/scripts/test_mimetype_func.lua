@@ -20,13 +20,13 @@
 
 require "send_response"
 
-success, mimetype = server.fs.get_mimetype(config.imgroot .. '/unit/' .. 'lena512.tif')
+success, mimeinfo = server.file_mimetype(config.imgroot .. '/unit/' .. 'lena512.tif')
 if not success then
     server.send_error(500, mimetype)
     return false
 end
 
-if mimetype == "image/tiff" then
+if mimeinfo['mimetype'] == "image/tiff" then
     server.sendStatus(200)
     return true
 else

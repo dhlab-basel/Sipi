@@ -47,6 +47,7 @@
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
+#include "Error.h"
 //#include "ChunkReader.h"
 
 #include "sole.hpp"
@@ -915,20 +916,44 @@ namespace shttps {
     /*!
     * Moves a file from one location to another.
     *
-    * LUA: server.fs.mvFile(source, target)
+    * LUA: server.fs.moveFile(source, target)
     *
     */
     static int lua_fs_mvfile(lua_State *L) {
+        lua_getglobal(L, shttps::luaconnection);
+        shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stacks
         int top = lua_gettop(L);
 
         if (top < 2) {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
-            lua_pushstring(L, "'lua_fs_mvfile(from,to)': not enough parameters");
+            lua_pushstring(L, "'server.fs.moveFile(from,to)': not enough parameters");
             return 2;
         }
 
-        std::string infile = lua_tostring(L, 1);
+        std::string infile;
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                infile = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.fs.moveFile(from,to)': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            infile = lua_tostring(L, 1);
+        }
+        else {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.fs.moveFile(from,to): filename must be string or index");
+            return 2;
+        }
         std::string outfile = lua_tostring(L, 2);
         lua_pop(L, top); // clear stack
 
@@ -937,17 +962,17 @@ namespace shttps {
             switch (errno) {
                 case EACCES: {
                     lua_pushboolean(L, false);
-                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': no permission!");
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': no permission!");
                     return 2;
                 }
                 case EXDEV: {
                     lua_pushboolean(L, false);
-                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': move across file systems not allowd!");
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': move across file systems not allowd!");
                     return 2;
                 }
                 default: {
                     lua_pushboolean(L, false);
-                    lua_pushstring(L, "'lua_fs_mvfile(from,to)': error moving file!");
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': error moving file!");
                     return 2;
                 }
             }
@@ -2230,6 +2255,7 @@ namespace shttps {
         lua_rawset(L, -3); // table
         return 2;
     }
+    //=========================================================================
 
     /*!
      * Lua: success, mimetype = server.parse_mimetype(str)
@@ -2267,11 +2293,15 @@ namespace shttps {
             return 2;
         }
     }
+    //=========================================================================
 
     /*!
      * Lua: success, mimetype = server.file_mimetype(path)
      */
     static int lua_file_mimetype(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
         int top = lua_gettop(L);
 
         if (top < 1) {
@@ -2281,14 +2311,29 @@ namespace shttps {
             return 2;
         }
 
-        if (!lua_isstring(L, 1)) {
+        std::string path;
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                path = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.file_mimetype()()': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            path = lua_tostring(L, 1);
+        }
+        else {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "server.file_mimetype(): path is not a string");
             return 2;
         }
 
-        std::string path = lua_tostring(L, 1);
         lua_pop(L, top);
 
         try {
@@ -2304,6 +2349,7 @@ namespace shttps {
             return 2;
         }
     }
+    //=========================================================================
 
     static int lua_systime(lua_State *L) {
         lua_settop(L, 0); // clear stack
@@ -2312,6 +2358,7 @@ namespace shttps {
         lua_pushinteger(L, (lua_Integer) result);
         return 1;
     }
+    //=========================================================================
 
     void LuaServer::setLuaPath(const std::string &path) {
         lua_getglobal(L, "package");
@@ -2325,6 +2372,7 @@ namespace shttps {
         lua_pop(L, 1); // get rid of package table from top of stack
         return; // all done!
     }
+    //=========================================================================
 
 
     /*!

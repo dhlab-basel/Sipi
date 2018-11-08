@@ -382,6 +382,9 @@ namespace Sipi {
      *    })
      */
     static int SImage_new(lua_State *L) {
+        lua_getglobal(L, shttps::luaconnection);
+        shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stacks
         int top = lua_gettop(L);
 
         if (top < 1) {
@@ -391,19 +394,34 @@ namespace Sipi {
             return 2;
         }
 
-        if (!lua_isstring(L, 1)) {
-            lua_pop(L, top);
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "SipiImage.new(): filename must be string");
-            return 2;
-        }
-
-        const char *imgpath = lua_tostring(L, 1);
-
         std::shared_ptr<SipiRegion> region;
         std::shared_ptr<SipiSize> size;
         std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
+        std::string imgpath;
+
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                imgpath = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+                original = uploads.at(tmpfile_id - 1).origname;
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'SipiImage.new()': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            imgpath = lua_tostring(L, 1);
+        }
+        else {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "SipiImage.new(): filename must be string or index");
+            return 2;
+        }
 
         if (top == 2) {
             if (lua_istable(L, 2)) {
@@ -521,66 +539,6 @@ namespace Sipi {
         return 2;
     }
     //=========================================================================
-
-    static int SImage_fromUpload(lua_State *L) {
-        lua_getglobal(L, shttps::luaconnection);
-        shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1);
-        lua_remove(L, -1); // remove from stacks
-        int top = lua_gettop(L);
-
-        if (top < 1) {
-            lua_pop(L, top);
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "SipiImage.fromUpload(): No index to upload area given");
-            return 2;
-        }
-
-        if (!lua_isinteger(L, 1)) {
-            lua_pop(L, top);
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "SipiImage.fromUpload(): parameter must be index to tmp area");
-            return 2;
-        }
-
-        std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
-        int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
-        std::string infile;
-        std::string origname;
-        shttps::HashType htype = shttps::HashType::sha256;
-
-        try {
-            infile = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
-            origname = uploads.at(tmpfile_id - 1).origname;
-        } catch (const std::out_of_range &oor) {
-            lua_settop(L, 0); // clear stack
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "'SipiImage.fromUpload()': Could not read data of uploaded file. Invalid index?");
-            return 2;
-        }
-
-        std::shared_ptr<SipiRegion> region;
-        std::shared_ptr<SipiSize> size;
-
-        lua_pushboolean(L, true); // result code
-        SImage *img = pushSImage(L);
-        img->image = new SipiImage();
-        img->filename = new std::string(infile);
-
-        try {
-            img->image->readOriginal(infile, region, size, origname, htype);
-        } catch (SipiImageError &err) {
-            lua_pop(L, lua_gettop(L));
-            lua_pushboolean(L, false);
-            std::stringstream ss;
-            ss << "SipiImage.new(): ";
-            ss << err;
-            lua_pushstring(L, ss.str().c_str());
-            return 2;
-        }
-
-        return 2;
-    }
-
 
     static int SImage_dims(lua_State *L) {
         size_t nx, ny;
@@ -983,7 +941,6 @@ namespace Sipi {
 
     // map the method names exposed to Lua to the names defined here
     static const luaL_Reg SImage_methods[] = {{"new",                  SImage_new},
-                                              {"from_upload",          SImage_fromUpload},
                                               {"dims",                 SImage_dims}, // #myimg
                                               {"write",                SImage_write}, // myimg >> filename
                                               {"send",                 SImage_send}, // myimg

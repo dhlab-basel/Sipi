@@ -52,7 +52,7 @@ for imgindex,imgparam in pairs(server.uploads) do
     -- internal in-memory representation independent of the original
     -- image format.
     --
-    success, myimg[imgindex] = SipiImage.from_upload(imgindex)
+    success, myimg[imgindex] = SipiImage.new(imgindex)
     if not success then
         server.log(myimg[imgindex], server.loglevel.error)
         send_error(500, myimg[imgindex])
