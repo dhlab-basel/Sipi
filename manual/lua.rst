@@ -686,8 +686,15 @@ The simple forms are:
 
 The first variant opens a file given by "filename", the second variant
 opens an uploaded file directly using the integer index to the uploaded
-files. In case of an uploaded file, the original filename and the pixel hash
-as well as the original mimetype are saved in an extra file header record.
+files.
+
+If the index of an uploaded file is passed as an argument, this method
+adds additional metadata to the ``SipiImage`` object that is constructed:
+the file's original name, its MIME type, and its SHA256 checksum. When
+the ``SipiImage`` object is then written to another file, this metadata
+will be stored in an extra header record.
+
+If a filename is passed, the method does not add this metadata.
 
 The more complex form is as follows:
 
