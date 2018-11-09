@@ -43,7 +43,7 @@ class TestServer:
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
 
-    def test_clean_tempdir(self, manager):
+    def test_clean_temp_dir(self, manager):
         """remove old temporary files"""
         temp_dir = manager.sipi_working_dir + "/images/tmp"
         os.makedirs(temp_dir, exist_ok=True)
@@ -57,7 +57,7 @@ class TestServer:
         mod_time = time.mktime(date.timetuple())
         os.utime(file_to_delete, (mod_time, mod_time))
 
-        manager.expect_status_code("/test_clean_tempdir", 200)
+        manager.expect_status_code("/test_clean_temp_dir", 200)
 
         assert file_to_leave.exists()
         assert not file_to_delete.exists()

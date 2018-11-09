@@ -237,7 +237,7 @@ server.fs.readdir
     success, filenames = server.fs.readdir(dirname)
 
 
-Gets the names of the files in a directory. Note that this includes ``.`` and ``..``.
+Gets the names of the files in a directory, not including ``.`` and ``..``.
 Returns ``true, table`` on success or ``false, errormsg`` on failure.
 
 server.fs.chdir

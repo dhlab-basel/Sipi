@@ -170,8 +170,8 @@ routes = {
     },
     {
         method = 'GET',
-        route = '/test_clean_tempdir',
-        script = 'test_clean_tempdir.lua'
+        route = '/test_clean_temp_dir',
+        script = 'test_clean_temp_dir.lua'
     },
     {
         method = 'GET',

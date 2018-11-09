@@ -536,7 +536,11 @@ namespace shttps {
         std::vector<std::string> filenames;
 
         while ((dirent_ptr = readdir(dir_ptr)) != nullptr) {
-            filenames.emplace_back(dirent_ptr->d_name);
+            const char* entry_name = dirent_ptr->d_name;
+
+            if (!(strncmp(entry_name, ".", 1) == 0 || strncmp(entry_name, "..", 2) == 0)) {
+                filenames.emplace_back(entry_name);
+            }
         }
 
         closedir(dir_ptr);

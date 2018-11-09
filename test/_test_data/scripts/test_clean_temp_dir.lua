@@ -19,17 +19,9 @@
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
 require "send_response"
-require "clean_tempdir"
+require "clean_temp_dir"
 
-success, errmsg = server.setBuffer()
-
-if not success then
-    server.log("server.setBuffer() failed: " .. errmsg, server.loglevel.LOG_ERR)
-    send_error(500, "buffer could not be set correctly")
-    return
-end
-
-success = clean_tempdir()
+success = clean_temp_dir()
 
 if success then
     local response = {
@@ -39,6 +31,6 @@ if success then
     send_success(response)
     return
 else
-    send_error(500, "clean_tempdir failed")
+    send_error(500, "clean_temp_dir failed")
     return
 end
