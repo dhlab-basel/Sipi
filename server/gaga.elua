@@ -1,0 +1,10 @@
+<html>
+    <head>
+        <title>GAGA</title>
+    </head>
+    <body>
+    docroot=<lua>server.print(server.docroot)</lua><br/>
+    systime=<lua>server.print(server.systime())</lua><br/>
+    modtime(gaga.elua)=<lua>server.print(server.fs.modtime(server.docroot .. '/gaga.elua'))</lua>
+    </body>
+</html>

@@ -60,7 +60,7 @@ for findex,fparam in pairs(server.uploads) do
     adminpath =  admindir .. uuid62 .. '-' .. origname
     local success, errmsg = server.copyTmpfile(findex, adminpath)
     if not success then
-        server.log(errmsg, server.loglevel.error)
+        server.log(errmsg, server.loglevel.LOG_ERR)
         send_error(500, "Couldn't upload file: " .. result)
         return false
     else

@@ -597,8 +597,12 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::getDim(std::string filepath, size_t &width, size_t &height) {
-        if (!is_jpx(filepath.c_str())) return false; // It's not a JPGE2000....
+    SipiImgInfo SipiIOJ2k::getDim(std::string filepath) {
+        SipiImgInfo info;
+        if (!is_jpx(filepath.c_str())) {
+            info.success = SipiImgInfo::FAILURE;
+            return info;
+        }
 
         kdu_customize_warnings(&kdu_sipi_warn);
         kdu_customize_errors(&kdu_sipi_error);
@@ -632,16 +636,31 @@ namespace Sipi {
         siz_params *siz = codestream.access_siz();
         int tmp_height;
         siz->get(Ssize, 0, 0, tmp_height);
-        height = tmp_height;
+        info.height = (size_t) tmp_height;
         int tmp_width;
         siz->get(Ssize, 0, 1, tmp_width);
-        width = tmp_width;
+        info.width = (size_t) tmp_width;
+        info.success = SipiImgInfo::DIMS;
+
+        kdu_codestream_comment comment = codestream.get_comment();
+        while (comment.exists()) {
+            const char *cstr = comment.get_text();
+            if (strncmp(cstr, "SIPI:", 5) == 0) {
+                SipiEssentials se(cstr + 5);
+                info.mimetype = se.mimetype();
+                info.origname = se.origname();
+                info.success = SipiImgInfo::ALL;
+                break;
+            }
+            comment = codestream.get_comment(comment);
+        }
 
         codestream.destroy();
         input->close();
         jpx_in.close(); // Not really necessary here.
 
-        return true;
+
+        return info;
     }
     //=============================================================================
 

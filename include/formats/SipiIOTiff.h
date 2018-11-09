@@ -83,6 +83,8 @@ namespace Sipi {
         unsigned char *cvrt8BitTo1bit(const SipiImage &img, unsigned int &sll);
 
     public:
+        virtual ~SipiIOTiff() {};
+
         static void initLibrary(void);
 
         /*!
@@ -100,10 +102,9 @@ namespace Sipi {
         * Get the dimension of the image
         *
         * \param[in] filepath Pathname of the image file
-        * \param[out] width Width of the image in pixels
-        * \param[out] height Height of the image in pixels
+        * \return Image information
         */
-        bool getDim(std::string filepath, size_t &width, size_t &height);
+        SipiImgInfo getDim(std::string filepath);
 
 
         /*!

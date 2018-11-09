@@ -126,10 +126,10 @@ sipi = {
 
 
     --
-    -- loglevel, one of "TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR",
-    --    "CRITICAL", "ALERT", "EMER", "OFF"
+    -- loglevel, one of "DEBUG", "INFO", "NOTICE", "WARNING", "ERR",
+    -- "CRIT", "ALERT", "EMERG"
     --
-    loglevel = "TRACE",
+    loglevel = "DEBUG"
 }
 
 --
@@ -170,6 +170,11 @@ routes = {
     },
     {
         method = 'GET',
+        route = '/test_clean_temp_dir',
+        script = 'test_clean_temp_dir.lua'
+    },
+    {
+        method = 'GET',
         route = '/test_mediatype',
         script = 'test_mediatype.lua'
     },
@@ -177,5 +182,15 @@ routes = {
         method = 'GET',
         route = '/test_knora_session_cookie',
         script = 'test_knora_session_cookie.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/upload',
+        script = 'upload.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test_mimetype_func',
+        script = 'test_mimetype_func.lua'
     }
 }

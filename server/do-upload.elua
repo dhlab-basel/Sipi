@@ -31,14 +31,14 @@ end
         local success, exists = server.fs.exists(tmpdir)
         if not success then
             server.sendStatus(500)
-            server.log(exists, server.loglevel.error)
+            server.log(exists, server.loglevel.LOG_ERR)
             return false
         end
         if not exists then
             local success, errmsg = server.fs.mkdir(tmpdir, 511)
             if not success then
                 server.sendStatus(500)
-                server.log(errmsg, server.loglevel.error)
+                server.log(errmsg, server.loglevel.LOG_ERR)
                 return false
             end
         end
@@ -49,14 +49,14 @@ end
         local success, uuid62 = server.uuid62()
         if not success then
             server.sendStatus(500)
-            server.log(uuid62, server.loglevel.error)
+            server.log(uuid62, server.loglevel.LOG_ERR)
             return false
         end
         tmppath =  tmpdir .. uuid62
         local success, errmsg = server.copyTmpfile(imgindex, tmppath)
         if not success then
             server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
+            server.log(errmsg, server.loglevel.LOG_ERR)
             return false
         end
 
@@ -65,10 +65,10 @@ end
         -- internal in-memory representation independent of the original
         -- image format.
         --
-        success, tmpimgref = SipiImage.new(tmppath)
+        success, tmpimgref = SipiImage.new(tmppath, {original = imgparam["origname"], hash = "sha256"})
         if not success then
             server.sendStatus(500)
-            server.log(gaga, server.loglevel.error)
+            server.log(gaga, server.loglevel.LOG_ERR)
             return false
         end
 
@@ -81,13 +81,13 @@ end
         success, newfilepath = helper.filename_hash(newfilename[imgindex]);
         if not success then
             server.sendStatus(500)
-            server.log(gaga, server.loglevel.error)
+            server.log(gaga, server.loglevel.LOG_ERR)
             return false
         end
 
         filename = config.imgroot .. '/' .. newfilepath
 
-        local status, errmsg = myimg[imgindex]:write(filename, {original = imgparam["origname"], hash = "sha256"})
+        local status, errmsg = myimg[imgindex]:write(filename)
         if not status then
             server.print('Error converting image to j2k: ', errmsg)
         end
@@ -95,7 +95,7 @@ end
         success, errmsg = server.fs.unlink(tmppath)
         if not success then
             server.sendStatus(500)
-            server.log(errmsg, server.loglevel.error)
+            server.log(errmsg, server.loglevel.LOG_ERR)
             return false
         end
     end

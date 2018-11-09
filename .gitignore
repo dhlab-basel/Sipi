@@ -42,3 +42,5 @@ icc.zip
 
 # ignore test results
 /Testing
+/test/nginx/logs/error.log
+_lena512.jp2

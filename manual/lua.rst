@@ -104,7 +104,8 @@ containing the Knora session ID.
 File uploads to SIPI
 ***************************************
 Using Lua it is possible to create an upload function for image files. See the
-scripts ``upload.elua``and ``do-upload.elua`` in the server directory
+scripts ``upload.elua`` and ``do-upload.elua`` in the server directory, or
+``upload.lua`` in the scripts directory.
 
 
 ***************************************
@@ -131,11 +132,21 @@ server.fs.ftype
 
 ::
 
-    success, filetype = server.fs.ftype("path")
+    success, filetype = server.fs.ftype(filepath)
 
 Checks the filetype of a given filepath. Returns either ``true, filetype``
 (one of ``"FILE"``, ``"DIRECTORY"``, ``"CHARDEV"``, ``"BLOCKDEV"``,
 ``"LINK"``, ``"SOCKET"`` or ``"UNKNOWN"``) or ``false, errormsg``.
+
+server.fs.modtime
+=================
+
+::
+
+    success, modtime = server.fs.modtime(filepath)
+
+Retrieves the last modification date of a file in seconds since epoch UTC. Returns
+either ``true``, ``modtime`` or ``false``, ``errormsg``.
 
 server.fs.is_readable
 =====================
@@ -218,6 +229,17 @@ server.fs.getcwd
 Gets the current working directory. Returns ``true, current_dir`` on success
 or ``false, errormsg`` on failure.
 
+server.fs.readdir
+=================
+
+::
+
+    success, filenames = server.fs.readdir(dirname)
+
+
+Gets the names of the files in a directory, not including ``.`` and ``..``.
+Returns ``true, table`` on success or ``false, errormsg`` on failure.
+
 server.fs.chdir
 ===============
 
@@ -227,6 +249,26 @@ server.fs.chdir
 
 Change working directory. Returns ``true, olddir`` on success or ``false,
 errormsg`` on failure.
+
+server.fs.copyFile
+==================
+
+::
+
+    success, errormsg = server.fs.copyFile(source, destination)
+
+Copies a file from source to destination. Returns ``true, nil``on success
+or ``false, errormsg`` on failure.
+
+server.fs.moveFile
+==================
+
+::
+
+    success, errormsg = server.fs.moveFile(from, to)
+
+Moves a file. The move connot cross filesystem boundaries! ``true, nil``on success
+or ``false, errormsg`` on failure.
 
 server.uuid
 ===========
@@ -381,7 +423,7 @@ server.sendStatus
 
 ::
 
-    server.sendStatus()
+    server.sendStatus(code)
 
 Sends an HTTP status code. This function is always successful and returns nothing.
 
@@ -415,6 +457,20 @@ server.decode_jwt
 
 Decodes a `JSON Web Token`_ (JWT) and returns its content as table. Returns
 ``true, table`` on success or ``false, errormsg`` on failure.
+
+server.file_mimetype
+====================
+
+::
+
+    success, table = server.file_mimetype(path)
+    success, table = server.file_mimetype(index)
+
+Determines the mimetype of a file. The first form is used if the file path is known.
+The second form can be used for uploads by passing the file index. It returns ``true, table``
+on success or ``false, errormsg`` on failure. The table has 2 members:
+- ``mimetype``
+- ``charset``
 
 server.requireAuth
 ==================
@@ -511,6 +567,15 @@ function is used to copy the file to another location where it can be
 retrieved later. Returns ``true, nil`` on success or ``false, errormsg`` on
 failure.
 
+server.systime
+==============
+
+::
+
+    systime = server.systime()
+
+Returns the current system time on the server in seconds since epoch.
+
 server.log
 ==========
 
@@ -532,6 +597,28 @@ Writes a message to syslog_. Severity levels are:
 ***************************************
 Sipi Variables Available to Lua Scripts
 ***************************************
+- ``config.hostname``: Hostname where SIPI runs on
+- ``config.port``: Portnumber where SIPI communicates (non SSL)
+- ``config.sslport``: Portnumber for SSL connections of SIPI
+- ``config.imgroot``: Root directory for IIIF-served images
+- ``config.docroot``: Root directory for WEB-Server
+- ``config.max_temp_file_age``: maximum age of temporary files
+- ``config.prefix_as_path``: ``true``if the prefix should be used as internal path image directories
+- ``config.init_script``: Path to initialization script
+- ``config.scriptdir``: Path to script directory
+- ``config.cache_dir``: Path to cache directory for iIIF served images
+- ``config.cache_size``: Maximal size of cache
+- ``config.cache_n_files``: Maximal number of files in cache
+- ``config.cache_hysteresis``: Amount fo data to be purged if cache reaches maximum size
+- ``config.keep_alive``: keep alive time
+- ``config.thumb_size``: Default thumbnail image size
+- ``config.n_threads``: Number of threads SIPI uses
+- ``config.max_post_size``: Maximal size of POST data allowed
+- ``config.tmpdir``: Temporary directory to store uploads
+- ``config.knora_path``: Path to knora REST API (only for SIPI used with Knora)
+- ``config.knora_port``: Port that the Knora API uses
+- ``config.adminuser``: Name of admin user
+- ``config.password``: Password of admin user (use with caution)!
 
 - ``server.has_openssl``: ``true`` if OpenSSL is available.
 - ``server.secure``: ``true`` if the connection was made over HTTPS.
@@ -542,7 +629,7 @@ Sipi Variables Available to Lua Scripts
 - ``server.header``: a table containing all the HTTP request headers (in lowercase).
 - ``server.cookies``: a table of the cookies that were sent with the request.
 - ``server.get``: a table of GET request parameters.
-- ``server.post``: a table of POST request parameters.
+- ``server.post``: a table of POST or PUT request parameters.
 - ``server.request``: all request parameters.
 - ``server.uploads``: an array of upload parameters, one per file. Each one is a table containing:
    - ``fieldname``: the name of the form field.
@@ -562,10 +649,10 @@ helper.filename_hash
 
     success, filepath = helper.filename_hash(fileid)
 
-if ``subdir_levels``(see configuration file) is > 0, recursive subdirectories named
+if ``subdir_levels`` (see configuration file) is > 0, recursive subdirectories named
 'A', 'B',.., 'Z' are used to split the image files across multiple directories. A simple
 hash-algorithm is being used. This function returns a filepath with the subdirectories
-prepended, e.g `gaga.jp2`` becomes ``C/W/gaga.jpg``
+prepended, e.g ``gaga.jp2`` becomes ``C/W/gaga.jpg``
 
 Example:
 
@@ -574,7 +661,7 @@ Example:
         success, newfilepath = helper.filename_hash(newfilename[imgindex]);
         if not success then
             server.sendStatus(500)
-            server.log(gaga, server.loglevel.error)
+            server.log(gaga, server.loglevel.LOG_ERR)
             return false
         end
 
@@ -590,11 +677,24 @@ There is an image object implemented which allows to manipulate and convert imag
 SipiImage.new(filename)
 =========================
 
-The simple form is:
+The simple forms are:
 
 ::
 
         img = SipiImage.new("filename")
+        img = SipiImage.new(index)
+
+The first variant opens a file given by "filename", the second variant
+opens an uploaded file directly using the integer index to the uploaded
+files.
+
+If the index of an uploaded file is passed as an argument, this method
+adds additional metadata to the ``SipiImage`` object that is constructed:
+the file's original name, its MIME type, and its SHA256 checksum. When
+the ``SipiImage`` object is then written to another file, this metadata
+will be stored in an extra header record.
+
+If a filename is passed, the method does not add this metadata.
 
 The more complex form is as follows:
 

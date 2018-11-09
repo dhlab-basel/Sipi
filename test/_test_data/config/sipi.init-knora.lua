@@ -122,5 +122,7 @@ function pre_flight(prefix, identifier, cookie)
             return 'deny'
         end
     end
+
+    return 'allow', filepath
 end
 -------------------------------------------------------------------------------

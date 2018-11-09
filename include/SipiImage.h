@@ -87,6 +87,7 @@ namespace Sipi {
         SKIP_NONE = 0x00, SKIP_ICC = 0x01, SKIP_XMP = 0x02, SKIP_IPTC = 0x04, SKIP_EXIF = 0x08, SKIP_ALL = 0xFF
     } SkipMetadata;
 
+    enum InfoError { INFO_ERROR };
 
     /*!
     * This class implements the error handling for the different image formats.
@@ -388,7 +389,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        static void getDim(std::string filepath, size_t &width, size_t &height);
+        SipiImgInfo getDim(std::string filepath);
 
         /*!
          * Get the dimension of the image object

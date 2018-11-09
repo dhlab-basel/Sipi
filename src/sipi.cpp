@@ -112,6 +112,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushstring(L, conf->getImgRoot().c_str());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "max_temp_file_age"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getMaxTempFileAge());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "prefix_as_path"); // table1 - "index_L1"
     lua_pushboolean(L, conf->getPrefixAsPath());
     lua_rawset(L, -3); // table1
@@ -227,8 +231,8 @@ option::ArgStatus SipiMultiChoice(const option::Option &option, bool msg) {
                     break;
 
                 case LOGLEVEL:
-                    if (str == "TRACE" || str == "DEBUG" || str == "INFO" || str == "WARN" || str == "ERROR" ||
-                        str == "CRITICAL" || str == "OFF") {
+                    if (str == "DEBUG" || str == "INFO" || str == "NOTICE" || str == "WARNING" || str == "ERR" ||
+                        str == "CRIT" || str == "ALERT" || str == "EMERG") {
                         return option::ARG_OK;
                     }
 
@@ -273,7 +277,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                     {SERVERPORT, 0, "p",     "serverport", option::Arg::NonEmpty, "  --serverport Value, -p Value  \tPort of the web server\n"},
                                     {NTHREADS,   0, "t",     "nthreads",   option::Arg::NonEmpty, "  --nthreads Value, -t Value  \tNumber of threads for web server\n"},
                                     {IMGROOT,    0, "i",     "imgroot",    option::Arg::NonEmpty, "  --imgroot Value, -i Value  \tRoot directory containing the images for the web server\n"},
-                                    {LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF\n"},
+                                    {LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: DEBUG,INFO,WARNING,ERR,CRIT,ALERT,EMERG\n"},
                                     {QUERY,      0, "x",     "query",      option::Arg::None,     "  --query -x \tDump all information about the given file"},
                                     {HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
                                     {UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
