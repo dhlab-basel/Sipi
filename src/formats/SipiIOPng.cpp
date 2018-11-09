@@ -243,8 +243,13 @@ namespace Sipi {
             if (strcmp(png_texts[i].key, xmp_tag) == 0) {
                 img->xmp = std::make_shared<SipiXmp>((char *) png_texts[i].text, (int) png_texts[i].text_length);
             } else if (strcmp(png_texts[i].key, exif_tag) == 0) {
-                img->exif = std::make_shared<SipiExif>((unsigned char *) png_texts[i].text,
-                                                       (unsigned int) png_texts[i].text_length);
+                try {
+                    img->exif = std::make_shared<SipiExif>((unsigned char *) png_texts[i].text,
+                                                           (unsigned int) png_texts[i].text_length);
+                }
+                catch (SipiError &err) {
+                    //TODO: better error handling – now we nothing at all
+                }
             } else if (strcmp(png_texts[i].key, iptc_tag) == 0) {
                 img->iptc = std::make_shared<SipiIptc>((unsigned char *) png_texts[i].text,
                                                        (unsigned int) png_texts[i].text_length);

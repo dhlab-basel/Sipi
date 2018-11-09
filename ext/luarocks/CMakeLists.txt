@@ -8,9 +8,9 @@ include(ExternalProject)
 ExternalProject_Add(project_luarocks
         DEPENDS lua
         INSTALL_DIR ${COMMON_LOCAL}
-        URL http://keplerproject.github.io/luarocks/releases/luarocks-2.4.1.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/luarocks-2.4.1
-        CONFIGURE_COMMAND ${COMMON_SRCS}/luarocks-2.4.1/configure
+        URL http://luarocks.github.io/luarocks/releases/luarocks-3.0.4.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/luarocks-3.0.4
+        CONFIGURE_COMMAND ${COMMON_SRCS}/luarocks-3.0.4/configure
             --prefix=${COMMON_LOCAL}
             --with-lua-bin=${COMMON_LOCAL}/bin
             --with-lua-include=${COMMON_LOCAL}/include

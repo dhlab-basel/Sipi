@@ -7,9 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(project_curl
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://curl.haxx.se/download/curl-7.60.0.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/curl-7.60.0
-        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.60.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} --with-ssl=${OPENSSL_ROOT_DIR} --disable-ldap
+        URL https://curl.haxx.se/download/curl-7.62.0.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/curl-7.62.0
+        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.62.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} --with-ssl=${OPENSSL_ROOT_DIR} --disable-ldap
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )

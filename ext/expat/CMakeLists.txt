@@ -4,7 +4,7 @@ include(ExternalProject)
 
 ExternalProject_Add(project_expat
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://github.com/libexpat/libexpat/releases/download/R_2_2_5/expat-2.2.5.tar.bz2
+        URL https://github.com/libexpat/libexpat/releases/download/R_2_2_6/expat-2.2.6.tar.bz2
         SOURCE_DIR ${COMMON_SRCS}/expat
         CONFIGURE_COMMAND ${COMMON_SRCS}/expat/configure --prefix=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make

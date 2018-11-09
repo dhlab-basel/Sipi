@@ -48,7 +48,12 @@ namespace Sipi {
         //
         // now we decode the binary exif
         //
-        byteorder = Exiv2::ExifParser::decode(exifData, exif, (uint32_t) len);
+        try {
+            byteorder = Exiv2::ExifParser::decode(exifData, exif, (uint32_t) len);
+        }
+        catch(Exiv2::BasicError<char> &exiverr) {
+            throw SipiError(__file__, __LINE__, exiverr.what());
+        }
     }
     //============================================================================
 
