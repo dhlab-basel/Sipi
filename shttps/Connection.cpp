@@ -841,48 +841,6 @@ namespace shttps {
                 }
             } else if (method_in == "DELETE") {
                 _method = DELETE;
-
-                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
-
-                if ((content_type_opts[0] == "text/plain") || (content_type_opts[0] == "application/json") ||
-                    (content_type_opts[0] == "application/ld+json") || (content_type_opts[0] == "application/xml")) {
-                    _content_type = content_type_opts[0];
-
-                    if (_chunked_transfer_in) {
-                        char *tmp;
-                        ChunkReader ckrd(ins, _server->max_post_size());
-                        content_length = ckrd.readAll(&tmp);
-
-                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
-                            throw Error(__file__, __LINE__, "malloc failed!", errno);
-                        }
-
-                        memcpy(_content, tmp, content_length);
-                        free(tmp);
-                        _content[content_length] = '\0';
-                    } else if (content_length > 0) {
-                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
-                            throw Error(__file__, __LINE__, "Content bigger than max_post_size");
-                        }
-
-                        _content = (char *) malloc(content_length + 1);
-
-                        if (_content == nullptr) {
-                            throw Error(__file__, __LINE__, "malloc failed!", errno);
-                        }
-
-                        ins->read(_content, content_length);
-
-                        if (ins->fail() || ins->eof()) {
-                            free(_content);
-                            _content = nullptr;
-                            throw INPUT_READ_FAIL;
-                        }
-                        _content[content_length] = '\0';
-                    }
-                } else {
-                    throw Error(__file__, __LINE__, "Content type not supported!");
-                }
             } else if (method_in == "TRACE") {
                 _method = TRACE;
             } else if (method_in == "CONNECT") {
