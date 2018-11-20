@@ -329,10 +329,14 @@ needs to be installed on the system.
 
 ::
 
-    docker image rm --force dhlabbasel/sipi-base:18.04 // deletes cached image and needs only to be used when newer image is available on dockerhub
-    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make" // building
-    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose" // building and running all tests
-    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html" // make html documentation
+    // deletes cached image and needs only to be used when newer image is available on dockerhub
+    docker image rm --force dhlabbasel/sipi-base:18.04
+    // building
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make"
+    // building and running all tests
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
+    // make html documentation
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html"
 
-Since we mount the current source directory into the docker continer, all build artifacts can be accessed as if the build would have been performed
+Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the build would have been performed
 without docker.
