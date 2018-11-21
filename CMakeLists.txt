@@ -58,7 +58,6 @@ else()
 endif()
 
 
-
 set(DARWIN "Darwin")
 set(LINUX "Linux")
 math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
@@ -81,6 +80,20 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     SET(LUA_ARCH "linux")
 endif()
 message(STATUS "Compiling for ${KDU_ARCH}")
+
+#
+# OpenSSL ??
+#
+include(FindOpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "Found OpenSSL at ${OPENSSL_ROOT_DIR}")
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
+else()
+    message(STATUS "No SSL support found!")
+endif()
 
 
 #SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -123,19 +136,6 @@ set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
 #
 find_package(LibMagic REQUIRED)
 
-#
-# OpenSSL ??
-#
-include(FindOpenSSL)
-if(OPENSSL_FOUND)
-    message(STATUS "Found OpenSSL at ${OPENSSL_INCLUDE_DIR}")
-    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
-    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
-else()
-    message(STATUS "No SSL support found!")
-endif()
 
 
 #find_package(JBIG REQUIRED)
@@ -175,7 +175,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
@@ -192,6 +191,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
+add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
@@ -369,7 +369,7 @@ install(TARGETS sipi
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
+#        ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
