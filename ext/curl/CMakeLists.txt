@@ -2,14 +2,20 @@ cmake_minimum_required(VERSION 2.8.10)
 project(curl_builder C CXX)
 include(ExternalProject)
 
+if (OPENSSL_ROOT_DIR)
+    SET(OSSL  "--with-ssl=${OPENSSL_ROOT_DIR}")
+else()
+    SET(OSSL "")
+endif()
+
 #
 # get libcurl
 #
 ExternalProject_Add(project_curl
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://curl.haxx.se/download/curl-7.60.0.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/curl-7.60.0
-        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.60.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} --with-ssl=${OPENSSL_ROOT_DIR} --disable-ldap
+        URL https://curl.haxx.se/download/curl-7.62.0.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/curl-7.62.0
+        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.62.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} ${OSSL} --disable-ldap
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
