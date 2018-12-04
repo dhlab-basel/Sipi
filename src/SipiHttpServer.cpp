@@ -384,8 +384,13 @@ namespace Sipi {
         json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/2/context.json"));
 
         std::string host = conn_obj.header("host");
-        std::string id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" +
-                         params[iiif_identifier]; //// ?????????????????????????????????????
+        std::string id;
+        if (conn_obj.secure()) {
+            id = std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+        }
+        else {
+            id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+        }
         json_object_set_new(root, "@id", json_string(id.c_str()));
 
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));

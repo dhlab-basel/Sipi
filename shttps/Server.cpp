@@ -463,7 +463,7 @@ namespace shttps {
     //=========================================================================
 
     Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p,
-                   const std::string &loglevel_p) : port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p),
+                   const std::string &loglevel_p) : _port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p),
                                                     _loglevel(loglevel_p) {
         _ssl_port = -1;
 
@@ -471,7 +471,7 @@ namespace shttps {
         // we use a semaphore object to control the number of threads
         //
         semname = "shttps";
-        semname += std::to_string(port);
+        semname += std::to_string(_port);
         _user_data = nullptr;
         running = false;
         _keep_alive_timeout = 20;
@@ -885,9 +885,9 @@ namespace shttps {
             setlogmask(old_ll);
         }
 
-        _sockfd = prepare_socket(port);
+        _sockfd = prepare_socket(_port);
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
-        syslog(LOG_INFO, "Server listening on port %d", port);
+        syslog(LOG_INFO, "Server listening on port %d", _port);
         setlogmask(old_ll);
 
         if (_ssl_port > 0) {
