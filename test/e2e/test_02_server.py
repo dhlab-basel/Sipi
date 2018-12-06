@@ -206,6 +206,14 @@ class TestServer:
         expected_result["@id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
         assert response_json == expected_result
 
+    def test_sqlite_api(self, manager):
+        """Test sqlite API"""
+        expected_result = {
+            "result": "Dies ist ein erster Text"
+        }
+        json_result = manager.get_json("/sqlite")
+        assert json_result == expected_result
+
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
 

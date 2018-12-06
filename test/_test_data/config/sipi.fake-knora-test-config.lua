@@ -192,5 +192,10 @@ routes = {
         method = 'GET',
         route = '/test_mimetype_func',
         script = 'test_mimetype_func.lua'
+    },
+    {
+        method = 'GET',
+        route = '/sqlite',
+        script = 'test_sqlite.lua'
     }
 }

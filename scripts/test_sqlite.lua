@@ -21,7 +21,7 @@
 require "send_response"
 
 function test_db()
-    local db = sqlite("./test.db", "RW")
+    local db = sqlite("./db/test.db", "RW")
     local qry = db << "SELECT * FROM image WHERE id = ?"
     local id = 512
     local row = qry(id);
