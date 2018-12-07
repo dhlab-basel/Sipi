@@ -167,7 +167,7 @@ namespace shttps {
 
     //
     // usage
-    //    db = sqlite.new("/path/to/db/file", "RW")
+    //    db = sqlite("/path/to/db/file", "RW")
     //    qry = sqlite.query(db, "SELECT * FROM test")
     //    -- or --
     //    qry = db << "SELECT * FROM test"
@@ -249,7 +249,6 @@ namespace shttps {
     //
     int Stmt_next(lua_State *L) {
         int top = lua_gettop(L);
-
         if (top < 1) {
             // throw an error!
             lua_pushstring(L, "Stmt_next: Incorrect number of arguments!");
@@ -263,7 +262,7 @@ namespace shttps {
         }
 
         if (top > 1) {
-            for (int i = 2; i < top; i++) {
+            for (int i = 2; i <= top; i++) {
                 int status;
                 if (lua_isinteger(L, i)) {
                     int val = lua_tointeger(L, i);

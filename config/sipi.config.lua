@@ -263,5 +263,10 @@ routes = {
         method = 'POST',
         route = '/api/upload',
         script = 'upload.lua'
+    },
+    {
+        method = 'GET',
+        route = '/sqlite',
+        script = 'test_sqlite.lua'
     }
 }
