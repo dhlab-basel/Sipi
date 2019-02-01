@@ -25,6 +25,8 @@ import os
 import os.path
 import time
 import datetime
+from conftest import SipiTestError
+
 
 # Tests basic functionality of the Sipi server.
 
@@ -124,6 +126,20 @@ class TestServer:
 
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+
+    def test_image_save_error(self, manager):
+        """return an error message if a file cannot be saved"""
+
+        request_failed = False
+        error_message = ""
+
+        try:
+            manager.post_file("/api/fail_upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        except SipiTestError as ex:
+            request_failed = True
+            error_message = ex.message
+
+        assert request_failed and "false" not in error_message
 
     def test_knora_info_validation(self, manager):
         """pass the knora.json request tests"""
