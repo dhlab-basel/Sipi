@@ -134,7 +134,7 @@ class TestServer:
         error_message = ""
 
         try:
-            response_json = manager.post_file("/api/fail_upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+            manager.post_file("/api/fail_upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
         except SipiTestError as ex:
             request_failed = True
             error_message = ex.message
