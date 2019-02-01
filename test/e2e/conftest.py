@@ -318,7 +318,6 @@ class SipiTestManager:
         """
         return os.path.join(self.data_dir, relative_path)
 
-
     def post_file(self, url_path, file_path, mime_type, params=None, headers=None):
         """
             Uploads a file to Sipi using HTTP POST with with Content-Type: multipart/form-data. Returns the parsed JSON of Sipi's response.
@@ -337,7 +336,7 @@ class SipiTestManager:
             try:
                 response = requests.post(sipi_url, files=files, data=params, headers=headers)
                 response.raise_for_status()
-            except:
+            except Exception:
                 raise SipiTestError("post request with image file to {} failed: {}".format(sipi_url, response.json()["message"]))
             return response.json()
 
@@ -350,15 +349,12 @@ class SipiTestManager:
 
         sipi_url = self.make_sipi_url(url_path)
 
-        sipi_url = self.make_sipi_url(url_path)
-
         try:
             response = requests.get(sipi_url)
             response.raise_for_status()
-        except:
+        except Exception:
             raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
         return response.json()
-
 
     def post_request(self, url_path, params, headers=None):
         """
@@ -375,7 +371,7 @@ class SipiTestManager:
         try:
             response = requests.post(sipi_url, data=params, headers=headers)
             response.raise_for_status()
-        except:
+        except Exception:
             raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
         return response.json()
 
@@ -436,8 +432,13 @@ class SipiTestManager:
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT) # redirect stderr to stdout
 
+
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""
+
+    def __init__(self, message):
+        self.message = message
+
 
 class ProcessOutputReader:
     """Spawns a thread that collects the output of a subprocess."""
@@ -462,6 +463,7 @@ class ProcessOutputReader:
 
     def get_output(self):
         return "".join(self.lines)
+
 
 def pytest_itemcollected(item):
     """Outputs test class and function docstrings, if provided, when each test is run."""
