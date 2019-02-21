@@ -11,14 +11,21 @@ include(ExternalProject)
 #else()
 #    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
 #endif()
+#
+set(CMAKE_MODULE_PATH "${COMMON_LOCAL};/usr/local;${CMAKE_MODULE_PATH}")
+
 ExternalProject_Add(project_exiv2
         DEPENDS expat
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://dl.bintray.com/dhlab-basel/thirdparty/exiv2-0.26-trunk.tar.gz
-        URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
+        #URL https://dl.bintray.com/dhlab-basel/thirdparty/exiv2-0.26-trunk.tar.gz
+        #URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
+        URL http://www.exiv2.org/builds/exiv2-0.27.0a-Source.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/exiv2-trunk
-        CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-trunk/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
-        BUILD_COMMAND make
+
+        CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DEXIV2_ENABLE_VIDEO=ON -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+
+        #CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-trunk/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
+        #BUILD_COMMAND make
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_exiv2 install_dir)
@@ -26,8 +33,12 @@ ExternalProject_Get_Property(project_exiv2 install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(exiv2 SHARED IMPORTED GLOBAL)
     set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libexiv2${CMAKE_SHARED_LIBRARY_SUFFIX})
+    add_library(xmp SHARED IMPORTED GLOBAL)
+    set_property(TARGET xmp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libxmp${CMAKE_SHARED_LIBRARY_SUFFIX})
 else()
     add_library(exiv2 STATIC IMPORTED GLOBAL)
     set_property(TARGET exiv2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libexiv2${CMAKE_STATIC_LIBRARY_SUFFIX})
+    add_library(xmp STATIC IMPORTED GLOBAL)
+    set_property(TARGET xmp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libxmp${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 add_dependencies(exiv2 project_exiv2)

@@ -49,6 +49,7 @@
 #include "shttps/Global.h"
 #include "SipiHttpServer.h"
 #include "shttps/Connection.h"
+#include "shttps/Parsing.h"
 
 #include "jansson.h"
 #include "favicon.h"
@@ -742,7 +743,7 @@ namespace Sipi {
                 bool use_subdirs = true;
                 for (auto str: serv->dirs_to_exclude()) {
                     if (str == urldecode(params[iiif_prefix])) {
-                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
+                        use_subdirs = false; // prefix is in list which is excluded from using subdirs
                     }
                 }
                 if (use_subdirs) {
@@ -760,18 +761,31 @@ namespace Sipi {
             syslog(LOG_DEBUG, "GET %s: file %s", uri.c_str(), infile.c_str());
 
             if (access(infile.c_str(), R_OK) == 0) {
-                conn_obj.setBuffer();
-                conn_obj.status(Connection::SEE_OTHER);
-                const std::string host = conn_obj.header("host");
-                std::string redirect =
-                        std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier] +
-                        "/info.json";
-                conn_obj.header("Location", redirect);
-                conn_obj.header("Content-Type", "text/plain");
-                conn_obj << "Redirect to " << redirect;
-                syslog(LOG_INFO, "GET: redirect to %s", redirect.c_str());
-                conn_obj.flush();
-                return;
+                std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+                syslog(LOG_DEBUG, "MIMETYPE= %s: file %s", actual_mimetype.c_str(), infile.c_str());
+                if ((actual_mimetype == "image/tiff") ||
+                    (actual_mimetype == "image/jpeg") ||
+                    (actual_mimetype == "image/png") ||
+                    (actual_mimetype == "image/jpx")) {
+                    conn_obj.setBuffer();
+                    conn_obj.status(Connection::SEE_OTHER);
+                    const std::string host = conn_obj.header("host");
+                    std::string redirect =
+                            std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier] +
+                            "/info.json";
+                    conn_obj.header("Location", redirect);
+                    conn_obj.header("Content-Type", "text/plain");
+                    conn_obj << "Redirect to " << redirect;
+                    syslog(LOG_INFO, "GET: redirect to %s", redirect.c_str());
+                    conn_obj.flush();
+                    return;
+                }
+                else {
+                    conn_obj.header("Content-Type", actual_mimetype);
+                    conn_obj.sendFile(infile);
+
+                    return;
+                }
             } else {
                 syslog(LOG_WARNING, "GET: %s not accessible", infile.c_str());
                 send_error(conn_obj, Connection::NOT_FOUND);

@@ -27,7 +27,7 @@
 
 #include <string>
 #include <mutex>
-#include <exiv2/xmp.hpp> //!< Import xmp from the exiv2 library!
+#include <exiv2/xmp_exiv2.hpp> //!< Import xmp from the exiv2 library!
 #include <exiv2/error.hpp>
 
 namespace Sipi {

@@ -3,6 +3,8 @@ project(curl_builder C CXX)
 include(ExternalProject)
 
 if (OPENSSL_ROOT_DIR)
+    set(DARWIN "Darwin")
+    set(LINUX "Linux")
     SET(OSSL  "--with-ssl=${OPENSSL_ROOT_DIR}")
 else()
     SET(OSSL "")
@@ -13,9 +15,9 @@ endif()
 #
 ExternalProject_Add(project_curl
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://curl.haxx.se/download/curl-7.62.0.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/curl-7.62.0
-        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.62.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} ${OSSL} --disable-ldap
+        URL https://curl.haxx.se/download/curl-7.64.0.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/curl-7.64.0
+        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.64.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} ${OSSL} --disable-ldap
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
