@@ -13,7 +13,7 @@ ExternalProject_Add(
 #        GIT_REPOSITORY https://github.com/akheron/jansson.git
         URL http://www.digip.org/jansson/releases/jansson-2.12.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/jansson
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DJANSSON_INSTALL_LIB_DIR:String=${CONFIGURE_LIBDIR}
+        CMAKE_ARGS -DCMAKE_PREFIX_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DJANSSON_INSTALL_LIB_DIR:String=${CONFIGURE_LIBDIR}
 )
 ExternalProject_Get_Property(project_jansson install_dir)
 add_library(jansson STATIC IMPORTED GLOBAL)

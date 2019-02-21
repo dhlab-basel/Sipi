@@ -12,7 +12,7 @@ ExternalProject_Add(
         SOURCE_DIR ${COMMON_SRCS}/gettext-latest
         CONFIGURE_COMMAND ${COMMON_SRCS}/gettext-latest/configure --prefix=${COMMON_LOCAL} --enable-static --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/gettext-latest/gettext-runtime/intl/.libs/libintl${CMAKE_STATIC_LIBRARY_SUFFIX} ${CONFIGURE_LIBDIR}
+        #INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/gettext-latest/gettext-runtime/intl/.libs/libintl${CMAKE_STATIC_LIBRARY_SUFFIX} ${CONFIGURE_LIBDIR}
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_gettext install_dir)
