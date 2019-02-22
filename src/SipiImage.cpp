@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+
 //#include <memory>
 #include <climits>
 
@@ -1173,27 +1174,28 @@ namespace Sipi {
             nx = nnx;
             ny = nny;
         } else { // all other angles
-            float phi = -M_PI * angle / 180.0;
+            double phi = M_PI * angle / 180.0;
             float ptx = nx / 2. - .5;
             float pty = ny / 2. - .5;
 
-            float si = sinf(phi);
-            float co = cosf(phi);
+            float si = sinf(-phi);
+            float co = cosf(-phi);
+
             size_t nnx;
             size_t nny;
 
             if ((angle > 0.) && (angle < 90.)) {
-                nnx = floor(nx * cosf(-phi) + ny * sinf(-phi) + .5);
-                nny = floor(nx * sinf(-phi) + ny * cosf(-phi) + .5);
+                nnx = floor((float) nx * cosf(phi) + (float) ny * sinf(phi) + .5);
+                nny = floor((float) nx * sinf(phi) + (float) ny * cosf(phi) + .5);
             } else if ((angle > 90.) && (angle < 180.)) {
-                nnx = floor(-nx * cosf(-phi) + ny * sinf(-phi) + .5);
-                nny = floor(nx * sinf(-phi) - ny * cosf(-phi) + .5);
+                nnx = floor(-((float) nx) * cosf(phi) + (float) ny * sinf(phi) + .5);
+                nny = floor((float) nx * sin(phi) - (float) ny * cosf(phi) + .5);
             } else if ((angle > 180.) && (angle < 270.)) {
-                nnx = floor(-nx * cosf(-phi) - ny * sinf(-phi) + .5);
-                nny = floor(-nx * sinf(-phi) - ny * cosf(-phi) + .5);
+                nnx = floor(-((float) nx) * cosf(phi) - (float) ny * sinf(phi) + .5);
+                nny = floor(-((float) nx) * sinf(phi) - (float) ny * cosf(phi) + .5);
             } else {
-                nnx = floor(nx * cosf(-phi) - ny * sinf(-phi) + .5);
-                nny = floor(-nx * sinf(-phi) + ny * cosf(-phi) + .5);
+                nnx = floor((float) nx * cosf(phi) - (float) ny * sinf(phi) + .5);
+                nny = floor(-((float) nx) * sinf(phi) + (float) ny * cosf(phi) + .5);
             }
 
             float pptx = ptx * (float) nnx / (float) nx;

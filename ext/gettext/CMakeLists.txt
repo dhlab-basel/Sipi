@@ -17,7 +17,7 @@ ExternalProject_Add(
 )
 ExternalProject_Get_Property(project_gettext install_dir)
 add_library(gettext STATIC IMPORTED GLOBAL)
-set_property(TARGET gettext PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libintl${CMAKE_STATIC_LIBRARY_SUFFIX})
+#set_property(TARGET gettext PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libintl${CMAKE_STATIC_LIBRARY_SUFFIX})
 set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
 
 add_dependencies(gettext project_gettext)

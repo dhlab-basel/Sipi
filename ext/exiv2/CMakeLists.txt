@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 2.8.10)
 project(exiv2_builder C CXX)
 include(ExternalProject)
 
+include_directories(
+        ${COMMON_LOCAL}/include
+        /usr/local/include
+        /usr/include
+)
 
 #
 # get exiv2
@@ -12,8 +17,7 @@ include(ExternalProject)
 #    set(XMPDSK_LIBFILE "libxmpsdk${CMAKE_STATIC_LIBRARY_SUFFIX}")
 #endif()
 #
-set(CMAKE_MODULE_PATH "${COMMON_LOCAL};/usr/local;${CMAKE_MODULE_PATH}")
-#add_dependencies(expat_builder gettext_builder)
+#set(CMAKE_MODULE_PATH "${COMMON_LOCAL};/usr/local;${CMAKE_MODULE_PATH}")
 ExternalProject_Add(project_exiv2
         DEPENDS expat
         DEPENDS gettext
@@ -23,7 +27,8 @@ ExternalProject_Add(project_exiv2
         URL http://www.exiv2.org/builds/exiv2-0.27.0a-Source.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/exiv2-trunk
 
-        CMAKE_ARGS -DEXIV2_BUILD_EXIV2_COMMAND=OFF -DBUILD_SHARED_LIBS=OFF -DEXIV2_ENABLE_VIDEO=ON -DCMAKE_MODULE_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        #CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DEXIV2_ENABLE_VIDEO=ON -DCMAKE_MODULE_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        CMAKE_ARGS -DBUILD_SHARED_LIBS=OFF -DEXIV2_ENABLE_NLS=OFF -DEXIV2_ENABLE_VIDEO=ON -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
 
         BUILD_IN_SOURCE 1
 )

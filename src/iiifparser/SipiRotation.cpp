@@ -44,7 +44,11 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
-    SipiRotation::SipiRotation() {}
+    SipiRotation::SipiRotation() {
+        mirror = false;
+        rotation = 0.F;
+        return;
+    }
 
     SipiRotation::SipiRotation(std::string str) {
         try {
@@ -54,8 +58,7 @@ namespace Sipi {
                 return;
             }
 
-            bool mirror = str[0] == '!';
-
+            mirror = str[0] == '!';
             if (mirror) {
                 str.erase(0, 1);
             }

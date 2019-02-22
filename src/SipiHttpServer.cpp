@@ -687,7 +687,7 @@ namespace Sipi {
         }
 
         (void) snprintf(canonical_header, canonical_header_len,
-                        "<http://%s/%s/%s/%s/%s/%s/default.%s>; rel=\"canonical\"", host.c_str(), prefix.c_str(),
+                        "<http://%s/%s/%s/%s/%s/%s/default.%s>;rel=\"canonical\"", host.c_str(), prefix.c_str(),
                         identifier.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
         std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
                                 std::string(canonical_size) + "/" + std::string(canonical_rotation) + format +
@@ -766,7 +766,8 @@ namespace Sipi {
                 if ((actual_mimetype == "image/tiff") ||
                     (actual_mimetype == "image/jpeg") ||
                     (actual_mimetype == "image/png") ||
-                    (actual_mimetype == "image/jpx")) {
+                    (actual_mimetype == "image/jpx") ||
+                    (actual_mimetype == "image/jp2")) {
                     conn_obj.setBuffer();
                     conn_obj.status(Connection::SEE_OTHER);
                     const std::string host = conn_obj.header("host");

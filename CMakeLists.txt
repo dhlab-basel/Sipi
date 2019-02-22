@@ -41,7 +41,7 @@ option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
         message(FATAL_ERROR "Requires clang 7.3 or greater.")
         set(ENV(CXX) "clang++")
@@ -54,7 +54,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(ENV(CC) "gcc")
     endif()
 else()
-    message(WARNING "You are using an unsupported compiler. Compilation has only been tested with Clang and GCC.")
+    message(WARNING "You are using an unsupported compiler (${CMAKE_CXX_COMPILER_ID}). Compilation has only been tested with Clang and GCC.")
 endif()
 
 
@@ -107,8 +107,9 @@ else()
     endif()
 endif()
 
-
-
+#
+# set path to special find_package() code
+#
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 if(MAKE_DEBUG)
@@ -298,15 +299,16 @@ link_directories(
 )
 
 include_directories(
-    ${COMMON_INCLUDE_FILES_DIR}
-    ${COMMON_INCLUDE_FILES_DIR}/metadata
-    ${COMMON_INCLUDE_FILES_DIR}/formats
-    ${COMMON_INCLUDE_FILES_DIR}/iiifparser
-    ${PROJECT_SOURCE_DIR}/shttps
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
-    /usr/local/include
+        ${COMMON_INCLUDE_FILES_DIR}
+        ${COMMON_INCLUDE_FILES_DIR}/metadata
+        ${COMMON_INCLUDE_FILES_DIR}/formats
+        ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+        ${PROJECT_SOURCE_DIR}/shttps
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/local/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+        ${COMMON_LOCAL}/include
+        /usr/local/include
 )
 
 add_executable(

@@ -11,7 +11,7 @@ ExternalProject_Add(
         project_kakadu
         INSTALL_DIR ${COMMON_LOCAL}
         DOWNLOAD_COMMAND unzip -o -d ${COMMON_SRCS} ${COMMON_VENDOR}/v7_A_7-01382N.zip
-        PATCH_COMMAND patch -d ${COMMON_SRCS}/v7_A_7-01382N -p0 < ${COMMON_PATCHES}/${KDU_MAKE}.patch
+        #PATCH_COMMAND patch -d ${COMMON_SRCS}/v7_A_7-01382N -p0 < ${COMMON_PATCHES}/${KDU_MAKE}.patch
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make --directory=${COMMON_SRCS}/v7_A_7-01382N/make/ -f ${KDU_MAKE}
         INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v7_A_7-01382N/lib/${KDU_ARCH} ${CONFIGURE_LIBDIR}
