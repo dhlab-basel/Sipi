@@ -1,3 +1,12 @@
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
+endif()
+check_cxx_compiler_flag("-fvisibility=hidden" SUPPORTS_FVISIBILITY_FLAG)
+if(SUPPORTS_FVISIBILITY_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+endif()
 
 link_directories(
         /usr/local/lib

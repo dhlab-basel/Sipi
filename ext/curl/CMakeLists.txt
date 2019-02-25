@@ -17,7 +17,13 @@ ExternalProject_Add(project_curl
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://curl.haxx.se/download/curl-7.64.0.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/curl-7.64.0
-        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.64.0/configure --prefix=${COMMON_LOCAL} --enable-shared --enable-static --libdir=${CONFIGURE_LIBDIR} ${OSSL} --disable-ldap
+        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.64.0/configure
+            --prefix=${COMMON_LOCAL}
+            --enable-shared
+            --enable-static
+            --libdir=${CONFIGURE_LIBDIR} ${OSSL}
+            --disable-ldap
+            --without-libidn2
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
