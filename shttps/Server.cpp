@@ -413,38 +413,69 @@ namespace shttps {
                 std::string htmlcode = eluacode.substr(end);
                 conn << htmlcode;
                 conn.flush();
-            } else if ((extension == "mp4") || (extension == "webm")) {
-                size_t start = 0, end = 0;
-                std::string rangestr = conn.header("range");
-                if (!rangestr.empty()) {
-                    std::cmatch cm;
-                    std::regex e("bytes=\\s*(\\d*)-(\\d*)[\\D.*]?");
-                    std::regex_match(rangestr.c_str(), cm, e);
-                    if (cm.size() == 3) {
-                        if (cm[1].str().empty()) {
-                            if (cm[2].str().empty()) {
-                                // throw error!!
-                            }
-                            else {
-                                start = s.st_size;
+            } else {
+                std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+                //
+                // first we get the filesize and time using fstat
+                //
+                struct stat fstatbuf;
 
-                            }
+                if (stat(infile.c_str(), &fstatbuf) != 0) {
+                    throw Error(__file__, __LINE__, "Cannot fstat file!");
+                }
+                size_t fsize = fstatbuf.st_size;
+                struct timespec rawtime = fstatbuf.st_mtimespec;
+                char timebuf[100];
+                std::strftime(timebuf, sizeof timebuf, "%a, %d %b %Y %H:%M:%S %Z", std::gmtime(&rawtime.tv_sec));
+
+                std::string range = conn.header("range");
+                if (range.empty()) {
+                    conn.header("Content-Type", actual_mimetype);
+                    conn.header("Cache-Control", "public, must-revalidate, max-age=0");
+                    conn.header("Pragma", "no-cache");
+                    conn.header("Accept-Ranges", "bytes");
+                    conn.header("Content-Length", std::to_string(fsize));
+                    conn.header("Last-Modified", timebuf);
+                    conn.header("Content-Transfer-Encoding: binary");
+                    conn.sendFile(infile);
+                }
+                else {
+                    //
+                    // now we parse the range
+                    //
+                    std::regex re("bytes=\\s*(\\d+)-(\\d*)[\\D.*]?");
+                    std::cmatch m;
+                    int start = 0; // lets assume beginning of file
+                    int end = fsize - 1; // lets assume whole file
+                    if (std::regex_match (range.c_str(), m, re)) {
+                        if (m.size() < 2) {
+                            throw Error(__file__, __LINE__, "Range expression invalid!");
                         }
-                        else {
-                            start = atoll(cm[1].str().c_str());
-                            if (cm[2].str().empty()) {
-                                end = s.st_size - 1;
-                            }
-                            else {
-                                end = atoll(cm[1].str().c_str());
-                            }
-
+                        start = std::stoi(m[1]);
+                        if ((m.size() > 1) && !m[2].str().empty()) {
+                            end = std::stoi(m[2]);
                         }
                     }
+                    else {
+                        throw Error(__file__, __LINE__, "Range expression invalid!");
+                    }
+
+                    conn.status(Connection::PARTIAL_CONTENT);
+                    conn.header("Content-Type", actual_mimetype);
+                    conn.header("Cache-Control", "public, must-revalidate, max-age=0");
+                    conn.header("Pragma", "no-cache");
+                    conn.header("Accept-Ranges", "bytes");
+                    conn.header("Content-Length", std::to_string(end - start + 1));
+                    conn.header("Content-Length", std::to_string(end - start + 1));
+                    std::stringstream ss;
+                    ss << "bytes " << start << "-" << end << "/" << fsize;
+                    conn.header("Content-Range", ss.str());
+                    conn.header("Content-Disposition",  std::string("inline; filename=") + infile);
+                    conn.header("Content-Transfer-Encoding: binary");
+                    conn.header("Last-Modified", timebuf);
+                    conn.sendFile(infile, 8192, start, end);
                 }
-            } else {
-                conn.header("Content-Type", mime.first + "; " + mime.second);
-                conn.sendFile(infile);
+                conn.flush();
             }
         } catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit

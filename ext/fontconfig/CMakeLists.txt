@@ -6,7 +6,7 @@ include(ExternalProject)
 # get luarocks
 #
 ExternalProject_Add(project_fontconfig
-       INSTALL_DIR ${COMMON_LOCAL}
+        INSTALL_DIR ${COMMON_LOCAL}
         URL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.1.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/fontconfig
         CONFIGURE_COMMAND ${COMMON_SRCS}/fontconfig/configure

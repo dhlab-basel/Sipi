@@ -855,12 +855,12 @@ namespace shttps {
     //=============================================================================
 
     Connection::Connection(const Connection &conn) {
-        throw Error(__file__, __LINE__, "Copy constructor now allowed!");
+        throw Error(__file__, __LINE__, "Copy constructor not allowed!");
     }
     //=============================================================================
 
     Connection &Connection::operator=(const Connection &other) {
-        throw Error(__file__, __LINE__, "Assignment operator now allowed!");
+        throw Error(__file__, __LINE__, "Assignment operator not allowed!");
     }
     //=============================================================================
 
@@ -1068,6 +1068,9 @@ namespace shttps {
                     status_string = "Unkown error";
                     break;
             }
+        }
+        else {
+            status_string = status_string_p;
         }
     }
     //=============================================================================
@@ -1408,7 +1411,7 @@ namespace shttps {
         }
 
         size_t fsize = fstatbuf.st_size;
-        size_t orig_fsize;
+        size_t orig_fsize = fsize;
 
         FILE *infile = fopen(path.c_str(), "rb");
 
@@ -1422,7 +1425,6 @@ namespace shttps {
                     fclose(infile);
                     throw Error(__file__, __LINE__, "Cannot seek to position!");
                 }
-                orig_fsize = fsize;
                 fsize -= from;
             } else {
                 fclose(infile);
@@ -1435,14 +1437,16 @@ namespace shttps {
                 fclose(infile);
                 throw Error(__file__, __LINE__, "Trying to read beyond end of file!");
             }
-            fsize -= (orig_fsize - to);
+            fsize -= (orig_fsize - to - 1);
         }
 
         if (outbuf != nullptr) {
             char buf[bufsize];
-            size_t n;
-            while ((n = fread(buf, sizeof(char), bufsize, infile)) > 0) {
+            size_t n = 0;
+            size_t nn = 0;
+            while ((nn < fsize) && ((n = fread(buf, sizeof(char), fsize - nn > bufsize ? bufsize : fsize - nn, infile)) > 0)) {
                 add_to_outbuf(buf, n);
+                nn += n;
             }
         } else {
             if (!header_sent) {
@@ -1455,8 +1459,9 @@ namespace shttps {
 
             char buf[bufsize];
             size_t n;
+            size_t nn = 0;
 
-            while ((n = fread(buf, sizeof(char), bufsize, infile)) > 0) {
+            while ((nn < fsize) && ((n = fread(buf, sizeof(char), fsize - nn > bufsize ? bufsize : fsize - nn, infile)) > 0)) {
                 // send data here...
                 if (_chunked_transfer_out) {
                     *os << std::hex << n << "\r\n";
@@ -1472,13 +1477,14 @@ namespace shttps {
 
                 os->flush();
                 if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
+                nn += n;
             }
-
             if (!feof(infile)) {
                 fclose(infile);
                 return;
                 // send Error here
             }
+            _finished = true; // no more data can be sent!
         }
 
         fclose(infile);

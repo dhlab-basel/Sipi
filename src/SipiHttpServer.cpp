@@ -37,8 +37,10 @@
 #include <vector>
 #include <cmath>
 #include <utility>
-#include <SipiFilenameHash.h>
+#include <regex>
+#include <sys/stat.h>
 
+#include <SipiFilenameHash.h>
 
 #include "SipiImage.h"
 #include "SipiError.h"
@@ -782,9 +784,67 @@ namespace Sipi {
                     return;
                 }
                 else {
-                    conn_obj.header("Content-Type", actual_mimetype);
-                    conn_obj.sendFile(infile);
+                    //
+                    // first we get the filesize and time using fstat
+                    //
+                    struct stat fstatbuf;
 
+                    if (stat(infile.c_str(), &fstatbuf) != 0) {
+                        throw Error(__file__, __LINE__, "Cannot fstat file!");
+                    }
+                    size_t fsize = fstatbuf.st_size;
+                    struct timespec rawtime = fstatbuf.st_mtimespec;
+                    char timebuf[100];
+                    std::strftime(timebuf, sizeof timebuf, "%a, %d %b %Y %H:%M:%S %Z", std::gmtime(&rawtime.tv_sec));
+
+                    std::string range = conn_obj.header("range");
+                    if (range.empty()) {
+                        conn_obj.header("Content-Type", actual_mimetype);
+                        conn_obj.header("Cache-Control", "public, must-revalidate, max-age=0");
+                        conn_obj.header("Pragma", "no-cache");
+                        conn_obj.header("Accept-Ranges", "bytes");
+                        conn_obj.header("Content-Length", std::to_string(fsize));
+                        conn_obj.header("Last-Modified", timebuf);
+                        conn_obj.header("Content-Transfer-Encoding: binary");
+                        conn_obj.sendFile(infile);
+                    }
+                    else {
+                        //
+                        // now we parse the range
+                        //
+                        std::regex re("bytes=\\s*(\\d+)-(\\d*)[\\D.*]?");
+                        std::cmatch m;
+                        int start = 0; // lets assume beginning of file
+                        int end = fsize - 1; // lets assume whole file
+                        if (std::regex_match (range.c_str(), m, re)) {
+                            if (m.size() < 2) {
+                                throw Error(__file__, __LINE__, "Range expression invalid!");
+                            }
+                            start = std::stoi(m[1]);
+                            if ((m.size() > 1) && !m[2].str().empty()) {
+                                end = std::stoi(m[2]);
+                            }
+                        }
+                        else {
+                            throw Error(__file__, __LINE__, "Range expression invalid!");
+                        }
+
+                        conn_obj.status(Connection::PARTIAL_CONTENT);
+                        conn_obj.header("Content-Type", actual_mimetype);
+                        conn_obj.header("Cache-Control", "public, must-revalidate, max-age=0");
+                        conn_obj.header("Pragma", "no-cache");
+                        conn_obj.header("Accept-Ranges", "bytes");
+                        conn_obj.header("Content-Length", std::to_string(end - start + 1));
+                        conn_obj.header("Content-Length", std::to_string(end - start + 1));
+                        std::stringstream ss;
+                        ss << "bytes " << start << "-" << end << "/" << fsize;
+                        conn_obj.header("Content-Range", ss.str());
+                        conn_obj.header("Content-Disposition",  std::string("inline; filename=") + urldecode(params[iiif_identifier]));
+                        conn_obj.header("Content-Transfer-Encoding: binary");
+                        conn_obj.header("Last-Modified", timebuf);
+                        conn_obj.sendFile(infile, 8192, start, end);
+                    }
+                    conn_obj.flush();
                     return;
                 }
             } else {
@@ -1491,7 +1551,7 @@ namespace Sipi {
     //=========================================================================
 
     static void exit_handler(Connection &conn_obj, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
-        std::cerr << "Exit handler called" << std::endl;
+        syslog(LOG_INFO, "Exit handler called. Stopping SIPI");
         conn_obj.status(Connection::OK);
         conn_obj.header("Content-Type", "text/plain");
         conn_obj << "Stopping Sipi\n";

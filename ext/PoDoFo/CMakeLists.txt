@@ -7,6 +7,9 @@ include(ExternalProject)
 #
 ExternalProject_Add(
         project_podofo
+        DEPENDS freetype
+        DEPENDS fontconfig
+        DEPENDS bzip2
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://sourceforge.net/projects/podofo/files/latest/download
         DOWNLOAD_NAME podofo-latest.tar.gz
