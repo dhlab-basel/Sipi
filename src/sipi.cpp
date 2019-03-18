@@ -342,6 +342,15 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
     conn.setChunkedTransfer();
     conn.header("Content-Type", "application/pdf; charset=utf-8");
 
+    unsigned char img[3*256*256];
+    for (int y = 0; y < 256; y++) {
+        for (int x = 0; x < 256; x++) {
+            img[3*(y*256 + x)] = x;
+            img[3*(y*256 + x) + 1] = y;
+            img[3*(y*256 + x) + 2] = (x + y)/2;
+        }
+    }
+
     PoDoFo::PdfRefCountedBuffer *pdf_buffer = new PoDoFo::PdfRefCountedBuffer(32000);
     PoDoFo::PdfOutputDevice *pdfdev = new PoDoFo::PdfOutputDevice(pdf_buffer);
     PoDoFo::PdfStreamedDocument document(pdfdev);
@@ -362,16 +371,20 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
         return;
     }
     pFont->SetFontSize( 18.0 );
-    std::cerr << "===> " << __LINE__ << std::endl;
     painter.SetFont( pFont );
-    std::cerr << "===> " << __LINE__ << std::endl;
     try {
         painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 56.69, "Hello World!");
     }
     catch (PoDoFo::PdfError &err) {
         std::cerr << err.what();
     }
-    std::cerr << "===> " << __LINE__ << std::endl;
+
+    PoDoFo::PdfImage image( &document );
+    PoDoFo::PdfMemoryInputStream inimgstream((const char *) img, (PoDoFo::pdf_long) 3*256*256);
+    image.SetImageData	(256, 256, 8, &inimgstream);
+
+    painter.DrawImage( 56.69, 100.0, &image );
+
     painter.FinishPage();
     document.GetInfo()->SetCreator ( PoDoFo::PdfString("examplahelloworld - A SIPI-PoDoFo test application") );
     document.GetInfo()->SetAuthor  ( PoDoFo::PdfString("Lukas Rosenthaler") );
@@ -382,26 +395,6 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
     conn.sendAndFlush(pdf_buffer->GetBuffer(), pdf_buffer->GetSize());
     delete pdfdev;
     delete pdf_buffer;
-
-    /*
-    std::vector <std::string> headers = conn.header();
-    for (unsigned i = 0; i < headers.size(); i++) {
-        std::cerr << headers[i] << " : " << conn.header(headers[i]) << std::endl;
-    }
-
-    if (!conn.getParams("gaga").empty()) {
-        std::cerr << "====> gaga = " << conn.getParams("gaga") << std::endl;
-    }
-
-    conn.header("Content-Type", "text/html; charset=utf-8");
-    conn << "<html><head>";
-    conn << "<title>SIPI TEST (chunked transfer)</title>";
-    conn << "</head>" << shttps::Connection::flush_data;
-
-    conn << "<body><h1>SIPI TEST (chunked transfer)</h1>";
-    conn << "<p>Dies ist ein kleiner Text</p>";
-    conn << "</body></html>" << shttps::Connection::flush_data;
-    */
     return;
 }
 

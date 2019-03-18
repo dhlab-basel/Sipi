@@ -1101,7 +1101,6 @@ namespace Sipi {
         //
         // get cache info
         //
-
         std::shared_ptr<SipiCache> cache = serv->cache();
         size_t img_w = 0, img_h = 0;
 
@@ -1163,7 +1162,6 @@ namespace Sipi {
         //.....................................................................
         // here we start building the canonical URL
         //
-
         std::pair<std::string, std::string> tmppair;
 
         try {
@@ -1234,10 +1232,11 @@ namespace Sipi {
             return;
         }
 
+        /*
         if (quality_format.format() == SipiQualityFormat::PDF) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported");
         }
-
+        */
 
         syslog(LOG_DEBUG, "Checking for cache...");
 
@@ -1269,6 +1268,11 @@ namespace Sipi {
 
                     case SipiQualityFormat::JP2: {
                         conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
+                        break;
+                    }
+
+                    case SipiQualityFormat::PDF: {
+                        conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
                         break;
                     }
 
@@ -1499,6 +1503,45 @@ namespace Sipi {
                     }
 
                     syslog(LOG_DEBUG, "After writing PNG...");
+
+                    if (cache != nullptr) {
+                        conn_obj.closeCacheFile();
+                        syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
+                        cache->add(infile, canonical, cachefile, img_w, img_h);
+                    }
+                    break;
+                }
+
+                case SipiQualityFormat::PDF: {
+                    conn_obj.status(Connection::OK);
+                    conn_obj.header("Link", canonical_header);
+                    conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
+                    conn_obj.setChunkedTransfer();
+
+                    if (cache != nullptr) {
+                        conn_obj.openCacheFile(cachefile);
+                    }
+
+                    if (cache != nullptr) {
+                        conn_obj.openCacheFile(cachefile);
+                    }
+
+                    syslog(LOG_DEBUG, "Before writing PDF...");
+
+                    try {
+                        img.write("pdf", "HTTP");
+                    } catch (SipiImageError &err) {
+                        syslog(LOG_ERR, "%s", err.to_string().c_str());
+
+                        if (cache != nullptr) {
+                            conn_obj.closeCacheFile();
+                            unlink(cachefile.c_str());
+                        }
+
+                        break;
+                    }
+
+                    syslog(LOG_DEBUG, "After writing PDF...");
 
                     if (cache != nullptr) {
                         conn_obj.closeCacheFile();

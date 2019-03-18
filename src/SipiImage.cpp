@@ -39,6 +39,7 @@
 //#include "formats/SipiIOOpenJ2k.h"
 #include "formats/SipiIOJpeg.h"
 #include "formats/SipiIOPng.h"
+#include "formats/SipiIOPdf.h"
 #include "shttps/Parsing.h"
 
 static const char __file__[] = __FILE__;
@@ -50,7 +51,8 @@ namespace Sipi {
                                                                                {"jpx", std::make_shared<SipiIOJ2k>()},
             //{"jpx", std::make_shared<SipiIOOpenJ2k>()},
                                                                                {"jpg", std::make_shared<SipiIOJpeg>()},
-                                                                               {"png", std::make_shared<SipiIOPng>()}};
+                                                                               {"png", std::make_shared<SipiIOPng>()},
+                                                                               {"pdf", std::make_shared<SipiIOPdf>()}};
 
     std::unordered_map<std::string, std::string> SipiImage::mimetypes = {{"jpx",  "image/jp2"},
                                                                          {"jp2",  "image/jp2"},
@@ -58,7 +60,8 @@ namespace Sipi {
                                                                          {"jpeg", "image/jpeg"},
                                                                          {"tiff", "image/tiff"},
                                                                          {"tif",  "image/tiff"},
-                                                                         {"png",  "image/png"}};
+                                                                         {"png",  "image/png"},
+                                                                         {"pdf",  "application/pdf"}};
 
     SipiImage::SipiImage() {
         nx = 0;

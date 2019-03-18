@@ -216,6 +216,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
+add_subdirectory(${EXT_PROJECTS_DIR}/poppler)
+
 
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
@@ -349,6 +351,7 @@ add_executable(
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
         src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
         src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
+        src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
@@ -368,9 +371,8 @@ add_executable(
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h)
 add_dependencies(sipi icc_profiles)
-
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
@@ -399,6 +401,7 @@ target_link_libraries(sipi ${LIBS}
         freetype
         bzip2
         unistring
+        poppler
         ${CMAKE_DL_LIBS}
         z
         m)
