@@ -50,6 +50,8 @@
 #include "optionparser.h"
 
 #include "jansson.h"
+#include "podofo/podofo.h"
+
 #include "shttps/Parsing.h"
 #include "SipiConf.h"
 
@@ -335,6 +337,74 @@ private:
     }
 };
 
+void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
+    conn.setBuffer();
+    conn.setChunkedTransfer();
+    conn.header("Content-Type", "application/pdf; charset=utf-8");
+
+    PoDoFo::PdfRefCountedBuffer *pdf_buffer = new PoDoFo::PdfRefCountedBuffer(32000);
+    PoDoFo::PdfOutputDevice *pdfdev = new PoDoFo::PdfOutputDevice(pdf_buffer);
+    PoDoFo::PdfStreamedDocument document(pdfdev);
+    PoDoFo::PdfPage* pPage;
+    PoDoFo::PdfPainter painter;
+    PoDoFo::PdfFont* pFont;
+
+    pPage = document.CreatePage( PoDoFo::PdfPage::CreateStandardPageSize( PoDoFo::ePdfPageSize_A4 ) );
+    if (!pPage) {
+        std::cerr << "==>> ERROR: " << __LINE__ << std::endl;
+        return;
+    }
+    painter.SetPage( pPage );
+
+    pFont = document.CreateFont( "arial" );
+    if (!pFont) {
+        std::cerr << "==>> ERROR: " << __LINE__ << std::endl;
+        return;
+    }
+    pFont->SetFontSize( 18.0 );
+    std::cerr << "===> " << __LINE__ << std::endl;
+    painter.SetFont( pFont );
+    std::cerr << "===> " << __LINE__ << std::endl;
+    try {
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 56.69, "Hello World!");
+    }
+    catch (PoDoFo::PdfError &err) {
+        std::cerr << err.what();
+    }
+    std::cerr << "===> " << __LINE__ << std::endl;
+    painter.FinishPage();
+    document.GetInfo()->SetCreator ( PoDoFo::PdfString("examplahelloworld - A SIPI-PoDoFo test application") );
+    document.GetInfo()->SetAuthor  ( PoDoFo::PdfString("Lukas Rosenthaler") );
+    document.GetInfo()->SetTitle   ( PoDoFo::PdfString("Hello World") );
+    document.GetInfo()->SetSubject ( PoDoFo::PdfString("Testing the PoDoFo PDF Library") );
+    document.GetInfo()->SetKeywords( PoDoFo::PdfString("Test;PDF;Hello World;") );
+    document.Close();
+    conn.sendAndFlush(pdf_buffer->GetBuffer(), pdf_buffer->GetSize());
+    delete pdfdev;
+    delete pdf_buffer;
+
+    /*
+    std::vector <std::string> headers = conn.header();
+    for (unsigned i = 0; i < headers.size(); i++) {
+        std::cerr << headers[i] << " : " << conn.header(headers[i]) << std::endl;
+    }
+
+    if (!conn.getParams("gaga").empty()) {
+        std::cerr << "====> gaga = " << conn.getParams("gaga") << std::endl;
+    }
+
+    conn.header("Content-Type", "text/html; charset=utf-8");
+    conn << "<html><head>";
+    conn << "<title>SIPI TEST (chunked transfer)</title>";
+    conn << "</head>" << shttps::Connection::flush_data;
+
+    conn << "<body><h1>SIPI TEST (chunked transfer)</h1>";
+    conn << "<p>Dies ist ein kleiner Text</p>";
+    conn << "</body></html>" << shttps::Connection::flush_data;
+    */
+    return;
+}
+
 int main(int argc, char *argv[]) {
     //
     // first we initialize the libraries that sipi uses
@@ -554,6 +624,7 @@ int main(int argc, char *argv[]) {
                 filehandler_info.second = docroot;
                 server.addRoute(shttps::Connection::GET, wwwroute, shttps::FileHandler, &filehandler_info);
                 server.addRoute(shttps::Connection::POST, wwwroute, shttps::FileHandler, &filehandler_info);
+                server.addRoute(shttps::Connection::GET, "/test", TestHandler, nullptr);
             }
 
             server.run();

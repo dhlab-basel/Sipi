@@ -201,10 +201,11 @@ add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
-#add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
-#add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
+add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
+add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
 add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
-add_subdirectory(${EXT_PROJECTS_DIR}/pdfwriter)
+add_subdirectory(${EXT_PROJECTS_DIR}/unistring)
+add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 add_subdirectory(${EXT_PROJECTS_DIR}/gettext)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
@@ -373,7 +374,34 @@ add_dependencies(sipi icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 xmp expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl intl pdfwriter ${CMAKE_DL_LIBS} z m)
+target_link_libraries(sipi ${LIBS}
+        lcms2
+        exiv2
+        xmp
+        expat
+        jpeg
+        tiff
+        jbigkit
+        png
+        kdu_aux
+        kdu
+        xz
+        magic
+        lua
+        jansson
+        sqlite3
+        dl
+        pthread
+        curl
+        intl
+        podofo
+        fontconfig
+        freetype
+        bzip2
+        unistring
+        ${CMAKE_DL_LIBS}
+        z
+        m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 else()
