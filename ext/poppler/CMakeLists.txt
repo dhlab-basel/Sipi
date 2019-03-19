@@ -13,7 +13,9 @@ ExternalProject_Add(project_poppler
         DEPENDS jpeg
         DEPENDS curl
         DEPENDS z
+        DEPENDS fontconfig
         INSTALL_DIR ${COMMON_LOCAL}
+        COMMAND cd ${COMMON_LOCAL}; git clone git://git.freedesktop.org/git/poppler/test
         #URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
         URL https://poppler.freedesktop.org/poppler-0.74.0.tar.xz
         SOURCE_DIR ${COMMON_SRCS}/poppler

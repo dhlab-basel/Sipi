@@ -46,6 +46,7 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOJ2k.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOJ2k.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOJpeg.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOJpeg.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOPng.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOPng.h
+        ${PROJECT_SOURCE_DIR}/src/formats/SipiIOPdf.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOPdf.h
         ${PROJECT_SOURCE_DIR}/src/SipiHttpServer.cpp ${PROJECT_SOURCE_DIR}/include/SipiHttpServer.h
         ${PROJECT_SOURCE_DIR}/src/SipiCache.cpp ${PROJECT_SOURCE_DIR}/include/SipiCache.h
         ${PROJECT_SOURCE_DIR}/src/SipiLua.cpp ${PROJECT_SOURCE_DIR}/include/SipiLua.h
@@ -74,7 +75,35 @@ target_link_libraries(
         libgtest)
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipiimage ${LIBS} lcms2 xmp exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl intl ${CMAKE_DL_LIBS} z m)
+target_link_libraries(sipiimage ${LIBS}
+        lcms2
+        xmp
+        exiv2
+        expat
+        jpeg
+        tiff
+        jbigkit
+        png
+        kdu_aux
+        kdu
+        xz
+        magic
+        lua
+        jansson
+        sqlite3
+        dl
+        pthread
+        curl
+        intl
+        podofo
+        fontconfig
+        freetype
+        bzip2
+        unistring
+        poppler
+        ${CMAKE_DL_LIBS}
+        z
+        m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     target_link_libraries(sipiimage iconv)
 else()

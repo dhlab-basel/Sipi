@@ -27,7 +27,6 @@
 
 #include <string>
 
-
 #include "SipiImage.h"
 #include "SipiIO.h"
 
@@ -70,7 +69,7 @@ namespace Sipi {
          * \param *img Pointer to SipiImage instance
          * \param filepath Name of the image file to be written.
          */
-        void write(SipiImage *img, std::string filepath, int quality = 80);
+        void write(SipiImage *img, std::string filepath, int quality = -1);
 
     };
 
