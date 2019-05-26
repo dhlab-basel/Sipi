@@ -371,7 +371,7 @@ add_executable(
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
 add_dependencies(sipi icc_profiles)
 
 
@@ -379,7 +379,7 @@ add_dependencies(sipi icc_profiles)
 target_link_libraries(sipi ${LIBS}
         lcms2
         exiv2
-        xmp
+        exiv2-xmp
         expat
         jpeg
         tiff
@@ -402,6 +402,7 @@ target_link_libraries(sipi ${LIBS}
         bzip2
         unistring
         poppler
+        poppler-cpp
         ${CMAKE_DL_LIBS}
         z
         m)

@@ -45,6 +45,7 @@
 #include "SipiImage.h"
 #include "SipiError.h"
 #include "iiifparser/SipiQualityFormat.h"
+#include "iiifparser/SipiIdentifier.h"
 #include "PhpSession.h"
 // #include "Salsah.h"
 
@@ -189,9 +190,10 @@ namespace Sipi {
      * \param conn_obj the server connection.
      * \param luaserver the Lua server that will be used to call the function.
      * \param params the HTTP request parameters.
+     * \return Pair of permission string and filepath
      */
     static std::pair<std::string, std::string>
-    call_pre_flight(Connection &conn_obj, shttps::LuaServer &luaserver, std::vector<std::string> &params) {
+    call_pre_flight(Connection &conn_obj, shttps::LuaServer &luaserver, const std::string &prefix, const std::string &identifier) {
         // The permission and optional file path that the pre_fight function returns.
         std::string permission;
         std::string infile;
@@ -202,13 +204,13 @@ namespace Sipi {
         // The first parameter is the IIIF prefix.
         LuaValstruct iiif_prefix_param;
         iiif_prefix_param.type = LuaValstruct::STRING_TYPE;
-        iiif_prefix_param.value.s = urldecode(params[iiif_prefix]);
+        iiif_prefix_param.value.s = prefix;
         lvals.push_back(iiif_prefix_param);
 
         // The second parameter is the IIIF identifier.
         LuaValstruct iiif_identifier_param;
         iiif_identifier_param.type = LuaValstruct::STRING_TYPE;
-        iiif_identifier_param.value.s = urldecode(params[iiif_identifier]);
+        iiif_identifier_param.value.s = identifier;
         lvals.push_back(iiif_identifier_param);
 
         // The third parameter is the HTTP cookie.
@@ -268,7 +270,7 @@ namespace Sipi {
 
     enum AccessError {PRE_FLIGHT_DENY,  FILE_ACCESS_DENY};
 
-    static std::string check_file_access(
+    static std::pair<std::string,int> check_file_access(
             Connection &conn_obj,
             SipiHttpServer *serv,
             shttps::LuaServer &luaserver,
@@ -276,10 +278,12 @@ namespace Sipi {
             bool prefix_as_path) {
         std::string infile;
 
+        SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
+        int pagenum = sid.getPage();
         if (luaserver.luaFunctionExists(pre_flight_func_name)) {
             std::pair<std::string, std::string> pre_flight_return_values;
 
-            pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params); // may throw SipiError
+            pre_flight_return_values = call_pre_flight(conn_obj, luaserver, urldecode(params[iiif_prefix]), sid.getIdentifier()); // may throw SipiError
 
             std::string permission = pre_flight_return_values.first;
             infile = pre_flight_return_values.second;
@@ -311,7 +315,7 @@ namespace Sipi {
                 throw PRE_FLIGHT_DENY;
             }
         } else {
-            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
+            SipiFilenameHash identifier = SipiFilenameHash(sid.getIdentifier());
             if (prefix_as_path) {
                 bool use_subdirs = true;
                 for (auto str: serv->dirs_to_exclude()) {
@@ -325,7 +329,7 @@ namespace Sipi {
                 }
                 else {
                     infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                             urldecode(params[iiif_identifier]);
+                            sid.getIdentifier();
                 }
             } else {
                 infile = serv->imgroot() + "/" + identifier.filepath();
@@ -338,7 +342,8 @@ namespace Sipi {
             throw FILE_ACCESS_DENY;
         }
 
-        return infile;
+        std::pair<std::string,int> result(infile, pagenum);
+        return result;
     }
     //=========================================================================
 
@@ -353,9 +358,9 @@ namespace Sipi {
         //
 
         //std::string permission;
-        std::string infile;
+        std::pair<std::string,int> access;
         try {
-            infile = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
+            access = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
         }
         catch(AccessError x) {
             switch (x) {
@@ -373,7 +378,8 @@ namespace Sipi {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
             return;
         }
-
+        std::string infile = access.first;
+        int pagenum = access.second;
 
         if (!contenttype.empty() && (contenttype == "application/ld+json")) {
             conn_obj.header("Content-Type", "application/ld+json");
@@ -399,18 +405,18 @@ namespace Sipi {
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
 
         size_t width, height;
+        int numpages = 0;
 
         //
         // get cache info
         //
-
         std::shared_ptr<SipiCache> cache = serv->cache();
 
-        if ((cache == nullptr) || !cache->getSize(infile, width, height)) {
+        if ((cache == nullptr) || !cache->getSize(infile, width, height, pagenum)) {
             Sipi::SipiImage tmpimg;
             Sipi::SipiImgInfo info;
             try {
-                info = tmpimg.getDim(infile);
+                info = tmpimg.getDim(infile, pagenum);
             }
             catch (SipiImageError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
@@ -422,10 +428,15 @@ namespace Sipi {
             }
             width = info.width;
             height = info.height;
+            numpages = info.numpages;
         }
 
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
+        if (numpages > 0) {
+            json_object_set_new(root, "numpages", json_integer(numpages));
+        }
+
         json_t *sizes = json_array();
 
         for (int i = 1; i < 5; i++) {
@@ -494,11 +505,9 @@ namespace Sipi {
         //
         // here we start the lua script which checks for permissions
         //
-
-        //std::string permission;
-        std::string infile;
+        std::pair<std::string,int> access;
         try {
-            infile = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
+            access = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
         }
         catch(AccessError x) {
             switch (x) {
@@ -516,13 +525,13 @@ namespace Sipi {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
             return;
         }
-
+        std::string infile = access.first;
+        int pagenum = access.second;
 
         conn_obj.header("Content-Type", "application/json");
 
         json_t *root = json_object();
         int width, height;
-
         //
         // get cache info
         //
@@ -531,7 +540,7 @@ namespace Sipi {
         Sipi::SipiImage tmpimg;
         Sipi::SipiImgInfo info;
         try {
-            info = tmpimg.getDim(infile);
+            info = tmpimg.getDim(infile, pagenum);
         }
         catch (SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
@@ -546,6 +555,9 @@ namespace Sipi {
 
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
+        if (info.numpages > 0) {
+            json_object_set_new(root, "numpages", json_integer(info.numpages));
+        }
         if (info.success == SipiImgInfo::ALL) {
             json_object_set_new(root, "originalMimeType", json_string(info.mimetype.c_str()));
             json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
@@ -566,7 +578,7 @@ namespace Sipi {
     SipiHttpServer::get_canonical_url(size_t tmp_w, size_t tmp_h, const std::string &host, const std::string &prefix,
                                       const std::string &identifier, std::shared_ptr<SipiRegion> region,
                                       std::shared_ptr<SipiSize> size, SipiRotation &rotation,
-                                      SipiQualityFormat &quality_format) {
+                                      SipiQualityFormat &quality_format, int pagenum) {
         static const int canonical_len = 127;
 
         char canonical_region[canonical_len + 1];
@@ -688,10 +700,12 @@ namespace Sipi {
             format = "/default.";
         }
 
+        std::string fullid = identifier;
+        if (pagenum > 0) fullid += "@" + std::to_string(pagenum);
         (void) snprintf(canonical_header, canonical_header_len,
                         "<http://%s/%s/%s/%s/%s/%s/default.%s>;rel=\"canonical\"", host.c_str(), prefix.c_str(),
-                        identifier.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
-        std::string canonical = host + "/" + prefix + "/" + identifier + "/" + std::string(canonical_region) + "/" +
+                        fullid.c_str(), canonical_region, canonical_size, canonical_rotation, ext);
+        std::string canonical = host + "/" + prefix + "/" + fullid + "/" + std::string(canonical_region) + "/" +
                                 std::string(canonical_size) + "/" + std::string(canonical_rotation) + format +
                                 std::string(ext);
 
@@ -711,6 +725,12 @@ namespace Sipi {
         size_t pos = 0;
         size_t old_pos = 0;
 
+        //
+        // IIIF URi schema:
+        // {scheme}://{server}{/prefix}/{identifier}/{region}/{size}/{rotation}/{quality}.{format}
+        //
+        // The slashes "/" separate the different parts...
+        //
         while ((pos = uri.find('/', pos)) != std::string::npos) {
             pos++;
 
@@ -735,7 +755,9 @@ namespace Sipi {
         params.push_back(uri.substr(old_pos, std::string::npos));
 
         //
-        // if we just get the base URL, we redirect to the image info document
+        // if we just get the base URL, we redirect to the image info document and the file is
+        // a supported image file format. Otherwise we just serve the file as blob.
+        // Note: PDF's are in this context blobs and we serve the whole PDF!
         //
         if (params.size() == 3) {
             std::string infile;
@@ -769,7 +791,7 @@ namespace Sipi {
                     (actual_mimetype == "image/jpeg") ||
                     (actual_mimetype == "image/png") ||
                     (actual_mimetype == "image/jpx") ||
-                    (actual_mimetype == "image/jp2")) {
+                    (actual_mimetype == "image/jp2")) { // no PDF here!! They are servced as blob
                     conn_obj.setBuffer();
                     conn_obj.status(Connection::SEE_OTHER);
                     const std::string host = conn_obj.header("host");
@@ -890,9 +912,12 @@ namespace Sipi {
         }
 
         //
+        // getting the identifier (which in case of a PDF or multipage TIFF my contain a page id (identifier@pagenum)
+        SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
+
+        //
         // getting region parameters
         //
-
         auto region = std::make_shared<SipiRegion>();
 
         try {
@@ -978,7 +1003,6 @@ namespace Sipi {
         //
         // here we start the lua script which checks for permissions
         //
-
         std::string infile;  // path to the input file on the server
         std::string permission; // the permission string
         std::string watermark; // path to watermark file, or empty, if no watermark required
@@ -988,7 +1012,7 @@ namespace Sipi {
             std::pair<std::string, std::string> pre_flight_return_values;
 
             try {
-                pre_flight_return_values = call_pre_flight(conn_obj, luaserver, params);
+                pre_flight_return_values = call_pre_flight(conn_obj, luaserver, urldecode(params[iiif_prefix]), sid.getIdentifier());
             } catch (SipiError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
@@ -1047,7 +1071,7 @@ namespace Sipi {
                 }
             }
         } else {
-            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
+            SipiFilenameHash identifier = SipiFilenameHash(sid.getIdentifier());
             if (prefix_as_path) {
                 bool use_subdirs = true;
                 for (auto str: serv->dirs_to_exclude()) {
@@ -1068,26 +1092,19 @@ namespace Sipi {
             }
         }
 
-        size_t extpos = infile.find_last_of('.');
-        std::string extension;
-        SipiQualityFormat::FormatType in_format;
+        //
+        // determine the extension of the file in the SIPI repo
+        //
+        SipiQualityFormat::FormatType in_format = SipiQualityFormat::UNSUPPORTED;
 
-        if (extpos != std::string::npos) {
-            extension = infile.substr(extpos + 1);
-        }
+        std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+        syslog(LOG_DEBUG, "MIMETYPE= %s: file %s", actual_mimetype.c_str(), infile.c_str());
 
-        if ((extension == "tif") || (extension == "TIF") || (extension == "tiff") || (extension == "TIFF")) {
-            in_format = SipiQualityFormat::TIF;
-        } else if ((extension == "jpg") || (extension == "JPG")) {
-            in_format = SipiQualityFormat::JPG;
-        } else if ((extension == "png") || (extension == "PNG")) {
-            in_format = SipiQualityFormat::PNG;
-        } else if ((extension == "j2k") || (extension == "J2K") || (extension == "jp2") || (extension == "JP2") ||
-                   (extension == "jpx") || (extension == "JPX")) {
-            in_format = SipiQualityFormat::JP2;
-        } else if ((extension == "pdf") || (extension == "PDF")) {
-            in_format = SipiQualityFormat::PDF;
-        }
+        if (actual_mimetype == "image/tiff") in_format = SipiQualityFormat::TIF;
+        if (actual_mimetype == "image/jpeg") in_format = SipiQualityFormat::JPG;
+        if (actual_mimetype == "image/png") in_format = SipiQualityFormat::PNG;
+        if ((actual_mimetype == "image/jpx") || (actual_mimetype == "image/jp2")) in_format = SipiQualityFormat::JP2;
+        if (actual_mimetype == "application/pdf") in_format = SipiQualityFormat::PDF;
 
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
             syslog(LOG_ERR, "File %s not found", infile.c_str());
@@ -1103,8 +1120,10 @@ namespace Sipi {
         //
         std::shared_ptr<SipiCache> cache = serv->cache();
         size_t img_w = 0, img_h = 0;
+        int numpages = 0;
+        int pagenum = sid.getPage();
 
-        if (in_format == SipiQualityFormat::PDF) {
+        if ((in_format == SipiQualityFormat::PDF) && (pagenum < 1)) {
             if (size->getType() != SipiSize::FULL) {
                 send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
                 return;
@@ -1131,11 +1150,11 @@ namespace Sipi {
             //
             // get image dimensions, needed for get_canonical...
             //
-            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h)) {
+            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h, numpages)) {
                 Sipi::SipiImage tmpimg;
                 Sipi::SipiImgInfo info;
                 try {
-                    info = tmpimg.getDim(infile);
+                    info = tmpimg.getDim(infile, pagenum);
                 } catch (SipiImageError &err) {
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
                     return;
@@ -1146,6 +1165,7 @@ namespace Sipi {
                 }
                 img_w = info.width;
                 img_h = info.height;
+                numpages = info.numpages;
             }
 
             size_t tmp_r_w, tmp_r_h;
@@ -1166,7 +1186,7 @@ namespace Sipi {
 
         try {
             tmppair = serv->get_canonical_url(img_w, img_h, conn_obj.host(), params[iiif_prefix],
-                                              params[iiif_identifier], region, size, rotation, quality_format);
+                                              sid.getIdentifier(), region, size, rotation, quality_format, sid.getPage());
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
@@ -1180,7 +1200,7 @@ namespace Sipi {
         //
         if ((region->getType() == SipiRegion::FULL) && (size->getType() == SipiSize::FULL) && (angle == 0.0) &&
             (!mirror) && watermark.empty() && (quality_format.format() == in_format) &&
-            (quality_format.quality() == SipiQualityFormat::DEFAULT)) {
+            (quality_format.quality() == SipiQualityFormat::DEFAULT) && (sid.getPage() < 1)) {
 
             syslog(LOG_DEBUG, "Sending unmodified file....");
             conn_obj.status(Connection::OK);
@@ -1230,7 +1250,7 @@ namespace Sipi {
             }
 
             return;
-        }
+        } // finish sending unmodified file in toto
 
         /*
         if (quality_format.format() == SipiQualityFormat::PDF) {
@@ -1300,7 +1320,7 @@ namespace Sipi {
         Sipi::SipiImage img;
 
         try {
-            img.read(infile, region, size, quality_format.format() == SipiQualityFormat::JPG, serv->scaling_quality());
+            img.read(infile, sid.getPage(), region, size, quality_format.format() == SipiQualityFormat::JPG, serv->scaling_quality());
         } catch (const SipiImageError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
             return;
@@ -1368,6 +1388,7 @@ namespace Sipi {
         }
 
         try {
+            bool cache_open = false;
             switch (quality_format.format()) {
                 case SipiQualityFormat::JPG: {
                     conn_obj.status(Connection::OK);
@@ -1384,6 +1405,7 @@ namespace Sipi {
 
                     if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
+                        cache_open = true;
                     }
 
                     syslog(LOG_DEBUG, "Before writing JPG...");
@@ -1395,20 +1417,13 @@ namespace Sipi {
 
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
+                            cache_open = false;
                             unlink(cachefile.c_str());
                         }
 
                         break;
                     }
-
                     syslog(LOG_DEBUG, "After writing JPG...");
-
-                    if (cache != nullptr) {
-                        conn_obj.closeCacheFile();
-                        syslog(LOG_INFO, "Adding cachefile %s to internal list", cachefile.c_str());
-                        cache->add(infile, canonical, cachefile, img_w, img_h);
-                    }
-
                     break;
                 }
 
@@ -1417,11 +1432,13 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
-                    syslog(LOG_DEBUG, "Before writing J2K...");
 
                     if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
+                        cache_open = true;
                     }
+
+                    syslog(LOG_DEBUG, "Before writing J2K...");
 
                     try {
                         img.write("jpx", "HTTP");
@@ -1430,10 +1447,10 @@ namespace Sipi {
 
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
+                            cache_open = false;
                             unlink(cachefile.c_str());
                         }
                     }
-
                     syslog(LOG_DEBUG, "After writing J2K...");
                     break;
                 }
@@ -1443,11 +1460,13 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
-                    syslog(LOG_DEBUG, "Before writing TIF...");
 
                     if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
+                        cache_open = true;
                     }
+
+                    syslog(LOG_DEBUG, "Before writing TIF...");
 
                     try {
                         img.write("tif", "HTTP");
@@ -1456,20 +1475,12 @@ namespace Sipi {
 
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
+                            cache_open = false;
                             unlink(cachefile.c_str());
                         }
-
                         break;
                     }
-
                     syslog(LOG_DEBUG, "After writing TIF...");
-
-                    if (cache != nullptr) {
-                        conn_obj.closeCacheFile();
-                        syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
-                        cache->add(infile, canonical, cachefile, img_w, img_h);
-                    }
-
                     break;
                 }
 
@@ -1481,10 +1492,7 @@ namespace Sipi {
 
                     if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
-                    }
-
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
+                        cache_open = true;
                     }
 
                     syslog(LOG_DEBUG, "Before writing PNG...");
@@ -1496,19 +1504,12 @@ namespace Sipi {
 
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
+                            cache_open = false;
                             unlink(cachefile.c_str());
                         }
-
                         break;
                     }
-
                     syslog(LOG_DEBUG, "After writing PNG...");
-
-                    if (cache != nullptr) {
-                        conn_obj.closeCacheFile();
-                        syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
-                        cache->add(infile, canonical, cachefile, img_w, img_h);
-                    }
                     break;
                 }
 
@@ -1520,14 +1521,9 @@ namespace Sipi {
 
                     if (cache != nullptr) {
                         conn_obj.openCacheFile(cachefile);
+                        cache_open = true;
                     }
-
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                    }
-
                     syslog(LOG_DEBUG, "Before writing PDF...");
-
                     try {
                         img.write("pdf", "HTTP");
                     } catch (SipiImageError &err) {
@@ -1535,20 +1531,13 @@ namespace Sipi {
 
                         if (cache != nullptr) {
                             conn_obj.closeCacheFile();
+                            cache_open = false;
                             unlink(cachefile.c_str());
                         }
-
                         break;
                     }
-
                     syslog(LOG_DEBUG, "After writing PDF...");
-
-                    if (cache != nullptr) {
-                        conn_obj.closeCacheFile();
-                        syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
-                        cache->add(infile, canonical, cachefile, img_w, img_h);
-                    }
-                    break;
+                   break;
                 }
 
                 default: {
@@ -1562,6 +1551,13 @@ namespace Sipi {
                     conn_obj.flush();
                 }
             }
+
+            if (cache_open) {
+                conn_obj.closeCacheFile();
+                syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
+                cache->add(infile, canonical, cachefile, img_w, img_h, numpages);
+            }
+
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
             return;

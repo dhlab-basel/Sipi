@@ -36,13 +36,13 @@ namespace Sipi {
     public:
         virtual ~SipiIOPdf() = default;
 
-        virtual bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
-                  std::shared_ptr<SipiSize> size, bool force_bps_8,
-                  ScalingQuality scaling_quality) override;
+        virtual bool read(SipiImage *img, std::string filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr,
+                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
+                  ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH}) override;
 
-        virtual SipiImgInfo getDim(std::string filepath) override;
+        virtual SipiImgInfo getDim(std::string filepath, int pagenum = 0) override;
 
-        virtual void write(SipiImage *img, std::string filepath, int quality) override;
+        virtual void write(SipiImage *img, std::string filepath, int quality = 0) override;
     };
 }
 

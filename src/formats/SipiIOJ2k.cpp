@@ -32,6 +32,7 @@
 #include <vector>
 #include <cstdio>
 
+#include <fcntl.h>
 #include <string.h>
 
 #include "shttps/Connection.h"
@@ -180,7 +181,7 @@ namespace Sipi {
     static bool is_jpx(const char *fname) {
         int inf;
         int retval = 0;
-        if ((inf = open(fname, O_RDONLY)) != -1) {
+        if ((inf = ::open(fname, O_RDONLY)) != -1) {
             char testbuf[48];
             char sig0[] = {'\xff', '\x52'};
             char sig1[] = {'\xff', '\x4f', '\xff', '\x51'};
@@ -197,7 +198,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiIOJ2k::read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                          std::shared_ptr<SipiSize> size, bool force_bps_8,
                          ScalingQuality scaling_quality)
     {
@@ -597,7 +598,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    SipiImgInfo SipiIOJ2k::getDim(std::string filepath) {
+    SipiImgInfo SipiIOJ2k::getDim(std::string filepath, int pagenum) {
         SipiImgInfo info;
         if (!is_jpx(filepath.c_str())) {
             info.success = SipiImgInfo::FAILURE;
@@ -763,6 +764,18 @@ namespace Sipi {
             //codestream.access_siz()->parse_string("Stiles={1024,1024}");
             //codestream.access_siz()->parse_string("ORGgen_plt=yes");
             //codestream.access_siz()->parse_string("ORGtparts=R");
+/*
+            codestream.access_siz()->parse_string("Clevels=6");
+            codestream.access_siz()->parse_string("Clayers=6");
+            codestream.access_siz()->parse_string("Cprecincts={256,256},{256,256},{128,128}");
+//            codestream.access_siz()->parse_string("Stiles={512,512}");
+            codestream.access_siz()->parse_string("Corder=RPCL");
+            codestream.access_siz()->parse_string("ORGgen_plt=yes");
+            codestream.access_siz()->parse_string("ORGtparts=R");
+            codestream.access_siz()->parse_string("Cblk={64,64}");
+            codestream.access_siz()->parse_string("Cuse_sop=yes");
+            codestream.access_siz()->parse_string("Cuse_eph=yes");
+*/
 
             codestream.access_siz()->finalize_all(); // Set up coding defaults
 

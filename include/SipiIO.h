@@ -51,6 +51,7 @@ namespace Sipi {
         enum { FAILURE = 0, DIMS = 1, ALL = 2 } success;
         int width;
         int height;
+        int numpages;
         std::string origname;
         std::string mimetype;
 
@@ -58,6 +59,7 @@ namespace Sipi {
             success = FAILURE;
             width = 0;
             height = 0;
+            numpages = 0;
         };
     };
 
@@ -81,9 +83,9 @@ namespace Sipi {
          * to read only half the resolution. [default: 0]
          * \param force_bps_8 Convert the file to 8 bits/sample on reading thus enforcing an 8 bit image
          */
-        virtual bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
-                          std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
-                          ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH}) = 0;
+        virtual bool read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality) = 0;
 
         /*!
          * Get the dimension of the image
@@ -92,7 +94,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        virtual SipiImgInfo getDim(std::string filepath) = 0;
+        virtual SipiImgInfo getDim(std::string filepath, int pagenum) = 0;
 
         /*!
          * Write an image for a file using the given file format implemented by the subclass
@@ -102,7 +104,7 @@ namespace Sipi {
          * - "-" means to write the image data to stdout
          * - "HTTP" means to write the image data to the HTTP-server output
          */
-        virtual void write(SipiImage *img, std::string filepath, int quality = 0) = 0;
+        virtual void write(SipiImage *img, std::string filepath, int quality) = 0;
     };
 
 }

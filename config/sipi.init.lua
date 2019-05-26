@@ -231,7 +231,13 @@ end
 -------------------------------------------------------------------------------
 function pre_flight(prefix,identifier,cookie)
     local success, result
-   if prefix == 'imgrep' then
+
+--[[    for key,value in pairs (server.header) do
+        print(key, ': ', value)
+        server.log("HEADER:: " .. key .. " : " .. value, server.loglevel.LOG_DEBUG)
+    end
+    ]]
+    if prefix == 'imgrep' then
         local url = 'http://127.0.0.1/salsah/api/iiif/' .. identifier
 
         if cookie then

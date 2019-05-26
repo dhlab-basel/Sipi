@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cmath>
 
+#include <fcntl.h>
 #include <stdio.h>
 
 #include "SipiError.h"
@@ -438,7 +439,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                           std::shared_ptr<SipiSize> size, bool force_bps_8,
                           ScalingQuality scaling_quality)
     {
@@ -772,7 +773,7 @@ namespace Sipi {
                           } while(0)
 
 
-    SipiImgInfo SipiIOJpeg::getDim(std::string filepath) {
+    SipiImgInfo SipiIOJpeg::getDim(std::string filepath, int pagenum) {
         // portions derived from IJG code */
 
         FILE *infile;

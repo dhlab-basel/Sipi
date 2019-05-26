@@ -118,7 +118,7 @@ for imgindex, imgparam in pairs(server.uploads) do
 
     local success, check = thumbImg:mimetype_consistency(submitted_mimetype.mimetype, filename)
     if not success then
-        send_error(500, "Couldn't check mimteype consistency: " .. check)
+        send_error(500,"Couldn't check mimteype consistency: " .. check)
         return -1
     end
 
@@ -137,6 +137,7 @@ for imgindex, imgparam in pairs(server.uploads) do
     local success, dims = thumbImg:dims()
     if not success then
         send_error(500, "Couldn't get image dimensions: " .. dims)
+        server.log("Couldn't get image dimensions: " .. dims , server.loglevel.LOG_ERR)
         return -1
     end
 

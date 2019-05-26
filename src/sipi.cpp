@@ -19,8 +19,10 @@
  * See the GNU Affero General Public License for more details.
  * You should have received a copy of the GNU Affero General Public
  * License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
- *//*!
- * \brief Implements a simple IIIF server.
+ */
+
+ /*!
+ * \brief Implements an IIIF server with many features.
  *
  */
 #include <syslog.h>
@@ -197,6 +199,7 @@ enum optionIndex {
     FORMAT,
     ICC,
     QUALITY,
+    PAGENUM,
     REGION,
     REDUCE,
     SIZE,
@@ -212,6 +215,7 @@ enum optionIndex {
     IMGROOT,
     LOGLEVEL,
     QUERY,
+    J2KPARAMS,
     HELP
 };
 
@@ -266,6 +270,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                     {FORMAT,     0, "F",     "format",     SipiMultiChoice,       "  --format Value, -F Value  \tOutput format Value can be: jpx,jpg,tif,png.\n"},
                                     {ICC,        0, "I",     "ICC",        SipiMultiChoice,       "  --ICC Value, -I Value  \tConvert to ICC profile. Value can be: none,sRGB,AdobeRGB,GRAY.\n"},
                                     {QUALITY,    0, "q",     "quality",    option::Arg::NumericI, "  --quality Value, -q Value  \tQuality (compression). Value can any integer between 1 and 100\n"},
+                                    {PAGENUM,    0, "P",     "pagenum",    option::Arg::NumericI, "  --pagenum Value, -P Value  \tPagenumber for PDF documents or multipage TIFFs\n"},
                                     {REGION,     0, "r",     "region",     option::Arg::NonEmpty, "  --region x,y,w,h, -r x,y,w,h  \tSelect region of interest, where x,y,w,h are integer values\n"},
                                     {REDUCE,     0, "R",     "Reduce",     option::Arg::NumericI, "  --Reduce Value, -R Value  \tReduce image size by factor Value (cannot be used together with --size and --scale)\n"},
                                     {SIZE,       0, "s",     "size",       option::Arg::NonEmpty, "  --size w,h -s w,h  \tResize image to given size w,h (cannot be used together with --reduce and --scale)\n"},
@@ -282,6 +287,7 @@ const option::Descriptor usage[] = {{UNKNOWN,    0, "",      "",           optio
                                     {LOGLEVEL,   0, "l",     "loglevel",   SipiMultiChoice,       "  --loglevel Value, -l Value  \tLogging level Value can be: DEBUG,INFO,WARNING,ERR,CRIT,ALERT,EMERG\n"},
                                     {QUERY,      0, "x",     "query",      option::Arg::None,     "  --query -x \tDump all information about the given file"},
                                     {HELP,       0, "",      "help",       option::Arg::None,     "  --help  \tPrint usage and exit.\n"},
+                                    {J2KPARAMS,  0, "j",     "j2kparams",  option::Arg::None,     "  --j2kparams Value, -j Value  \tJ2K compression parameters\n"},
                                     {UNKNOWN,    0, "",      "",           option::Arg::None,     "\nExamples:\n"
                                                                                                           "USAGE (server): sipi --config filename or sipi --c filename where filename is a properly formatted configuration file in Lua\n"
                                                                                                           "USAGE (server): sipi [options]\n"
@@ -338,6 +344,8 @@ private:
 };
 
 void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
+    Sipi::SipiHttpServer *server = (Sipi::SipiHttpServer *) user_data;
+
     conn.setBuffer();
     conn.setChunkedTransfer();
     conn.header("Content-Type", "application/pdf; charset=utf-8");
@@ -373,7 +381,30 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
     pFont->SetFontSize( 18.0 );
     painter.SetFont( pFont );
     try {
-        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 56.69, "Hello World!");
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 56.69, "Simple Image Presentation Interface (SIPI)");
+        pFont->SetFontSize( 16.0 );
+        painter.SetFont( pFont );
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 80.0, "Server parameters");
+        pFont->SetFontSize( 12.0 );
+        painter.SetFont( pFont );
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 100.0, "Number of threads:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 100.0, std::to_string(server->nthreads()));
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 120.0, "Port:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 120.0, std::to_string(server->port()));
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 140.0, "Image root:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 140.0, server->imgroot());
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 160.0, "Tmpdir:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 160.0, server->tmpdir());
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 180.0, "Scriptdir:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 180.0, server->scriptdir());
+
+        painter.DrawText(56.69, pPage->GetPageSize().GetHeight() - 200.0, "Max. post size:");
+        painter.DrawText(200.0, pPage->GetPageSize().GetHeight() - 200.0, std::to_string(server->max_post_size()));
     }
     catch (PoDoFo::PdfError &err) {
         std::cerr << err.what();
@@ -381,16 +412,16 @@ void TestHandler(shttps::Connection &conn, shttps::LuaServer &luaserver, void *u
 
     PoDoFo::PdfImage image( &document );
     PoDoFo::PdfMemoryInputStream inimgstream((const char *) img, (PoDoFo::pdf_long) 3*256*256);
-    image.SetImageData	(256, 256, 8, &inimgstream);
+    image.SetImageData(256, 256, 8, &inimgstream);
 
-    painter.DrawImage( 56.69, 100.0, &image );
+    painter.DrawImage(56.69, 100.0, &image);
 
     painter.FinishPage();
-    document.GetInfo()->SetCreator ( PoDoFo::PdfString("examplahelloworld - A SIPI-PoDoFo test application") );
-    document.GetInfo()->SetAuthor  ( PoDoFo::PdfString("Lukas Rosenthaler") );
-    document.GetInfo()->SetTitle   ( PoDoFo::PdfString("Hello World") );
-    document.GetInfo()->SetSubject ( PoDoFo::PdfString("Testing the PoDoFo PDF Library") );
-    document.GetInfo()->SetKeywords( PoDoFo::PdfString("Test;PDF;Hello World;") );
+    document.GetInfo()->SetCreator (PoDoFo::PdfString("Simple Image Presentation Interface (SIPI)"));
+    document.GetInfo()->SetAuthor  (PoDoFo::PdfString("Lukas Rosenthaler"));
+    document.GetInfo()->SetTitle   (PoDoFo::PdfString("Configuration parameters"));
+    document.GetInfo()->SetSubject (PoDoFo::PdfString("Configuration of SIPI server"));
+    document.GetInfo()->SetKeywords(PoDoFo::PdfString("SIPI;configuration;"));
     document.Close();
     conn.sendAndFlush(pdf_buffer->GetBuffer(), pdf_buffer->GetSize());
     delete pdfdev;
@@ -617,7 +648,7 @@ int main(int argc, char *argv[]) {
                 filehandler_info.second = docroot;
                 server.addRoute(shttps::Connection::GET, wwwroute, shttps::FileHandler, &filehandler_info);
                 server.addRoute(shttps::Connection::POST, wwwroute, shttps::FileHandler, &filehandler_info);
-                server.addRoute(shttps::Connection::GET, "/test", TestHandler, nullptr);
+                server.addRoute(shttps::Connection::GET, "/test", TestHandler, &server);
             }
 
             server.run();
@@ -671,9 +702,19 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
+        int pagenum;
+
+        try {
+            pagenum = options[PAGENUM] ? (std::stoi(options[PAGENUM].arg)) : 0;
+        } catch (std::exception &e) {
+            std::cerr << options[PAGENUM].desc->help << std::endl;
+            return EXIT_FAILURE;
+        }
+
+
         if (options[QUERY]) {
             Sipi::SipiImage img;
-            img.read(infname);
+            img.read(infname, pagenum);
             std::cout << img << std::endl;
             return (0);
         }
@@ -727,6 +768,9 @@ int main(int argc, char *argv[]) {
                 }
                 else if (ext == "png") {
                     format = "png";
+                }
+                else if (ext == "pdf") {
+                    format = "pdf";
                 }
                 else {
                     std::cerr << "Not a supported filename extension: '" << ext << "' !" << std::endl;
@@ -810,7 +854,7 @@ int main(int argc, char *argv[]) {
         //
         Sipi::SipiImage img;
         try {
-            img.readOriginal(infname, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+            img.readOriginal(infname, pagenum, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
             if (format == "jpg") {
                 img.to8bps();
                 //http://www.equasys.de/colorconversion.html
@@ -842,7 +886,6 @@ int main(int argc, char *argv[]) {
         //
         // color profile processing
         //
-
         std::string iccprofile("none");
         if (options[ICC]) {
             try {

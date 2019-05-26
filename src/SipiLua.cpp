@@ -394,6 +394,7 @@ namespace Sipi {
             return 2;
         }
 
+        int pagenum = 0;
         std::shared_ptr<SipiRegion> region;
         std::shared_ptr<SipiSize> size;
         std::string original;
@@ -439,7 +440,16 @@ namespace Sipi {
                 if (lua_isstring(L, -2)) {
                     const char *param = lua_tostring(L, -2);
 
-                    if (strcmp(param, "region") == 0) {
+                    if (strcmp(param, "pagenum") == 0) {
+                        if (lua_isnumber(L, -1)) {
+                            pagenum = lua_tointeger(L, -1);
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushboolean(L, false);
+                            lua_pushstring(L, "SipiImage.new(): Error in pagenum parameter");
+                            return 2;
+                        }
+                    } else if (strcmp(param, "region") == 0) {
                         if (lua_isstring(L, -1)) {
                             region = std::make_shared<SipiRegion>(lua_tostring(L, -1));
                         } else {
@@ -522,9 +532,9 @@ namespace Sipi {
 
         try {
             if (!original.empty()) {
-                img->image->readOriginal(imgpath, region, size, original, htype);
+                img->image->readOriginal(imgpath, pagenum, region, size, original, htype);
             } else {
-                img->image->read(imgpath, region, size);
+                img->image->read(imgpath, pagenum, region, size);
             }
         } catch (SipiImageError &err) {
             lua_pop(L, lua_gettop(L));

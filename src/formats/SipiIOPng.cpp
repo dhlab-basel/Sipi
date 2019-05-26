@@ -129,7 +129,7 @@ namespace Sipi {
 
     }
 
-    bool SipiIOPng::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiIOPng::read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                          std::shared_ptr<SipiSize> size, bool force_bps_8,
                          ScalingQuality scaling_quality)
     {
@@ -336,7 +336,7 @@ namespace Sipi {
     /*==========================================================================*/
 
 
-    SipiImgInfo SipiIOPng::getDim(std::string filepath) {
+    SipiImgInfo SipiIOPng::getDim(std::string filepath, int pagenum) {
         FILE *infile;
         SipiImgInfo info;
         unsigned char header[8];

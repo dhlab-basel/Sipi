@@ -329,7 +329,7 @@ namespace Sipi {
          *
          * \throws SipiError
          */
-        void read(std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
+        void read(std::string filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr,
                   std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false,
                   ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
 
@@ -354,7 +354,7 @@ namespace Sipi {
          * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
-        readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
+        readOriginal(const std::string &filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr,
                      shttps::HashType htype = shttps::HashType::sha256);
 
         /*!
@@ -379,7 +379,7 @@ namespace Sipi {
          * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
-        readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
+        readOriginal(const std::string &filepath, int pagenum, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
                      const std::string &origname, shttps::HashType htype);
 
 
@@ -387,10 +387,10 @@ namespace Sipi {
          * Get the dimension of the image
          *
          * \param[in] filepath Pathname of the image file
-         * \param[out] width Width of the image in pixels
-         * \param[out] height Height of the image in pixels
+         * \param[in] pagenum Page that is to be used (for PDF's and multipage TIF's only, first page is 1)
+         * \return Info about image (see SipiImgInfo)
          */
-        SipiImgInfo getDim(std::string filepath);
+        SipiImgInfo getDim(std::string filepath, int pagenum = 0);
 
         /*!
          * Get the dimension of the image object

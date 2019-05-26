@@ -50,6 +50,7 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/src/SipiHttpServer.cpp ${PROJECT_SOURCE_DIR}/include/SipiHttpServer.h
         ${PROJECT_SOURCE_DIR}/src/SipiCache.cpp ${PROJECT_SOURCE_DIR}/include/SipiCache.h
         ${PROJECT_SOURCE_DIR}/src/SipiLua.cpp ${PROJECT_SOURCE_DIR}/include/SipiLua.h
+        ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiIdentifier.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiIdentifier.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiRotation.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiRotation.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiQualityFormat.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiQualityFormat.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiRegion.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiRegion.h
@@ -101,6 +102,7 @@ target_link_libraries(sipiimage ${LIBS}
         bzip2
         unistring
         poppler
+        poppler-cpp
         ${CMAKE_DL_LIBS}
         z
         m)

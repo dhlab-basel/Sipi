@@ -94,7 +94,7 @@ namespace Sipi {
          * \param filepath Image file path
          * \param reduce Reducing factor. Not used reading TIFF files
          */
-        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
+        bool read(SipiImage *img, std::string filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr,
                   std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
                   ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
 
@@ -104,7 +104,7 @@ namespace Sipi {
         * \param[in] filepath Pathname of the image file
         * \return Image information
         */
-        SipiImgInfo getDim(std::string filepath);
+        SipiImgInfo getDim(std::string filepath, int pagenum = 0);
 
 
         /*!

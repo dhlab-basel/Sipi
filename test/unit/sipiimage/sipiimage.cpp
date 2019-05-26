@@ -52,7 +52,7 @@ TEST(Sipiimage, ConvertTiffWithAlphaToJPG)
 
     Sipi::SipiImage img;
 
-    ASSERT_NO_THROW(img.read(leavesSmallWithAlpha, region, size));
+    ASSERT_NO_THROW(img.read(leavesSmallWithAlpha, 0, region, size));
 
     ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-with-alpha.jpg"));
 }
@@ -65,7 +65,7 @@ TEST(Sipiimage, ConvertTiffWithNoAlphaToJPG)
 
     Sipi::SipiImage img;
 
-    ASSERT_NO_THROW(img.read(leavesSmallNoAlpha, region, size));
+    ASSERT_NO_THROW(img.read(leavesSmallNoAlpha, 0, region, size));
 
     ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-no-alpha.jpg"));
 }
