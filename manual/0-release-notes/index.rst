@@ -24,13 +24,12 @@
    You should have received a copy of the GNU Affero General Public
    License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
-+++++++++++++
+#############
 Release Notes
-+++++++++++++
+#############
 
 .. toctree::
    :maxdepth: 2
 
-   v1.2.0
-   v1.3.0
+   v1.x.x
 

@@ -202,7 +202,7 @@ namespace shttps {
         //=========================================================================
 
     private:
-        int port; //!< listening Port for server
+        int _port; //!< listening Port for server
         int _ssl_port; //!< listening port for openssl
         int _sockfd; //!< socket id
         int _ssl_sockfd; //!< SSL socket id
@@ -270,6 +270,8 @@ namespace shttps {
         inline int semaphore_get() {
             return _semcnt;
         }
+
+        inline int port(void) { return _port; }
 
 #       ifdef SHTTPS_ENABLE_SSL
 

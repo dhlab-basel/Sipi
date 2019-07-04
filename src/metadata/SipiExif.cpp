@@ -48,7 +48,12 @@ namespace Sipi {
         //
         // now we decode the binary exif
         //
-        byteorder = Exiv2::ExifParser::decode(exifData, exif, (uint32_t) len);
+        try {
+            byteorder = Exiv2::ExifParser::decode(exifData, exif, (uint32_t) len);
+        }
+        catch(Exiv2::BasicError<char> &exiverr) {
+            throw SipiError(__file__, __LINE__, exiverr.what());
+        }
     }
     //============================================================================
 
@@ -82,6 +87,19 @@ namespace Sipi {
             len = binary_size;
         }
         return buf;
+    }
+    //============================================================================
+
+    std::vector<unsigned char> SipiExif::exifBytes(void) {
+        unsigned int len = 0;
+        unsigned char *buf = exifBytes(len);
+        std::vector<unsigned char> data;
+        if (buf != nullptr) {
+            data.reserve(len);
+            for (int i = 0; i < len; i++) data.push_back(buf[i]);
+            delete[] buf;
+        }
+        return data;
     }
     //============================================================================
 

@@ -85,6 +85,12 @@ namespace Sipi {
         */
         char *xmpBytes(unsigned int &len);
 
+        /*!
+         * Returns the bytes of the RDF/XML data as std::string
+         *
+         * @return String holding the xmp data
+         */
+        std::string xmpBytes(void);
 
         /*!
          * The overloaded << operator which is used to write the xmp formatted to the outstream

@@ -77,6 +77,13 @@ namespace Sipi {
         unsigned char *exifBytes(unsigned int &len);
 
         /*!
+         * Returns the bytes of the EXIF data as vector
+         *
+         * @return Vector with EXIF data
+         */
+        std::vector<unsigned char> exifBytes(void);
+
+        /*!
          * Helper function to convert a signed float to a signed rational as used by EXIF
          *
          * \param[in] f Input signed float

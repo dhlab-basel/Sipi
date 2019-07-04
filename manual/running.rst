@@ -134,7 +134,7 @@ Command-line Options
 
      --loglevel Value, -l Value
                        Logging level Value can be:
-                       TRACE,DEBUG,INFO,WARN,ERROR,CRITICAL,OFF
+                       DEBUG,INFO,NOTICE,WARNING,ERR,CRIT,ALERT,EMERG
 
      --help
                        Print usage and exit.

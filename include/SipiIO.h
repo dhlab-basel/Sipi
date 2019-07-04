@@ -46,6 +46,20 @@ namespace Sipi {
         ScalingMethod png;
     } ScalingQuality;
 
+    class SipiImgInfo {
+    public:
+        enum { FAILURE = 0, DIMS = 1, ALL = 2 } success;
+        int width;
+        int height;
+        std::string origname;
+        std::string mimetype;
+
+        SipiImgInfo(void) {
+            success = FAILURE;
+            width = 0;
+            height = 0;
+        };
+    };
 
     class SipiImage; //!< forward declaration of class SipiImage
 
@@ -54,6 +68,9 @@ namespace Sipi {
      */
     class SipiIO {
     public:
+        virtual ~SipiIO() {};
+
+
         /*!
          * Method used to read an image file
          *
@@ -75,7 +92,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        virtual bool getDim(std::string filepath, size_t &width, size_t &height) = 0;
+        virtual SipiImgInfo getDim(std::string filepath) = 0;
 
         /*!
          * Write an image for a file using the given file format implemented by the subclass

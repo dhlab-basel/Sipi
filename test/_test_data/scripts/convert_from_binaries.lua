@@ -148,7 +148,7 @@ if mediatype == IMAGE then
     success, newFilePath = helper.filename_hash(fullImgName);
     if not success then
         server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(gaga, server.loglevel.LOG_ERR)
         return false
     end
 
@@ -181,7 +181,7 @@ if mediatype == IMAGE then
     success, newThumbPath = helper.filename_hash(thumbImgName);
     if not success then
         server.sendStatus(500)
-        server.log(gaga, server.loglevel.error)
+        server.log(gaga, server.loglevel.LOG_ERR)
         return false
     end
 

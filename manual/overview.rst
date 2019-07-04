@@ -30,7 +30,7 @@
 Overview
 ########
 
-Sipi is a high-performance media server developed by the
+Sipi is a high-performance, IIIF compatible media server developed by the
 `Digital Humanities Lab`_ at the `University of Basel`_. It is designed to
 be used by archives, libraries, and other institutions that need to preserve
 high-quality images while making them available online. 
@@ -48,6 +48,15 @@ metadata and can preserve or transform ICC_ colour profiles.
 In addition, a simple webserver is integrated. The server is able to serve most
 common file types. In addition Lua scripts and embedded Lua (i.e., Lua
 embedded into HTML pages using the tags <lua>…</lua> are supported.
+
+Sipi can also be used from the command line to convert images to/from TIFF_, `JPEG 2000`_,
+JPEG_ and PNG_ formats. For all these conversion, Sipi tries to preserve all embedded
+metadata such as IPTC_, EXIF_, XMP_ and ICC_ color profiles. However, due to the limitations
+of some file formats, it cannot be guaranteed that all metadata and ICC profiles are
+preserved. `JPEG 2000`_ does not allow all types of ICC_ profiles. Unsupported profile types
+will be added to the `JPEG 2000`_ header as comment and will be reinstated if the `JPEG 2000`_
+file is converted back to the TIFF_ format.
+
 
 Sipi is `free software`_, released under the `GNU Affero General Public License`_.
 It is written in C++ and runs on Linux (including Debian_, Ubuntu_, and CentOS_) and

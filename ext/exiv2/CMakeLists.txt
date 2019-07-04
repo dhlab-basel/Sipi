@@ -14,7 +14,8 @@ include(ExternalProject)
 ExternalProject_Add(project_exiv2
         DEPENDS expat
         INSTALL_DIR ${COMMON_LOCAL}
-        URL http://www.exiv2.org/builds/exiv2-0.26-trunk.tar.gz
+        URL https://dl.bintray.com/dhlab-basel/thirdparty/exiv2-0.26-trunk.tar.gz
+        URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
         SOURCE_DIR ${COMMON_SRCS}/exiv2-trunk
         CONFIGURE_COMMAND ${COMMON_SRCS}/exiv2-trunk/configure --prefix=${COMMON_LOCAL} --with-expat=${COMMON_LOCAL} --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make

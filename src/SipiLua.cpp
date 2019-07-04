@@ -31,7 +31,7 @@
 #include <SipiCache.h>
 #include <SipiFilenameHash.h>
 
-
+#include "shttps/Connection.h"
 #include "SipiImage.h"
 #include "SipiLua.h"
 #include "SipiHttpServer.h"
@@ -382,6 +382,9 @@ namespace Sipi {
      *    })
      */
     static int SImage_new(lua_State *L) {
+        lua_getglobal(L, shttps::luaconnection);
+        shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stacks
         int top = lua_gettop(L);
 
         if (top < 1) {
@@ -391,19 +394,34 @@ namespace Sipi {
             return 2;
         }
 
-        if (!lua_isstring(L, 1)) {
-            lua_pop(L, top);
-            lua_pushboolean(L, false);
-            lua_pushstring(L, "SipiImage.new(): filename must be string");
-            return 2;
-        }
-
-        const char *imgpath = lua_tostring(L, 1);
-
         std::shared_ptr<SipiRegion> region;
         std::shared_ptr<SipiSize> size;
         std::string original;
         shttps::HashType htype = shttps::HashType::sha256;
+        std::string imgpath;
+
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                imgpath = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+                original = uploads.at(tmpfile_id - 1).origname;
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'SipiImage.new()': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            imgpath = lua_tostring(L, 1);
+        }
+        else {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "SipiImage.new(): filename must be string or index");
+            return 2;
+        }
 
         if (top == 2) {
             if (lua_istable(L, 2)) {
@@ -536,9 +554,19 @@ namespace Sipi {
         if (lua_isstring(L, 1)) {
             const char *imgpath = lua_tostring(L, 1);
             SipiImage img;
+            SipiImgInfo info;
             try {
-                img.getDim(imgpath, nx, ny);
-            } catch (SipiImageError &err) {
+                info = img.getDim(imgpath);
+            }
+            catch (InfoError &e) {
+                lua_pop(L, top);
+                lua_pushboolean(L, false);
+                std::stringstream ss;
+                ss << "SipiImage.dims(): Couldn't get dimensions";
+                lua_pushstring(L, ss.str().c_str());
+                return 2;
+            }
+            catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
                 std::stringstream ss;
@@ -546,6 +574,8 @@ namespace Sipi {
                 lua_pushstring(L, ss.str().c_str());
                 return 2;
             }
+            nx = info.width;
+            ny = info.height;
         } else {
             SImage *img = checkSImage(L, 1);
             if (img == nullptr) {

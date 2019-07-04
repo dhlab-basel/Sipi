@@ -145,6 +145,19 @@ namespace Sipi {
     }
     //============================================================================
 
+    std::string SipiXmp::xmpBytes(void) {
+        unsigned int len = 0;
+        char *buf = xmpBytes(len);
+        std::string data;
+        if (buf != nullptr) {
+            data.reserve(len);
+            for (int i = 0; i < len; i++) data.push_back(buf[i]);
+            delete[] buf;
+        }
+        return data;
+    }
+    //============================================================================
+
     std::ostream &operator<< (std::ostream &outstr, const SipiXmp &rhs) {
         /*
         for (Exiv2::XmpData::const_iterator md = rhs.xmpData.begin();

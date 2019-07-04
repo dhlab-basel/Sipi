@@ -62,7 +62,7 @@ add_dependencies(sipiimage icc_profiles)
 
 target_link_libraries(
         sipiimage
-        gtest gmock_main)
+        libgtest)
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
 target_link_libraries(sipiimage ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
@@ -77,3 +77,6 @@ if(OPENSSL_FOUND)
 endif()
 
 install(TARGETS sipiimage DESTINATION bin)
+
+add_test(NAME sipiimage_unit_test
+        COMMAND sipiimage)

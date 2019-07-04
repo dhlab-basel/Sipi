@@ -29,6 +29,7 @@
 #include <string>
 #include <cstring>      // Needed for memset
 #include <chrono>
+#include <cerrno>
 
 //#include <sys/types.h>
 #include <sys/stat.h>
@@ -37,6 +38,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <syslog.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "curl/curl.h"
 #include "Global.h"
@@ -44,6 +47,7 @@
 #include "LuaServer.h"
 #include "Connection.h"
 #include "Server.h"
+#include "Error.h"
 //#include "ChunkReader.h"
 
 #include "sole.hpp"
@@ -208,8 +212,9 @@ namespace shttps {
             char_array_4[i++] = encoded_string[in_];
             in_++;
             if (i == 4) {
-                for (i = 0; i < 4; i++)
+                for (i = 0; i < 4; i++) {
                     char_array_4[i] = base64_chars.find(char_array_4[i]);
+                }
 
                 char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
                 char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
@@ -245,7 +250,7 @@ namespace shttps {
      */
     LuaServer::LuaServer() {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
         lua_atpanic(L, dont_panic);
         luaL_openlibs(L);
@@ -257,7 +262,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -273,7 +278,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(const std::string &luafile, bool iscode) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -305,7 +310,7 @@ namespace shttps {
      */
     LuaServer::LuaServer(Connection &conn, const std::string &luafile, bool iscode, const std::string &lua_scriptdir) {
         if ((L = luaL_newstate()) == nullptr) {
-            throw new Error(__file__, __LINE__, "Couldn't start lua interpreter");
+            throw Error(__file__, __LINE__, "Couldn't start lua interpreter");
         }
 
         lua_atpanic(L, dont_panic);
@@ -398,7 +403,7 @@ namespace shttps {
     /*!
      * Checks the filetype of a given filepath
      * LUA: server.fs.ftype("path")
-     * RETURNS: "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
+     * @return "FILE", "DIRECTORY", "CHARDEV", "BLOCKDEV", "LINK", "SOCKET" or "UNKNOWN"
      */
     static int lua_fs_ftype(lua_State *L) {
         struct stat s;
@@ -446,6 +451,111 @@ namespace shttps {
             lua_pushstring(L, "SOCKET");
         } else {
             lua_pushstring(L, "UNKNOWN");
+        }
+
+        return 2;
+    }
+    //=========================================================================
+
+    /*!
+    * Returns the modification time of a given filepath (in s since epoch)
+    * LUA: server.fs.modtime("path")
+    * @return integer with seconds since epoch of last modification
+    */
+    static int lua_fs_modtime(lua_State *L) {
+        struct stat s;
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.modtime()': parameter missing");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.modtime()': filename is not a string");
+            return 2;
+        }
+
+        const char *filename = lua_tostring(L, 1);
+        lua_settop(L, 0); // clear stack
+
+        if (stat(filename, &s) != 0) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, strerror(errno));
+            return 2;
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushinteger(L, (lua_Integer) s.st_mtime);
+
+        return 2;
+    }
+    //=========================================================================
+
+    /*!
+     * Returns a table of the names of the files in the specified directory.
+     * LUA: server.fs.readdir("path")
+     * @return a table of filenames in the directory.
+     */
+    static int lua_fs_readdir(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.readdir()': parameter missing");
+            return 2;
+        }
+
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.readdir()': path is not a string");
+            return 2;
+        }
+
+        const char *path = lua_tostring(L, 1);
+        lua_settop(L, 0); // clear stack
+
+        DIR* dir_ptr = opendir(path);
+
+        if (dir_ptr == nullptr) {
+            std::stringstream ss;
+            ss << strerror(errno) << ": " << path;
+            lua_pushboolean(L, false);
+            lua_pushstring(L, ss.str().c_str());
+            return 2;
+        }
+
+        struct dirent *dirent_ptr;
+        std::vector<std::string> filenames;
+
+        while ((dirent_ptr = readdir(dir_ptr)) != nullptr) {
+            const char* entry_name = dirent_ptr->d_name;
+
+            if (!(strncmp(entry_name, ".", 1) == 0 || strncmp(entry_name, "..", 2) == 0)) {
+                filenames.emplace_back(entry_name);
+            }
+        }
+
+        closedir(dir_ptr);
+        lua_pushboolean(L, true); // we assume success
+
+        lua_createtable(L, 0, 0);
+        int table_index = 1;
+        std::vector<std::string>::const_iterator filename_iter = filenames.begin();
+
+        while (filename_iter != filenames.end()) {
+            lua_pushinteger(L, table_index);
+            lua_pushstring(L, (*filename_iter).c_str());
+            lua_rawset(L, -3);
+            ++filename_iter;
+            ++table_index;
         }
 
         return 2;
@@ -637,7 +747,7 @@ namespace shttps {
         }
 
         const char *dirname = lua_tostring(L, 1);
-        mode_t mode = static_cast<mode_t>(lua_tointeger(L, 2));
+        auto mode = static_cast<mode_t>(lua_tointeger(L, 2));
         lua_settop(L, 0); // clear stack
 
         if (mkdir(dirname, mode) != 0) {
@@ -653,7 +763,7 @@ namespace shttps {
     //=========================================================================
 
     /*!
-     * Creates a new directory
+     * Deletes a directory
      * LUA: server.fs.rmdir(dirname)
      */
     static int lua_fs_rmdir(lua_State *L) {
@@ -807,7 +917,80 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*!
+    * Moves a file from one location to another.
+    *
+    * LUA: server.fs.moveFile(source, target)
+    *
+    */
+    static int lua_fs_mvfile(lua_State *L) {
+        lua_getglobal(L, shttps::luaconnection);
+        shttps::Connection *conn = (shttps::Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stacks
+        int top = lua_gettop(L);
+
+        if (top < 2) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.fs.moveFile(from,to)': not enough parameters");
+            return 2;
+        }
+
+        std::string infile;
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                infile = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.fs.moveFile(from,to)': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            infile = lua_tostring(L, 1);
+        }
+        else {
+            lua_pop(L, top);
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.fs.moveFile(from,to): filename must be string or index");
+            return 2;
+        }
+        std::string outfile = lua_tostring(L, 2);
+        lua_pop(L, top); // clear stack
+
+        if (std::rename(infile.c_str(), outfile.c_str())) {
+            //an error occured
+            switch (errno) {
+                case EACCES: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': no permission!");
+                    return 2;
+                }
+                case EXDEV: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': move across file systems not allowd!");
+                    return 2;
+                }
+                default: {
+                    lua_pushboolean(L, false);
+                    lua_pushstring(L, "'server.fs.moveFile(from,to)': error moving file!");
+                    return 2;
+                }
+            }
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushnil(L);
+        return 2;
+    }
+    //=========================================================================
+
     static const luaL_Reg fs_methods[] = {{"ftype",         lua_fs_ftype},
+                                          {"modtime",       lua_fs_modtime},
+                                          {"readdir",       lua_fs_readdir},
                                           {"is_readable",   lua_fs_is_readable},
                                           {"is_writeable",  lua_fs_is_writeable},
                                           {"is_executable", lua_fs_is_executable},
@@ -818,6 +1001,7 @@ namespace shttps {
                                           {"getcwd",        lua_fs_getcwd},
                                           {"chdir",         lua_fs_chdir},
                                           {"copyFile",      lua_fs_copyfile},
+                                          {"moveFile",      lua_fs_mvfile},
                                           {0,               0}};
     //=========================================================================
 
@@ -926,11 +1110,12 @@ namespace shttps {
         int top = lua_gettop(L);
 
         for (int i = 1; i <= top; i++) {
-            const char *str = lua_tostring(L, i);
+            size_t len;
+            const char *str = lua_tolstring(L, i, &len);
 
             if (str != nullptr) {
                 try {
-                    conn->send(str, strlen(str));
+                    conn->send(str, len);
                 } catch (int ierr) {
                     lua_settop(L, 0); // clear stack
                     lua_pushboolean(L, false);
@@ -2074,6 +2259,7 @@ namespace shttps {
         lua_rawset(L, -3); // table
         return 2;
     }
+    //=========================================================================
 
     /*!
      * Lua: success, mimetype = server.parse_mimetype(str)
@@ -2111,11 +2297,15 @@ namespace shttps {
             return 2;
         }
     }
+    //=========================================================================
 
     /*!
      * Lua: success, mimetype = server.file_mimetype(path)
      */
     static int lua_file_mimetype(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
         int top = lua_gettop(L);
 
         if (top < 1) {
@@ -2125,14 +2315,29 @@ namespace shttps {
             return 2;
         }
 
-        if (!lua_isstring(L, 1)) {
+        std::string path;
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                path = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.file_mimetype()()': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            path = lua_tostring(L, 1);
+        }
+        else {
             lua_settop(L, 0); // clear stack
             lua_pushboolean(L, false);
             lua_pushstring(L, "server.file_mimetype(): path is not a string");
             return 2;
         }
 
-        std::string path = lua_tostring(L, 1);
         lua_pop(L, top);
 
         try {
@@ -2148,6 +2353,16 @@ namespace shttps {
             return 2;
         }
     }
+    //=========================================================================
+
+    static int lua_systime(lua_State *L) {
+        lua_settop(L, 0); // clear stack
+
+        std::time_t result = std::time(nullptr);
+        lua_pushinteger(L, (lua_Integer) result);
+        return 1;
+    }
+    //=========================================================================
 
     void LuaServer::setLuaPath(const std::string &path) {
         lua_getglobal(L, "package");
@@ -2161,6 +2376,7 @@ namespace shttps {
         lua_pop(L, 1); // get rid of package table from top of stack
         return; // all done!
     }
+    //=========================================================================
 
 
     /*!
@@ -2437,6 +2653,10 @@ namespace shttps {
 
         lua_pushstring(L, "requireAuth"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_require_auth); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "systime"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_systime); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
 #ifdef SHTTPS_ENABLE_SSL

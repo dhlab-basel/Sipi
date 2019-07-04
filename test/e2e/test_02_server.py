@@ -20,6 +20,11 @@
 # License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+from pathlib import Path
+import os
+import os.path
+import time
+import datetime
 
 # Tests basic functionality of the Sipi server.
 
@@ -38,9 +43,32 @@ class TestServer:
         """call C++ functions from Lua scripts"""
         manager.expect_status_code("/test_functions", 200)
 
+    def test_clean_temp_dir(self, manager):
+        """remove old temporary files"""
+        temp_dir = manager.sipi_working_dir + "/images/tmp"
+        os.makedirs(temp_dir, exist_ok=True)
+
+        file_to_leave = Path(temp_dir + "/test_ok.jp2")
+        file_to_leave.touch()
+
+        file_to_delete = Path(temp_dir + "/test_old.jp2")
+        file_to_delete.touch()
+        date = datetime.datetime(year=2016, month=1, day=1)
+        mod_time = time.mktime(date.timetuple())
+        os.utime(file_to_delete, (mod_time, mod_time))
+
+        manager.expect_status_code("/test_clean_temp_dir", 200)
+
+        assert file_to_leave.exists()
+        assert not file_to_delete.exists()
+
     def test_lua_scripts(self, manager):
         """call Lua functions for mediatype handling"""
         manager.expect_status_code("/test_mediatype", 200)
+
+    def test_lua_mimetype(self, manager):
+        """call Lua functions for getting mimetype"""
+        manager.expect_status_code("/test_mimetype_func", 200)
 
     def test_knora_session_parsing(self, manager):
         """call Lua function that gets the Knora session id from the cookie header sent to Sipi"""
@@ -96,6 +124,95 @@ class TestServer:
 
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
         manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+
+    def test_knora_info_validation(self, manager):
+        """pass the knora.json request tests"""
+
+        expected_result = {
+            "width": 512,
+            "height": 512,
+            "originalFilename": "lena512.tif",
+            "originalMimeType": "image/tiff"
+        }
+
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        filename = response_json["filename"]
+        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
+
+        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+
+        assert response_json == expected_result
+
+    def test_json_info_validation(self, manager):
+        """pass the info.json request tests"""
+
+        expected_result = {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://127.0.0.1:1024/images/lena512.jp2",
+            "protocol": "http://iiif.io/api/image",
+            "width": 512,
+            "height": 512,
+            "sizes": [
+                {
+                    "width": 256,
+                    "height": 256
+                },
+                {
+                    "width": 128,
+                    "height": 128
+                }
+            ],
+            "profile": [
+                "http://iiif.io/api/image/2/level2.json",
+                {
+                    "formats": [
+                        "tif",
+                        "jpg",
+                        "png",
+                        "jp2"
+                    ],
+                    "qualities": [
+                        "color",
+                        "gray"
+                    ],
+                    "supports": [
+                        "color",
+                        "cors",
+                        "mirroring",
+                        "profileLinkHeader",
+                        "regionByPct",
+                        "regionByPx",
+                        "rotationArbitrary",
+                        "rotationBy90s",
+                        "sizeAboveFull",
+                        "sizeByWhListed",
+                        "sizeByForcedWh",
+                        "sizeByH",
+                        "sizeByPct",
+                        "sizeByW",
+                        "sizeByWh"
+                    ]
+                }
+            ]
+        }
+
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        filename = response_json["filename"]
+
+        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
+
+        response_json = manager.get_json("/unit/{}/info.json".format(filename))
+
+        expected_result["@id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
+        assert response_json == expected_result
+
+    def test_sqlite_api(self, manager):
+        """Test sqlite API"""
+        expected_result = {
+            "result": "Dies ist ein erster Text"
+        }
+        json_result = manager.get_json("/sqlite")
+        assert json_result == expected_result
 
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""

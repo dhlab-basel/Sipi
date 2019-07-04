@@ -160,7 +160,9 @@ namespace shttps {
 
 
     std::string urldecode(const std::string &src, bool form_encoded) {
+
 #define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
+
         stringstream outss;
         size_t start = 0;
         size_t pos;
@@ -471,8 +473,13 @@ namespace shttps {
                 _method = GET;
             } else if (method_in == "HEAD") {
                 _method = HEAD;
-            } else if (method_in == "POST") {
-                _method = POST;
+            } else if ((method_in == "POST") || (method_in == "PUT")) {
+                if (method_in == "POST") {
+                    _method = POST;
+                } else {
+                    _method = PUT;
+                }
+
                 vector<string> content_type_opts = process_header_value(header_in["content-type"]);
                 if (content_type_opts[0] == "application/x-www-form-urlencoded") {
                     char *bodybuf = nullptr;
@@ -601,6 +608,10 @@ namespace shttps {
                                     }
 
                                     fieldname = opts["name"];
+                                    if (fieldname[0] == '"' && fieldname[fieldname.size() - 1] == '"') {
+                                        // filename is inside quotes, remove them
+                                        fieldname = fieldname.substr(1, fieldname.size() - 2);
+                                    }
 
                                     if (opts.count("filename") == 1) {
                                         // we have an upload of a file ...
@@ -828,54 +839,8 @@ namespace shttps {
                 } else {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
-            } else if ((method_in == "PUT") || (method_in == "DELETE")) {
-                if (method_in == "DELETE") {
-                    _method = DELETE;
-                } else {
-                    _method = PUT;
-                }
-
-                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
-
-                if ((content_type_opts[0] == "text/plain") || (content_type_opts[0] == "application/json") ||
-                    (content_type_opts[0] == "application/ld+json") || (content_type_opts[0] == "application/xml")) {
-                    _content_type = content_type_opts[0];
-
-                    if (_chunked_transfer_in) {
-                        char *tmp;
-                        ChunkReader ckrd(ins, _server->max_post_size());
-                        content_length = ckrd.readAll(&tmp);
-
-                        if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
-                            throw Error(__file__, __LINE__, "malloc failed!", errno);
-                        }
-
-                        memcpy(_content, tmp, content_length);
-                        free(tmp);
-                        _content[content_length] = '\0';
-                    } else if (content_length > 0) {
-                        if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
-                            throw Error(__file__, __LINE__, "Content bigger than max_post_size");
-                        }
-
-                        _content = (char *) malloc(content_length + 1);
-
-                        if (_content == nullptr) {
-                            throw Error(__file__, __LINE__, "malloc failed!", errno);
-                        }
-
-                        ins->read(_content, content_length);
-
-                        if (ins->fail() || ins->eof()) {
-                            free(_content);
-                            _content = nullptr;
-                            throw INPUT_READ_FAIL;
-                        }
-                        _content[content_length] = '\0';
-                    }
-                } else {
-                    throw Error(__file__, __LINE__, "Content type not supported!");
-                }
+            } else if (method_in == "DELETE") {
+                _method = DELETE;
             } else if (method_in == "TRACE") {
                 _method = TRACE;
             } else if (method_in == "CONNECT") {

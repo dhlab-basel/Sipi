@@ -341,6 +341,25 @@ class SipiTestManager:
                 raise SipiTestError("post request with image file to {} failed: {}".format(sipi_url, response.json()["message"]))
             return response.json()
 
+    def get_json(self, url_path):
+        """
+        Sends a request which expects JSON
+        :param url_path: a path that will be appended to the Sipi base URL to make the request.
+        :return: the json response as a dict.
+        """
+
+        sipi_url = self.make_sipi_url(url_path)
+
+        sipi_url = self.make_sipi_url(url_path)
+
+        try:
+            response = requests.get(sipi_url)
+            response.raise_for_status()
+        except:
+            raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
+        return response.json()
+
+
     def post_request(self, url_path, params, headers=None):
         """
         Sends a post request to a Sipi route (without binaries).

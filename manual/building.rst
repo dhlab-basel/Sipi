@@ -41,10 +41,10 @@ Prerequisites
 
 To build Sipi from source code, you must have Kakadu_, a JPEG 2000 development
 toolkit that is not provided with Sipi and must be licensed separately.
-The Kakadu source code archive ``v7_9-01727L.zip`` must be placed in the
+The Kakadu source code archive ``v7_A_4-01727L.zip`` must be placed in the
 ``vendor`` subdirectory of the source tree before building Sipi.
 
-Sipi's build process requires CMake_, a C++ compiler that supports the C++11
+Sipi's build process requires CMake_ (minimal Version 3.0.0), a C++ compiler that supports the C++11
 standard (such as GCC_ or clang_), and several libraries that are readily
 available on supported platforms. The test framework requires `Python 3`_,
 (version 3.5 or later), `Apache ab`_ (which is assumed to be installed by default
@@ -208,6 +208,12 @@ Then:
     sudo pip3.5 install iiif_validator
 
 
+Docker
+======
+
+We provide a docker image based on Ubuntu LTS releases, containing all dependencies: https://hub.docker.com/r/dhlabbasel/sipi-base/
+
+
 *************************
 Compiling the Source Code
 *************************
@@ -242,8 +248,9 @@ You can run the automated tests in the ``build`` directory like this:
 
 ::
 
-    make test // will run all tests
-    make check // will run only e2e tests
+    make test // will run all tests (minimum output)
+    ctest --verbose // will run all tests (detailed output)
+    make check // will run only e2e tests (detailed output)
 
 
 *******************************************
@@ -310,3 +317,26 @@ the top level of the source tree and type:
 .. _devtoolset-4: https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/
 .. _Apache ab: https://httpd.apache.org/docs/2.4/programs/ab.html
 .. _ImageMagick: http://www.imagemagick.org/
+
+
+**********************
+Building inside Docker
+**********************
+
+All that was described before, can also be done by using docker. All commands need
+to be executed from inside the source directory (and not ``build`` the build directory). Also, Docker
+needs to be installed on the system.
+
+::
+
+    // deletes cached image and needs only to be used when newer image is available on dockerhub
+    docker image rm --force dhlabbasel/sipi-base:18.04
+    // building
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make"
+    // building and running all tests
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
+    // make html documentation
+    docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html"
+
+Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the build would have been performed
+without docker.

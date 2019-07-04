@@ -21,7 +21,7 @@
 # License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.0.0)
 
 include(ExternalProject)
 include(CheckStructHasMember)
@@ -30,7 +30,7 @@ include(CheckIncludeFiles)
 project(sipi)
 
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
-set(SIPI_RELEASE "Sipi Version v1.2.0 Beta (build ${SIPIDATE})")
+set(SIPI_RELEASE "Sipi Version v1.5.0-SNAPSHOT (build ${SIPIDATE})")
 
 #
 # Usually SIPI is compiled with all static libraries
@@ -61,7 +61,6 @@ else()
 endif()
 
 
-
 set(DARWIN "Darwin")
 set(LINUX "Linux")
 math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
@@ -84,6 +83,20 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
     SET(LUA_ARCH "linux")
 endif()
 message(STATUS "Compiling for ${KDU_ARCH}")
+
+#
+# OpenSSL ??
+#
+include(FindOpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "Found OpenSSL at ${OPENSSL_ROOT_DIR}")
+    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
+    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
+    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
+else()
+    message(STATUS "No SSL support found!")
+endif()
 
 
 #SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -127,19 +140,6 @@ set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
 #
 find_package(LibMagic REQUIRED)
 
-#
-# OpenSSL ??
-#
-include(FindOpenSSL)
-if(OPENSSL_FOUND)
-    message(STATUS "Found OpenSSL at ${OPENSSL_INCLUDE_DIR}")
-    add_definitions(${CMAKE_C_FLAGS} " -DSHTTPS_ENABLE_SSL")
-    add_definitions(${CMAKE_C_FLAGS} " -I${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}")
-    message(STATUS "OPENSSL_VERSION=${OPENSSL_VERSION}")
-else()
-    message(STATUS "No SSL support found!")
-endif()
 
 
 #find_package(JBIG REQUIRED)
@@ -179,7 +179,6 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
@@ -196,6 +195,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
+add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
@@ -373,7 +373,7 @@ install(TARGETS sipi
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/lua
         ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
+#        ${CMAKE_CURRENT_SOURCE_DIR}/local/bin/luarocks-5.3
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 
@@ -386,6 +386,9 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
 # Test
 #-------------------
 
+# enables cmake's support for testing
+enable_testing()
+
 # custom target to only run 'e2e' tests
 add_custom_target(check
         DEPENDS sipi
@@ -393,46 +396,8 @@ add_custom_target(check
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 # enables running of 'e2e' tests when `make test` is executed
-add_test(NAME all_e2e_tests
+add_test(NAME all_python_based_e2e_tests
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
         COMMAND pytest)
 
-include(CTest)
-
-if (CMAKE_VERSION VERSION_LESS 3.2)
-    set(UPDATE_DISCONNECTED_IF_AVAILABLE "")
-else()
-    set(UPDATE_DISCONNECTED_IF_AVAILABLE "UPDATE_DISCONNECTED 1")
-endif()
-
-include(DownloadProject.cmake)
-download_project(PROJ                googletest
-        GIT_REPOSITORY      https://github.com/google/googletest.git
-        GIT_TAG             master
-        ${UPDATE_DISCONNECTED_IF_AVAILABLE}
-        )
-
-# Prevent GoogleTest from overriding our compiler/linker options
-# when building with Visual Studio
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-
-# When using CMake 2.8.11 or later, header path dependencies
-# are automatically added to the gtest and gmock targets.
-# For earlier CMake versions, we have to explicitly add the
-# required directories to the header search path ourselves.
-if (CMAKE_VERSION VERSION_LESS 2.8.11)
-    include_directories("${gtest_SOURCE_DIR}/include"
-            "${gmock_SOURCE_DIR}/include")
-endif()
-
-# enables cmake's support for testing
-enable_testing()
-
-# need to add the unit test directory containing it's own CMakeLists.txt
 add_subdirectory(test/unit)
-
-
-
-

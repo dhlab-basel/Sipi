@@ -27,6 +27,7 @@
 #define __sipi_icc_h
 
 #include <string>
+#include <vector>
 
 #include <stdio.h>
 #include <limits.h>
@@ -52,7 +53,8 @@ namespace Sipi {
         icc_CYMK_standard,  //!< A "standard" CMYK profile. We currently use the "USWebCoatedSWOP" profile
         icc_GRAY_D50,       //!< A standard profile for gray value images using a D50 light source and a gamma of 2.2
         icc_LUM_D65,        //!< A standard profile for gray value images as used be JPEG2000 JP2_sLUM_SPACE
-        icc_ROMM_GRAY       //!< A profile used by the JPEG2000 ISO suite....
+        icc_ROMM_GRAY,       //!< A profile used by the JPEG2000 ISO suite....
+        icc_LAB
     } PredefinedProfiles;
 
     /*!
@@ -121,10 +123,16 @@ namespace Sipi {
 
         /*!
          * Get the blob containing the ICC profile
-         * \param[out] len Length of the buffer returned
-         * \returns Buffer containing the binary ICC profile
+         * @param[out] len Length of the buffer returned
+         * @returns Buffer containing the binary ICC profile
          */
         unsigned char *iccBytes(unsigned int &len);
+
+        /*!
+         * Get the blob containing the ICC profile as std::vector
+         * @return std:vector containing the binary ICC profile
+         */
+        std::vector<unsigned char> iccBytes();
 
         /*!
          * Retireve the littleCMS profile

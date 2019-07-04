@@ -26,6 +26,7 @@
 #define __defined_iptc_h
 
 #include <string>
+#include <vector>
 #include <exiv2/iptc.hpp>
 
 namespace Sipi {
@@ -58,6 +59,12 @@ namespace Sipi {
         * \returns Chunk of chars holding the IPTC data
         */
         unsigned char *iptcBytes(unsigned int &len);
+
+        /*!
+         * Returns the bytes of the IPTC data as std::vector
+         * @return IPTC bytes as std::vector
+         */
+        std::vector<unsigned char> iptcBytes(void);
 
         /*!
          * The overloaded << operator which is used to write the IPTC data formatted to the outstream
