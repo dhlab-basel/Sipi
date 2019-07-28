@@ -182,7 +182,7 @@ namespace Sipi {
         return info;
     };
 
-    void SipiIOPdf::write(SipiImage *img, std::string filepath, int quality) {
+    void SipiIOPdf::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         if (img->bps == 16) img->to8bps();
 
         //

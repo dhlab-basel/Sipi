@@ -42,7 +42,7 @@ namespace Sipi {
 
         virtual SipiImgInfo getDim(std::string filepath, int pagenum = 0) override;
 
-        virtual void write(SipiImage *img, std::string filepath, int quality = 0) override;
+        virtual void write(SipiImage *img, std::string filepath, const SipiCompressionParams *params = nullptr) override;
     };
 }
 

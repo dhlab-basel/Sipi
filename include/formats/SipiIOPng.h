@@ -69,7 +69,7 @@ namespace Sipi {
          * - "-" means to write the image data to stdout
          * - "HTTP" means to write the image data to the HTTP-server output
          */
-        void write(SipiImage *img, std::string filepath, int quality = 0) override;
+        void write(SipiImage *img, std::string filepath, const SipiCompressionParams *params = nullptr) override;
     };
 }
 

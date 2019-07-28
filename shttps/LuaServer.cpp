@@ -2482,13 +2482,12 @@ namespace shttps {
             lua_createtable(L, 0, get_params.size()); // table1 - "index_L1" - table2
 
             for (unsigned i = 0; i < get_params.size(); i++) {
-                lua_pushstring(L, get_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
-                lua_pushstring(L, conn.getParams(
-                        get_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
-                lua_rawset(L, -3); // table1 - "index_L1" - table2
-            }
+                (void) lua_pushstring(L, get_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
+                (void) lua_pushstring(L, conn.getParams(get_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
+                lua_settable(L, -3); // table1 - "index_L1" - table2
+             }
 
-            lua_rawset(L, -3); // table1
+            lua_settable(L, -3); // table1
         }
 
         std::vector<std::string> post_params = conn.postParams();
@@ -2501,10 +2500,9 @@ namespace shttps {
                 lua_pushstring(L, post_params[i].c_str()); // table1 - "index_L1" - table2 - "index_L2"
                 lua_pushstring(L, conn.postParams(
                         post_params[i]).c_str()); // table1 - "index_L1" - table2 - "index_L2" - "value_L2"
-                lua_rawset(L, -3); // table1 - "index_L1" - table2
+                lua_settable(L, -3); // table1 - "index_L1" - table2
             }
-
-            lua_rawset(L, -3); // table1
+            lua_settable(L, -3); // table1
         }
 
         std::vector<Connection::UploadedFile> uploads = conn.uploads();
@@ -2914,21 +2912,29 @@ namespace shttps {
      * @param variable Variable name (which must be a table with key value pairs)
      * @return Map of key-value pairs
      */
-    const std::map<std::string,std::string> LuaServer::configStringTable(const std::string table, const std::string variable) {
+    const std::map<std::string,std::string> LuaServer::configStringTable(
+            const std::string &table,
+            const std::string &variable,
+            const std::map<std::string,std::string> &defval) {
         std::map<std::string,std::string> subtable;
 
         int top = lua_gettop(L);
 
         if (lua_getglobal(L, table.c_str()) != LUA_TTABLE) {
             lua_pop(L, top);
-            return subtable;
+            return defval;
         }
 
-        lua_getfield(L, 1, variable.c_str());
+        try {
+            lua_getfield(L, 1, variable.c_str());
+        }
+        catch(...) {
+            return defval;
+        }
 
         if (lua_isnil(L, -1)) {
             lua_pop(L, lua_gettop(L));
-            return subtable;
+            return defval;
         }
 
         if (!lua_istable(L, -1)) {
@@ -3046,6 +3052,65 @@ namespace shttps {
     }
     //=========================================================================
 
+    const std::map<std::string,LuaKeyValStore> LuaServer::configKeyValueStores(const std::string table) {
+        std::map<std::string,LuaKeyValStore> keyvalstores;
+
+        int top = lua_gettop(L);
+
+        lua_getglobal(L, table.c_str());
+
+        if (!lua_istable(L, -1)) {
+            //return keyvalstores;
+            throw Error(__file__, __LINE__, "Value '" + table + "' in config file must be a table");
+        }
+
+        lua_pushnil(L);
+        while (lua_next(L, -2) != 0) {
+            const char *profile_name = lua_tostring(L, -2);
+
+            if (!lua_istable(L, -1)) {
+                throw Error(__file__, __LINE__, "Value '" + std::string(profile_name) + "' in config file must be a table");
+            }
+            LuaKeyValStore kvstore;
+            lua_pushnil(L);
+            while (lua_next(L, -2) != 0) {
+                LuaValstruct tmplv;
+                const char *param_name = lua_tostring(L, -2);
+                if (lua_isstring(L, -1)) {
+                    tmplv.type = LuaValstruct::STRING_TYPE;
+                    tmplv.value.s = std::string(lua_tostring(L, -1));
+                } else if (lua_isinteger(L, -1)) {
+                    tmplv.type = LuaValstruct::INT_TYPE;
+                    tmplv.value.i = lua_tointeger(L, -1);
+                } else if (lua_isnumber(L, -1)) {
+                    tmplv.type = LuaValstruct::FLOAT_TYPE;
+                    tmplv.value.f = (float) lua_tonumber(L, -1);
+                } else if (lua_isboolean(L, -1)) {
+                    tmplv.type = LuaValstruct::BOOLEAN_TYPE;
+                    tmplv.value.b = (bool) lua_toboolean(L, -1);
+                } else if (lua_isnil(L, -1)) {
+                    std::string luaTypeName = std::string(lua_typename(L, -1));
+                    std::ostringstream errStream;
+                    errStream << "Table contained returned nil";
+                    std::string errorMsg = errStream.str();
+                    throw Error(__file__, __LINE__, errorMsg);
+                } else {
+                    std::string luaTypeName = std::string(lua_typename(L, -1));
+                    std::ostringstream errMsg;
+                    errMsg << "Table contained a value of type " << luaTypeName
+                           << ", which is not supported";
+                    throw Error(__file__, __LINE__, errMsg.str());
+                }
+                kvstore[param_name] = tmplv;
+                lua_pop(L, 1);
+            }
+            keyvalstores[profile_name] = kvstore;
+            lua_pop(L, 1);
+        }
+        lua_pop(L, top);
+
+        return keyvalstores;
+    }
 
     int LuaServer::executeChunk(const std::string &luastr, const std::string &scriptname ) {
         if (luaL_dostring(L, luastr.c_str()) != LUA_OK) {
@@ -3072,6 +3137,74 @@ namespace shttps {
     }
     //=========================================================================
 
+    static LuaValstruct getLuaValue(lua_State *L, int index, const std::string &funcname) {
+        LuaValstruct tmplv;
+        if (lua_isstring(L, index)) {
+            tmplv.type = LuaValstruct::STRING_TYPE;
+            tmplv.value.s = std::string(lua_tostring(L, index));
+        } else if (lua_isinteger(L, index)) {
+            tmplv.type = LuaValstruct::INT_TYPE;
+            tmplv.value.i = lua_tointeger(L, index);
+        } else if (lua_isnumber(L, index)) {
+            tmplv.type = LuaValstruct::FLOAT_TYPE;
+            tmplv.value.f = (float) lua_tonumber(L, index);
+        } else if (lua_isboolean(L, index)) {
+            tmplv.type = LuaValstruct::BOOLEAN_TYPE;
+            tmplv.value.b = (bool) lua_toboolean(L, index);
+        } else if (lua_istable(L, index)) {
+            tmplv.type = LuaValstruct::TABLE_TYPE;
+            lua_pushnil(L);  /* first key */
+            while (lua_next(L, index) != 0) {
+                std::string key(lua_tostring(L, -2));
+                LuaValstruct val = getLuaValue(L, -1, funcname);
+                tmplv.value.table[key] = val;
+                /* removes 'value'; keeps 'key' for next iteration */
+                lua_pop(L, 1);
+            }
+        } else if (lua_isnil(L, index)) {
+            std::string luaTypeName = std::string(lua_typename(L, index));
+            std::ostringstream errStream;
+            errStream << "Lua function " << funcname << " returned nil";
+            std::string errorMsg = errStream.str();
+            throw Error(__file__, __LINE__, errorMsg);
+        } else {
+            std::string luaTypeName = std::string(lua_typename(L, index));
+            std::ostringstream errMsg;
+            errMsg << "Lua function " << funcname << " returned a value of type " << luaTypeName
+                   << ", which is not supported";
+            throw Error(__file__, __LINE__, errMsg.str());
+        }
+        return tmplv;
+    }
+
+    static void pushLuaValue(lua_State *L, const LuaValstruct &lv) {
+        switch (lv.type) {
+            case LuaValstruct::INT_TYPE: {
+                lua_pushinteger(L, lv.value.i);
+                break;
+            }
+            case LuaValstruct::FLOAT_TYPE: {
+                lua_pushnumber(L, lv.value.f);
+                break;
+            }
+            case LuaValstruct::STRING_TYPE: {
+                lua_pushstring(L, lv.value.s.c_str());
+                break;
+            }
+            case LuaValstruct::BOOLEAN_TYPE: {
+                lua_pushboolean(L, lv.value.b);
+                break;
+            }
+            case LuaValstruct::TABLE_TYPE: {
+                lua_createtable(L, 0, lv.value.table.size());
+                for( const auto& keyval : lv.value.table ) {
+                    lua_pushstring(L, keyval.first.c_str());
+                    pushLuaValue(L, keyval.second);
+                }
+                break;
+            }
+        }
+    }
 
     std::vector<LuaValstruct>
     LuaServer::executeLuafunction(const std::string &funcname, std::vector<LuaValstruct> &lvs) {
@@ -3083,24 +3216,7 @@ namespace shttps {
         }
 
         for (auto lv : lvs) {
-            switch (lv.type) {
-                case LuaValstruct::INT_TYPE: {
-                    lua_pushinteger(L, lv.value.i);
-                    break;
-                }
-                case LuaValstruct::FLOAT_TYPE: {
-                    lua_pushnumber(L, lv.value.f);
-                    break;
-                }
-                case LuaValstruct::STRING_TYPE: {
-                    lua_pushstring(L, lv.value.s.c_str());
-                    break;
-                }
-                case LuaValstruct::BOOLEAN_TYPE: {
-                    lua_pushboolean(L, lv.value.b);
-                    break;
-                }
-            }
+            pushLuaValue(L, lv);
         }
 
         if (lua_pcall(L, lvs.size(), LUA_MULTRET, 0) != LUA_OK) {
@@ -3114,36 +3230,8 @@ namespace shttps {
         int top = lua_gettop(L);
         std::vector<LuaValstruct> retval;
 
-        LuaValstruct tmplv;
-
         for (int i = 1; i <= top; i++) {
-            if (lua_isstring(L, i)) {
-                tmplv.type = LuaValstruct::STRING_TYPE;
-                tmplv.value.s = std::string(lua_tostring(L, i));
-            } else if (lua_isinteger(L, i)) {
-                tmplv.type = LuaValstruct::INT_TYPE;
-                tmplv.value.i = lua_tointeger(L, i);
-            } else if (lua_isnumber(L, i)) {
-                tmplv.type = LuaValstruct::FLOAT_TYPE;
-                tmplv.value.f = (float) lua_tonumber(L, i);
-            } else if (lua_isboolean(L, i)) {
-                tmplv.type = LuaValstruct::BOOLEAN_TYPE;
-                tmplv.value.b = (bool) lua_toboolean(L, i);
-            } else if (lua_isnil(L, i)) {
-                std::string luaTypeName = std::string(lua_typename(L, i));
-                std::ostringstream errStream;
-                errStream << "Lua function " << funcname << " returned nil";
-                std::string errorMsg = errStream.str();
-                throw Error(__file__, __LINE__, errorMsg);
-            } else {
-                std::string luaTypeName = std::string(lua_typename(L, i));
-                std::ostringstream errMsg;
-                errMsg << "Lua function " << funcname << " returned a value of type " << luaTypeName
-                       << ", which is not supported";
-                throw Error(__file__, __LINE__, errMsg.str());
-            }
-
-            retval.push_back(tmplv);
+            retval.push_back(getLuaValue(L, i, funcname));
         }
 
         lua_pop(L, top);

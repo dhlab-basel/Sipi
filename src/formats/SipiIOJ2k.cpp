@@ -697,7 +697,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    void SipiIOJ2k::write(SipiImage *img, std::string filepath, int quality) {
+    void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         kdu_customize_warnings(&kdu_sipi_warn);
         kdu_customize_errors(&kdu_sipi_error);
 
@@ -753,9 +753,10 @@ namespace Sipi {
 
             // Set up any specific coding parameters and finalize them.
 
+            codestream.access_siz()->parse_string("Cprofile=PART2");
             codestream.access_siz()->parse_string("Creversible=yes");
             codestream.access_siz()->parse_string("Clayers=8");
-            codestream.access_siz()->parse_string("Clevels=8");
+            codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
             codestream.access_siz()->parse_string("Corder=RPCL");
             codestream.access_siz()->parse_string("Cprecincts={256,256}");
             codestream.access_siz()->parse_string("Cblk={64,64}");

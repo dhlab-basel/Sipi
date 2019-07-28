@@ -223,20 +223,34 @@ end
 --
 -- @return permission, filepath
 --     permission:
---       'allow' : the view is allowed with the given IIIF parameters
---       'restrict:watermark=<path-to-watermark>' : Add a watermark
---       'restrict:size=<iiif-size-string>' : reduce size/resolution
---       'deny' : no access!
+--        The permission can be
+--        1) either the string 'allow' or 'deny'
+--        2) a table with the following structure. 'type' is required, the other fields depend on the type
+--          {
+--             type = 'allow' | 'login' | 'clickthrough' | 'kiosk' | 'external' | 'restrict' | 'deny',
+--             cookieUrl = '<URL>',
+--             tokenUrl = '<URL>',
+--             logoutUrl = '<URL>',  -- optional
+--             confirmLabel = '<string>', -- optional
+--             description = '<string>',  -- optional
+--             failureDescription = '<string>',  -- optional
+--             failureHeader = '<string>',  -- optional
+--             header = '<string>',  -- optional
+--             watermark = '<path-to-wm-file>',
+--             size = '<iiif-size-string>'
+--          }
+--         'allow' : the view is allowed with the given IIIF parameters
+--         'login': cookie-url token-url [logout-url]: IIIF Auth API login profile
+--         'clickthrough': required: cookie-url token-url: IIIF Auth API clickthrough profile
+--         'kiosk': required: cookie-url token-url: IIIF Auth API kiosk profile
+--         'external': required: token-url: IIIF Auth API external profile
+--         'restrict': watermark=<path-to-watermark>' or size=<iiif-size-string>' required
+--         'deny' : no access!
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
 function pre_flight(prefix,identifier,cookie)
     local success, result
 
---[[    for key,value in pairs (server.header) do
-        print(key, ': ', value)
-        server.log("HEADER:: " .. key .. " : " .. value, server.loglevel.LOG_DEBUG)
-    end
-    ]]
     if prefix == 'imgrep' then
         local url = 'http://127.0.0.1/salsah/api/iiif/' .. identifier
 
@@ -293,7 +307,43 @@ function pre_flight(prefix,identifier,cookie)
     --qry = ~qry
     --db = ~db
 
-    return 'allow', filepath
+    -- return 'allow', filepath
+    if server.cookies['sipi-auth'] then
+        print('preflight: IIIF cookie')
+        access_info = server.cookies['sipi-auth']
+        success, token_val = server.decode_jwt(access_info)
+        if not success then
+            server.sendStatus(500)
+            server.log(token_val, server.loglevel.LOG_ERR)
+            return false
+        end
+        if token_val['allow'] then
+            return 'allow', filepath
+        end
+    elseif server.header['authorization'] then
+        access_info = string.sub(server.header['authorization'], 8)
+        success, token_val = server.decode_jwt(access_info)
+        if not success then
+            server.sendStatus(500)
+            server.log(token_val, server.loglevel.LOG_ERR)
+            return false
+        end
+        if token_val['allow'] then
+            return 'allow', filepath
+        end
+    else
+        return {
+            type = 'login',
+            cookieUrl = 'https://localhost:1025/server/cookie.elua',
+            tokenUrl = 'https://localhost:1025/api/token',
+            confirmLabel =  'Login to SIPI',
+            description = 'Example Institution requires that you log in with your example account to view this content.',
+            failureDescription = '<a href="http://example.org/policy">Access Policy</a>',
+            failureHeader = 'Authentication Failed',
+            header = 'Please Log In',
+            label = 'Login to SIPI',
+        }, filepath
+    end
 
 end
 -------------------------------------------------------------------------------

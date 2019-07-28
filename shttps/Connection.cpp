@@ -266,7 +266,7 @@ namespace shttps {
                 name = urldecode(*it, form_encoded);
             }
 
-            asciitolower(name);
+            //asciitolower(name);
             q[name] = value;
         }
 

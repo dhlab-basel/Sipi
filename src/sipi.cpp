@@ -56,6 +56,8 @@
 
 #include "shttps/Parsing.h"
 #include "SipiConf.h"
+#include "SipiIO.h"
+
 
 // A macro for silencing incorrect compiler warnings about unused variables.
 #define _unused(x) ((void)(x))
@@ -972,19 +974,16 @@ int main(int argc, char *argv[]) {
         //
         // write the output file
         //
-        int quality = 80;
+        //int quality = 80;
+        Sipi::SipiCompressionParams quality;
+        quality[Sipi::JPEG_quality] = "80";
 
         if (options[QUALITY]) {
-            try {
-                quality = std::stoi(options[QUALITY].arg);
-            } catch (std::exception &e) {
-                std::cerr << options[QUALITY].desc->help << std::endl;
-                return EXIT_FAILURE;
-            }
+            quality[Sipi::JPEG_quality] = options[QUALITY].arg;
         }
 
         try {
-            img.write(format, outfname, quality);
+            img.write(format, outfname, &quality);
         } catch (Sipi::SipiImageError &err) {
             std::cerr << err << std::endl;
         }

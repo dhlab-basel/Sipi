@@ -427,7 +427,7 @@ namespace Sipi {
 
     /*==========================================================================*/
 
-    void SipiIOPng::write(SipiImage *img, std::string filepath, int quality) {
+    void SipiIOPng::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         FILE *outfile = nullptr;
         png_structp png_ptr;
 

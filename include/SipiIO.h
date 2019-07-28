@@ -26,6 +26,10 @@
 #ifndef __sipi_io_h
 #define __sipi_io_h
 
+#include <unordered_map>
+#include <string>
+#include  <stdexcept>
+
 #include "SipiImage.h"
 #include "iiifparser/SipiRegion.h"
 #include "iiifparser/SipiSize.h"
@@ -62,6 +66,9 @@ namespace Sipi {
             numpages = 0;
         };
     };
+
+    typedef std::unordered_map<std::string, std::string> SipiCompressionParams;
+    const char JPEG_quality[] = "JPEG_QUALITY";
 
     class SipiImage; //!< forward declaration of class SipiImage
 
@@ -104,7 +111,7 @@ namespace Sipi {
          * - "-" means to write the image data to stdout
          * - "HTTP" means to write the image data to the HTTP-server output
          */
-        virtual void write(SipiImage *img, std::string filepath, int quality) = 0;
+        virtual void write(SipiImage *img, std::string filepath, const SipiCompressionParams *params = nullptr) = 0;
     };
 
 }

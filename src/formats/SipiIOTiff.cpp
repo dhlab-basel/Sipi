@@ -1049,7 +1049,7 @@ namespace Sipi {
     //============================================================================
 
 
-    void SipiIOTiff::write(SipiImage *img, std::string filepath, int quality) {
+    void SipiIOTiff::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         TIFF *tif;
         MEMTIFF *memtif = nullptr;
         uint32 rowsperstrip = (uint32) -1;

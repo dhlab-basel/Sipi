@@ -1,0 +1,16 @@
+<lua>
+    server.sendHeader("Set-Cookie", "iiifauth=Waseliwas")
+</lua>
+<html>
+    <head>
+        <title>TEST</title>
+        <script>
+            function closeit() {
+                window.close();
+            }
+        </script>
+    </head>
+    <body onload="closeit()">
+    gaga
+    </body>
+</html>

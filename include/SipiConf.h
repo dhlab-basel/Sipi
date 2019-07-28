@@ -52,6 +52,7 @@ namespace Sipi {
         std::vector<std::string> subdir_excludes;
         bool prefix_as_path; //<! Use IIIF-prefix as part of path or ignore it...
         int jpeg_quality;
+        std::map<std::string,shttps::LuaKeyValStore> j2k_profiles;
         std::map<std::string,std::string> scaling_quality;
         std::string init_script;
         std::string cache_dir;
@@ -103,6 +104,8 @@ namespace Sipi {
         inline bool getPrefixAsPath(void) { return prefix_as_path; }
 
         inline int getJpegQuality(void) { return jpeg_quality; }
+
+        inline std::map<std::string,shttps::LuaKeyValStore> getJ2kprofiles(void) { return j2k_profiles; }
 
         inline std::map<std::string,std::string> getScalingQuality(void) { return scaling_quality; }
 

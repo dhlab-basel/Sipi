@@ -414,7 +414,8 @@ namespace Sipi {
          * - "png" for PNG files
          * \param[in] filepath String containing the path/filename
          */
-        void write(std::string ftype, std::string filepath, int quality = -1);
+        void write(std::string ftype, std::string filepath, const SipiCompressionParams *params = nullptr);
+
 
         /*!
          * Convert full range YCbCr (YCC) to RGB colors

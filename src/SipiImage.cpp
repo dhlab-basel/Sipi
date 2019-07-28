@@ -388,13 +388,9 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::write(std::string ftype, std::string filepath, int quality) {
-        if (quality == -1) {
-            io[ftype]->write(this, filepath, 80);
-        } else {
-            io[ftype]->write(this, filepath, quality);
-        }
-    }
+    void SipiImage::write(std::string ftype, std::string filepath, const SipiCompressionParams *params) {
+        io[ftype]->write(this, filepath, params);
+   }
     //============================================================================
 
     void SipiImage::convertYCC2RGB(void) {

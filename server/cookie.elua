@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <title>Sipi Login</title>
+    </head>
+    <body>
+        <form action="do-cookie.lua" method="POST">
+            username: <input type="text" name="username" value="test"></input><br/>
+            password: <input type="password" name="password" value="password"></input><br/>
+            <input type="submit" value="SUBMIT"></input>
+        </form>
+    </body>
+</html>

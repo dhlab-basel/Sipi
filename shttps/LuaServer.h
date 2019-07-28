@@ -40,15 +40,16 @@
 
 namespace shttps {
 
-    typedef struct {
+    typedef struct _LuaValstruct {
         enum {
-            INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOLEAN_TYPE
+            INT_TYPE, FLOAT_TYPE, STRING_TYPE, BOOLEAN_TYPE, TABLE_TYPE
         } type;
         struct {
             int i;
             float f;
             std::string s;
             bool b;
+            std::unordered_map<std::string, struct _LuaValstruct> table;
         } value;
         //inline LuaValstruct() { type = }
     } LuaValstruct;
@@ -58,6 +59,8 @@ namespace shttps {
         std::string route;
         std::string script;
     } LuaRoute;
+
+    typedef std::unordered_map<std::string, LuaValstruct> LuaKeyValStore;
 
     typedef void (*LuaSetGlobalsFunc)(lua_State *L, Connection &, void *);
 
@@ -162,10 +165,14 @@ namespace shttps {
 
         const std::vector<std::string> configStringList(const std::string table, const std::string stringlist);
 
-        const std::map<std::string,std::string> configStringTable(const std::string table, const std::string variable);
+        const std::map<std::string,std::string> configStringTable(
+                const std::string &table,
+                const std::string &variable,
+                const std::map<std::string,std::string> &defval);
 
         const std::vector<LuaRoute> configRoute(const std::string routetable);
 
+        const std::map<std::string,LuaKeyValStore> configKeyValueStores(const std::string table);
         /*!
          * Execute a chunk of Lua code
          *

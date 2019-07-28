@@ -65,6 +65,7 @@ namespace Sipi {
         std::string _logfile;
         std::shared_ptr<SipiCache> _cache;
         int _jpeg_quality;
+        std::unordered_map<std::string,SipiCompressionParams> _j2k_compression_profiles;
         ScalingQuality _scaling_quality;
 
     public:
@@ -105,6 +106,10 @@ namespace Sipi {
         inline void dirs_to_exclude(const std::vector<std::string> &dirs_to_exclude) { _dirs_to_exclude = dirs_to_exclude; }
 
         inline void jpeg_quality(int jpeg_quality_p) { _jpeg_quality = jpeg_quality_p; }
+
+        inline void j2k_compression_profiles(const std::unordered_map<std::string,SipiCompressionParams> &j2k_compression_profiles) {
+            _j2k_compression_profiles = j2k_compression_profiles;
+        }
 
         inline int jpeg_quality(void) { return _jpeg_quality; }
 
