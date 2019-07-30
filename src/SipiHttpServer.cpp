@@ -262,7 +262,7 @@ namespace Sipi {
             }
         } else {
             std::ostringstream err_msg;
-            err_msg << "The permission value returned by Lua function " << pre_flight_func_name << " was not a string";
+            err_msg << "The permission value returned by Lua function " << pre_flight_func_name << " was not valid";
             throw SipiError(__file__, __LINE__, err_msg.str());
         }
 
@@ -486,15 +486,6 @@ namespace Sipi {
             }
             json_object_set_new(root, "service", service);
             http_status = Connection::StatusCodes::UNAUTHORIZED;
-        }
-        else if (access["type"] == "clickthrough") {
-
-        }
-        else if (access["type"] == "kiosk") {
-
-        }
-        else if (access["type"] == "external") {
-
         }
 
         size_t width, height;

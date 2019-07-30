@@ -119,7 +119,7 @@ function pre_flight(prefix,identifier,cookie)
         elseif response_json.permissionCode == 1 then
             -- restricted view permission on file
             -- either watermark or size (depends on project, should be returned with permission code by Sipi responder)
-            return 'restrict:size=' .. config.thumb_size, filepath
+            return {type = 'restrict', size = config.thumb_size }, filepath
         elseif response_json.permissionCode >= 2 then
             -- full view permissions on file
             return 'allow', filepath

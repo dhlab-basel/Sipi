@@ -2147,6 +2147,12 @@ namespace shttps {
             return 2;
         }
 
+        if (!lua_isstring(L, 1)) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "'server.decode_jwt(token)': error in parameter list: is not string");
+            return 2;
+        }
         std::string token = lua_tostring(L, 1);
         lua_pop(L, 1);
 

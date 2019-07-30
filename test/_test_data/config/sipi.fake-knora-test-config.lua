@@ -132,6 +132,51 @@ sipi = {
     loglevel = "DEBUG"
 }
 
+j2k_profiles = {
+    lossless_profile = {
+        --
+        -- for lossless use 'yes', for lossy use 'no'
+        --
+        Creversible = 'yes',
+
+        --
+        -- number of quality layers (determine bitrates automatically)
+        -- may not be used if rate is specified
+        --
+        Clayers = 8,
+
+        --
+        -- number of resolution levels of resolution pyramid)
+        --
+        Clevels = 6,
+
+        --
+        -- order of file organization
+        --
+        Corder = 'RPCL',
+
+        --
+        -- size of precincts
+        --
+        Cprecincts = '{256,256}',
+
+        --
+        -- code block size
+        --
+        Cblk = '{64,64}',
+
+        --
+        -- write SOP markers
+        --
+        Cuse_sop = 'yes'
+
+        --
+        -- bitrates per quality layer
+        --
+        -- rate '-,1,0.5,0.25'
+    }
+}
+
 --
 -- here we define routes that are handled by lua scripts. A route is a defined url:
 -- http://<server-DNS>/<route>

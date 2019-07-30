@@ -40,7 +40,7 @@ namespace Sipi {
         subdir_levels = luacfg.configInteger("sipi", "subdir_levels", 0);
         subdir_excludes = luacfg.configStringList("sipi", "subdir_excludes"); // has no defaults, returns an empty vector if nothing is there
         prefix_as_path = luacfg.configBoolean("sipi", "prefix_as_path", true);
-        jpeg_quality = luacfg.configInteger("sipi", "jeg_quality", 80);
+        jpeg_quality = luacfg.configInteger("sipi", "jpeg_quality", 80);
         j2k_profiles = luacfg.configKeyValueStores("j2k_profiles");
 
         std::map<std::string,std::string> default_scaling_quality = {

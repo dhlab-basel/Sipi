@@ -169,7 +169,8 @@ class TestServer:
                         "tif",
                         "jpg",
                         "png",
-                        "jp2"
+                        "jp2",
+                        "pdf"
                     ],
                     "qualities": [
                         "color",

@@ -236,15 +236,14 @@ end
 --             failureDescription = '<string>',  -- optional
 --             failureHeader = '<string>',  -- optional
 --             header = '<string>',  -- optional
---             watermark = '<path-to-wm-file>',
---             size = '<iiif-size-string>'
+--             watermark = '<path-to-wm-file>', -- for type = restrict only
+--             size = '<iiif-size-string>' -- for type = restrict only
 --          }
 --         'allow' : the view is allowed with the given IIIF parameters
 --         'login': cookie-url token-url [logout-url]: IIIF Auth API login profile
 --         'clickthrough': required: cookie-url token-url: IIIF Auth API clickthrough profile
 --         'kiosk': required: cookie-url token-url: IIIF Auth API kiosk profile
 --         'external': required: token-url: IIIF Auth API external profile
---         'restrict': watermark=<path-to-watermark>' or size=<iiif-size-string>' required
 --         'deny' : no access!
 --    filepath: server-path where the master file is located
 -------------------------------------------------------------------------------
@@ -334,10 +333,10 @@ function pre_flight(prefix,identifier,cookie)
     else
         return {
             type = 'login',
-            cookieUrl = 'https://localhost:1025/server/cookie.elua',
-            tokenUrl = 'https://localhost:1025/api/token',
+            cookieUrl = 'https://localhost/iiif-cookie.html',
+            tokenUrl = 'https://localhost/iiif-token.php',
             confirmLabel =  'Login to SIPI',
-            description = 'Example Institution requires that you log in with your example account to view this content.',
+            description = 'This Example requires a demo login!',
             failureDescription = '<a href="http://example.org/policy">Access Policy</a>',
             failureHeader = 'Authentication Failed',
             header = 'Please Log In',
