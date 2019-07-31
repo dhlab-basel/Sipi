@@ -341,6 +341,7 @@ add_executable(
         src/SipiConf.cpp include/SipiConf.h
         src/SipiError.cpp include/SipiError.h
         include/AdobeRGB1998_icc.h include/USWebCoatedSWOP_icc.h
+        include/CLI11.hpp
         src/metadata/SipiIcc.cpp include/metadata/SipiIcc.h
         src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
         src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h

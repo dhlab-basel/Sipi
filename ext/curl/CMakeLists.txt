@@ -15,9 +15,9 @@ endif()
 #
 ExternalProject_Add(project_curl
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://curl.haxx.se/download/curl-7.64.0.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/curl-7.64.0
-        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.64.0/configure
+        URL https://curl.haxx.se/download/curl-7.65.3.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/curl-7.65.3
+        CONFIGURE_COMMAND ${COMMON_SRCS}/curl-7.65.3/configure
             --prefix=${COMMON_LOCAL}
             --enable-shared
             --enable-static

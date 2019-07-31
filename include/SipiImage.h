@@ -245,6 +245,12 @@ namespace Sipi {
          */
         inline size_t getNalpha() { return es.size(); }
 
+        /*!
+         * Get bits per sample of image
+         * @return bis per sample (bps)
+         */
+        inline size_t getBps() { return bps; }
+
         /*! Destructor
          *
          * Destroys the image and frees all the resources associated with it
