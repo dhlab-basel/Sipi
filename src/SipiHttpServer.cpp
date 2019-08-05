@@ -1469,7 +1469,7 @@ namespace Sipi {
 
                     syslog(LOG_DEBUG, "Before writing JPG...");
 
-                    Sipi::SipiCompressionParams qp = {{JPEG_quality, std::to_string(serv->jpeg_quality())}};
+                    Sipi::SipiCompressionParams qp = {{JPEG_QUALITY, std::to_string(serv->jpeg_quality())}};
                     try {
                         img.write("jpg", "HTTP", &qp);
                     } catch (SipiImageError &err) {

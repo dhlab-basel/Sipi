@@ -381,6 +381,47 @@ int main(int argc, char *argv[]) {
     sipiopt.add_option("-q,--quality", optJpegQuality, "Quality (compression). Value can any integer between 1 and 100")
     ->check(CLI::Range(1,100))->envname("SIPI_JPEGQUALITY");
 
+    //
+    // Parameters for JPEG2000 compression (see kakadu kdu_compress for details!)
+    //
+    std::string j2k_Cprofile = "PART2";
+    sipiopt.add_option("--Cprofile", j2k_Cprofile, "J2K: ('PROFILE0', 'PROFILE1', 'PROFILE2', 'PART2', "
+                                                   "'CINEMA2K', 'CINEMA4K', 'BROADCAST', 'CINEMA2S', 'CINEMA4S', 'CINEMASS', 'IMF',  [default: 'PART2']) "
+                                                   "Restricted profile to which the code-stream conforms.")
+                                                   ->check(CLI::IsMember({"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
+                                                                          "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
+                                                                          "CINEMASS", "IMF"}, CLI::ignore_case));
+
+    bool j2k_Creversible = true;
+    sipiopt.add_option("--Creversible", j2k_Creversible, "J2K: True for Reversible compression [default: true].");
+
+    int j2k_Clayers = 8;
+    sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers [default: 8].");
+
+    int j2k_Clevels = 6;
+    sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages [default: 6].");
+
+    std::string j2k_Corder = "RPCL";
+    sipiopt.add_option("--Corder", j2k_Corder, "J2K: ('LRCP', 'RLCP', 'RPCL', 'PCRL', 'CPRL', default: 'RPCL') Progression order. "
+                                               "The four character identifiers have the following interpretation: "
+                                               "L=layer; R=resolution; C=component; P=position. The first character in the identifier refers to the "
+                                               "index which progresses most slowly, while the last refers to the index which progresses most quickly.")
+                                               ->check(CLI::IsMember({"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"}, CLI::ignore_case));
+
+    std::string j2k_Cprecincts = "{256,256}";
+    sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions (must be powers of 2) [default: '{256,256}'].");
+
+    std::string j2k_Cblk = "{64,64}";
+    sipiopt.add_option("--Cblk", j2k_Cblk, "J2K: Nominal code-block dimensions (must be powers of 2, no less than 4 and "
+                                           "no greater than 1024, whose product may not exceed 4096) [default: '{64,64}'].");
+
+    bool j2k_Cuse_sop = true;
+    sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers) [default: true].");
+
+
+    //
+    // used for rendering only one page of multipage PDF or TIFF (NYI for tif...)
+    //
     int optPagenum = 0;
     sipiopt.add_option("-n,--pagenum", optPagenum, "Pagenumber for PDF documents or multipage TIFFs.");
 
@@ -719,12 +760,20 @@ int main(int argc, char *argv[]) {
         //
         // write the output file
         //
-        //int quality = 80;
-        Sipi::SipiCompressionParams quality;
-        quality[Sipi::JPEG_quality] = optJpegQuality;
+        //int quality = 80
+        Sipi::SipiCompressionParams comp_params;
+        comp_params[Sipi::JPEG_QUALITY] = optJpegQuality;
+        comp_params[Sipi::J2K_Cprofile] = j2k_Cprofile;
+        comp_params[Sipi::J2K_Creversible] = j2k_Creversible ? "yes" : "no";
+        comp_params[Sipi::J2K_Clayers] = std::to_string(j2k_Clayers);
+        comp_params[Sipi::J2K_Clevels] = std::to_string(j2k_Clevels);
+        comp_params[Sipi::J2K_Corder] = j2k_Corder;
+        comp_params[Sipi::J2K_Cprecincts] = j2k_Cprecincts;
+        comp_params[Sipi::J2K_Cblk] = j2k_Cblk;
+        comp_params[Sipi::J2K_Cuse_sop] = j2k_Cuse_sop ? "yes" : "no";
 
         try {
-            img.write(format, optOutFile, &quality);
+            img.write(format, optOutFile, &comp_params);
         } catch (Sipi::SipiImageError &err) {
             std::cerr << err << std::endl;
         }
