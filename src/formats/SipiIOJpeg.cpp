@@ -901,7 +901,7 @@ namespace Sipi {
         int quality = 80;
         if (params != nullptr) {
             try {
-                quality = stoi(params->at(JPEG_quality));
+                quality = stoi(params->at(JPEG_QUALITY));
             }
             catch(const std::out_of_range &er) {
                 throw SipiImageError(__file__, __LINE__, "JPEG quality argument must be integer between 0 and 100");

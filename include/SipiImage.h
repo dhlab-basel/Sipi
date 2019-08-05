@@ -33,6 +33,7 @@
 #include <utility>
 #include <string>
 #include <unordered_map>
+#include <exception>
 
 #include "SipiError.h"
 #include "SipiIO.h"
@@ -95,12 +96,13 @@ namespace Sipi {
     * also catches errors withing reading/writing an image format.
     */
     //class SipiImageError : public std::runtime_error {
-    class SipiImageError {
+class SipiImageError : public std::exception {
     private:
         std::string file; //!< Source file where the error occurs in
         int line; //!< Line within the source file
         int errnum; //!< error number if a system call is the reason for the error
         std::string errmsg;
+        std::string fullerrmsg;
 
     public:
         /*!
@@ -148,6 +150,7 @@ namespace Sipi {
             outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
             return outStream;
         }
+        //============================================================================
     };
 
 

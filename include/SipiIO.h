@@ -28,7 +28,7 @@
 
 #include <unordered_map>
 #include <string>
-#include  <stdexcept>
+#include <stdexcept>
 
 #include "SipiImage.h"
 #include "iiifparser/SipiRegion.h"
@@ -67,7 +67,19 @@ namespace Sipi {
         };
     };
 
-    typedef std::unordered_map<std::string, std::string> SipiCompressionParams;
+    enum {
+        JPEG_QUALITY,
+        J2K_Cprofile,
+        J2K_Creversible,
+        J2K_Clayers,
+        J2K_Clevels,
+        J2K_Corder,
+        J2K_Cprecincts,
+        J2K_Cblk,
+        J2K_Cuse_sop
+    } SipiCompressionParamName;
+    typedef std::unordered_map<int, std::string> SipiCompressionParams;
+
     const char JPEG_quality[] = "JPEG_QUALITY";
 
     class SipiImage; //!< forward declaration of class SipiImage

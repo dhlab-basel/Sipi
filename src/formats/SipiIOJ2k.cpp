@@ -752,15 +752,81 @@ namespace Sipi {
             codestream.create(&siz, output);
 
             // Set up any specific coding parameters and finalize them.
+            if (params != nullptr) {
+                try {
+                    std::stringstream ss;
+                    ss << "Cprofile=" << params->at(J2K_Cprofile);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Cprofile=PART2");
+                }
 
-            codestream.access_siz()->parse_string("Cprofile=PART2");
-            codestream.access_siz()->parse_string("Creversible=yes");
-            codestream.access_siz()->parse_string("Clayers=8");
-            codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
-            codestream.access_siz()->parse_string("Corder=RPCL");
-            codestream.access_siz()->parse_string("Cprecincts={256,256}");
-            codestream.access_siz()->parse_string("Cblk={64,64}");
-            codestream.access_siz()->parse_string("Cuse_sop=yes");
+                try {
+                    std::stringstream ss;
+                    ss << "Creversible=" << params->at(J2K_Creversible);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Creversible=yes");
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Clayers=" << params->at(J2K_Clayers);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Clayers=8");
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Clevels=" << params->at(J2K_Clevels);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Corder=" << params->at(J2K_Corder);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Corder=RPCL");
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Cprecincts=" << params->at(J2K_Cprecincts);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Cprecincts={256,256}");
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Cblk=" << params->at(J2K_Cblk);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Cblk={64,64}");
+                }
+
+                try {
+                    std::stringstream ss;
+                    ss << "Cuse_sop=" << params->at(J2K_Cuse_sop);
+                    codestream.access_siz()->parse_string(ss.str().c_str());
+                } catch(const std::out_of_range &er) {
+                    codestream.access_siz()->parse_string("Cuse_sop=yes");
+                }
+            }
+            else {
+                codestream.access_siz()->parse_string("Cprofile=PART2");
+                codestream.access_siz()->parse_string("Creversible=yes");
+                codestream.access_siz()->parse_string("Clayers=8");
+                codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
+                codestream.access_siz()->parse_string("Corder=RPCL");
+                codestream.access_siz()->parse_string("Cprecincts={256,256}");
+                codestream.access_siz()->parse_string("Cblk={64,64}");
+                codestream.access_siz()->parse_string("Cuse_sop=yes");
+            }
 
             //codestream.access_siz()->parse_string("Stiles={1024,1024}");
             //codestream.access_siz()->parse_string("ORGgen_plt=yes");
