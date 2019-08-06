@@ -76,11 +76,10 @@ namespace Sipi {
         J2K_Corder,
         J2K_Cprecincts,
         J2K_Cblk,
-        J2K_Cuse_sop
+        J2K_Cuse_sop,
+        J2K_rates
     } SipiCompressionParamName;
     typedef std::unordered_map<int, std::string> SipiCompressionParams;
-
-    const char JPEG_quality[] = "JPEG_QUALITY";
 
     class SipiImage; //!< forward declaration of class SipiImage
 

@@ -384,7 +384,7 @@ int main(int argc, char *argv[]) {
     //
     // Parameters for JPEG2000 compression (see kakadu kdu_compress for details!)
     //
-    std::string j2k_Cprofile = "PART2";
+    std::string j2k_Cprofile;
     sipiopt.add_option("--Cprofile", j2k_Cprofile, "J2K: ('PROFILE0', 'PROFILE1', 'PROFILE2', 'PART2', "
                                                    "'CINEMA2K', 'CINEMA4K', 'BROADCAST', 'CINEMA2S', 'CINEMA4S', 'CINEMASS', 'IMF',  [default: 'PART2']) "
                                                    "Restricted profile to which the code-stream conforms.")
@@ -392,30 +392,47 @@ int main(int argc, char *argv[]) {
                                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                                           "CINEMASS", "IMF"}, CLI::ignore_case));
 
-    bool j2k_Creversible = true;
+    bool j2k_Creversible;
     sipiopt.add_option("--Creversible", j2k_Creversible, "J2K: True for Reversible compression [default: true].");
 
-    int j2k_Clayers = 8;
+    std::vector<double> j2k_rates;
+    sipiopt.add_option("--rates", j2k_rates, "One or more bit-rates, expressed in terms of the ratio between the total "
+                                             "number of compressed bits (including headers) and the product of the "
+                                             "largest horizontal and  vertical image component dimensions.  A value "
+                                             "\"-1\" may be used in place of the first bit-rate in the list to indicate "
+                                             "that the final quality layer should include all compressed bits. "
+                                             "If \"Clayers\" is not used, the number of layers is set to the number "
+                                             "of rates specified here. If \"Clayers\" is used to specify an actual "
+                                             "number of quality layers, one of the following must be true: 1) the "
+                                             "number of rates specified here is identical to the specified number of "
+                                             "layers; or 2) one, two or no rates are specified using this argument. "
+                                             "When two rates are specified, the number of layers must be 2 or more and "
+                                             "intervening layers will be assigned roughly logarithmically spaced "
+                                             "bit-rates. When only one rate is specified, an internal heuristic "
+                                             "determines a lower bound and logarithmically spaces the layer rates over "
+                                             "the range.");
+
+    int j2k_Clayers;
     sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers [default: 8].");
 
-    int j2k_Clevels = 6;
+    int j2k_Clevels;
     sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages [default: 6].");
 
-    std::string j2k_Corder = "RPCL";
+    std::string j2k_Corder;
     sipiopt.add_option("--Corder", j2k_Corder, "J2K: ('LRCP', 'RLCP', 'RPCL', 'PCRL', 'CPRL', default: 'RPCL') Progression order. "
                                                "The four character identifiers have the following interpretation: "
                                                "L=layer; R=resolution; C=component; P=position. The first character in the identifier refers to the "
                                                "index which progresses most slowly, while the last refers to the index which progresses most quickly.")
                                                ->check(CLI::IsMember({"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"}, CLI::ignore_case));
 
-    std::string j2k_Cprecincts = "{256,256}";
+    std::string j2k_Cprecincts;
     sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions (must be powers of 2) [default: '{256,256}'].");
 
-    std::string j2k_Cblk = "{64,64}";
+    std::string j2k_Cblk;
     sipiopt.add_option("--Cblk", j2k_Cblk, "J2K: Nominal code-block dimensions (must be powers of 2, no less than 4 and "
                                            "no greater than 1024, whose product may not exceed 4096) [default: '{64,64}'].");
 
-    bool j2k_Cuse_sop = true;
+    bool j2k_Cuse_sop;
     sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers) [default: true].");
 
 
@@ -637,7 +654,7 @@ int main(int argc, char *argv[]) {
             // there is no format option given – we try to determine the format
             // from the output name extension
             //
-            size_t pos = optOutFile.rfind(".");
+            size_t pos = optOutFile.rfind('.');
             if (pos != std::string::npos) {
                 std::string ext = optOutFile.substr(pos + 1);
                 if ((ext == "jpx") || (ext == "jp2")) {
@@ -763,14 +780,24 @@ int main(int argc, char *argv[]) {
         //int quality = 80
         Sipi::SipiCompressionParams comp_params;
         comp_params[Sipi::JPEG_QUALITY] = optJpegQuality;
-        comp_params[Sipi::J2K_Cprofile] = j2k_Cprofile;
-        comp_params[Sipi::J2K_Creversible] = j2k_Creversible ? "yes" : "no";
-        comp_params[Sipi::J2K_Clayers] = std::to_string(j2k_Clayers);
-        comp_params[Sipi::J2K_Clevels] = std::to_string(j2k_Clevels);
-        comp_params[Sipi::J2K_Corder] = j2k_Corder;
-        comp_params[Sipi::J2K_Cprecincts] = j2k_Cprecincts;
-        comp_params[Sipi::J2K_Cblk] = j2k_Cblk;
-        comp_params[Sipi::J2K_Cuse_sop] = j2k_Cuse_sop ? "yes" : "no";
+        if (!sipiopt.get_option("--Cprofile")->empty()) comp_params[Sipi::J2K_Cprofile] = j2k_Cprofile;
+        if (!sipiopt.get_option("--Creversible")->empty()) comp_params[Sipi::J2K_Creversible] = j2k_Creversible ? "yes" : "no";
+        if (!sipiopt.get_option("--Clayers")->empty()) comp_params[Sipi::J2K_Clayers] = std::to_string(j2k_Clayers);
+        if (!sipiopt.get_option("--Clevels")->empty()) comp_params[Sipi::J2K_Clevels] = std::to_string(j2k_Clevels);
+        if (!sipiopt.get_option("--Corder")->empty()) comp_params[Sipi::J2K_Corder] = j2k_Corder;
+        if (!sipiopt.get_option("--Cprecincts")->empty()) comp_params[Sipi::J2K_Cprecincts] = j2k_Cprecincts;
+        if (!sipiopt.get_option("--Cblk")->empty()) comp_params[Sipi::J2K_Cblk] = j2k_Cblk;
+        if (!sipiopt.get_option("--Cuse_sop")->empty()) comp_params[Sipi::J2K_Cuse_sop] = j2k_Cuse_sop ? "yes" : "no";
+        if (!sipiopt.get_option("--rates")->empty()) {
+            std::stringstream ss;
+            bool sep = false;
+            for (auto &rate: j2k_rates) {
+                ss << rate;
+                if (sep) ss << " ";
+                sep = true;
+            }
+            comp_params[Sipi::J2K_rates] = ss.str();
+        }
 
         try {
             img.write(format, optOutFile, &comp_params);

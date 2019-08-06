@@ -696,6 +696,23 @@ namespace Sipi {
     }
     //=============================================================================
 
+    static long get_bpp_dims(kdu_codestream &codestream)
+    {
+        int comps = codestream.get_num_components();
+        int n, max_width=0, max_height=0;
+        for (n = 0; n < comps; n++) {
+            kdu_dims dims;
+            codestream.get_dims(n,dims);
+            if (dims.size.x > max_width) {
+                max_width = dims.size.x;
+            }
+            if (dims.size.y > max_height) {
+                max_height = dims.size.y;
+            }
+        }
+        return ((long) max_height) * ((long) max_width);
+    }
+
 
     void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         kdu_customize_warnings(&kdu_sipi_warn);
@@ -752,6 +769,8 @@ namespace Sipi {
             codestream.create(&siz, output);
 
             // Set up any specific coding parameters and finalize them.
+            int num_clayers;
+            std::vector<double> rates;
             if (params != nullptr) {
                 try {
                     std::stringstream ss;
@@ -770,12 +789,20 @@ namespace Sipi {
                 }
 
                 try {
+                    num_clayers = std::stoi(params->at(J2K_Clayers));
                     std::stringstream ss;
                     ss << "Clayers=" << params->at(J2K_Clayers);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
+                } catch (const std::invalid_argument &er) {
                     codestream.access_siz()->parse_string("Clayers=8");
-                }
+                    num_clayers = 8;
+                } catch(const std::out_of_range &er) {
+                    // no Clayers...
+                    if (params->find(J2K_rates) == params->end()) { // no rates either
+                        codestream.access_siz()->parse_string("Clayers=8");
+                        num_clayers = 8;
+                    }
+               }
 
                 try {
                     std::stringstream ss;
@@ -816,11 +843,22 @@ namespace Sipi {
                 } catch(const std::out_of_range &er) {
                     codestream.access_siz()->parse_string("Cuse_sop=yes");
                 }
+
+                try {
+                    std::string ratestr = params->at(J2K_rates);
+                    std::stringstream ss(ratestr);
+                    double temp;
+                    while (ss >> temp)
+                        rates.push_back(temp); // done! now array={102,330,3133,76531,451,000,12,44412}
+                } catch(const std::out_of_range &er) {
+                    //codestream.access_siz()->parse_string("Cuse_sop=yes");
+                }
             }
             else {
                 codestream.access_siz()->parse_string("Cprofile=PART2");
                 codestream.access_siz()->parse_string("Creversible=yes");
                 codestream.access_siz()->parse_string("Clayers=8");
+                num_clayers = 8;
                 codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
                 codestream.access_siz()->parse_string("Corder=RPCL");
                 codestream.access_siz()->parse_string("Cprecincts={256,256}");
@@ -1061,20 +1099,48 @@ namespace Sipi {
                 env_ref = &env;
             }
 
+            //
+            // here we calculate the JPEG2000/kakadu parameters for num_layer...
+            // see kdu_compress, derived fromn code there
+            //
+            int num_layers = 0;
+            std::vector<kdu_long> layer_sizes(rates.size());
+            kdu_long *layer_sizes_ptr = nullptr;
+            if (rates.size() > 0) {
+                if ((rates.size() == num_clayers) || ((rates.size() <= 2) && ((num_clayers >= 2)))) {
+                    kdu_long total_pels = get_bpp_dims(codestream);
+                    for (auto &rate: rates) {
+                        if (rate == -1.0) {
+                            layer_sizes.push_back(KDU_LONG_MAX);
+                        } else {
+                            layer_sizes.push_back((kdu_long) std::floor(rate * 0.125 * total_pels));
+                        }
+                    }
+                    std::sort(layer_sizes.begin(), layer_sizes.end());
+                    if (layer_sizes.back() == KDU_LONG_MAX) layer_sizes.back() = 0;
+                    layer_sizes_ptr = layer_sizes.data();
+                    num_layers = layer_sizes.size();
+                }
+            }
+            else {
+                layer_sizes_ptr = nullptr;
+                num_layers = 0;
+            }
+
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
             compressor.start(codestream,
-                             8,       // num_layer_specs
-                             nullptr, // layer_sizes
-                             nullptr, // layer_slopes
-                             0,       // min_slope_threshold
-                             false,   // no_prediction
-                             true,    //force_precise [YES]
-                             true,    // record_layer_info_in_comment
-                             0.0,     // size_tolerance
-                             img->nc, // num_components
-                             false,   // want_fastest [NO]
-                             env_ref);
+                    num_layers,       // num_layer_specs
+                    layer_sizes_ptr, // layer_sizes
+                    nullptr, // layer_slopes
+                    0,       // min_slope_threshold
+                    false,   // no_prediction
+                    true,    //force_precise [YES]
+                    true,    // record_layer_info_in_comment
+                    0.0,     // size_tolerance
+                    img->nc, // num_components
+                    false,   // want_fastest [NO]
+                    env_ref);
             int *stripe_heights = new int[img->nc];
             for (size_t i = 0; i < img->nc; i++) {
                 stripe_heights[i] = img->ny;
