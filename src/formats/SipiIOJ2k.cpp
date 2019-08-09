@@ -858,7 +858,7 @@ namespace Sipi {
                 codestream.access_siz()->parse_string("Cprofile=PART2");
                 codestream.access_siz()->parse_string("Creversible=yes");
                 codestream.access_siz()->parse_string("Clayers=8");
-                num_clayers = 8;
+                //num_clayers = 8;
                 codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
                 codestream.access_siz()->parse_string("Corder=RPCL");
                 codestream.access_siz()->parse_string("Cprecincts={256,256}");
@@ -1056,11 +1056,11 @@ namespace Sipi {
                     }
                 }
             }
-            /*
+
             for (int c = 0; c < img->es.size(); c++) {
                 jp2_family_channels.set_opacity_mapping(img->nc - img->es.size() + c, img->nc - img->es.size() + c);
             }
-             */
+
             jpx_out.write_headers();
             if (img->iptc != nullptr) {
                 std::vector<unsigned char> iptc_buf = img->iptc->iptcBytes();
@@ -1127,6 +1127,7 @@ namespace Sipi {
                 num_layers = 0;
             }
 
+            std::cerr << "layer_sizes_ptr: " << layer_sizes_ptr << " num_layers: " << num_layers << std::endl;
             // Now compress the image in one hit, using `kdu_stripe_compressor'
             kdu_stripe_compressor compressor;
             compressor.start(codestream,

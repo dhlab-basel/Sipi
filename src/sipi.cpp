@@ -348,10 +348,10 @@ int main(int argc, char *argv[]) {
     sipiopt.add_option("-c,--config", optConfigfile, "Configuration file for web server.")->envname("SIPI_CONFIGFILE")->check(CLI::ExistingFile);;
 
     std::string optInFile;
-    sipiopt.add_option("-f,--file,--inf,infile", optInFile, "Input file to be converted. Usage: sipi [options] [-f] fileIn [--outf] fileout.")->check(CLI::ExistingFile);;
+    sipiopt.add_option("-f,--file,--inf,infile", optInFile, "Input file to be converted.")->check(CLI::ExistingFile);;
 
     std::string optOutFile;
-    sipiopt.add_option("-z,--outf,outfile", optOutFile, "Output file to be converted. Usage: sipi [options] [-f] fileIn [--outf] fileout.");
+    sipiopt.add_option("-z,--outf,outfile", optOutFile, "Output file to be converted.");
 
     enum class OptFormat: int {jpx, jpg, tif, png, pdf};
     OptFormat optFormat = OptFormat::jpx;
@@ -363,7 +363,7 @@ int main(int argc, char *argv[]) {
             {"png", OptFormat ::png},
             {"pdf", OptFormat::pdf}
     };
-    sipiopt.add_option("-F,--format", optFormat, "Output format Value can be: 'jpx', 'jpg', 'tif', 'png', 'pdf'.")
+    sipiopt.add_option("-F,--format", optFormat, "Output format.")
             ->transform(CLI::CheckedTransformer(optFormatMap, CLI::ignore_case));
 
     enum class OptIcc: int{none, sRGB, AdobeRGB, GRAY};
@@ -374,66 +374,51 @@ int main(int argc, char *argv[]) {
             {"AdobeRGB", OptIcc::AdobeRGB},
             {"GRAY", OptIcc::GRAY}
     };
-    sipiopt.add_option("-I,--icc", optIcc, "Convert to ICC profile. Value can be: 'none', 'sRGB', 'AdobeRGB', 'GRAY'.")
+    sipiopt.add_option("-I,--icc", optIcc, "Convert to ICC profile.")
             ->transform(CLI::CheckedTransformer(optIccMap, CLI::ignore_case));
 
     int optJpegQuality = 60;
-    sipiopt.add_option("-q,--quality", optJpegQuality, "Quality (compression). Value can any integer between 1 and 100")
+    sipiopt.add_option("-q,--quality", optJpegQuality, "Quality (compression).")
     ->check(CLI::Range(1,100))->envname("SIPI_JPEGQUALITY");
 
     //
     // Parameters for JPEG2000 compression (see kakadu kdu_compress for details!)
     //
     std::string j2k_Cprofile;
-    sipiopt.add_option("--Cprofile", j2k_Cprofile, "J2K: ('PROFILE0', 'PROFILE1', 'PROFILE2', 'PART2', "
-                                                   "'CINEMA2K', 'CINEMA4K', 'BROADCAST', 'CINEMA2S', 'CINEMA4S', 'CINEMASS', 'IMF',  [default: 'PART2']) "
-                                                   "Restricted profile to which the code-stream conforms.")
+    sipiopt.add_option("--Cprofile", j2k_Cprofile, "Restricted profile to which the code-stream conforms.")
                                                    ->check(CLI::IsMember({"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
                                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                                           "CINEMASS", "IMF"}, CLI::ignore_case));
 
     bool j2k_Creversible;
-    sipiopt.add_option("--Creversible", j2k_Creversible, "J2K: True for Reversible compression [default: true].");
+    sipiopt.add_option("--Creversible", j2k_Creversible, "J2K: True for Reversible compression.");
 
     std::vector<double> j2k_rates;
-    sipiopt.add_option("--rates", j2k_rates, "One or more bit-rates, expressed in terms of the ratio between the total "
-                                             "number of compressed bits (including headers) and the product of the "
-                                             "largest horizontal and  vertical image component dimensions.  A value "
+    sipiopt.add_option("--rates", j2k_rates, "One or more bit-rates (see kdu_compress help!). A value "
                                              "\"-1\" may be used in place of the first bit-rate in the list to indicate "
-                                             "that the final quality layer should include all compressed bits. "
-                                             "If \"Clayers\" is not used, the number of layers is set to the number "
-                                             "of rates specified here. If \"Clayers\" is used to specify an actual "
-                                             "number of quality layers, one of the following must be true: 1) the "
-                                             "number of rates specified here is identical to the specified number of "
-                                             "layers; or 2) one, two or no rates are specified using this argument. "
-                                             "When two rates are specified, the number of layers must be 2 or more and "
-                                             "intervening layers will be assigned roughly logarithmically spaced "
-                                             "bit-rates. When only one rate is specified, an internal heuristic "
-                                             "determines a lower bound and logarithmically spaces the layer rates over "
-                                             "the range.");
+                                             "that the final quality layer should include all compressed bits.");
 
     int j2k_Clayers;
-    sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers [default: 8].");
+    sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers.");
 
     int j2k_Clevels;
-    sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages [default: 6].");
+    sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages.");
 
     std::string j2k_Corder;
-    sipiopt.add_option("--Corder", j2k_Corder, "J2K: ('LRCP', 'RLCP', 'RPCL', 'PCRL', 'CPRL', default: 'RPCL') Progression order. "
-                                               "The four character identifiers have the following interpretation: "
+    sipiopt.add_option("--Corder", j2k_Corder, "J2K: Progression order. The four character identifiers have the following interpretation: "
                                                "L=layer; R=resolution; C=component; P=position. The first character in the identifier refers to the "
                                                "index which progresses most slowly, while the last refers to the index which progresses most quickly.")
                                                ->check(CLI::IsMember({"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"}, CLI::ignore_case));
 
     std::string j2k_Cprecincts;
-    sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions (must be powers of 2) [default: '{256,256}'].");
+    sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions (must be powers of 2).");
 
     std::string j2k_Cblk;
     sipiopt.add_option("--Cblk", j2k_Cblk, "J2K: Nominal code-block dimensions (must be powers of 2, no less than 4 and "
-                                           "no greater than 1024, whose product may not exceed 4096) [default: '{64,64}'].");
+                                           "no greater than 1024, whose product may not exceed 4096).");
 
     bool j2k_Cuse_sop;
-    sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers) [default: true].");
+    sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers).");
 
 
     //
