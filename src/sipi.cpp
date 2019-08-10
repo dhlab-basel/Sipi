@@ -384,8 +384,8 @@ int main(int argc, char *argv[]) {
     //
     // Parameters for JPEG2000 compression (see kakadu kdu_compress for details!)
     //
-    std::string j2k_Cprofile;
-    sipiopt.add_option("--Cprofile", j2k_Cprofile, "Restricted profile to which the code-stream conforms.")
+    std::string j2k_Sprofile;
+    sipiopt.add_option("--Sprofile", j2k_Sprofile, "Restricted profile to which the code-stream conforms.")
                                                    ->check(CLI::IsMember({"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
                                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                                           "CINEMASS", "IMF"}, CLI::ignore_case));
@@ -396,7 +396,8 @@ int main(int argc, char *argv[]) {
     std::vector<double> j2k_rates;
     sipiopt.add_option("--rates", j2k_rates, "One or more bit-rates (see kdu_compress help!). A value "
                                              "\"-1\" may be used in place of the first bit-rate in the list to indicate "
-                                             "that the final quality layer should include all compressed bits.");
+                                             "that the final quality layer should include all compressed bits.")
+                                             ->delimiter(',');
 
     int j2k_Clayers;
     sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers.");
@@ -765,7 +766,7 @@ int main(int argc, char *argv[]) {
         //int quality = 80
         Sipi::SipiCompressionParams comp_params;
         comp_params[Sipi::JPEG_QUALITY] = optJpegQuality;
-        if (!sipiopt.get_option("--Cprofile")->empty()) comp_params[Sipi::J2K_Cprofile] = j2k_Cprofile;
+        if (!sipiopt.get_option("--Sprofile")->empty()) comp_params[Sipi::J2K_Sprofile] = j2k_Sprofile;
         if (!sipiopt.get_option("--Creversible")->empty()) comp_params[Sipi::J2K_Creversible] = j2k_Creversible ? "yes" : "no";
         if (!sipiopt.get_option("--Clayers")->empty()) comp_params[Sipi::J2K_Clayers] = std::to_string(j2k_Clayers);
         if (!sipiopt.get_option("--Clevels")->empty()) comp_params[Sipi::J2K_Clevels] = std::to_string(j2k_Clevels);

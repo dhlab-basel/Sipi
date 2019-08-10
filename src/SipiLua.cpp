@@ -845,15 +845,15 @@ namespace Sipi {
                     }
                     const char *tmpvalue = lua_tostring(L, -1);
                     std::string value(tmpvalue);
-                    if (key == std::string("Cprofile")) {
+                    if (key == std::string("Sprofile")) {
                         std::set<std::string> validvalues {"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
                                                            "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                            "CINEMASS", "IMF"};
                         if (validvalues.find(value) != validvalues.end()) {
-                            comp_params[Sipi::J2K_Cprofile] = value;
+                            comp_params[Sipi::J2K_Sprofile] = value;
                         } else {
                             lua_pop(L, lua_gettop(L));
-                            lua_pushstring(L, "SipiImage.write(): invalid Cprofile!");
+                            lua_pushstring(L, "SipiImage.write(): invalid Sprofile!");
                             return lua_error(L);
                         }
                     } else if (key == std::string("Creversible")) {
@@ -899,7 +899,7 @@ namespace Sipi {
                     } else if (key == std::string("Corder")) {
                         std::set<std::string> validvalues = {"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"};
                         if (validvalues.find(value) != validvalues.end()) {
-                            comp_params[Sipi::J2K_Clevels] = value;
+                            comp_params[Sipi::J2K_Corder] = value;
                         } else {
                             lua_pop(L, lua_gettop(L));
                             lua_pushstring(L, "SipiImage.write(): invalid Corder!");
@@ -972,7 +972,7 @@ namespace Sipi {
             lua_remove(L, -1); // remove from stack
             img->image->connection(conn);
             try {
-                img->image->write(ftype, "HTTP");
+                img->image->write(ftype, "HTTP", comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
@@ -981,7 +981,7 @@ namespace Sipi {
             }
         } else {
             try {
-                img->image->write(ftype, imgpath);
+                img->image->write(ftype, imgpath, comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
