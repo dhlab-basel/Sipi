@@ -306,9 +306,10 @@ function pre_flight(prefix,identifier,cookie)
     --qry = ~qry
     --db = ~db
 
-    --return 'allow', filepath
+    return 'allow', filepath
 
---end
+end
+    --[[
     if server.cookies['sipi-auth'] then
         print('preflight: IIIF cookie')
         access_info = server.cookies['sipi-auth']
@@ -347,4 +348,5 @@ function pre_flight(prefix,identifier,cookie)
     end
 
 end
+--]]
 -------------------------------------------------------------------------------

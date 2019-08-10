@@ -69,7 +69,7 @@ namespace Sipi {
 
     enum {
         JPEG_QUALITY,
-        J2K_Cprofile,
+        J2K_Sprofile,
         J2K_Creversible,
         J2K_Clayers,
         J2K_Clevels,

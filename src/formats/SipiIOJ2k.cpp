@@ -733,8 +733,7 @@ namespace Sipi {
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
-            kdu_codestream codestream;
-
+            kdu_stripe_compressor compressor;
             kdu_compressed_target *output = nullptr;
             jp2_family_tgt jp2_ultimate_tgt;
             jpx_target jpx_out;
@@ -766,26 +765,31 @@ namespace Sipi {
 
             output = jpx_stream.access_stream();
 
+            kdu_codestream codestream;
             codestream.create(&siz, output);
 
             // Set up any specific coding parameters and finalize them.
             int num_clayers;
             std::vector<double> rates;
+            bool is_reversible = false;
             if (params != nullptr) {
                 try {
                     std::stringstream ss;
-                    ss << "Cprofile=" << params->at(J2K_Cprofile);
+                    ss << "Sprofile=" << params->at(J2K_Sprofile);
                     codestream.access_siz()->parse_string(ss.str().c_str());
                 } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Cprofile=PART2");
+                    codestream.access_siz()->parse_string("Sprofile=PART2");
                 }
 
                 try {
+                    std::string reversible = params->at(J2K_Creversible);
+                    if (reversible == "yes") is_reversible = true;
                     std::stringstream ss;
-                    ss << "Creversible=" << params->at(J2K_Creversible);
+                    ss << "Creversible=" << reversible;
                     codestream.access_siz()->parse_string(ss.str().c_str());
                 } catch(const std::out_of_range &er) {
                     codestream.access_siz()->parse_string("Creversible=yes");
+                    is_reversible = true;
                 }
 
                 try {
@@ -809,7 +813,7 @@ namespace Sipi {
                     ss << "Clevels=" << params->at(J2K_Clevels);
                     codestream.access_siz()->parse_string(ss.str().c_str());
                 } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
+                    codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
                 }
 
                 try {
@@ -855,11 +859,12 @@ namespace Sipi {
                 }
             }
             else {
-                codestream.access_siz()->parse_string("Cprofile=PART2");
+                codestream.access_siz()->parse_string("Sprofile=PART2");
                 codestream.access_siz()->parse_string("Creversible=yes");
+                is_reversible = true;
                 codestream.access_siz()->parse_string("Clayers=8");
-                //num_clayers = 8;
-                codestream.access_siz()->parse_string("Clevels=6"); // resolution levels
+                num_clayers = 8;
+                codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
                 codestream.access_siz()->parse_string("Corder=RPCL");
                 codestream.access_siz()->parse_string("Cprecincts={256,256}");
                 codestream.access_siz()->parse_string("Cblk={64,64}");
@@ -1039,7 +1044,6 @@ namespace Sipi {
                 comment.put_text(emdata.c_str());
             }
 
-
             jp2_family_channels.init(img->nc - img->es.size());
             for (int c = 0; c < img->nc - img->es.size(); c++) {
                 jp2_family_channels.set_colour_mapping(c, c);
@@ -1055,10 +1059,6 @@ namespace Sipi {
                         jp2_family_channels.set_opacity_mapping(c, img->nc - img->es.size() + c);
                     }
                 }
-            }
-
-            for (int c = 0; c < img->es.size(); c++) {
-                jp2_family_channels.set_opacity_mapping(img->nc - img->es.size() + c, img->nc - img->es.size() + c);
             }
 
             jpx_out.write_headers();
@@ -1104,12 +1104,12 @@ namespace Sipi {
             // see kdu_compress, derived fromn code there
             //
             int num_layers = 0;
-            std::vector<kdu_long> layer_sizes(rates.size());
+            std::vector<kdu_long> layer_sizes;
             kdu_long *layer_sizes_ptr = nullptr;
             if (rates.size() > 0) {
                 if ((rates.size() == num_clayers) || ((rates.size() <= 2) && ((num_clayers >= 2)))) {
                     kdu_long total_pels = get_bpp_dims(codestream);
-                    for (auto &rate: rates) {
+                    for (const auto &rate: rates) {
                         if (rate == -1.0) {
                             layer_sizes.push_back(KDU_LONG_MAX);
                         } else {
@@ -1121,22 +1121,25 @@ namespace Sipi {
                     layer_sizes_ptr = layer_sizes.data();
                     num_layers = layer_sizes.size();
                 }
-            }
-            else {
+            } else if (num_clayers > 0) {
+                for (int i = 0; i < num_clayers; i++) {
+                    layer_sizes.push_back(0);
+                    layer_sizes_ptr = layer_sizes.data();
+                    num_layers = layer_sizes.size();
+                }
+            } else {
                 layer_sizes_ptr = nullptr;
                 num_layers = 0;
             }
 
-            std::cerr << "layer_sizes_ptr: " << layer_sizes_ptr << " num_layers: " << num_layers << std::endl;
             // Now compress the image in one hit, using `kdu_stripe_compressor'
-            kdu_stripe_compressor compressor;
             compressor.start(codestream,
                     num_layers,       // num_layer_specs
                     layer_sizes_ptr, // layer_sizes
                     nullptr, // layer_slopes
                     0,       // min_slope_threshold
                     false,   // no_prediction
-                    true,    //force_precise [YES]
+                    is_reversible,    //force_precise [YES, if reversible=yes]
                     true,    // record_layer_info_in_comment
                     0.0,     // size_tolerance
                     img->nc, // num_components
