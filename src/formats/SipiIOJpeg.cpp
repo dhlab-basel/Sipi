@@ -899,7 +899,7 @@ namespace Sipi {
 
     void SipiIOJpeg::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
         int quality = 80;
-        if (params != nullptr) {
+        if ((params != nullptr) && (!params->empty())) {
             try {
                 quality = stoi(params->at(JPEG_QUALITY));
             }

@@ -772,90 +772,64 @@ namespace Sipi {
             int num_clayers;
             std::vector<double> rates;
             bool is_reversible = false;
-            if (params != nullptr) {
-                try {
+            if ((params != nullptr) && (!params->empty())) {
+                if (params->find(J2K_Sprofile) != params->end()) {
                     std::stringstream ss;
                     ss << "Sprofile=" << params->at(J2K_Sprofile);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Sprofile=PART2");
                 }
 
-                try {
+                if (params->find(J2K_Creversible) != params->end()) {
                     std::string reversible = params->at(J2K_Creversible);
                     if (reversible == "yes") is_reversible = true;
                     std::stringstream ss;
                     ss << "Creversible=" << reversible;
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Creversible=yes");
-                    is_reversible = true;
                 }
 
-                try {
+                if (params->find(J2K_Clayers) != params->end()) {
                     num_clayers = std::stoi(params->at(J2K_Clayers));
                     std::stringstream ss;
                     ss << "Clayers=" << params->at(J2K_Clayers);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch (const std::invalid_argument &er) {
-                    codestream.access_siz()->parse_string("Clayers=8");
-                    num_clayers = 8;
-                } catch(const std::out_of_range &er) {
-                    // no Clayers...
-                    if (params->find(J2K_rates) == params->end()) { // no rates either
-                        codestream.access_siz()->parse_string("Clayers=8");
-                        num_clayers = 8;
-                    }
-               }
+                }
 
-                try {
+                if (params->find(J2K_Clevels) != params->end()) {
                     std::stringstream ss;
                     ss << "Clevels=" << params->at(J2K_Clevels);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
                 }
 
-                try {
+                if (params->find(J2K_Corder) != params->end()) {
                     std::stringstream ss;
                     ss << "Corder=" << params->at(J2K_Corder);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Corder=RPCL");
                 }
 
-                try {
+                if (params->find(J2K_Cprecincts) != params->end()) {
                     std::stringstream ss;
                     ss << "Cprecincts=" << params->at(J2K_Cprecincts);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Cprecincts={256,256}");
                 }
 
-                try {
+                if (params->find(J2K_Cblk) != params->end()) {
                     std::stringstream ss;
                     ss << "Cblk=" << params->at(J2K_Cblk);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Cblk={64,64}");
                 }
 
-                try {
+                if (params->find(J2K_Cuse_sop) != params->end()) {
                     std::stringstream ss;
                     ss << "Cuse_sop=" << params->at(J2K_Cuse_sop);
                     codestream.access_siz()->parse_string(ss.str().c_str());
-                } catch(const std::out_of_range &er) {
-                    codestream.access_siz()->parse_string("Cuse_sop=yes");
                 }
 
-                try {
+                if (params->find(J2K_rates) != params->end()) {
                     std::string ratestr = params->at(J2K_rates);
                     std::stringstream ss(ratestr);
                     double temp;
                     while (ss >> temp)
                         rates.push_back(temp); // done! now array={102,330,3133,76531,451,000,12,44412}
-                } catch(const std::out_of_range &er) {
-                    //codestream.access_siz()->parse_string("Cuse_sop=yes");
                 }
             }
             else {
