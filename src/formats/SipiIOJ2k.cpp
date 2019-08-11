@@ -773,17 +773,12 @@ namespace Sipi {
             std::vector<double> rates;
             bool is_reversible = false;
             if ((params != nullptr) && (!params->empty())) {
+                codestream.access_siz()->parse_string("Creversible=yes");
+                is_reversible = true;
+
                 if (params->find(J2K_Sprofile) != params->end()) {
                     std::stringstream ss;
                     ss << "Sprofile=" << params->at(J2K_Sprofile);
-                    codestream.access_siz()->parse_string(ss.str().c_str());
-                }
-
-                if (params->find(J2K_Creversible) != params->end()) {
-                    std::string reversible = params->at(J2K_Creversible);
-                    if (reversible == "yes") is_reversible = true;
-                    std::stringstream ss;
-                    ss << "Creversible=" << reversible;
                     codestream.access_siz()->parse_string(ss.str().c_str());
                 }
 

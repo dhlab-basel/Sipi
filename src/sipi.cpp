@@ -390,14 +390,10 @@ int main(int argc, char *argv[]) {
                                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                                           "CINEMASS", "IMF"}, CLI::ignore_case));
 
-    bool j2k_Creversible;
-    sipiopt.add_option("--Creversible", j2k_Creversible, "J2K: True for Reversible compression.");
-
-    std::vector<double> j2k_rates;
+    std::vector<std::string> j2k_rates;
     sipiopt.add_option("--rates", j2k_rates, "One or more bit-rates (see kdu_compress help!). A value "
                                              "\"-1\" may be used in place of the first bit-rate in the list to indicate "
-                                             "that the final quality layer should include all compressed bits.")
-                                             ->delimiter(',');
+                                             "that the final quality layer should include all compressed bits.");
 
     int j2k_Clayers;
     sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers.");
@@ -765,9 +761,8 @@ int main(int argc, char *argv[]) {
         //
         //int quality = 80
         Sipi::SipiCompressionParams comp_params;
-        comp_params[Sipi::JPEG_QUALITY] = optJpegQuality;
+        if (!sipiopt.get_option("--quality")->empty()) comp_params[Sipi::JPEG_QUALITY] = optJpegQuality;
         if (!sipiopt.get_option("--Sprofile")->empty()) comp_params[Sipi::J2K_Sprofile] = j2k_Sprofile;
-        if (!sipiopt.get_option("--Creversible")->empty()) comp_params[Sipi::J2K_Creversible] = j2k_Creversible ? "yes" : "no";
         if (!sipiopt.get_option("--Clayers")->empty()) comp_params[Sipi::J2K_Clayers] = std::to_string(j2k_Clayers);
         if (!sipiopt.get_option("--Clevels")->empty()) comp_params[Sipi::J2K_Clevels] = std::to_string(j2k_Clevels);
         if (!sipiopt.get_option("--Corder")->empty()) comp_params[Sipi::J2K_Corder] = j2k_Corder;
@@ -776,11 +771,12 @@ int main(int argc, char *argv[]) {
         if (!sipiopt.get_option("--Cuse_sop")->empty()) comp_params[Sipi::J2K_Cuse_sop] = j2k_Cuse_sop ? "yes" : "no";
         if (!sipiopt.get_option("--rates")->empty()) {
             std::stringstream ss;
-            bool sep = false;
             for (auto &rate: j2k_rates) {
-                ss << rate;
-                if (sep) ss << " ";
-                sep = true;
+                if (rate == "X") {
+                    ss << "-1.0 ";
+                } else {
+                    ss << rate << " ";
+                }
             }
             comp_params[Sipi::J2K_rates] = ss.str();
         }
