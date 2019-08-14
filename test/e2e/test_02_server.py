@@ -215,6 +215,87 @@ class TestServer:
         json_result = manager.get_json("/sqlite")
         assert json_result == expected_result
 
+    def test_iiif_auth_api(self, manager):
+        """Test the IIIF Auth Api that returns HTTP code 401 and a info.json"""
+        expected_result = {
+            "@context": "http://iiif.io/api/image/2/context.json",
+            "@id": "http://127.0.0.1:1024/auth/lena512.jp2",
+            "protocol": "http://iiif.io/api/image",
+            "service": {
+                "@context": "http://iiif.io/api/auth/1/context.json",
+                "@id": "https://localhost/iiif-cookie.html",
+                "profile": "http://iiif.io/api/auth/1/login",
+                "description": "This Example requires a demo login!",
+                "label": "Login to SIPI",
+                "failureHeader": "Authentication Failed",
+                "failureDescription": "<a href=\"http://example.org/policy\">Access Policy</a>",
+                "confirmLabel": "Login to SIPI",
+                "header": "Please Log In",
+                "service": [
+                    {
+                        "@id": "https://localhost/iiif-token.php",
+                        "profile": "http://iiif.io/api/auth/1/token"
+                    }
+                ]
+            },
+            "width": 512,
+            "height": 512,
+            "sizes": [
+                {
+                    "width": 256,
+                    "height": 256
+                },
+                {
+                    "width": 128,
+                    "height": 128
+                }
+            ],
+            "profile": [
+                "http://iiif.io/api/image/2/level2.json",
+                {
+                    "formats": [
+                        "tif",
+                        "jpg",
+                        "png",
+                        "jp2",
+                        "pdf"
+                    ],
+                    "qualities": [
+                        "color",
+                        "gray"
+                    ],
+                    "supports": [
+                        "color",
+                        "cors",
+                        "mirroring",
+                        "profileLinkHeader",
+                        "regionByPct",
+                        "regionByPx",
+                        "rotationArbitrary",
+                        "rotationBy90s",
+                        "sizeAboveFull",
+                        "sizeByWhListed",
+                        "sizeByForcedWh",
+                        "sizeByH",
+                        "sizeByPct",
+                        "sizeByW",
+                        "sizeByWh"
+                    ]
+                }
+            ]
+        }
+
+        json_result = manager.get_auth_json("/auth/lena512.jp2/info.json")
+        assert json_result == expected_result
+
+    def test_pdf_server(self, manager):
+        """Test serving entire PDF files"""
+        manager.compare_server_bytes("/unit/CV+Pub_LukasRosenthaler.pdf", manager.data_dir_path("unit/CV+Pub_LukasRosenthaler.pdf"))
+
+    def test_pdf_page_server(self, manager):
+        """Test serving a PDF page as TIFF"""
+        manager.compare_server_images("/unit/CV+Pub_LukasRosenthaler.pdf@3/full/pct:25/0/default.jpg", manager.data_dir_path("unit/CV+Pub_LukasRosenthaler_p3.jpg"))
+
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
 

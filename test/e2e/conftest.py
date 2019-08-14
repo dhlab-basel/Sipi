@@ -83,6 +83,7 @@ class SipiTestManager:
         self.sipi_started = False
         self.sipi_took_too_long = False
         self.sipi_convert_command = "{} --file {} --format {} {}" # Braces will be replaced by actual arguments. See https://pyformat.info for details on string formatting.
+        self.sipi_compare_command = "{} --compare {} {}"
 
         self.nginx_base_url = self.config["Nginx"]["base-url"]
         self.nginx_working_dir = os.path.abspath("nginx")
@@ -241,6 +242,27 @@ class SipiTestManager:
         else:
             raise SipiTestError("Downloaded file {} is different from expected file {} (wrote {})".format(downloaded_file_path, expected_file_path, self.sipi_log_file))
 
+    def compare_server_images(self, url_path, expected_file_path, headers=None):
+        """
+            Downloads a temporary image and compares it with an existing image on disk. If the two are equivalent,
+            deletes the temporary file, otherwise writes Sipi's output to sipi.log and raises an exception.
+
+            url_path: a path that will be appended to the Sipi base URL to make the request.
+            expected_file_path: the absolute path of a file containing the expected data.
+            headers: an optional dictionary of request headers.
+        """
+
+        expected_file_basename, expected_file_extension = os.path.splitext(expected_file_path)
+        downloaded_file_path = self.download_file(url_path, headers=headers, suffix=expected_file_extension)
+        compare_process_args = shlex.split(self.sipi_compare_command.format(self.sipi_executable, downloaded_file_path, expected_file_path))
+        compare_process = subprocess.run(compare_process_args,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.STDOUT,
+                                         universal_newlines = True)
+
+        if compare_process.returncode != 0:
+            raise SipiTestError("Sipi compare: pixels not identical {} {}:\n{}".format(downloaded_file_path, expected_file_path, convert_process.stdout))
+
     def expect_status_code(self, url_path, status_code, headers=None):
         """
         Requests a file and expects to get a particular HTTP status code.
@@ -350,8 +372,6 @@ class SipiTestManager:
 
         sipi_url = self.make_sipi_url(url_path)
 
-        sipi_url = self.make_sipi_url(url_path)
-
         try:
             response = requests.get(sipi_url)
             response.raise_for_status()
@@ -359,6 +379,16 @@ class SipiTestManager:
             raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
         return response.json()
 
+    def get_auth_json(self, url_path):
+        sipi_url = self.make_sipi_url(url_path)
+
+        try:
+            response = requests.get(sipi_url)
+            if response.status_code != 401:
+                raise SipiTestError("Get of IIIF Auth info.json {} failed: no 401 error!".format(sipi_url))
+        except:
+            raise SipiTestError("Get of IIIF Auth info.json {} failed: {}".format(sipi_url, response.json()["message"]))
+        return response.json()
 
     def post_request(self, url_path, params, headers=None):
         """
