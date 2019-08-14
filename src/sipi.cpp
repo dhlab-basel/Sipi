@@ -664,7 +664,7 @@ int main(int argc, char *argv[]) {
         //
         // getting information about a region of interest
         //
-        std::shared_ptr<Sipi::SipiRegion> region;
+        std::shared_ptr<Sipi::SipiRegion> region = nullptr;
         if (!sipiopt.get_option("--region")->empty()) {
             region = std::make_shared<Sipi::SipiRegion>(optRegion.at(0), optRegion.at(1), optRegion.at(2), optRegion.at(3));
         }
@@ -675,7 +675,7 @@ int main(int argc, char *argv[]) {
         // is written a resolution pyramid). reduce=0 results in full resolution, reduce=1 is half the resolution
         // etc.
         //
-        std::shared_ptr<Sipi::SipiSize> size;
+        std::shared_ptr<Sipi::SipiSize> size = nullptr;
         if (optReduce > 0) {
             size = std::make_shared<Sipi::SipiSize>(optReduce);
         } else if (!sipiopt.get_option("--size")->empty()) {
@@ -698,6 +698,7 @@ int main(int argc, char *argv[]) {
         Sipi::SipiImage img;
         try {
             img.readOriginal(optInFile, optPagenum, region, size, shttps::HashType::sha256); //convert to bps=8 in case of JPG output
+            //img.read(optInFile); //convert to bps=8 in case of JPG output
             if (format == "jpg") {
                 img.to8bps();
                 img.convertToIcc(Sipi::icc_sRGB, 8);

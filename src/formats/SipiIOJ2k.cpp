@@ -771,10 +771,14 @@ namespace Sipi {
             // Set up any specific coding parameters and finalize them.
             int num_clayers;
             std::vector<double> rates;
-            bool is_reversible = false;
+
+            //
+            // always
+            //
+            bool is_reversible = true;
+            codestream.access_siz()->parse_string("Creversible=yes");
+
             if ((params != nullptr) && (!params->empty())) {
-                codestream.access_siz()->parse_string("Creversible=yes");
-                is_reversible = true;
 
                 if (params->find(J2K_Sprofile) != params->end()) {
                     std::stringstream ss;
@@ -829,8 +833,6 @@ namespace Sipi {
             }
             else {
                 codestream.access_siz()->parse_string("Sprofile=PART2");
-                codestream.access_siz()->parse_string("Creversible=yes");
-                is_reversible = true;
                 codestream.access_siz()->parse_string("Clayers=8");
                 num_clayers = 8;
                 codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
@@ -1107,7 +1109,7 @@ namespace Sipi {
                     layer_sizes_ptr, // layer_sizes
                     nullptr, // layer_slopes
                     0,       // min_slope_threshold
-                    false,   // no_prediction
+                    true,   // no_prediction
                     is_reversible,    //force_precise [YES, if reversible=yes]
                     true,    // record_layer_info_in_comment
                     0.0,     // size_tolerance
@@ -1136,7 +1138,7 @@ namespace Sipi {
             } else {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
-            compressor.finish(0, NULL, NULL, env_ref);
+            compressor.finish(num_layers, NULL, NULL, env_ref);
             // Finally, cleanup
             codestream.destroy(); // All done: simple as that.
             output->close(); // Not really necessary here.
