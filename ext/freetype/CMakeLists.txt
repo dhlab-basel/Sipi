@@ -23,8 +23,13 @@ ExternalProject_Get_Property(project_freetype install_dir)
 if(MAKE_SHARED_SIPI)
     add_library(freetype SHARED IMPORTED GLOBAL)
     set_property(TARGET freetype PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfreetype${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set( ENV{FREETYPE_LIBS} -L${CONFIGURE_LIBDIR}/libfreetype${CMAKE_SHARED_LIBRARY_SUFFIX} )
 else()
     add_library(freetype STATIC IMPORTED GLOBAL)
     set_property(TARGET freetype PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfreetype${CMAKE_STATIC_LIBRARY_SUFFIX})
+    set( ENV{FREETYPE_LIBS} -L${CONFIGURE_LIBDIR}/libfreetype${CMAKE_STATIC_LIBRARY_SUFFIX} )
 endif()
+
+set( ENV{FREETYPE_CFLAGS} -I${COMMON_LOCAL}/incluse/freetype2 )
+
 add_dependencies(freetype project_freetype)

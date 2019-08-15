@@ -201,8 +201,8 @@ add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
-add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
 add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
+add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
 add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
 add_subdirectory(${EXT_PROJECTS_DIR}/unistring)
 add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
@@ -221,6 +221,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/poppler)
 
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
+add_dependencies(fontconfig freetype)
 
 
 
