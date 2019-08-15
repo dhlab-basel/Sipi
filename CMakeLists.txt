@@ -221,10 +221,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/poppler)
 
 #add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
-add_dependencies(fontconfig freetype)
-
-
-
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
