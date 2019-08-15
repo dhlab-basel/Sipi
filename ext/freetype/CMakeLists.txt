@@ -11,8 +11,8 @@ include_directories(
 ExternalProject_Add(project_freetype
         INSTALL_DIR ${COMMON_LOCAL}
         #URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
-        URL https://download.savannah.gnu.org/releases/freetype/freetype-2.9.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/freetype-2.9
+        URL https://download.savannah.gnu.org/releases/freetype/freetype-2.10.1.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/freetype-2.10.1
 
         CMAKE_ARGS -DBUILD_SHARED_LIBS:BOOL=OFF -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
 

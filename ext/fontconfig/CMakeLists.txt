@@ -5,9 +5,11 @@ include(ExternalProject)
 #
 # get fontconfig
 #
+set(ENV{FREETYPE_CFLAGS} "-I${CONFIGURE_INCDIR}/freetype2")
+set(ENV{FREETYPE_LIBS} "-L${CONFIGURE_LIBDIR} -lfreetype")
 ExternalProject_Add(project_fontconfig
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.1.tar.gz
+        URL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/fontconfig-2.13.1
         CONFIGURE_COMMAND ${COMMON_SRCS}/fontconfig-2.13.1/configure
             --prefix=${COMMON_LOCAL}
@@ -15,6 +17,8 @@ ExternalProject_Add(project_fontconfig
             FREETYPE_LIBS="-L${CONFIGURE_LIBDIR}/libfreetype${CMAKE_STATIC_LIBRARY_SUFFIX} -lfreetype"
             --enable-shared
             --enable-static
+            FREETYPE_CFLAGS="-I${CONFIGURE_INCDIR}/freetype2"
+            FREETYPE_LIBS="-L${CONFIGURE_LIBDIR} -lfreetype"
         BUILD_COMMAND make
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
