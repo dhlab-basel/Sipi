@@ -22,6 +22,7 @@ ExternalProject_Add(
 )
 
 ExternalProject_Get_Property(project_kakadu install_dir)
+
 if(MAKE_SHARED_SIPI)
     add_library(kdu SHARED IMPORTED GLOBAL)
     set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libkdu_v7AR.so)
@@ -29,7 +30,9 @@ else()
     add_library(kdu STATIC IMPORTED GLOBAL)
     set_property(TARGET kdu PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libkdu${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
+
 add_dependencies(kdu project_kakadu)
+
 if(MAKE_SHARED_SIPI)
     add_library(kdu_aux SHARED IMPORTED GLOBAL)
     set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libkdu_a7AR.so)
@@ -37,4 +40,5 @@ else()
     add_library(kdu_aux STATIC IMPORTED GLOBAL)
     set_property(TARGET kdu_aux PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libkdu_aux${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
+
 add_dependencies(kdu_aux project_kakadu)

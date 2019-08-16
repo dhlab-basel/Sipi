@@ -37,6 +37,14 @@ make html
 
 You will then find the manual under `manual/_build/html`.
 
+# Build inside Docker using ccache
+
+```bash
+$ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
+OR
+$ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja .. && ninja && ctest --verbose"
+```
+
 # Contact Information
 
 Lukas Rosenthaler `<lukas.rosenthaler@unibas.ch>`

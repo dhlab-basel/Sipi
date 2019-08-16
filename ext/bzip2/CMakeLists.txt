@@ -14,7 +14,9 @@ ExternalProject_Add(project_bzip2
         INSTALL_COMMAND make PREFIX=${COMMON_LOCAL} install
         BUILD_IN_SOURCE 1
 )
+
 ExternalProject_Get_Property(project_bzip2 install_dir)
+
 add_library(bzip2 STATIC IMPORTED GLOBAL)
 set_property(TARGET bzip2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libbz2${CMAKE_STATIC_LIBRARY_SUFFIX})
 

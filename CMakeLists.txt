@@ -145,19 +145,17 @@ set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
 set(COMMON_SRCS ${PROJECT_SOURCE_DIR}/extsrcs)
 set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
 set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
+set(CONFIGURE_LIBDIR ${COMMON_LOCAL}/lib)
+set(CONFIGURE_INCDIR ${COMMON_LOCAL}/include)
 set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
-set(CONFIGURE_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
-set(CONFIGURE_INCDIR ${CMAKE_INSTALL_PREFIX}/include)
-set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
+# set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
+# set(CMAKE_INSTALL_LIBDIR lib) # cmake will prefix this with CMAKE_INSTALL_PREFIX
 
 #
 # libmagic
 # (used to be build locally from source was moved to prerequisites)
 #
 find_package(LibMagic REQUIRED)
-
-
 
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
@@ -196,21 +194,24 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# !!! order is important !!!
+# dependent targets need to be added before the dependers,
+# e.g., png, bzip2 before freetype
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
+add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
 add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
 add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
-add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
 add_subdirectory(${EXT_PROJECTS_DIR}/unistring)
 add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 add_subdirectory(${EXT_PROJECTS_DIR}/gettext)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
-add_subdirectory(${EXT_PROJECTS_DIR}/png)
 add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
@@ -218,9 +219,6 @@ add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
 add_subdirectory(${EXT_PROJECTS_DIR}/poppler)
-
-
-#add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
@@ -232,9 +230,7 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
-
-
-
+# get version from git
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     FIND_PACKAGE(Git)
     IF(GIT_FOUND)
@@ -270,8 +266,7 @@ CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILE
 #    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
 #endif()
 
-set(
-        GENERATED_ICC_HEADERS
+set(GENERATED_ICC_HEADERS
         ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/YCC709_icc.h
@@ -309,8 +304,7 @@ add_custom_command(
 #        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
 #        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
 #)
-add_custom_target(
-        icc_profiles
+add_custom_target(icc_profiles
         DEPENDS ${GENERATED_ICC_HEADERS}
 )
 
@@ -333,8 +327,7 @@ include_directories(
         /usr/local/include
 )
 
-add_executable(
-        sipi
+add_executable(sipi
         src/sipi.cpp
         src/SipiConf.cpp include/SipiConf.h
         src/SipiError.cpp include/SipiError.h
@@ -371,7 +364,36 @@ add_executable(
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
         shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
-add_dependencies(sipi icc_profiles)
+
+# specify sipi dependencies
+add_dependencies(sipi
+        bzip2
+        curl
+        exiv2
+        expat
+        # fmt
+        fontconfig
+        freetype
+        gettext
+        jansson
+        jbigkit
+        jpeg
+        kdu
+        kdu_aux
+        lcms2
+        lua
+        luarocks
+        # openjpeg2000
+        png
+        podofo
+        poppler
+        # shttp
+        sqlite3
+        tiff
+        unistring
+        xz
+        zlib
+        icc_profiles)
 
 
 # MESSAGE(STATUS "LIBS: " ${LIBS})
