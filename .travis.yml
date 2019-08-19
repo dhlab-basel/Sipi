@@ -31,7 +31,7 @@ jobs:
         # decrypt archive containing the kakadu library
         - openssl aes-256-cbc -K $encrypted_b6ef6f57f289_key -iv $encrypted_b6ef6f57f289_iv -in vendor/v7_A_7-01382N.zip.enc -out vendor/v7_A_7-01382N.zip -d
         # run compile and tests inside docker
-        - docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
+        - docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -DMAKE_DEBUG:BOOL=FALSE .. && make && ctest --verbose"
 
     - stage: publish
       script:

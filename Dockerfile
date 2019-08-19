@@ -7,7 +7,7 @@ COPY . /sipi
 
 # Install and clean-up SIPI.
 RUN cd /sipi/build && \
-    cmake .. && \
+    cmake -DMAKE_DEBUG:BOOL=FALSE .. && \
     make && \
     make install && \
     mkdir -p /sipi/images/knora && \
