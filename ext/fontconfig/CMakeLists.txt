@@ -27,14 +27,16 @@ ExternalProject_Add(project_fontconfig
 
 ExternalProject_Get_Property(project_fontconfig install_dir)
 
-if(MAKE_SHARED_SIPI)
-    add_library(fontconfig SHARED IMPORTED GLOBAL)
-    set_property(TARGET fontconfig PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfontconfig${CMAKE_SHARED_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=ON")
-else()
-    add_library(fontconfig STATIC IMPORTED GLOBAL)
-    set_property(TARGET fontconfig PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfontconfig${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
-endif()
+# static
+add_library(fontconfig STATIC IMPORTED GLOBAL)
+set_property(TARGET fontconfig PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfontconfig${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 add_dependencies(fontconfig project_fontconfig)
+
+# shared
+add_library(fontconfig_shared SHARED IMPORTED GLOBAL)
+set_property(TARGET fontconfig_shared PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libfontconfig${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+add_dependencies(fontconfig_shared project_fontconfig)
+
+
