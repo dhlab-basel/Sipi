@@ -31,7 +31,7 @@ ExternalProject_Add(project_poppler
             # -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
             -DFREETYPE_INCLUDE_DIR_freetype2=${CONFIGURE_INCDIR}/freetype2
             -DFREETYPE_INCLUDE_DIR_ft2build=${CONFIGURE_INCDIR}
-            -DFREETYPE_LIBRARY=${CONFIGURE_LIBDIR}/libfreetype.a
+            -DFREETYPE_LIBRARY=${CONFIGURE_LIBDIR}/libfreetype.so
         BUILD_IN_SOURCE 1
 )
 

@@ -18,7 +18,7 @@ ExternalProject_Add(project_fontconfig
             --prefix=${COMMON_LOCAL}
             FREETYPE_CFLAGS=-I${CONFIGURE_INCDIR}/freetype2
             FREETYPE_LIBS="-L${CONFIGURE_LIBDIR} -lfreetype -lz -lpng -lbz2 -lm"
-            --disable-shared
+            --enable-shared
             --enable-static
         BUILD_COMMAND make
         INSTALL_COMMAND make install
