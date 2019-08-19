@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.14.5)
 project(libfmt_builder C CXX)
 include(ExternalProject)
 
