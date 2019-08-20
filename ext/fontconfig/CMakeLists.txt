@@ -11,6 +11,9 @@ ExternalProject_Add(project_fontconfig
         DEPENDS expat
         DEPENDS png
         DEPENDS freetype
+        DEPENDS freetype_shared
+        DEPENDS bzip2
+        DEPENDS bzip2_shared
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/fontconfig-2.13.1

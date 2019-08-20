@@ -427,6 +427,7 @@ target_link_libraries(sipi ${LIBS}
         ${CMAKE_DL_LIBS}
         z
         m)
+
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi iconv)
 else()
@@ -436,8 +437,6 @@ endif()
 if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()
-
-
 
 
 install(TARGETS sipi
