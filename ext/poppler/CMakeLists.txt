@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.14.5)
 project(poppler_builder C CXX)
 include(ExternalProject)
 
-include_directories(
-        ${COMMON_LOCAL}/include
-        /usr/local/include
-        /usr/include
-)
-
 ExternalProject_Add(project_poppler
         DEPENDS png
         DEPENDS jpeg

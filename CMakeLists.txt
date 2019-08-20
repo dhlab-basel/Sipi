@@ -365,34 +365,38 @@ add_executable(sipi
         shttps/jwt.c shttps/jwt.h
         shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
 
-# specify sipi dependencies
+## specify sipi dependencies
+# add_custom_target(sipi_dependencies
+#        DEPENDS bzip2
+#        DEPENDS curl
+#        DEPENDS exiv2
+#        DEPENDS expat
+#        # fmt
+#        DEPENDS fontconfig
+#        DEPENDS freetype
+#        # DEPENDS gettext
+#        DEPENDS jansson
+#        DEPENDS jbigkit
+#        DEPENDS jpeg
+#        DEPENDS kdu
+#        DEPENDS kdu_aux
+#        DEPENDS lcms2
+#        DEPENDS lua
+#        # DEPENDS luarocks
+#        # openjpeg2000
+#        DEPENDS png
+#        DEPENDS podofo
+#        DEPENDS poppler
+#        # shttp
+#        DEPENDS sqlite3
+#        DEPENDS tiff
+#        DEPENDS unistring
+#        DEPENDS xz
+#        DEPENDS zlib
+#        )
+#
+
 add_dependencies(sipi
-        bzip2
-        curl
-        exiv2
-        expat
-        # fmt
-        fontconfig
-        freetype
-        gettext
-        jansson
-        jbigkit
-        jpeg
-        kdu
-        kdu_aux
-        lcms2
-        lua
-        luarocks
-        # openjpeg2000
-        png
-        podofo
-        poppler
-        # shttp
-        sqlite3
-        tiff
-        unistring
-        xz
-        zlib
         icc_profiles)
 
 
