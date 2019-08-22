@@ -42,7 +42,7 @@ option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0")
         message(FATAL_ERROR "Requires clang 7.3 or greater.")
         set(ENV(CXX) "clang++")
         set(ENV(CC) "clang")
