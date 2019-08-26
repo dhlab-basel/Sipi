@@ -45,6 +45,20 @@ OR
 $ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja .. && ninja && ctest --verbose"
 ```
 
+# Build inside Docker using GCC
+```bash
+$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 .. && make && ctest --verbose"
+OR
+$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 .. && ninja && ctest --verbose"
+```
+
+# Build inside Docker using Clang/LLVM
+```bash
+$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_COMPILER=clang++-8 .. && make && ctest --verbose"
+OR
+$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_COMPILER=clang++-8 .. && ninja && ctest --verbose"
+```
+
 # Contact Information
 
 Lukas Rosenthaler `<lukas.rosenthaler@unibas.ch>`
