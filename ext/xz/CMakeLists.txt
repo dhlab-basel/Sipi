@@ -14,6 +14,7 @@ ExternalProject_Add(project_xz
     BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_xz install_dir)
+
 if(MAKE_SHARED_SIPI)
     add_library(xz SHARED IMPORTED GLOBAL)
     set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblzma${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -21,4 +22,5 @@ else()
     add_library(xz STATIC IMPORTED GLOBAL)
     set_property(TARGET xz PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblzma${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
+
 add_dependencies(xz project_xz)

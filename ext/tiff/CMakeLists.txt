@@ -13,8 +13,10 @@ else()
     SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
     set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
 endif()
+
 ExternalProject_Add(project_tiff
-        DEPENDS project_jpeg project_xz
+        DEPENDS jpeg
+        DEPENDS xz
         INSTALL_DIR ${COMMON_LOCAL}
         TEST_BEFORE_INSTALL 1
         URL http://download.osgeo.org/libtiff/tiff-4.0.9.tar.gz

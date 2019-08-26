@@ -6,13 +6,14 @@ include(ExternalProject)
 # get png
 #
 ExternalProject_Add(project_png
+        DEPENDS zlib
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://dl.bintray.com/dhlab-basel/thirdparty/libpng-1.6.34.tar.gz
         URL_HASH SHA256=574623a4901a9969080ab4a2df9437026c8a87150dfd5c235e28c94b212964a7
         DOWNLOAD_NAME libpng-latest.tar.gz
         #URL https://sourceforge.net/projects/libpng/files/latest/download?source=files
         SOURCE_DIR ${COMMON_SRCS}/libpng-latest
-        CMAKE_ARGS  -DPNG_SHARED:BOOL=ON
+        CMAKE_ARGS  -DPNG_SHARED:BOOL=OFF
                     -DCMAKE_PREFIX_PATH=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}

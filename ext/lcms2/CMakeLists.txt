@@ -22,14 +22,12 @@ ExternalProject_Add(project_lcms2
 
 ExternalProject_Get_Property(project_lcms2 install_dir)
 
-if (MAKE_SHARED_SIPI)
-    add_library(lcms2 SHARED IMPORTED GLOBAL)
-    set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblcms2${CMAKE_SHARED_LIBRARY_SUFFIX})
-else ()
-
-endif ()
-
 add_library(lcms2 STATIC IMPORTED GLOBAL)
 set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblcms2${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 add_dependencies(lcms2 project_lcms2)
+
+add_library(lcms2_shared SHARED IMPORTED GLOBAL)
+set_property(TARGET lcms2_shared PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblcms2${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+add_dependencies(lcms2_shared project_lcms2)

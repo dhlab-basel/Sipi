@@ -12,7 +12,7 @@ ExternalProject_Add(project_zlib
         CONFIGURE_COMMAND ${COMMON_SRCS}/zlib-1.2.11/configure
             --prefix=${COMMON_LOCAL}
             --static
-            --shared
+            # --shared
             --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1

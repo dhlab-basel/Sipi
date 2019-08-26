@@ -31,16 +31,20 @@ ExternalProject_Add(project_poppler
 
 ExternalProject_Get_Property(project_poppler install_dir)
 
-if(MAKE_SHARED_SIPI)
-    add_library(poppler SHARED IMPORTED GLOBAL)
-    set_property(TARGET poppler PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler${CMAKE_SHARED_LIBRARY_SUFFIX})
-    add_library(poppler-cpp SHARED IMPORTED GLOBAL)
-    set_property(TARGET poppler-cpp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler-cpp${CMAKE_SHARED_LIBRARY_SUFFIX})
-else()
-    add_library(poppler STATIC IMPORTED GLOBAL)
-    set_property(TARGET poppler PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler${CMAKE_STATIC_LIBRARY_SUFFIX})
-    add_library(poppler-cpp STATIC IMPORTED GLOBAL)
-    set_property(TARGET poppler-cpp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
-endif()
+# static
+add_library(poppler STATIC IMPORTED GLOBAL)
+set_property(TARGET poppler PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+add_library(poppler-cpp STATIC IMPORTED GLOBAL)
+set_property(TARGET poppler-cpp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler-cpp${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 add_dependencies(poppler project_poppler)
+
+# shared
+add_library(poppler_shared SHARED IMPORTED GLOBAL)
+set_property(TARGET poppler PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+add_library(poppler-cpp_shared SHARED IMPORTED GLOBAL)
+set_property(TARGET poppler-cpp PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libpoppler-cpp${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+add_dependencies(poppler_shared project_poppler)

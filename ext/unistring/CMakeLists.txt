@@ -14,6 +14,7 @@ ExternalProject_Add(project_unistring
     BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_unistring install_dir)
+
 if(MAKE_SHARED_SIPI)
     add_library(unistring SHARED IMPORTED GLOBAL)
     set_property(TARGET unistring PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libunistring${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -21,4 +22,5 @@ else()
     add_library(unistring STATIC IMPORTED GLOBAL)
     set_property(TARGET unistring PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libunistring${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
+
 add_dependencies(unistring project_unistring)

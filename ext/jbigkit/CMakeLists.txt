@@ -16,7 +16,8 @@ ExternalProject_Add(
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_jbigkit install_dir)
+
 add_library(jbigkit STATIC IMPORTED GLOBAL)
 set_property(TARGET jbigkit PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libjbig${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
+
 add_dependencies(jbigkit project_jbigkit)
