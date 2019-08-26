@@ -92,6 +92,7 @@ namespace Sipi {
         img->bps = 8;
         img->icc = std::make_shared<SipiIcc>(icc_sRGB);
         img->photo = RGB;
+        std::cerr << "===>" << myimage.format() << std::endl;
         if(myimage.format() == poppler::image::format_rgb24) {
             std::cerr << "----------->rgb24" << std::endl;
             img->nc = 3;
