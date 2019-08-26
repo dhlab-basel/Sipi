@@ -49,7 +49,7 @@ namespace shttps {
             float f;
             std::string s;
             bool b;
-            std::unordered_map<std::string, struct _LuaValstruct> table;
+            std::unordered_map<std::string, std::shared_ptr<struct _LuaValstruct>> table;
         } value;
         //inline LuaValstruct() { type = }
     } LuaValstruct;
@@ -189,7 +189,7 @@ namespace shttps {
          * \param[in] lvals vector of parameters to be passed to the function
          * \returns vector of LuaValstruct containing the result of the execution of the lua function
          */
-        std::vector<LuaValstruct> executeLuafunction(const std::string &funcname, std::vector<LuaValstruct> &lvals);
+        std::vector<std::shared_ptr<LuaValstruct>> executeLuafunction(const std::string &funcname, std::vector<std::shared_ptr<LuaValstruct>> lvals);
 
         /*!
          * Executes a Lua function that either is defined in C or in Lua

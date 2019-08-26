@@ -3058,6 +3058,7 @@ namespace shttps {
     }
     //=========================================================================
 
+    /*
     const std::map<std::string,LuaKeyValStore> LuaServer::configKeyValueStores(const std::string table) {
         std::map<std::string,LuaKeyValStore> keyvalstores;
 
@@ -3080,20 +3081,20 @@ namespace shttps {
             LuaKeyValStore kvstore;
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                LuaValstruct tmplv;
+                std::shared_ptr<LuaValstruct> tmplv = std::make_shared<LuaValstruct>();
                 const char *param_name = lua_tostring(L, -2);
                 if (lua_isstring(L, -1)) {
-                    tmplv.type = LuaValstruct::STRING_TYPE;
-                    tmplv.value.s = std::string(lua_tostring(L, -1));
+                    tmplv->type = LuaValstruct::STRING_TYPE;
+                    tmplv->value.s = std::string(lua_tostring(L, -1));
                 } else if (lua_isinteger(L, -1)) {
-                    tmplv.type = LuaValstruct::INT_TYPE;
-                    tmplv.value.i = lua_tointeger(L, -1);
+                    tmplv->type = LuaValstruct::INT_TYPE;
+                    tmplv->value.i = lua_tointeger(L, -1);
                 } else if (lua_isnumber(L, -1)) {
-                    tmplv.type = LuaValstruct::FLOAT_TYPE;
-                    tmplv.value.f = (float) lua_tonumber(L, -1);
+                    tmplv->type = LuaValstruct::FLOAT_TYPE;
+                    tmplv->value.f = (float) lua_tonumber(L, -1);
                 } else if (lua_isboolean(L, -1)) {
-                    tmplv.type = LuaValstruct::BOOLEAN_TYPE;
-                    tmplv.value.b = (bool) lua_toboolean(L, -1);
+                    tmplv->type = LuaValstruct::BOOLEAN_TYPE;
+                    tmplv->value.b = (bool) lua_toboolean(L, -1);
                 } else if (lua_isnil(L, -1)) {
                     std::string luaTypeName = std::string(lua_typename(L, -1));
                     std::ostringstream errStream;
@@ -3117,7 +3118,7 @@ namespace shttps {
 
         return keyvalstores;
     }
-
+*/
     int LuaServer::executeChunk(const std::string &luastr, const std::string &scriptname ) {
         if (luaL_dostring(L, luastr.c_str()) != LUA_OK) {
             const char *errorMsg = nullptr;
@@ -3143,27 +3144,27 @@ namespace shttps {
     }
     //=========================================================================
 
-    static LuaValstruct getLuaValue(lua_State *L, int index, const std::string &funcname) {
-        LuaValstruct tmplv;
+    static std::shared_ptr<LuaValstruct> getLuaValue(lua_State *L, int index, const std::string &funcname) {
+        std::shared_ptr<LuaValstruct> tmplv = std::make_shared<LuaValstruct>();
         if (lua_isstring(L, index)) {
-            tmplv.type = LuaValstruct::STRING_TYPE;
-            tmplv.value.s = std::string(lua_tostring(L, index));
+            tmplv->type = LuaValstruct::STRING_TYPE;
+            tmplv->value.s = std::string(lua_tostring(L, index));
         } else if (lua_isinteger(L, index)) {
-            tmplv.type = LuaValstruct::INT_TYPE;
-            tmplv.value.i = lua_tointeger(L, index);
+            tmplv->type = LuaValstruct::INT_TYPE;
+            tmplv->value.i = lua_tointeger(L, index);
         } else if (lua_isnumber(L, index)) {
-            tmplv.type = LuaValstruct::FLOAT_TYPE;
-            tmplv.value.f = (float) lua_tonumber(L, index);
+            tmplv->type = LuaValstruct::FLOAT_TYPE;
+            tmplv->value.f = (float) lua_tonumber(L, index);
         } else if (lua_isboolean(L, index)) {
-            tmplv.type = LuaValstruct::BOOLEAN_TYPE;
-            tmplv.value.b = (bool) lua_toboolean(L, index);
+            tmplv->type = LuaValstruct::BOOLEAN_TYPE;
+            tmplv->value.b = (bool) lua_toboolean(L, index);
         } else if (lua_istable(L, index)) {
-            tmplv.type = LuaValstruct::TABLE_TYPE;
+            tmplv->type = LuaValstruct::TABLE_TYPE;
             lua_pushnil(L);  /* first key */
             while (lua_next(L, index) != 0) {
                 std::string key(lua_tostring(L, -2));
-                LuaValstruct val = getLuaValue(L, -1, funcname);
-                tmplv.value.table[key] = val;
+                std::shared_ptr<LuaValstruct> val = getLuaValue(L, -1, funcname);
+                tmplv->value.table[key] = val;
                 /* removes 'value'; keeps 'key' for next iteration */
                 lua_pop(L, 1);
             }
@@ -3183,27 +3184,27 @@ namespace shttps {
         return tmplv;
     }
 
-    static void pushLuaValue(lua_State *L, const LuaValstruct &lv) {
-        switch (lv.type) {
+    static void pushLuaValue(lua_State *L, const std::shared_ptr<LuaValstruct> lv) {
+        switch (lv->type) {
             case LuaValstruct::INT_TYPE: {
-                lua_pushinteger(L, lv.value.i);
+                lua_pushinteger(L, lv->value.i);
                 break;
             }
             case LuaValstruct::FLOAT_TYPE: {
-                lua_pushnumber(L, lv.value.f);
+                lua_pushnumber(L, lv->value.f);
                 break;
             }
             case LuaValstruct::STRING_TYPE: {
-                lua_pushstring(L, lv.value.s.c_str());
+                lua_pushstring(L, lv->value.s.c_str());
                 break;
             }
             case LuaValstruct::BOOLEAN_TYPE: {
-                lua_pushboolean(L, lv.value.b);
+                lua_pushboolean(L, lv->value.b);
                 break;
             }
             case LuaValstruct::TABLE_TYPE: {
-                lua_createtable(L, 0, lv.value.table.size());
-                for( const auto& keyval : lv.value.table ) {
+                lua_createtable(L, 0, lv->value.table.size());
+                for( const auto& keyval : lv->value.table ) {
                     lua_pushstring(L, keyval.first.c_str());
                     pushLuaValue(L, keyval.second);
                 }
@@ -3212,8 +3213,8 @@ namespace shttps {
         }
     }
 
-    std::vector<LuaValstruct>
-    LuaServer::executeLuafunction(const std::string &funcname, std::vector<LuaValstruct> &lvs) {
+    std::vector<std::shared_ptr<LuaValstruct>>
+    LuaServer::executeLuafunction(const std::string &funcname, std::vector<std::shared_ptr<LuaValstruct>> lvs) {
         if (lua_getglobal(L, funcname.c_str()) != LUA_TFUNCTION) {
             lua_settop(L, 0); // clear stack
             std::ostringstream errMsg;
@@ -3234,7 +3235,7 @@ namespace shttps {
         }
 
         int top = lua_gettop(L);
-        std::vector<LuaValstruct> retval;
+        std::vector<std::shared_ptr<LuaValstruct>> retval;
 
         for (int i = 1; i <= top; i++) {
             retval.push_back(getLuaValue(L, i, funcname));
