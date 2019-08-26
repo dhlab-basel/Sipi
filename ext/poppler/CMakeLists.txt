@@ -11,23 +11,38 @@ ExternalProject_Add(project_poppler
         DEPENDS freetype
         DEPENDS lcms2
         DEPENDS expat
+        DEPENDS bzip2
         INSTALL_DIR ${COMMON_LOCAL}
+        link_directories(${CONFIGURE_LIBDIR})
         COMMAND cd ${COMMON_LOCAL}; git clone git://git.freedesktop.org/git/poppler/test
         #URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
         URL https://poppler.freedesktop.org/poppler-0.80.0.tar.xz
         SOURCE_DIR ${COMMON_SRCS}/poppler
+        PATCH_COMMAND patch -d ${COMMON_SRCS}/poppler -p0 < ${COMMON_PATCHES}/CMakeLists.poppler.patch
         CMAKE_ARGS
         -DENABLE_CMS=lcms2
         -DENABLE_DCTDECODER=libjpeg
         -DENABLE_LIBOPENJPEG=none
         -DENABLE_UTILS:BOOL=OFF
-        -DENABLE_QT5:BOOL=OFF
         -DBUILD_SHARED_LIBS:BOOL=OFF
-        -DENABLE_ZLIB_UNCOMPRESS:BOOL=ON
+        -DBUILD_GTK_TESTS:BOOL=OFF
+        -DBUILD_QT5_TESTS:BOOL=OFF
+        -DBUILD_CPP_TESTS:BOOL=OFF
         -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
-        -DFREETYPE_INCLUDE_DIR_freetype2=${CONFIGURE_INCDIR}/freetype2
-        -DFREETYPE_INCLUDE_DIR_ft2build=${CONFIGURE_INCDIR}
-        -DFREETYPE_LIBRARY=${CONFIGURE_LIBDIR}/libfreetype${CMAKE_STATIC_LIBRARY_SUFFIX}
+        -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+#        CMAKE_ARGS
+#        -DENABLE_CMS=lcms2
+#        -DENABLE_DCTDECODER=libjpeg
+#        -DENABLE_LIBOPENJPEG=none
+#        -DENABLE_UTILS:BOOL=OFF
+#        -DENABLE_QT5:BOOL=OFF
+#        -DENABLE_CPP:BOOL=OFF
+#        -DBUILD_SHARED_LIBS:BOOL=OFF
+#        -DENABLE_ZLIB_UNCOMPRESS:BOOL=ON
+#        -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+#        -DFREETYPE_INCLUDE_DIR_freetype2=${CONFIGURE_INCDIR}/freetype2
+#        -DFREETYPE_INCLUDE_DIR_ft2build=${CONFIGURE_INCDIR}
+#        -DFREETYPE_LIBRARY=${CONFIGURE_LIBDIR}/libfreetype${CMAKE_STATIC_LIBRARY_SUFFIX}
         # -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
         BUILD_IN_SOURCE 1
 )
