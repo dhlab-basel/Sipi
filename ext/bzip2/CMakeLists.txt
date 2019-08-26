@@ -36,6 +36,7 @@ ExternalProject_Add(project_bzip2_shared
         INSTALL_DIR ${COMMON_LOCAL}
         URL https://sourceforge.net/projects/bzip2/files/latest/download
         SOURCE_DIR ${COMMON_SRCS}/bzip2
+        PATCH_COMMAND patch -d ${COMMON_SRCS}/bzip2 -p0 < ${COMMON_PATCHES}/bzip2/Makefile-libbz2_so.patch
         CONFIGURE_COMMAND ""
         BUILD_COMMAND make -f Makefile-libbz2_so PREFIX=${COMMON_LOCAL}
         INSTALL_COMMAND cp -f libbz2.so.1.0.6 ${COMMON_LOCAL}/lib/libbz2.so && chmod a+r ${COMMON_LOCAL}/lib/libbz2.so
@@ -45,7 +46,7 @@ ExternalProject_Add(project_bzip2_shared
 ExternalProject_Get_Property(project_bzip2_shared install_dir)
 
 add_library(bzip2_shared SHARED IMPORTED GLOBAL)
-set_property(TARGET bzip2_shared PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libbz2${CMAKE_SHARED_LIBRARY_SUFFIX})
+set_property(TARGET bzip2_shared PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libbz2.so)
 
 add_dependencies(bzip2_shared project_bzip2_shared)
 
