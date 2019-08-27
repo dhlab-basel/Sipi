@@ -213,6 +213,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/expat)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
 add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
 add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
+add_subdirectory(${EXT_PROJECTS_DIR}/harfbuzz)
 add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
 add_subdirectory(${EXT_PROJECTS_DIR}/unistring)
 add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
@@ -435,6 +436,7 @@ target_link_libraries(sipi ${LIBS}
         unistring
         poppler
         poppler-cpp
+        harfbuzz
         ${CMAKE_DL_LIBS}
         z
         m)

@@ -19,17 +19,16 @@ ExternalProject_Add(project_poppler
         URL https://poppler.freedesktop.org/poppler-0.80.0.tar.xz
         SOURCE_DIR ${COMMON_SRCS}/poppler
         PATCH_COMMAND patch -d ${COMMON_SRCS}/poppler -p0 < ${COMMON_PATCHES}/CMakeLists.poppler.patch
-        CMAKE_ARGS
-        -DENABLE_CMS=lcms2
-        -DENABLE_DCTDECODER=libjpeg
-        -DENABLE_LIBOPENJPEG=none
-        -DENABLE_UTILS:BOOL=OFF
-        -DBUILD_SHARED_LIBS:BOOL=OFF
-        -DBUILD_GTK_TESTS:BOOL=OFF
-        -DBUILD_QT5_TESTS:BOOL=OFF
-        -DBUILD_CPP_TESTS:BOOL=OFF
-        -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
-        -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        CMAKE_ARGS  -DENABLE_CMS=lcms2
+                    -DENABLE_DCTDECODER=libjpeg
+                    -DENABLE_LIBOPENJPEG=none
+                    -DENABLE_UTILS:BOOL=OFF
+                    -DBUILD_SHARED_LIBS:BOOL=OFF
+                    -DBUILD_GTK_TESTS:BOOL=OFF
+                    -DBUILD_QT5_TESTS:BOOL=OFF
+                    -DBUILD_CPP_TESTS:BOOL=OFF
+                    -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+                    -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
 #        CMAKE_ARGS
 #        -DENABLE_CMS=lcms2
 #        -DENABLE_DCTDECODER=libjpeg

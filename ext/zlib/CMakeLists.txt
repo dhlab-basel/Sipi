@@ -15,8 +15,8 @@ ExternalProject_Add(project_zlib
             # --shared
             --libdir=${CONFIGURE_LIBDIR}
         BUILD_COMMAND make
-        BUILD_IN_SOURCE 1
 	    INSTALL_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} install INSTALL_TOP=${COMMON_LOCAL}
+        BUILD_IN_SOURCE 1
 )
 
 ExternalProject_Get_Property(project_zlib install_dir)

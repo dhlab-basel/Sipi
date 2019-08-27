@@ -11,6 +11,7 @@ ExternalProject_Add(project_fontconfig
         DEPENDS expat
         DEPENDS png
         DEPENDS freetype
+        DEPENDS harfbuzz
         # DEPENDS freetype_shared
         DEPENDS bzip2
         # DEPENDS bzip2_shared
@@ -20,7 +21,7 @@ ExternalProject_Add(project_fontconfig
         CONFIGURE_COMMAND   ${COMMON_SRCS}/fontconfig-2.13.1/configure
                             --prefix=${COMMON_LOCAL}
                             FREETYPE_CFLAGS=-I${CONFIGURE_INCDIR}/freetype2
-                            FREETYPE_LIBS="-L${CONFIGURE_LIBDIR} -lfreetype -lz -lpng -lbz2 -lm"
+                            FREETYPE_LIBS="-L${CONFIGURE_LIBDIR} -lfreetype -lz -lpng -lbz2 -lm -lharfbuzz"
                             --disable-shared
                             --enable-static
         BUILD_COMMAND make

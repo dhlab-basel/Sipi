@@ -24,12 +24,11 @@ ExternalProject_Add(project_freetype
         CMAKE_ARGS  -DBUILD_SHARED_LIBS:BOOL=OFF
                     -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+                    -DZLIB_ROOT=${COMMON_LOCAL}
                     -DPNG_LIBRARY=${CONFIGURE_LIBDIR}/libpng${CMAKE_STATIC_LIBRARY_SUFFIX}
                     -DPNG_PNG_INCLUDE_DIR=${CONFIGURE_INCDIR}
                     -DBZIP2_LIBRARIES=${CONFIGURE_LIBDIR}/libbz2${CMAKE_STATIC_LIBRARY_SUFFIX}
                     -DBZIP2_INCLUDE_DIR=${CONFIGURE_INCDIR}
-
-        #        BUILD_IN_SOURCE 1
         )
 ExternalProject_Get_Property(project_freetype install_dir)
 

@@ -14,6 +14,7 @@ ExternalProject_Add(
                             --prefix=${COMMON_LOCAL}
                             --enable-static
                             --libdir=${CONFIGURE_LIBDIR}
+                            --disable-java
         BUILD_COMMAND make
         # INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/gettext-latest/gettext-runtime/intl/.libs/libintl${CMAKE_STATIC_LIBRARY_SUFFIX} ${CONFIGURE_LIBDIR}
         BUILD_IN_SOURCE 1

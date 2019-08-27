@@ -103,6 +103,7 @@ target_link_libraries(sipiimage ${LIBS}
         unistring
         poppler
         poppler-cpp
+        harfbuzz
         ${CMAKE_DL_LIBS}
         z
         m)

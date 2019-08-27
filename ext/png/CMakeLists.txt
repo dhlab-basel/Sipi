@@ -17,6 +17,9 @@ ExternalProject_Add(project_png
                     -DCMAKE_PREFIX_PATH=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+                    -DPNG_BUILD_ZLIB:BOOL=ON
+                    -DZLIB_INCLUDE_DIR=${CONFIGURE_INCDIR}
+                    -DZLIB_LIBRARY=${CONFIGURE_LIBDIR}/libz${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 ExternalProject_Get_Property(project_png install_dir)
