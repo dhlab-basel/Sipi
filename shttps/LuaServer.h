@@ -31,6 +31,7 @@
 #include <map>
 #include <unordered_map>
 #include <stdexcept>
+#include <memory>
 
 #include "Error.h"
 #include "Connection.h"

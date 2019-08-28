@@ -455,7 +455,11 @@ namespace shttps {
                     throw Error(__file__, __LINE__, "Cannot fstat file!");
                 }
                 size_t fsize = fstatbuf.st_size;
+#ifdef __APPLE__
                 struct timespec rawtime = fstatbuf.st_mtimespec;
+#else
+                struct timespec rawtime = fstatbuf.st_mtim;
+#endif
                 char timebuf[100];
                 std::strftime(timebuf, sizeof timebuf, "%a, %d %b %Y %H:%M:%S %Z", std::gmtime(&rawtime.tv_sec));
 
