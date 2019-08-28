@@ -387,13 +387,12 @@ add_dependencies(sipi
         icc_profiles)
 
 
-# MESSAGE(STATUS "LIBS: " ${LIBS})
+# !!! ORDER MATTERS !!!
 target_link_libraries(sipi ${LIBS}
         lcms2
         exiv2
         exiv2-xmp
         expat
-        jpeg
         tiff
         jbigkit
         png
@@ -407,14 +406,15 @@ target_link_libraries(sipi ${LIBS}
         dl
         pthread
         curl
+        poppler-cpp
+        poppler
         podofo
+        jpeg
         fontconfig
         harfbuzz
         freetype
         bzip2
         unistring
-        poppler
-        poppler-cpp
         ${CMAKE_DL_LIBS}
         z
         m)

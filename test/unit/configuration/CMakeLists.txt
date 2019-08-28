@@ -30,8 +30,7 @@ include_directories(
 
 file(GLOB SRCS *.cpp)
 
-add_executable(
-        configuration
+add_executable(configuration
         ${SRCS}
         ${PROJECT_SOURCE_DIR}/src/SipiConf.cpp ${PROJECT_SOURCE_DIR}/include/SipiConf.h
         ${PROJECT_SOURCE_DIR}/src/SipiError.cpp ${PROJECT_SOURCE_DIR}/include/SipiError.h
@@ -49,16 +48,49 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/shttps/makeunique.h ${PROJECT_SOURCE_DIR}/src/SipiFilenameHash.cpp ${PROJECT_SOURCE_DIR}/include/SipiFilenameHash.h
 )
 
-target_link_libraries(
-        configuration
+target_link_libraries(configuration
         libgtest)
 
-# MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(configuration ${LIBS} lcms2 xmp exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl intl ${CMAKE_DL_LIBS} z m)
+target_link_libraries(configuration
+        ${LIBS}
+        lcms2
+        exiv2
+        exiv2-xmp
+        expat
+        tiff
+        jbigkit
+        png
+        kdu_aux
+        kdu
+        xz
+        magic
+        lua
+        jansson
+        sqlite3
+        dl
+        pthread
+        curl
+        poppler-cpp
+        poppler
+        podofo
+        jpeg
+        fontconfig
+        harfbuzz
+        freetype
+        bzip2
+        unistring
+        ${CMAKE_DL_LIBS}
+        z
+        m)
+
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-    target_link_libraries(configuration iconv)
+    target_link_libraries(configuration
+            iconv
+            idn
+            gettext_intl)
 else()
-    target_link_libraries(configuration rt)
+    target_link_libraries(configuration
+            rt)
 endif()
 
 if(OPENSSL_FOUND)

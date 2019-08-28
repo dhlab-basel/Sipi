@@ -70,17 +70,15 @@ add_executable(
 )
 add_dependencies(sipiimage icc_profiles)
 
-target_link_libraries(
-        sipiimage
+target_link_libraries(sipiimage
         libgtest)
 
-# MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipiimage ${LIBS}
+target_link_libraries(sipiimage
+        ${LIBS}
         lcms2
-        xmp
         exiv2
+        exiv2-xmp
         expat
-        jpeg
         tiff
         jbigkit
         png
@@ -94,18 +92,19 @@ target_link_libraries(sipiimage ${LIBS}
         dl
         pthread
         curl
-        intl
+        poppler-cpp
+        poppler
         podofo
+        jpeg
         fontconfig
+        harfbuzz
         freetype
         bzip2
         unistring
-        poppler
-        poppler-cpp
-        harfbuzz
         ${CMAKE_DL_LIBS}
         z
         m)
+
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     target_link_libraries(sipiimage
             iconv
