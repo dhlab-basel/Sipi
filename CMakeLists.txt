@@ -32,6 +32,29 @@ project(sipi)
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
 set(SIPI_RELEASE "Sipi Version v1.5.0-SNAPSHOT (build ${SIPIDATE})")
 
+# ------------------------------------------------------------------------------
+# Set our path variables
+# the build folder will hold all downloaded, built, and installed files
+# ------------------------------------------------------------------------------
+set(COMMON_LOCAL ${CMAKE_BINARY_DIR}/local)
+set(COMMON_SRCS ${CMAKE_BINARY_DIR}/extsrcs)
+set(CONFIGURE_LIBDIR ${COMMON_LOCAL}/lib)
+set(CONFIGURE_INCDIR ${COMMON_LOCAL}/include)
+
+# set cmake default install location
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set (CMAKE_INSTALL_PREFIX "${COMMON_LOCAL}" CACHE PATH "default install path" FORCE )
+    message(STATUS CMAKE_INSTALL_DIR: ${CMAKE_INSTALL_PREFIX})
+endif()
+
+set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
+set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
+set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
+set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
+set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
+set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
+set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+
 #
 # Usually SIPI is compiled with all static libraries
 #
@@ -144,19 +167,7 @@ if(SUPPORTS_FVISIBILITY_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 endif()
 
-set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
-set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
-set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
-set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
-set(COMMON_SRCS ${PROJECT_SOURCE_DIR}/extsrcs)
-set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
-set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
-set(CONFIGURE_LIBDIR ${COMMON_LOCAL}/lib)
-set(CONFIGURE_INCDIR ${COMMON_LOCAL}/include)
-set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-# set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
-# set(CMAKE_INSTALL_LIBDIR lib) # cmake will prefix this with CMAKE_INSTALL_PREFIX
+
 
 #
 # libmagic
@@ -373,37 +384,6 @@ add_executable(sipi
         shttps/jwt.c shttps/jwt.h
         shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
 
-## specify sipi dependencies
-# add_custom_target(sipi_dependencies
-#        DEPENDS bzip2
-#        DEPENDS curl
-#        DEPENDS exiv2
-#        DEPENDS expat
-#        # fmt
-#        DEPENDS fontconfig
-#        DEPENDS freetype
-#        # DEPENDS gettext
-#        DEPENDS jansson
-#        DEPENDS jbigkit
-#        DEPENDS jpeg
-#        DEPENDS kdu
-#        DEPENDS kdu_aux
-#        DEPENDS lcms2
-#        DEPENDS lua
-#        # DEPENDS luarocks
-#        # openjpeg2000
-#        DEPENDS png
-#        DEPENDS podofo
-#        DEPENDS poppler
-#        # shttp
-#        DEPENDS sqlite3
-#        DEPENDS tiff
-#        DEPENDS unistring
-#        DEPENDS xz
-#        DEPENDS zlib
-#        )
-#
-
 add_dependencies(sipi
         icc_profiles)
 
@@ -428,15 +408,15 @@ target_link_libraries(sipi ${LIBS}
         dl
         pthread
         curl
-        intl
+        gettext_intl
         podofo
         fontconfig
+        harfbuzz
         freetype
         bzip2
         unistring
         poppler
         poppler-cpp
-        harfbuzz
         ${CMAKE_DL_LIBS}
         z
         m)

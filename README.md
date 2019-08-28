@@ -37,26 +37,31 @@ make html
 
 You will then find the manual under `manual/_build/html`.
 
-# Build inside Docker using ccache
+# Building from source
+
+All should be run from inside the root of the repository.
+
+## Build under macOS
+
+```bash
+$ (mkdir -p ./build-mac && cd build-mac && cmake .. && make && ctest --verbose)
+OR
+$ (mkdir -p ./build-mac && cd build-mac && cmake -G Ninja .. && ninja && ctest --verbose)
+```
+
+## Build inside Docker using Clang/LLVM
+```bash
+$ docker run -it --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+OR
+$ docker run -it --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake -G Ninja .. && ninja && ctest --verbose"
+```
+
+## Build inside Docker using ccache
 
 ```bash
 $ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
 OR
 $ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja .. && ninja && ctest --verbose"
-```
-
-# Build inside Docker using GCC
-```bash
-$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 .. && make && ctest --verbose"
-OR
-$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_CXX_COMPILER=g++-7 .. && ninja && ctest --verbose"
-```
-
-# Build inside Docker using Clang/LLVM
-```bash
-$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_COMPILER=clang++-8 .. && make && ctest --verbose"
-OR
-$ docker run -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_COMPILER=clang++-8 .. && ninja && ctest --verbose"
 ```
 
 # Contact Information
