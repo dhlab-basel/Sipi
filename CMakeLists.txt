@@ -329,7 +329,6 @@ add_custom_target(icc_profiles
 
 link_directories(
         /usr/local/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CONFIGURE_LIBDIR}
 )
 
@@ -408,7 +407,6 @@ target_link_libraries(sipi ${LIBS}
         dl
         pthread
         curl
-        gettext_intl
         podofo
         fontconfig
         harfbuzz
@@ -422,7 +420,10 @@ target_link_libraries(sipi ${LIBS}
         m)
 
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-	target_link_libraries(sipi iconv)
+	target_link_libraries(sipi
+            iconv
+            idn
+            gettext_intl)
 else()
     target_link_libraries(sipi rt)
 endif()

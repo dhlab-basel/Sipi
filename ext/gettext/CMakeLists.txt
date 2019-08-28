@@ -25,7 +25,9 @@ set_property(TARGET gettext PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libge
 
 add_dependencies(gettext project_gettext)
 
-add_library(gettext_intl STATIC IMPORTED GLOBAL)
-set_property(TARGET gettext_intl PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libintl${CMAKE_STATIC_LIBRARY_SUFFIX})
-
-add_dependencies(gettext_intl project_gettext)
+# only needed on mac. under Linux this is not built and needed
+if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
+    add_library(gettext_intl STATIC IMPORTED GLOBAL)
+    set_property(TARGET gettext_intl PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libintl${CMAKE_STATIC_LIBRARY_SUFFIX})
+    add_dependencies(gettext_intl project_gettext)
+endif()

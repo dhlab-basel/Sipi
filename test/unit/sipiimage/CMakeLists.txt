@@ -10,7 +10,6 @@ endif()
 
 link_directories(
         /usr/local/lib
-        ${PROJECT_SOURCE_DIR}/local/lib
         ${CONFIGURE_LIBDIR}
 )
 
@@ -108,7 +107,10 @@ target_link_libraries(sipiimage ${LIBS}
         z
         m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-    target_link_libraries(sipiimage iconv)
+    target_link_libraries(sipiimage
+            iconv
+            idn
+            gettext_intl)
 else()
     target_link_libraries(sipiimage rt)
 endif()
