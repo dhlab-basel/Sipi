@@ -6,15 +6,15 @@ MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
 COPY . /sipi
 
 # Install and clean-up SIPI.
-RUN mkdir -p /sipi/build && \
-    cd /sipi/build && \
+RUN mkdir -p /sipi/build-linux && \
+    cd /sipi/build-linux && \
     cmake -DMAKE_DEBUG:BOOL=OFF .. && \
     make && \
-    cp /sipi/build/sipi /sipi/sipi
+    cp /sipi/build-build/sipi /sipi/sipi
     mkdir -p /sipi/images/knora && \
     mkdir -p /sipi/cache && \
     rm -rf /sipi/vendor && \
-    rm -rf /sipi/build
+    rm -rf /sipi/build-linux
 
 EXPOSE 1024
 

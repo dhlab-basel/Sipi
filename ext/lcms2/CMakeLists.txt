@@ -10,7 +10,7 @@ ExternalProject_Add(project_lcms2
         URL https://dl.bintray.com/dhlab-basel/thirdparty/lcms2-2.9.tar.gz
         URL_HASH SHA256=48c6fdf98396fa245ed86e622028caf49b96fa22f3e5734f853f806fbc8e7d20
         SOURCE_DIR ${COMMON_SRCS}/lcms2-2.9
-        CONFIGURE_COMMAND ${COMMON_SRCS}/lcms2-2.9/configure
+        CONFIGURE_COMMAND   ${COMMON_SRCS}/lcms2-2.9/configure
                             --prefix=${COMMON_LOCAL}
                             --with-jpeg=${COMMON_LOCAL}
                             --with-tiff=${COMMON_LOCAL}
@@ -26,8 +26,3 @@ add_library(lcms2 STATIC IMPORTED GLOBAL)
 set_property(TARGET lcms2 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblcms2${CMAKE_STATIC_LIBRARY_SUFFIX})
 
 add_dependencies(lcms2 project_lcms2)
-
-add_library(lcms2_shared SHARED IMPORTED GLOBAL)
-set_property(TARGET lcms2_shared PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblcms2${CMAKE_SHARED_LIBRARY_SUFFIX})
-
-add_dependencies(lcms2_shared project_lcms2)

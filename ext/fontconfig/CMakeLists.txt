@@ -25,7 +25,7 @@ ExternalProject_Add(project_fontconfig
                             --disable-shared
                             --enable-static
         BUILD_COMMAND make
-        INSTALL_COMMAND make install
+        INSTALL_COMMAND make PREFIX=${COMMON_LOCAL} install
         BUILD_IN_SOURCE 1
         )
 
