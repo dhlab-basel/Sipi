@@ -10,7 +10,7 @@ RUN mkdir -p /sipi/build-linux && \
     cd /sipi/build-linux && \
     cmake -DMAKE_DEBUG:BOOL=OFF .. && \
     make && \
-    cp /sipi/build-build/sipi /sipi/sipi && \
+    cp /sipi/build-linux/sipi /sipi/sipi && \
     mkdir -p /sipi/images/knora && \
     mkdir -p /sipi/cache && \
     rm -rf /sipi/vendor && \
