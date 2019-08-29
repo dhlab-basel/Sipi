@@ -409,6 +409,7 @@ target_link_libraries(sipi ${LIBS}
         poppler-cpp
         poppler
         podofo
+        idn
         jpeg
         fontconfig
         harfbuzz
@@ -422,7 +423,6 @@ target_link_libraries(sipi ${LIBS}
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
 	target_link_libraries(sipi
             iconv
-            idn
             gettext_intl)
 else()
     target_link_libraries(sipi rt)
