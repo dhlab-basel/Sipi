@@ -36,10 +36,17 @@ import re
 import hashlib
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--sipi-exec", action="store", default="notset", help="The absolut path to the sipi executable"
+    )
+
+
 @pytest.fixture(scope="session")
-def manager():
-    """Returns a SipiTestManager. Automatically starts Sipi and nginx before tests are run, and stops them afterwards."""
-    manager = SipiTestManager()
+def manager(request):
+    """Returns a SipiTestManager. Automatically starts Sipi and nginx before tests are run, and
+    stops them afterwards."""
+    manager = SipiTestManager(request.config.getoption('--sipi-exec'))
     manager.start_nginx()
     manager.start_sipi()
     yield manager
@@ -50,7 +57,7 @@ def manager():
 class SipiTestManager:
     """Controls Sipi and Nginx during tests."""
 
-    def __init__(self):
+    def __init__(self, sipi_exec):
         """Reads config.ini."""
 
         self.config = configparser.ConfigParser()
@@ -68,7 +75,13 @@ class SipiTestManager:
             pass
 
         sipi_config = self.config["Sipi"]
-        self.sipi_executable = os.path.abspath(sipi_config["sipi-executable"])
+
+        # use the pytest parameter '--sipi-executable-path' instead the one in config.ini
+        if sipi_exec is not "notset":
+            self.sipi_executable = sipi_exec
+        else:
+            self.sipi_executable = os.path.abspath(sipi_config["sipi-executable"])
+
         self.sipi_config_file = sipi_config["config-file"]
         self.sipi_command = "{} --config config/{}".format(self.sipi_executable, self.sipi_config_file)
         self.data_dir = os.path.abspath(test_config["data-dir"])
@@ -130,16 +143,16 @@ class SipiTestManager:
         sipi_args = shlex.split(self.sipi_command)
         sipi_start_time = time.time()
         self.sipi_process = subprocess.Popen(sipi_args,
-            cwd=self.sipi_working_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True)
+                                             cwd=self.sipi_working_dir,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.STDOUT,
+                                             universal_newlines=True)
         self.sipi_output_reader = ProcessOutputReader(self.sipi_process.stdout, check_for_ready_output)
 
         # Wait until Sipi says it's ready to receive requests.
         while (not self.sipi_started) and (not self.sipi_took_too_long):
             time.sleep(0.2)
-            if (time.time() - sipi_start_time > self.sipi_start_wait):
+            if time.time() - sipi_start_time > self.sipi_start_wait:
                 self.sipi_took_too_long = True
 
         if self.sipi_took_too_long:
@@ -148,7 +161,7 @@ class SipiTestManager:
     def stop_sipi(self):
         """Sends SIGTERM to Sipi and waits for it to stop."""
 
-        if (self.sipi_process != None):
+        if self.sipi_process is not None:
             self.sipi_process.send_signal(signal.SIGTERM)
             self.sipi_process.wait(timeout=self.sipi_stop_wait)
             self.sipi_process = None
@@ -158,10 +171,10 @@ class SipiTestManager:
     def sipi_is_running(self):
         """Returns True if Sipi is running."""
 
-        if (self.sipi_process == None):
-            return false
+        if self.sipi_process is None:
+            return False
         else:
-            return self.sipi_process.poll() == None
+            return self.sipi_process.poll() is None
 
     def get_sipi_output(self):
         """Returns the output collected from Sipi"s stdout and stderr."""

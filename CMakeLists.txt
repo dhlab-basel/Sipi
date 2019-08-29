@@ -456,14 +456,14 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
 enable_testing()
 
 # custom target to only run 'e2e' tests
-add_custom_target(check
+add_custom_target(e2e
         DEPENDS sipi
-        COMMAND pytest
+        COMMAND pytest --sipi-exec=${CMAKE_BINARY_DIR}/sipi
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 # enables running of 'e2e' tests when `make test` is executed
 add_test(NAME all_python_based_e2e_tests
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
-        COMMAND pytest)
+        COMMAND pytest --sipi-exec=$<TARGET_FILE:sipi>)
 
 add_subdirectory(test/unit)

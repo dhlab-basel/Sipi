@@ -340,5 +340,5 @@ needs to be installed on the system.
     // make html documentation
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html"
 
-Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the build would have been performed
-without docker.
+Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the
+build would have been performed without docker.
