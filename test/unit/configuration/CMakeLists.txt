@@ -73,6 +73,7 @@ target_link_libraries(configuration
         poppler-cpp
         poppler
         podofo
+        idn
         jpeg
         fontconfig
         harfbuzz
@@ -86,7 +87,6 @@ target_link_libraries(configuration
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     target_link_libraries(configuration
             iconv
-            idn
             gettext_intl)
 else()
     target_link_libraries(configuration

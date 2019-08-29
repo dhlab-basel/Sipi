@@ -95,6 +95,7 @@ target_link_libraries(sipiimage
         poppler-cpp
         poppler
         podofo
+        idn
         jpeg
         fontconfig
         harfbuzz
@@ -108,7 +109,6 @@ target_link_libraries(sipiimage
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     target_link_libraries(sipiimage
             iconv
-            idn
             gettext_intl)
 else()
     target_link_libraries(sipiimage rt)
