@@ -1,0 +1,74 @@
+{
+  "@context": "http://iiif.io/api/presentation/2/context.json",
+  "@id": "https://localhost:1025/server/manifest.json",
+  "@type": "sc:Manifest",
+
+  "label": "TEST MANIFEST",
+
+
+  "sequences": [
+    {
+      "@context": "http://iiif.io/api/presentation/2/context.json",
+      "@id": "https://localhost:1025/server/sequence/normal",
+      "@type": "sc:Sequence",
+      "canvases": [
+        {
+          "@context": "http://iiif.io/api/presentation/2/context.json",
+          "@id": "https://localhost:1025/server/canvas/bigcanvas1",
+          "@type": "sc:Canvas",
+          "label": "Big Canvas 1",
+          "height": 5116,
+          "width": 15306,
+          "images": [
+            {
+              "@context": "http://iiif.io/api/presentation/2/context.json",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "resource": {
+                "@id": "https://localhost:1025/images/bigimage1.jp2/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://localhost:1025/images/bigimage1.jp2",
+                  "profile": "http://iiif.io/api/image/2/level2.json"
+                },
+                "height":5116,
+                "width":15306
+              },
+              "on": "https://localhost:1025/server/canvas/bigcanvas1"
+            }
+          ]
+        },
+        {
+          "@context": "http://iiif.io/api/presentation/2/context.json",
+          "@id": "https://localhost:1025/server/canvas/bigcanvas2",
+          "@type": "sc:Canvas",
+          "label": "Big Canvas 2",
+          "height": 2832,
+          "width": 4256,
+          "images": [
+            {
+              "@context": "http://iiif.io/api/presentation/2/context.json",
+              "@type": "oa:Annotation",
+              "motivation": "sc:painting",
+              "resource": {
+                "@id": "https://localhost:1025/images/bigimage2.jp2/full/full/0/default.jpg",
+                "@type": "dctypes:Image",
+                "format": "image/jpeg",
+                "service": {
+                  "@context": "http://iiif.io/api/image/2/context.json",
+                  "@id": "https://localhost:1025/images/bigimage2.jp2",
+                  "profile": "http://iiif.io/api/image/2/level2.json"
+                },
+                "height":2832,
+                "width":4256
+              },
+              "on": "https://localhost:1025/server/canvas/bigcanvas2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

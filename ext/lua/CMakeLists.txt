@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.14.5)
 project(liblua_builder C CXX)
 include(ExternalProject)
 
@@ -16,7 +16,10 @@ ExternalProject_Add(project_lua
     INSTALL_COMMAND make INSTALL_LIB=${CONFIGURE_LIBDIR} install INSTALL_TOP=${COMMON_LOCAL}
     BUILD_IN_SOURCE 1
 )
+
 ExternalProject_Get_Property(project_lua install_dir)
+
 add_library(lua STATIC IMPORTED GLOBAL)
 set_property(TARGET lua PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/liblua${CMAKE_STATIC_LIBRARY_SUFFIX})
+
 add_dependencies(lua project_lua)

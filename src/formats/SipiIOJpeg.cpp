@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cmath>
 
+#include <fcntl.h>
 #include <stdio.h>
 
 #include "SipiError.h"
@@ -438,7 +439,7 @@ namespace Sipi {
     //=============================================================================
 
 
-    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiIOJpeg::read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                           std::shared_ptr<SipiSize> size, bool force_bps_8,
                           ScalingQuality scaling_quality)
     {
@@ -772,7 +773,7 @@ namespace Sipi {
                           } while(0)
 
 
-    SipiImgInfo SipiIOJpeg::getDim(std::string filepath) {
+    SipiImgInfo SipiIOJpeg::getDim(std::string filepath, int pagenum) {
         // portions derived from IJG code */
 
         FILE *infile;
@@ -896,7 +897,23 @@ namespace Sipi {
     //============================================================================
 
 
-    void SipiIOJpeg::write(SipiImage *img, std::string filepath, int quality) {
+    void SipiIOJpeg::write(SipiImage *img, std::string filepath, const SipiCompressionParams *params) {
+        int quality = 80;
+        if ((params != nullptr) && (!params->empty())) {
+            try {
+                quality = stoi(params->at(JPEG_QUALITY));
+            }
+            catch(const std::out_of_range &er) {
+                throw SipiImageError(__file__, __LINE__, "JPEG quality argument must be integer between 0 and 100");
+            }
+            catch (const std::invalid_argument& ia) {
+                throw SipiImageError(__file__, __LINE__, "JPEG quality argument must be integer between 0 and 100");
+            }
+            if ((quality < 0) || (quality > 100)){
+                throw SipiImageError(__file__, __LINE__, "JPEG quality argument must be integer between 0 and 100");
+            }
+        }
+
         if (img->bps == 16) img->to8bps();
 
         //
@@ -907,9 +924,6 @@ namespace Sipi {
             for (size_t i = 3; i < (img->getNalpha() + 3); i++) img->removeChan(i);
         }
 
-        //
-        // TODO! Support incoming 16 bit images by converting the buffer to 8 bit!
-        //
         struct jpeg_compress_struct cinfo;
         struct jpeg_error_mgr jerr;
 

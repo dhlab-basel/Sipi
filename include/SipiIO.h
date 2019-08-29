@@ -26,6 +26,10 @@
 #ifndef __sipi_io_h
 #define __sipi_io_h
 
+#include <unordered_map>
+#include <string>
+#include <stdexcept>
+
 #include "SipiImage.h"
 #include "iiifparser/SipiRegion.h"
 #include "iiifparser/SipiSize.h"
@@ -51,6 +55,7 @@ namespace Sipi {
         enum { FAILURE = 0, DIMS = 1, ALL = 2 } success;
         int width;
         int height;
+        int numpages;
         std::string origname;
         std::string mimetype;
 
@@ -58,8 +63,23 @@ namespace Sipi {
             success = FAILURE;
             width = 0;
             height = 0;
+            numpages = 0;
         };
     };
+
+    enum {
+        JPEG_QUALITY,
+        J2K_Sprofile,
+        J2K_Creversible,
+        J2K_Clayers,
+        J2K_Clevels,
+        J2K_Corder,
+        J2K_Cprecincts,
+        J2K_Cblk,
+        J2K_Cuse_sop,
+        J2K_rates
+    } SipiCompressionParamName;
+    typedef std::unordered_map<int, std::string> SipiCompressionParams;
 
     class SipiImage; //!< forward declaration of class SipiImage
 
@@ -81,9 +101,9 @@ namespace Sipi {
          * to read only half the resolution. [default: 0]
          * \param force_bps_8 Convert the file to 8 bits/sample on reading thus enforcing an 8 bit image
          */
-        virtual bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
-                          std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
-                          ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH}) = 0;
+        virtual bool read(SipiImage *img, std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region,
+                          std::shared_ptr<SipiSize> size, bool force_bps_8,
+                          ScalingQuality scaling_quality) = 0;
 
         /*!
          * Get the dimension of the image
@@ -92,7 +112,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        virtual SipiImgInfo getDim(std::string filepath) = 0;
+        virtual SipiImgInfo getDim(std::string filepath, int pagenum) = 0;
 
         /*!
          * Write an image for a file using the given file format implemented by the subclass
@@ -102,7 +122,7 @@ namespace Sipi {
          * - "-" means to write the image data to stdout
          * - "HTTP" means to write the image data to the HTTP-server output
          */
-        virtual void write(SipiImage *img, std::string filepath, int quality = 0) = 0;
+        virtual void write(SipiImage *img, std::string filepath, const SipiCompressionParams *params = nullptr) = 0;
     };
 
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.14.5)
 project(sqlite_builder C CXX)
 include(ExternalProject)
 
@@ -14,6 +14,7 @@ ExternalProject_Add(project_sqlite3
         BUILD_IN_SOURCE 1
         )
 ExternalProject_Get_Property(project_sqlite3 install_dir)
+
 if(MAKE_SHARED_SIPI)
     add_library(sqlite3 SHARED IMPORTED GLOBAL)
     set_property(TARGET sqlite3 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libsqlite3${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -23,4 +24,5 @@ else()
     set_property(TARGET sqlite3 PROPERTY IMPORTED_LOCATION ${CONFIGURE_LIBDIR}/libsqlite3${CMAKE_STATIC_LIBRARY_SUFFIX})
     set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
 endif()
+
 add_dependencies(sqlite3 project_sqlite3)

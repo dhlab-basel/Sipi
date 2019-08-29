@@ -52,7 +52,7 @@ TEST(Sipiimage, ConvertTiffWithAlphaToJPG)
 
     Sipi::SipiImage img;
 
-    ASSERT_NO_THROW(img.read(leavesSmallWithAlpha, region, size));
+    ASSERT_NO_THROW(img.read(leavesSmallWithAlpha, 0, region, size));
 
     ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-with-alpha.jpg"));
 }
@@ -65,7 +65,7 @@ TEST(Sipiimage, ConvertTiffWithNoAlphaToJPG)
 
     Sipi::SipiImage img;
 
-    ASSERT_NO_THROW(img.read(leavesSmallNoAlpha, region, size));
+    ASSERT_NO_THROW(img.read(leavesSmallNoAlpha, 0, region, size));
 
     ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/thumbs/Leaves-small-no-alpha.jpg"));
 }
@@ -185,4 +185,25 @@ TEST(Sipiimage, GRAYICC_Conversion)
     Sipi::SipiImage img;
     ASSERT_NO_THROW(img.read(grayicc));
     ASSERT_NO_THROW(img.write("jpg", "../../../../test/_test_data/images/unit/_grayicc.jpg"));
+}
+
+TEST(Sipiimage, CMYK_lossy_compression)
+{
+    Sipi::SipiImage img;
+    std::shared_ptr<Sipi::SipiRegion> region = nullptr;
+    std::shared_ptr<Sipi::SipiSize> size = nullptr;
+    ASSERT_NO_THROW(img.readOriginal(cmyk, 0, region, size, shttps::HashType::sha256));
+        Sipi::SipiCompressionParams params =  {
+            {
+                Sipi::J2K_rates, "0.5 0.2 0.1 0.025"
+            },
+            {
+                Sipi::J2K_Clayers, "4"
+            },
+            {
+                Sipi::J2K_Clevels, "3"
+            }
+    };
+    ASSERT_NO_THROW(img.write("jpx", "../../../../test/_test_data/images/unit/_cmyk_lossy.jp2", &params));
+    EXPECT_TRUE(image_identical("../../../../test/_test_data/images/unit/cmyk_lossy.jp2", "../../../../test/_test_data/images/unit/_cmyk_lossy.jp2"));
 }

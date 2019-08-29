@@ -43,9 +43,9 @@ namespace Sipi {
          * \param filepath Image file path
          * \param reduce Reducing factor. Not used reading TIFF files
          */
-        bool read(SipiImage *img, std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
-                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false,
-                  ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
+        bool read(SipiImage *img, std::string filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr,
+                  std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = true,
+                  ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH}) override;
 
         /*!
          * Get the dimension of the image
@@ -54,7 +54,7 @@ namespace Sipi {
          * \param[out] width Width of the image in pixels
          * \param[out] height Height of the image in pixels
          */
-        Sipi::SipiImgInfo getDim(std::string filepath);
+        Sipi::SipiImgInfo getDim(std::string filepath, int pagenum = 0) override;
 
 
         /*!
@@ -69,7 +69,7 @@ namespace Sipi {
          * - "-" means to write the image data to stdout
          * - "HTTP" means to write the image data to the HTTP-server output
          */
-        void write(SipiImage *img, std::string filepath, int quality = 0);
+        void write(SipiImage *img, std::string filepath, const SipiCompressionParams *params = nullptr) override;
     };
 }
 

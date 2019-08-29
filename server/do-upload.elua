@@ -87,9 +87,58 @@ end
 
         filename = config.imgroot .. '/' .. newfilepath
 
-        local status, errmsg = myimg[imgindex]:write(filename)
-        if not status then
-            server.print('Error converting image to j2k: ', errmsg)
+        --
+        -- get the J2K compression parameter
+        --
+        j2k_params = {}
+        pcnt = 0
+        if server.post['Cprofile'] ~= nil then
+            j2k_params['Cprofile'] = server.post['Cprofile']
+            pcnt = pcnt + 1
+        end
+        if server.post['Creversible'] ~= nil then
+            j2k_params['Creversible'] = server.post['Creversible']
+            pcnt = pcnt + 1
+        end
+        if server.post['rates'] ~= nil and server.post['rates'] ~= '' then
+            j2k_params['rates'] = server.post['rates']
+            pcnt = pcnt + 1
+        end
+        if server.post['Clayers'] ~= nil and server.post['Clayers'] ~= '' then
+            j2k_params['Clayers'] = server.post['Clayers']
+            pcnt = pcnt + 1
+        end
+        if server.post['Clevels'] ~= nil and server.post['Clevels'] ~= '' then
+            j2k_params['Clevels'] = server.post['Clevels']
+            pcnt = pcnt + 1
+        end
+        if server.post['Corder'] ~= nil then
+            j2k_params['Corder'] = server.post['Corder']
+            pcnt = pcnt + 1
+        end
+        if server.post['Cprecincts'] ~= nil and server.post['Cprecincts'] ~= '' then
+            j2k_params['Cprecincts'] = server.post['Cprecincts']
+            pcnt = pcnt + 1
+        end
+        if server.post['Cblk'] ~= nil and server.post['Cblk'] ~= ''then
+            j2k_params['Cblk'] = server.post['Cblk']
+            pcnt = pcnt + 1
+        end
+        if server.post['Cuse_sop'] ~= nil then
+            j2k_params['Cuse_sop'] = server.post['Cuse_sop']
+            pcnt = pcnt + 1
+        end
+
+        if pcnt > 0 then
+            local status, errmsg = myimg[imgindex]:write(filename, j2k_params)
+            if not status then
+                server.print('Error converting image to j2k: ', errmsg)
+            end
+        else
+            local status, errmsg = myimg[imgindex]:write(filename)
+            if not status then
+                server.print('Error converting image to j2k: ', errmsg)
+            end
         end
 
         success, errmsg = server.fs.unlink(tmppath)

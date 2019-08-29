@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 3.14.5)
 project(tiff_builder C CXX)
 include(ExternalProject)
 
@@ -13,14 +13,16 @@ else()
     SET(TIFFXX_LIBRARY "libtiffxx${CMAKE_STATIC_LIBRARY_SUFFIX}")
     set(CMAKE_CREATE_SHARED "-DBUILD_SHARED_LIBS=OFF")
 endif()
+
 ExternalProject_Add(project_tiff
-        DEPENDS project_jpeg project_xz
+        DEPENDS jpeg
+        DEPENDS xz
         INSTALL_DIR ${COMMON_LOCAL}
         TEST_BEFORE_INSTALL 1
         URL http://download.osgeo.org/libtiff/tiff-4.0.9.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/libtiff-4.0.9
         PATCH_COMMAND patch ${COMMON_SRCS}/libtiff-4.0.9/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
-        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_PREFIX_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
         INSTALL_COMMAND make test
         COMMAND make install
         COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.0.9/libtiff/tif_dir.h ${COMMON_LOCAL}/include/

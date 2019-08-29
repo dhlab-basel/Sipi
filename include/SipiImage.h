@@ -33,6 +33,7 @@
 #include <utility>
 #include <string>
 #include <unordered_map>
+#include <exception>
 
 #include "SipiError.h"
 #include "SipiIO.h"
@@ -95,12 +96,13 @@ namespace Sipi {
     * also catches errors withing reading/writing an image format.
     */
     //class SipiImageError : public std::runtime_error {
-    class SipiImageError {
+class SipiImageError : public std::exception {
     private:
         std::string file; //!< Source file where the error occurs in
         int line; //!< Line within the source file
         int errnum; //!< error number if a system call is the reason for the error
         std::string errmsg;
+        std::string fullerrmsg;
 
     public:
         /*!
@@ -148,6 +150,7 @@ namespace Sipi {
             outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
             return outStream;
         }
+        //============================================================================
     };
 
 
@@ -164,9 +167,10 @@ namespace Sipi {
         friend class SipiIcc;       //!< We need SipiIcc as friend class
         friend class SipiIOTiff;    //!< I/O class for the TIFF file format
         friend class SipiIOJ2k;     //!< I/O class for the JPEG2000 file format
-        friend class SipiIOOpenJ2k; //!< I/O class for the JPEG2000 file format
+        //friend class SipiIOOpenJ2k; //!< I/O class for the JPEG2000 file format
         friend class SipiIOJpeg;    //!< I/O class for the JPEG file format
         friend class SipiIOPng;     //!< I/O class for the PNG file format
+        friend class SipiIOPdf;     //!< I/O class for the PDF file format
     private:
         static std::unordered_map<std::string, std::shared_ptr<SipiIO> > io; //!< member variable holding a map of I/O class instances for the different file formats
         byte bilinn(byte buf[], register int nx, register float x, register float y, register int c, register int n);
@@ -243,6 +247,12 @@ namespace Sipi {
          * Getter for number of alpha channels
          */
         inline size_t getNalpha() { return es.size(); }
+
+        /*!
+         * Get bits per sample of image
+         * @return bis per sample (bps)
+         */
+        inline size_t getBps() { return bps; }
 
         /*! Destructor
          *
@@ -328,7 +338,7 @@ namespace Sipi {
          *
          * \throws SipiError
          */
-        void read(std::string filepath, std::shared_ptr<SipiRegion> region = nullptr,
+        void read(std::string filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr,
                   std::shared_ptr<SipiSize> size = nullptr, bool force_bps_8 = false,
                   ScalingQuality scaling_quality = {HIGH, HIGH, HIGH, HIGH});
 
@@ -353,7 +363,7 @@ namespace Sipi {
          * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
-        readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
+        readOriginal(const std::string &filepath, int pagenum = 0, std::shared_ptr<SipiRegion> region = nullptr, std::shared_ptr<SipiSize> size = nullptr,
                      shttps::HashType htype = shttps::HashType::sha256);
 
         /*!
@@ -378,7 +388,7 @@ namespace Sipi {
          * \returns true, if everything worked. False, if the checksums do not match.
          */
         bool
-        readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
+        readOriginal(const std::string &filepath, int pagenum, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
                      const std::string &origname, shttps::HashType htype);
 
 
@@ -386,10 +396,10 @@ namespace Sipi {
          * Get the dimension of the image
          *
          * \param[in] filepath Pathname of the image file
-         * \param[out] width Width of the image in pixels
-         * \param[out] height Height of the image in pixels
+         * \param[in] pagenum Page that is to be used (for PDF's and multipage TIF's only, first page is 1)
+         * \return Info about image (see SipiImgInfo)
          */
-        SipiImgInfo getDim(std::string filepath);
+        SipiImgInfo getDim(std::string filepath, int pagenum = 0);
 
         /*!
          * Get the dimension of the image object
@@ -413,7 +423,8 @@ namespace Sipi {
          * - "png" for PNG files
          * \param[in] filepath String containing the path/filename
          */
-        void write(std::string ftype, std::string filepath, int quality = -1);
+        void write(std::string ftype, std::string filepath, const SipiCompressionParams *params = nullptr);
+
 
         /*!
          * Convert full range YCbCr (YCC) to RGB colors

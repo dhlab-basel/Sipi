@@ -41,7 +41,7 @@ Prerequisites
 
 To build Sipi from source code, you must have Kakadu_, a JPEG 2000 development
 toolkit that is not provided with Sipi and must be licensed separately.
-The Kakadu source code archive ``v7_A_4-01727L.zip`` must be placed in the
+The Kakadu source code archive ``v7_A_7-01382N.zip`` must be placed in the
 ``vendor`` subdirectory of the source tree before building Sipi.
 
 Sipi's build process requires CMake_ (minimal Version 3.0.0), a C++ compiler that supports the C++11
@@ -59,7 +59,7 @@ is responsible for reading and agreeing with Adobe's license conditions,
 which are specified in the file ``Color Profile EULA.pdf``.
 
 
-Mac OS X & macOS
+macOS
 ================
 
 You will need Homebrew_ and at least OSX 10.11.5.
@@ -74,6 +74,7 @@ Prerequisites for building Sipi without its automated test framework:
     brew install openssl
     brew install libmagic
     brew install gettext
+    brew install libidn
 
 If you also want to run Sipi's tests:
 
@@ -91,14 +92,14 @@ If you also want to run Sipi's tests:
 
 .. _ubuntu-build:
 
-Ubuntu 16.04
+Ubuntu 18.04
 ============
 
 Prerequisites for building Sipi without its automated test framework:
 
 ::
 
-    sudo apt-get install g++
+    sudo apt-get install g++-7
     sudo apt-get install cmake
     sudo apt-get install libssl-dev
     sudo apt-get install doxygen
@@ -106,6 +107,7 @@ Prerequisites for building Sipi without its automated test framework:
     sudo apt-get install gettext
     sudo apt-get install libmagic-dev
     sudo apt-get install unzip
+    sudo apt-get install libidn11-dev
 
 If you also want to run Sipi's tests, you will need ImageMagick_, version 7.0.6
 or higher. We suggest compiling it from source:
@@ -338,5 +340,5 @@ needs to be installed on the system.
     // make html documentation
     docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html"
 
-Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the build would have been performed
-without docker.
+Since we mount the current source directory into the docker container, all build artifacts can be accessed as if the
+build would have been performed without docker.

@@ -394,6 +394,7 @@ namespace Sipi {
             return 2;
         }
 
+        int pagenum = 0;
         std::shared_ptr<SipiRegion> region;
         std::shared_ptr<SipiSize> size;
         std::string original;
@@ -439,7 +440,16 @@ namespace Sipi {
                 if (lua_isstring(L, -2)) {
                     const char *param = lua_tostring(L, -2);
 
-                    if (strcmp(param, "region") == 0) {
+                    if (strcmp(param, "pagenum") == 0) {
+                        if (lua_isnumber(L, -1)) {
+                            pagenum = lua_tointeger(L, -1);
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushboolean(L, false);
+                            lua_pushstring(L, "SipiImage.new(): Error in pagenum parameter");
+                            return 2;
+                        }
+                    } else if (strcmp(param, "region") == 0) {
                         if (lua_isstring(L, -1)) {
                             region = std::make_shared<SipiRegion>(lua_tostring(L, -1));
                         } else {
@@ -522,9 +532,9 @@ namespace Sipi {
 
         try {
             if (!original.empty()) {
-                img->image->readOriginal(imgpath, region, size, original, htype);
+                img->image->readOriginal(imgpath, pagenum, region, size, original, htype);
             } else {
-                img->image->read(imgpath, region, size);
+                img->image->read(imgpath, pagenum, region, size);
             }
         } catch (SipiImageError &err) {
             lua_pop(L, lua_gettop(L));
@@ -799,7 +809,7 @@ namespace Sipi {
 
 
     /*!
-     * SipiImage.write(img, <filepath>)
+     * SipiImage.write(img, <filepath> [, compression_parameter])
      */
     static int SImage_write(lua_State *L) {
         int top = lua_gettop(L);
@@ -814,7 +824,111 @@ namespace Sipi {
         }
 
         const char *imgpath = lua_tostring(L, 2);
-        lua_pop(L, 2);
+
+        Sipi::SipiCompressionParams comp_params;
+        if (top > 2) { // we do have compressin parameters
+            if (lua_istable(L, 3)) {
+                lua_pushnil(L);
+                while (lua_next(L, 3) != 0) {
+                    if (!lua_isstring(L, -2)) {
+                        lua_pop(L, top);
+                        lua_pushboolean(L, false);
+                        lua_pushstring(L, "SipiImage.write(): Incorrect compression value name: Must be string!");
+                        return 2;
+                    }
+                    const char *key = lua_tostring(L, -2);
+                    if (!lua_isstring(L, -1)) {
+                        lua_pop(L, top);
+                        lua_pushboolean(L, false);
+                        lua_pushstring(L, "SipiImage.write(): Incorrect compression value: Must be string!");
+                        return 2;
+                    }
+                    const char *tmpvalue = lua_tostring(L, -1);
+                    std::string value(tmpvalue);
+                    if (key == std::string("Sprofile")) {
+                        std::set<std::string> validvalues {"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
+                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
+                                                           "CINEMASS", "IMF"};
+                        if (validvalues.find(value) != validvalues.end()) {
+                            comp_params[Sipi::J2K_Sprofile] = value;
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Sprofile!");
+                            return lua_error(L);
+                        }
+                    } else if (key == std::string("Creversible")) {
+                        if (value == "yes" || value == "no") {
+                            comp_params[Sipi::J2K_Creversible] = value;
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Creversible!");
+                            return lua_error(L);
+                        }
+                    } else if (key == std::string("Clayers")) {
+                        try {
+                            int i = std::stoi(value);
+                            std::stringstream ss;
+                            ss << i;
+                            value = ss.str();
+                        } catch (std::invalid_argument) {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Clayers!");
+                            return lua_error(L);
+                        } catch(std::out_of_range) {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Clayers!");
+                            return lua_error(L);
+                        }
+                        comp_params[Sipi::J2K_Clayers] = value;
+                    } else if (key == std::string("Clevels")) {
+                        try {
+                            int i = std::stoi(value);
+                            std::stringstream ss;
+                            ss << i;
+                            value = ss.str();
+                        } catch (std::invalid_argument) {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Clevels!");
+                            return lua_error(L);
+                        } catch(std::out_of_range) {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Clevels!");
+                            return lua_error(L);
+                        }
+                        comp_params[Sipi::J2K_Clevels] = value;
+                    } else if (key == std::string("Corder")) {
+                        std::set<std::string> validvalues = {"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"};
+                        if (validvalues.find(value) != validvalues.end()) {
+                            comp_params[Sipi::J2K_Corder] = value;
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Corder!");
+                            return lua_error(L);
+                        }
+                    } else if (key == std::string("Cprecincts")) {
+                        comp_params[Sipi::J2K_Cprecincts] = value;
+                    } else if (key == std::string("Cblk")) {
+                        comp_params[Sipi::J2K_Cblk] = value;
+                    } else if (key == std::string("Cuse_sop")) {
+                        if (value == "yes" || value == "no") {
+                            comp_params[Sipi::J2K_Cuse_sop] = value;
+                        } else {
+                            lua_pop(L, lua_gettop(L));
+                            lua_pushstring(L, "SipiImage.write(): invalid Cuse_sop!");
+                            return lua_error(L);
+                          }
+                    } else if (key == std::string("rates")) {
+                        comp_params[Sipi::J2K_rates] = value;
+                    } else {
+                        lua_pop(L, lua_gettop(L));
+                        lua_pushstring(L, "SipiImage.write(): invalid J2K compression parameter!");
+                        return lua_error(L);
+                    }
+                    lua_pop(L, 1);
+                }
+            }
+        }
+        lua_pop(L, top);
 
         std::string filename = imgpath;
         size_t pos_ext = filename.find_last_of(".");
@@ -858,7 +972,7 @@ namespace Sipi {
             lua_remove(L, -1); // remove from stack
             img->image->connection(conn);
             try {
-                img->image->write(ftype, "HTTP");
+                img->image->write(ftype, "HTTP", comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);
@@ -867,7 +981,7 @@ namespace Sipi {
             }
         } else {
             try {
-                img->image->write(ftype, imgpath);
+                img->image->write(ftype, imgpath, comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
                 lua_pop(L, top);
                 lua_pushboolean(L, false);

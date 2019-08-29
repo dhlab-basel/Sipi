@@ -1,7 +1,15 @@
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
+endif()
+check_cxx_compiler_flag("-fvisibility=hidden" SUPPORTS_FVISIBILITY_FLAG)
+if(SUPPORTS_FVISIBILITY_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+endif()
 
 link_directories(
         /usr/local/lib
-        ${PROJECT_SOURCE_DIR}/local/lib
         ${CONFIGURE_LIBDIR}
 )
 
@@ -32,14 +40,16 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiIptc.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiIptc.h
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiExif.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiExif.h
         ${PROJECT_SOURCE_DIR}/src/metadata/SipiEssentials.cpp ${PROJECT_SOURCE_DIR}/include/metadata/SipiEssentials.h
-        ${PROJECT_SOURCE_DIR}/src/SipiImage.cpp ${PROJECT_SOURCE_DIR}/include/SipiImage.h
+        ${PROJECT_SOURCE_DIR}/src/SipiImage.cpp ${PROJECT_SOURCE_DIR}/include/SipiImage.h ${PROJECT_SOURCE_DIR}/include/SipiIO.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOTiff.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOTiff.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOJ2k.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOJ2k.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOJpeg.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOJpeg.h
         ${PROJECT_SOURCE_DIR}/src/formats/SipiIOPng.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOPng.h
+        ${PROJECT_SOURCE_DIR}/src/formats/SipiIOPdf.cpp ${PROJECT_SOURCE_DIR}/include/formats/SipiIOPdf.h
         ${PROJECT_SOURCE_DIR}/src/SipiHttpServer.cpp ${PROJECT_SOURCE_DIR}/include/SipiHttpServer.h
         ${PROJECT_SOURCE_DIR}/src/SipiCache.cpp ${PROJECT_SOURCE_DIR}/include/SipiCache.h
         ${PROJECT_SOURCE_DIR}/src/SipiLua.cpp ${PROJECT_SOURCE_DIR}/include/SipiLua.h
+        ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiIdentifier.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiIdentifier.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiRotation.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiRotation.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiQualityFormat.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiQualityFormat.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiRegion.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiRegion.h
@@ -60,14 +70,46 @@ add_executable(
 )
 add_dependencies(sipiimage icc_profiles)
 
-target_link_libraries(
-        sipiimage
+target_link_libraries(sipiimage
         libgtest)
 
-# MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipiimage ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
+target_link_libraries(sipiimage
+        ${LIBS}
+        lcms2
+        exiv2
+        exiv2-xmp
+        expat
+        tiff
+        jbigkit
+        png
+        kdu_aux
+        kdu
+        xz
+        magic
+        lua
+        jansson
+        sqlite3
+        dl
+        pthread
+        curl
+        poppler-cpp
+        poppler
+        podofo
+        idn
+        jpeg
+        fontconfig
+        harfbuzz
+        freetype
+        bzip2
+        unistring
+        ${CMAKE_DL_LIBS}
+        z
+        m)
+
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-    target_link_libraries(sipiimage iconv)
+    target_link_libraries(sipiimage
+            iconv
+            gettext_intl)
 else()
     target_link_libraries(sipiimage rt)
 endif()

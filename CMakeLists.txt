@@ -21,7 +21,7 @@
 # License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.14.5)
 
 include(ExternalProject)
 include(CheckStructHasMember)
@@ -32,6 +32,29 @@ project(sipi)
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
 set(SIPI_RELEASE "Sipi Version v1.5.0-SNAPSHOT (build ${SIPIDATE})")
 
+# ------------------------------------------------------------------------------
+# Set our path variables
+# the build folder will hold all downloaded, built, and installed files
+# ------------------------------------------------------------------------------
+set(COMMON_LOCAL ${CMAKE_BINARY_DIR}/local)
+set(COMMON_SRCS ${CMAKE_BINARY_DIR}/extsrcs)
+set(CONFIGURE_LIBDIR ${COMMON_LOCAL}/lib)
+set(CONFIGURE_INCDIR ${COMMON_LOCAL}/include)
+
+# set cmake default install location
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set (CMAKE_INSTALL_PREFIX "${COMMON_LOCAL}" CACHE PATH "default install path" FORCE )
+    message(STATUS CMAKE_INSTALL_DIR: ${CMAKE_INSTALL_PREFIX})
+endif()
+
+set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
+set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
+set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
+set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
+set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
+set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
+set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+
 #
 # Usually SIPI is compiled with all static libraries
 #
@@ -41,20 +64,36 @@ option(MAKE_DEBUG "Create sipi with debugger options on" ON)
 #
 # Here we determine the compiler and compiler version. We need clang >= 7.3 or g++ >= 5.3
 #
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.3")
-        message(FATAL_ERROR "Requires clang 7.3 or greater.")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")
+        message(FATAL_ERROR "Requires Apple Clang 10.0 or greater.")
+        set(ENV(CXX) "clang++")
+        set(ENV(CC) "clang")
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0.0")
+        message(FATAL_ERROR "Requires Clang 7.0.0 or greater.")
         set(ENV(CXX) "clang++")
         set(ENV(CC) "clang")
     endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5.3")
-        message(FATAL_ERROR "Requires GCC 5.3 or greater.")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "7.0")
+        message(FATAL_ERROR "Requires GCC 7.0 or greater.")
         set(ENV(CXX) "g++")
         set(ENV(CC) "gcc")
     endif()
 else()
-    message(WARNING "You are using an unsupported compiler. Compilation has only been tested with Clang and GCC.")
+    message(WARNING "You are using an unsupported compiler (${CMAKE_CXX_COMPILER_ID}). Compilation has only been tested with Clang and GCC.")
+endif()
+
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
+endif()
+check_cxx_compiler_flag("-fvisibility=hidden" SUPPORTS_FVISIBILITY_FLAG)
+if(SUPPORTS_FVISIBILITY_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 endif()
 
 
@@ -68,6 +107,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
     SET(KDU_MAKE "Makefile-MAC-x86-${BITS}-gcc")
     SET(KDU_ARCH "Mac-x86-${BITS}-gcc")
     SET(LUA_ARCH "macosx")
+    # ToDo: shouldn't this be also set on the mac through FindOpenSSL?
     SET(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE FILEPATH "openssl")
     SET(OPENSSL_USE_STATIC_LIBS ON)
 elseif(CMAKE_SYSTEM_NAME STREQUAL LINUX)
@@ -95,7 +135,6 @@ else()
     message(STATUS "No SSL support found!")
 endif()
 
-
 #SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 if(MAKE_SHARED_SIPI)
     SET(BUILD_SHARED_LIBRARIES ON)
@@ -107,8 +146,9 @@ else()
     endif()
 endif()
 
-
-
+#
+# set path to special find_package() code
+#
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 if(MAKE_DEBUG)
@@ -117,26 +157,23 @@ else()
     set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -std=c++11 -Wall -Wno-uninitialized -Wno-deprecated -Woverloaded-virtual")
 endif()
 
-set(COMMON_SOURCE_FILES_DIR ${PROJECT_SOURCE_DIR}/src)
-set(COMMON_INCLUDE_FILES_DIR ${PROJECT_SOURCE_DIR}/include)
-set(DOXYGEN_FILES_DIR ${PROJECT_SOURCE_DIR}/doxygen)
-set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
-set(COMMON_LOCAL ${PROJECT_SOURCE_DIR}/local)
-set(COMMON_SRCS ${PROJECT_SOURCE_DIR}/extsrcs)
-set(COMMON_PATCHES ${PROJECT_SOURCE_DIR}/patches)
-set(COMMON_VENDOR ${PROJECT_SOURCE_DIR}/vendor)
-set(SIPI_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(CMAKE_INSTALL_PREFIX ${COMMON_LOCAL})
-set(CONFIGURE_LIBDIR ${CMAKE_INSTALL_PREFIX}/lib)
-set(CMAKE_INSTALL_LIBDIR  ${CMAKE_INSTALL_PREFIX}/lib)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
+endif()
+check_cxx_compiler_flag("-fvisibility=hidden" SUPPORTS_FVISIBILITY_FLAG)
+if(SUPPORTS_FVISIBILITY_FLAG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+endif()
+
+
 
 #
 # libmagic
 # (used to be build locally from source was moved to prerequisites)
 #
 find_package(LibMagic REQUIRED)
-
-
 
 #find_package(JBIG REQUIRED)
 #include_directories(${JBIG_INCLUDE_DIR})
@@ -175,28 +212,32 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# !!! order is important !!!
+# dependent targets need to be added before the dependers,
+# e.g., png, bzip2 before freetype
 add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
-#add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
-#add_subdirectory(${EXT_PROJECTS_DIR}/freetype2)
+add_subdirectory(${EXT_PROJECTS_DIR}/png)
+add_subdirectory(${EXT_PROJECTS_DIR}/bzip2)
+add_subdirectory(${EXT_PROJECTS_DIR}/freetype)
+add_subdirectory(${EXT_PROJECTS_DIR}/harfbuzz)
+add_subdirectory(${EXT_PROJECTS_DIR}/fontconfig)
+add_subdirectory(${EXT_PROJECTS_DIR}/unistring)
+add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
+add_subdirectory(${EXT_PROJECTS_DIR}/gettext)
 add_subdirectory(${EXT_PROJECTS_DIR}/lcms2)
 add_subdirectory(${EXT_PROJECTS_DIR}/exiv2)
-add_subdirectory(${EXT_PROJECTS_DIR}/png)
 add_subdirectory(${EXT_PROJECTS_DIR}/jansson)
 add_subdirectory(${EXT_PROJECTS_DIR}/lua)
 add_subdirectory(${EXT_PROJECTS_DIR}/luarocks)
 add_subdirectory(${EXT_PROJECTS_DIR}/sqlite3)
 add_subdirectory(${EXT_PROJECTS_DIR}/kakadu)
 add_subdirectory(${EXT_PROJECTS_DIR}/curl)
-
-#add_subdirectory(${EXT_PROJECTS_DIR}/podofo)
-
-
-
+add_subdirectory(${EXT_PROJECTS_DIR}/poppler)
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
@@ -208,9 +249,7 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
-
-
-
+# get version from git
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     FIND_PACKAGE(Git)
     IF(GIT_FOUND)
@@ -246,8 +285,7 @@ CONFIGURE_FILE(${COMMON_INCLUDE_FILES_DIR}/SipiConfig.h.in ${COMMON_INCLUDE_FILE
 #    file(DOWNLOAD http://download.adobe.com/pub/adobe/iccprofiles/win/AdobeICCProfilesWin_end-user.zip ${COMMON_INCLUDE_FILES_DIR}/icc.zip SHOW_PROGRESS)
 #endif()
 
-set(
-        GENERATED_ICC_HEADERS
+set(GENERATED_ICC_HEADERS
         ${COMMON_INCLUDE_FILES_DIR}/AdobeRGB1998_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP_icc.h
         ${COMMON_INCLUDE_FILES_DIR}/YCC709_icc.h
@@ -285,35 +323,34 @@ add_custom_command(
 #        COMMAND rm ${COMMON_INCLUDE_FILES_DIR}/USWebCoatedSWOP.icc
 #        COMMAND rm -rf '${COMMON_INCLUDE_FILES_DIR}/Adobe ICC Profiles \(end-user\)'
 #)
-add_custom_target(
-        icc_profiles
+add_custom_target(icc_profiles
         DEPENDS ${GENERATED_ICC_HEADERS}
 )
 
 link_directories(
         /usr/local/lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/local/lib
         ${CONFIGURE_LIBDIR}
 )
 
 include_directories(
-    ${COMMON_INCLUDE_FILES_DIR}
-    ${COMMON_INCLUDE_FILES_DIR}/metadata
-    ${COMMON_INCLUDE_FILES_DIR}/formats
-    ${COMMON_INCLUDE_FILES_DIR}/iiifparser
-    ${PROJECT_SOURCE_DIR}/shttps
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
-    /usr/local/include
+        ${COMMON_INCLUDE_FILES_DIR}
+        ${COMMON_INCLUDE_FILES_DIR}/metadata
+        ${COMMON_INCLUDE_FILES_DIR}/formats
+        ${COMMON_INCLUDE_FILES_DIR}/iiifparser
+        ${PROJECT_SOURCE_DIR}/shttps
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/local/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/local/include/openjpeg-2.1
+        ${COMMON_LOCAL}/include
+        /usr/local/include
 )
 
-add_executable(
-        sipi
+add_executable(sipi
         src/sipi.cpp
         src/SipiConf.cpp include/SipiConf.h
         src/SipiError.cpp include/SipiError.h
         include/AdobeRGB1998_icc.h include/USWebCoatedSWOP_icc.h
+        include/CLI11.hpp
         src/metadata/SipiIcc.cpp include/metadata/SipiIcc.h
         src/metadata/SipiXmp.cpp include/metadata/SipiXmp.h
         src/metadata/SipiIptc.cpp include/metadata/SipiIptc.h
@@ -324,6 +361,7 @@ add_executable(
         src/formats/SipiIOJ2k.cpp include/formats/SipiIOJ2k.h
         src/formats/SipiIOJpeg.cpp include/formats/SipiIOJpeg.h
         src/formats/SipiIOPng.cpp include/formats/SipiIOPng.h
+        src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h
         src/SipiHttpServer.cpp include/SipiHttpServer.h
         src/SipiCache.cpp include/SipiCache.h
         src/SipiLua.cpp include/SipiLua.h
@@ -343,15 +381,49 @@ add_executable(
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h)
-add_dependencies(sipi icc_profiles)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
+
+add_dependencies(sipi
+        icc_profiles)
 
 
+# !!! ORDER MATTERS !!!
+target_link_libraries(sipi ${LIBS}
+        lcms2
+        exiv2
+        exiv2-xmp
+        expat
+        tiff
+        jbigkit
+        png
+        kdu_aux
+        kdu
+        xz
+        magic
+        lua
+        jansson
+        sqlite3
+        dl
+        pthread
+        curl
+        poppler-cpp
+        poppler
+        podofo
+        idn
+        jpeg
+        fontconfig
+        harfbuzz
+        freetype
+        bzip2
+        unistring
+        ${CMAKE_DL_LIBS}
+        z
+        m)
 
-# MESSAGE(STATUS "LIBS: " ${LIBS})
-target_link_libraries(sipi ${LIBS} lcms2 exiv2 expat jpeg tiff jbigkit png kdu_aux kdu xz magic lua jansson sqlite3 dl pthread curl ${CMAKE_DL_LIBS} z m)
 if(CMAKE_SYSTEM_NAME STREQUAL DARWIN)
-	target_link_libraries(sipi iconv)
+	target_link_libraries(sipi
+            iconv
+            gettext_intl)
 else()
     target_link_libraries(sipi rt)
 endif()
@@ -359,8 +431,6 @@ endif()
 if(OPENSSL_FOUND)
     target_link_libraries(sipi ${OPENSSL_LIBRARIES})
 endif()
-
-
 
 
 install(TARGETS sipi
@@ -386,14 +456,14 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/sipi.config.lua
 enable_testing()
 
 # custom target to only run 'e2e' tests
-add_custom_target(check
+add_custom_target(e2e
         DEPENDS sipi
-        COMMAND pytest
+        COMMAND pytest --sipi-exec=${CMAKE_BINARY_DIR}/sipi
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 # enables running of 'e2e' tests when `make test` is executed
 add_test(NAME all_python_based_e2e_tests
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
-        COMMAND pytest)
+        COMMAND pytest --sipi-exec=$<TARGET_FILE:sipi>)
 
 add_subdirectory(test/unit)

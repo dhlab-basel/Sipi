@@ -29,6 +29,8 @@ _build/
 #
 lib
 local
+build-linux
+build-mac
 cmake-build-debug
 # ignore cache
 cache/

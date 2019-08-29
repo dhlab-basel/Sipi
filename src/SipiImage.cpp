@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+
 //#include <memory>
 #include <climits>
 
@@ -38,6 +39,7 @@
 //#include "formats/SipiIOOpenJ2k.h"
 #include "formats/SipiIOJpeg.h"
 #include "formats/SipiIOPng.h"
+#include "formats/SipiIOPdf.h"
 #include "shttps/Parsing.h"
 
 static const char __file__[] = __FILE__;
@@ -49,7 +51,8 @@ namespace Sipi {
                                                                                {"jpx", std::make_shared<SipiIOJ2k>()},
             //{"jpx", std::make_shared<SipiIOOpenJ2k>()},
                                                                                {"jpg", std::make_shared<SipiIOJpeg>()},
-                                                                               {"png", std::make_shared<SipiIOPng>()}};
+                                                                               {"png", std::make_shared<SipiIOPng>()},
+                                                                               {"pdf", std::make_shared<SipiIOPdf>()}};
 
     std::unordered_map<std::string, std::string> SipiImage::mimetypes = {{"jpx",  "image/jp2"},
                                                                          {"jp2",  "image/jp2"},
@@ -57,7 +60,8 @@ namespace Sipi {
                                                                          {"jpeg", "image/jpeg"},
                                                                          {"tiff", "image/tiff"},
                                                                          {"tif",  "image/tiff"},
-                                                                         {"png",  "image/png"}};
+                                                                         {"png",  "image/png"},
+                                                                         {"pdf",  "application/pdf"}};
 
     SipiImage::SipiImage() {
         nx = 0;
@@ -256,7 +260,7 @@ namespace Sipi {
         return true;
     }
 
-    void SipiImage::read(std::string filepath, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
+    void SipiImage::read(std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
                          bool force_bps_8, ScalingQuality scaling_quality) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
@@ -267,18 +271,18 @@ namespace Sipi {
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
 
         if ((_fext == "tif") || (_fext == "tiff")) {
-            got_file = io[std::string("tif")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
+            got_file = io[std::string("tif")]->read(this, filepath, pagenum, region, size, force_bps_8, scaling_quality);
         } else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            got_file = io[std::string("jpg")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
+            got_file = io[std::string("jpg")]->read(this, filepath, pagenum, region, size, force_bps_8, scaling_quality);
         } else if (_fext == "png") {
-            got_file = io[std::string("png")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
+            got_file = io[std::string("png")]->read(this, filepath, pagenum, region, size, force_bps_8, scaling_quality);
         } else if ((_fext == "jp2") || (_fext == "jpx") || (_fext == "j2k")) {
-            got_file = io[std::string("jpx")]->read(this, filepath, region, size, force_bps_8, scaling_quality);
+            got_file = io[std::string("jpx")]->read(this, filepath, pagenum, region, size, force_bps_8, scaling_quality);
         }
 
         if (!got_file) {
             for (auto const &iterator : io) {
-                if ((got_file = iterator.second->read(this, filepath, region, size, force_bps_8, scaling_quality))) break;
+                if ((got_file = iterator.second->read(this, filepath, pagenum, region, size, force_bps_8, scaling_quality))) break;
             }
         }
 
@@ -288,9 +292,9 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiImage::readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiImage::readOriginal(const std::string &filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                                  std::shared_ptr<SipiSize> size, shttps::HashType htype) {
-        read(filepath, region, size, false);
+        read(filepath, pagenum, region, size, false);
 
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
@@ -318,9 +322,9 @@ namespace Sipi {
     //============================================================================
 
 
-    bool SipiImage::readOriginal(const std::string &filepath, std::shared_ptr<SipiRegion> region,
+    bool SipiImage::readOriginal(const std::string &filepath, int pagenum, std::shared_ptr<SipiRegion> region,
                                  std::shared_ptr<SipiSize> size, const std::string &origname, shttps::HashType htype) {
-        read(filepath, region, size, false);
+        read(filepath, pagenum, region, size, false);
 
         if (!emdata.is_set()) {
             shttps::Hash internal_hash(htype);
@@ -342,29 +346,30 @@ namespace Sipi {
     }
     //============================================================================
 
-    SipiImgInfo SipiImage::getDim(std::string filepath) {
+    SipiImgInfo SipiImage::getDim(std::string filepath, int pagenum) {
         size_t pos = filepath.find_last_of('.');
         std::string fext = filepath.substr(pos + 1);
         std::string _fext;
-
 
         _fext.resize(fext.size());
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
 
         SipiImgInfo info;
         if ((_fext == "tif") || (_fext == "tiff")) {
-            info = io[std::string("tif")]->getDim(filepath);
+            info = io[std::string("tif")]->getDim(filepath, pagenum);
         } else if ((_fext == "jpg") || (_fext == "jpeg")) {
-            info = io[std::string("jpg")]->getDim(filepath);
+            info = io[std::string("jpg")]->getDim(filepath, pagenum);
         } else if (_fext == "png") {
-            info = io[std::string("png")]->getDim(filepath);
+            info = io[std::string("png")]->getDim(filepath, pagenum);
         } else if ((_fext == "jp2") || (_fext == "jpx")) {
-            info = io[std::string("jpx")]->getDim(filepath);
+            info = io[std::string("jpx")]->getDim(filepath, pagenum);
+        } else if (_fext == "pdf") {
+            info = io[std::string("pdf")]->getDim(filepath, pagenum);
         }
 
         if (info.success == SipiImgInfo::FAILURE) {
             for (auto const &iterator : io) {
-                info = iterator.second->getDim(filepath);
+                info = iterator.second->getDim(filepath, pagenum);
                 if (info.success != SipiImgInfo::FAILURE) break;
             }
         }
@@ -383,13 +388,9 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiImage::write(std::string ftype, std::string filepath, int quality) {
-        if (quality == -1) {
-            io[ftype]->write(this, filepath, 80);
-        } else {
-            io[ftype]->write(this, filepath, quality);
-        }
-    }
+    void SipiImage::write(std::string ftype, std::string filepath, const SipiCompressionParams *params) {
+        io[ftype]->write(this, filepath, params);
+   }
     //============================================================================
 
     void SipiImage::convertYCC2RGB(void) {
@@ -1173,27 +1174,28 @@ namespace Sipi {
             nx = nnx;
             ny = nny;
         } else { // all other angles
-            float phi = -M_PI * angle / 180.0;
+            double phi = M_PI * angle / 180.0;
             float ptx = nx / 2. - .5;
             float pty = ny / 2. - .5;
 
-            float si = sinf(phi);
-            float co = cosf(phi);
+            float si = sinf(-phi);
+            float co = cosf(-phi);
+
             size_t nnx;
             size_t nny;
 
             if ((angle > 0.) && (angle < 90.)) {
-                nnx = floor(nx * cosf(-phi) + ny * sinf(-phi) + .5);
-                nny = floor(nx * sinf(-phi) + ny * cosf(-phi) + .5);
+                nnx = floor((float) nx * cosf(phi) + (float) ny * sinf(phi) + .5);
+                nny = floor((float) nx * sinf(phi) + (float) ny * cosf(phi) + .5);
             } else if ((angle > 90.) && (angle < 180.)) {
-                nnx = floor(-nx * cosf(-phi) + ny * sinf(-phi) + .5);
-                nny = floor(nx * sinf(-phi) - ny * cosf(-phi) + .5);
+                nnx = floor(-((float) nx) * cosf(phi) + (float) ny * sinf(phi) + .5);
+                nny = floor((float) nx * sin(phi) - (float) ny * cosf(phi) + .5);
             } else if ((angle > 180.) && (angle < 270.)) {
-                nnx = floor(-nx * cosf(-phi) - ny * sinf(-phi) + .5);
-                nny = floor(-nx * sinf(-phi) - ny * cosf(-phi) + .5);
+                nnx = floor(-((float) nx) * cosf(phi) - (float) ny * sinf(phi) + .5);
+                nny = floor(-((float) nx) * sinf(phi) - (float) ny * cosf(phi) + .5);
             } else {
-                nnx = floor(nx * cosf(-phi) - ny * sinf(-phi) + .5);
-                nny = floor(-nx * sinf(-phi) + ny * cosf(-phi) + .5);
+                nnx = floor((float) nx * cosf(phi) - (float) ny * sinf(phi) + .5);
+                nny = floor(-((float) nx) * sinf(phi) + (float) ny * cosf(phi) + .5);
             }
 
             float pptx = ptx * (float) nnx / (float) nx;

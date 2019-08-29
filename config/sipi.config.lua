@@ -268,5 +268,10 @@ routes = {
         method = 'GET',
         route = '/sqlite',
         script = 'test_sqlite.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/token',
+        script = 'token.lua'
     }
 }

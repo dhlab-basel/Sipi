@@ -6,20 +6,20 @@ MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
 COPY . /sipi
 
 # Install and clean-up SIPI.
-RUN cd /sipi/build && \
-    cmake .. && \
+RUN mkdir -p /sipi/build-linux && \
+    cd /sipi/build-linux && \
+    cmake -DMAKE_DEBUG:BOOL=OFF .. && \
     make && \
-    make install && \
+    cp /sipi/build-build/sipi /sipi/sipi
     mkdir -p /sipi/images/knora && \
     mkdir -p /sipi/cache && \
     rm -rf /sipi/vendor && \
-    rm -rf /sipi/build && \
-    rm -rf /sipi/extsrcs
+    rm -rf /sipi/build-linux
 
 EXPOSE 1024
 
 WORKDIR /sipi
 
-ENTRYPOINT [ "/sipi/local/bin/sipi" ]
+ENTRYPOINT [ "/sipi/sipi" ]
 
 CMD ["--config=/sipi/config/sipi.config.lua"]

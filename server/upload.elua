@@ -14,8 +14,80 @@ end
 	<h1>Upload files....</h1>
 	<hr/>
 	<form action="do-upload.elua" method="POST" enctype="multipart/form-data">
-		<input name="Datei" type="file" size="50" accept="image/*" multiple><br/>
-		<input type="submit" value="UPLOAD">
+		<input name="Datei" type="file" size="50" accept="image/*" multiple/><br/>
+		<hr/>
+		CProfile:
+		<select name="Sprofile">
+			<option value="PROFILE0">PROFILE0</option>
+			<option value="PROFILE1">PROFILE1</option>
+			<option value="PROFILE2">PROFILE2</option>
+			<option value="PART2" selected="selected">PART2</option>
+			<option value="CINEMA2K">CINEMA2K</option>
+			<option value="CINEMA4K">CINEMA4K</option>
+			<option value="BROADCAST">BROADCAST</option>
+			<option value="CINEMA2S">CINEMA2S</option>
+			<option value="CINEMA4S">CINEMA4S</option>
+			<option value="CINEMASS">CINEMASS</option>
+			<option value="IMF">IMF</option>
+		</select>
+		<br/>
+		Creversible:
+		<input type="radio" name="Creversible" value="yes" checked="checked"/>yes
+		<input type="radio" name="Creversible" value="no"/>no
+		<br/>
+		rates:
+		<input type="text" name="rates"/>
+		<br/>
+		CLayers:
+		<select name="Clayers">
+			<option value="-1">-</option>
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+			<option value="5">5</option>
+			<option value="6">6</option>
+			<option value="7">7</option>
+			<option value="8" selected="selected">8</option>
+			<option value="9">9</option>
+			<option value="10">10</option>
+			<option value="11">11</option>
+			<option value="12">12</option>
+		</select>
+		<br/>
+		Clevels:
+		<select name="Clevels">
+			<option value="-1">-</option>
+			<option value="1">1</option>
+			<option value="2">2</option>
+			<option value="3">3</option>
+			<option value="4">4</option>
+			<option value="5">5</option>
+			<option value="6" selected="selected">6</option>
+			<option value="7">7</option>
+			<option value="8">8</option>
+		</select>
+		<br/>
+		Corder:
+		<select name="Corder">
+			<option value="LRCP">LRCP</option>
+			<option value="RLCP">RLCP</option>
+			<option value="RPCL" selected="selected">RPCL</option>
+			<option value="PCRL">PCRL</option>
+			<option value="CPRL">CPRL</option>
+		</select>
+		<br/>
+		Cprecincts:
+		<input type="text" name="Cprecincts" value="{256,256}"/>
+		<br/>
+		Cblk:
+		<input type="text" name="Cblk" value="{64,64}"/>
+		<br/>
+		Cuse_sop:
+		<input type="radio" name="Cuse_sop" value="yes" checked="checked"/>yes
+		<input type="radio" name="Cuse_sop" value="no"/>no
+		<br/>
+		<input type="submit" value="Send Files"/>
 	</form>
 </body>
 </html>

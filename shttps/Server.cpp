@@ -34,9 +34,12 @@
 
 #include <sys/types.h>
 #include <sys/select.h>
+#include <sys/errno.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <semaphore.h>
 #include <signal.h>
 #include <poll.h>
-#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
@@ -118,7 +121,15 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /**
+     * This ist just the default handler that handles any unknown routes or requests. It
+     * is called if the server does not know how to ahndle a requerst...
+     *
+     * @param conn Connection instance
+     * @param lua Lua interpreter instance
+     * @param user_data Hook to user data
+     * @param hd not used
+     */
     static void default_handler(Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         conn.status(Connection::NOT_FOUND);
         conn.header("Content-Type", "text/text");
@@ -135,7 +146,17 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /**
+     * This is the handler that is used to execute pure lua scripts (e.g. implementing
+     * RESTful services based on Lua. The file must have the extention ".lua" or
+     * ".elua" (for embeded lua in HTML, tags <lua>...</lua> in order that this handler
+     * is being called.
+     *
+     * @param conn Connection instance
+     * @param lua Lua interpreter instance
+     * @param user_data
+     * @param hd Pointer to string object containing the lua script file name
+     */
     void ScriptHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
@@ -261,7 +282,17 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /**
+     * This is the normal file handler that just sends the contents of the file.
+     * It is being activated in the main program (e.g. in shttps.cpp or sipi.cpp)
+     * using "server.addRoute()". For binary objects (images, video etc.) this handler
+     * supports the HTTP range header.
+     *
+     * @param conn Connection instance
+     * @param lua Lua interpreter instance
+     * @param user_data Hook to user data
+     * @param hd nullptr or pair (docroot, route)
+     */
     void FileHandler(shttps::Connection &conn, LuaServer &lua, void *user_data, void *hd) {
         std::vector<std::string> headers = conn.header();
         std::string uri = conn.uri();
@@ -413,38 +444,73 @@ namespace shttps {
                 std::string htmlcode = eluacode.substr(end);
                 conn << htmlcode;
                 conn.flush();
-            } else if ((extension == "mp4") || (extension == "webm")) {
-                size_t start = 0, end = 0;
-                std::string rangestr = conn.header("range");
-                if (!rangestr.empty()) {
-                    std::cmatch cm;
-                    std::regex e("bytes=\\s*(\\d*)-(\\d*)[\\D.*]?");
-                    std::regex_match(rangestr.c_str(), cm, e);
-                    if (cm.size() == 3) {
-                        if (cm[1].str().empty()) {
-                            if (cm[2].str().empty()) {
-                                // throw error!!
-                            }
-                            else {
-                                start = s.st_size;
+            } else {
+                std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+                //
+                // first we get the filesize and time using fstat
+                //
+                struct stat fstatbuf;
 
-                            }
+                if (stat(infile.c_str(), &fstatbuf) != 0) {
+                    throw Error(__file__, __LINE__, "Cannot fstat file!");
+                }
+                size_t fsize = fstatbuf.st_size;
+#ifdef __APPLE__
+                struct timespec rawtime = fstatbuf.st_mtimespec;
+#else
+                struct timespec rawtime = fstatbuf.st_mtim;
+#endif
+                char timebuf[100];
+                std::strftime(timebuf, sizeof timebuf, "%a, %d %b %Y %H:%M:%S %Z", std::gmtime(&rawtime.tv_sec));
+
+                std::string range = conn.header("range");
+                if (range.empty()) {
+                    conn.header("Content-Type", actual_mimetype);
+                    conn.header("Cache-Control", "public, must-revalidate, max-age=0");
+                    conn.header("Pragma", "no-cache");
+                    conn.header("Accept-Ranges", "bytes");
+                    conn.header("Content-Length", std::to_string(fsize));
+                    conn.header("Last-Modified", timebuf);
+                    conn.header("Content-Transfer-Encoding: binary");
+                    conn.sendFile(infile);
+                }
+                else {
+                    //
+                    // now we parse the range
+                    //
+                    std::regex re("bytes=\\s*(\\d+)-(\\d*)[\\D.*]?");
+                    std::cmatch m;
+                    int start = 0; // lets assume beginning of file
+                    int end = fsize - 1; // lets assume whole file
+                    if (std::regex_match (range.c_str(), m, re)) {
+                        if (m.size() < 2) {
+                            throw Error(__file__, __LINE__, "Range expression invalid!");
                         }
-                        else {
-                            start = atoll(cm[1].str().c_str());
-                            if (cm[2].str().empty()) {
-                                end = s.st_size - 1;
-                            }
-                            else {
-                                end = atoll(cm[1].str().c_str());
-                            }
-
+                        start = std::stoi(m[1]);
+                        if ((m.size() > 1) && !m[2].str().empty()) {
+                            end = std::stoi(m[2]);
                         }
                     }
+                    else {
+                        throw Error(__file__, __LINE__, "Range expression invalid!");
+                    }
+
+                    conn.status(Connection::PARTIAL_CONTENT);
+                    conn.header("Content-Type", actual_mimetype);
+                    conn.header("Cache-Control", "public, must-revalidate, max-age=0");
+                    conn.header("Pragma", "no-cache");
+                    conn.header("Accept-Ranges", "bytes");
+                    conn.header("Content-Length", std::to_string(end - start + 1));
+                    conn.header("Content-Length", std::to_string(end - start + 1));
+                    std::stringstream ss;
+                    ss << "bytes " << start << "-" << end << "/" << fsize;
+                    conn.header("Content-Range", ss.str());
+                    conn.header("Content-Disposition",  std::string("inline; filename=") + infile);
+                    conn.header("Content-Transfer-Encoding: binary");
+                    conn.header("Last-Modified", timebuf);
+                    conn.sendFile(infile, 8192, start, end);
                 }
-            } else {
-                conn.header("Content-Type", mime.first + "; " + mime.second);
-                conn.sendFile(infile);
+                conn.flush();
             }
         } catch (InputFailure iofail) {
             return; // we have an io error => just return, the thread will exit
@@ -462,6 +528,21 @@ namespace shttps {
     }
     //=========================================================================
 
+    /**
+     * Create an instance of the simple HTTP server.
+     *
+     * @param port_p Port number to listen on for incoming connections
+     * @param nthreads_p Number of parallel threads that will be used to serve the requests.
+     *                   If there are more requests then this number, these requests will
+     *                   be put on hold on socket level
+     * @param userid_str User id the server runs on. This requires the server is started as
+     *                   root. It will then use setuid() to change to the given user id. If
+     *                   the string is empty, the server is run as the user that is starting
+     *                   the server.
+     * @param logfile_p Name of the logfile
+     * @param loglevel_p Loglevel, must be one of "DEBUG", "INFO", "NOTICE", "WARNING", "ERR",
+     *                   "CRIT", "ALERT" or "EMERG".
+     */
     Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p,
                    const std::string &loglevel_p) : _port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p),
                                                     _loglevel(loglevel_p) {
@@ -543,14 +624,19 @@ namespace shttps {
         OpenSSL_add_all_algorithms();
 #endif
 
-        ::sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
-        _semaphore = ::sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
+        sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
+        _semaphore = sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
         _semcnt = _nthreads;
     }
     //=========================================================================
 
 #ifdef SHTTPS_ENABLE_SSL
 
+    /**
+     * Set the Jason Web Token (jwt) secret that the server will use
+     *
+     * @param jwt_secret_p String containing the secret.
+     */
     void Server::jwt_secret(const std::string &jwt_secret_p) {
         _jwt_secret = jwt_secret_p;
         auto secret_size = _jwt_secret.size();
@@ -564,7 +650,15 @@ namespace shttps {
     //=========================================================================
 #endif
 
-
+    /**
+     * Get the correct handler to handle an incoming request. It seaches all
+     * the supplied handlers to find the correct one. It returns the appropriate
+     * handler and returns the handler data in handler_data_p
+     *
+     * @param conn Connection instance
+     * @param handler_data_p Returns the pointer to the handler data
+     * @return The appropriate handler for this request.
+     */
     RequestHandler Server::getHandler(Connection &conn, void **handler_data_p) {
         std::map<std::string, RequestHandler>::reverse_iterator item;
 
@@ -592,12 +686,16 @@ namespace shttps {
     }
     //=============================================================================
 
-
+    /**
+     * Setup the server socket with the correct parameters
+     * @param port Port number
+     * @return Socket ID
+     */
     static int prepare_socket(int port) {
         int sockfd;
         struct sockaddr_in serv_addr;
 
-        sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
         if (sockfd < 0) {
             syslog(LOG_ERR, "Could not create socket: %m");
@@ -633,7 +731,10 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /**
+     * Put a thread to the list of idle threads usinng a lock_guard!
+     * @param tid_p Thread id
+     */
     static void idle_add(pthread_t tid_p) {
         std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
 
@@ -641,6 +742,10 @@ namespace shttps {
     }
     //=========================================================================
 
+    /**
+     * Remove a socket from the list of idle sockets
+     * @param tid_p Thread id
+     */
     static void idle_remove(pthread_t tid_p) {
         int index = 0;
         bool in_idle = false;
@@ -651,7 +756,6 @@ namespace shttps {
                 in_idle = true;
                 break;
             }
-
             index++;
         }
 
@@ -664,6 +768,11 @@ namespace shttps {
     }
     //=========================================================================
 
+    /**
+     * Close a socket
+     * @param tdata Pointer to thread data
+     * @return
+     */
     static int close_socket(TData *tdata) {
 
 #ifdef SHTTPS_ENABLE_SSL
@@ -694,7 +803,13 @@ namespace shttps {
 
 
     /*!
-     * Runs a request-handling thread.
+     * Runs a request-handling thread. If there is a "keep_alive" header, the thread
+     * will wait (put in idle state) until the keep alive time passed. Thus, after having
+     * handled the current request, it will be idle for keep-alive time, However, if q new
+     * request comes in and there is no free thread to handle it, the longest idling thread
+     * will be stopped to make room for a thread handling the new request. In addition the
+     * main thread my send a stop-request to all active are idling request handling threads
+     * in order to guarantee an oderly shutdown of the server.
      *
      * @param arg a pointer to a TData, which this function will delete before returning.
      * @return NULL.
@@ -719,9 +834,15 @@ namespace shttps {
         std::istream ins(sockstream.get());
         std::ostream os(sockstream.get());
 
+        //
+        // prepare the loop that handles this and sibsequent requests from the
+        // same address (if keep  alive is set).
+        //
         ThreadStatus tstatus;
-        int keep_alive = 1;
+        int keep_alive = 1; // we assume first that keep-alive is set
         do {
+            //
+            // let's process the current request
 #ifdef SHTTPS_ENABLE_SSL
             if (tdata->cSSL != nullptr) {
                 tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
@@ -732,10 +853,15 @@ namespace shttps {
             tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
 #endif
 
+            //
+            // we goot a tstatus of "CLOSE" – finish the loop
+            //
             if (tstatus == CLOSE) break; // it's CLOSE , let's get out of the loop
 
             //
             // tstatus is CONTINUE. Let's check if we got in the meantime a CLOSE message from the main...
+            // we are polling bith the internal channel from the main thread as well as the
+            // internet socket.
             //
             pollfd readfds[2];
             readfds[0] = {tdata->commpipe_read, POLLIN, 0};
@@ -748,6 +874,7 @@ namespace shttps {
             }
 
             if (readfds[1].revents & POLLIN) {
+                // we got data on the internet socket -> go and process it
                 continue;
             }
 
@@ -760,7 +887,7 @@ namespace shttps {
                     break;
                 }
                 keep_alive = -1;
-                if (readfds[1].revents & POLLIN) { // but we already have data...
+                if (readfds[1].revents & POLLIN) { // but we already have data on the internet connection...
                     continue; // continue loop
                 } else {
                     break;
@@ -851,7 +978,9 @@ namespace shttps {
     }
     //=========================================================================
 
-
+    /**
+     * Run the shttps server
+     */
     void Server::run() {
         // Start a thread just to catch signals sent to the server process.
         pthread_t sighandler_thread;
@@ -867,7 +996,12 @@ namespace shttps {
             syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", pthread_sigmask_result);
         }
 
-        pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this);
+        //
+        // start the thread that handles incoming signals (SIGTERM, SIGPIPE etc.)
+        if (pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this) != 0) {
+            syslog(LOG_ERR, "Couldn't create thread: %s", strerror(errno));
+            return;
+        }
 
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Starting shttps server with %d threads", _nthreads);
@@ -897,7 +1031,10 @@ namespace shttps {
             setlogmask(old_ll);
         }
 
-        pipe(stoppipe); // ToDo: Errorcheck
+        if (pipe(stoppipe) != 0) {
+            syslog(LOG_ERR, "Couldn't create internal communication pipe: %s", strerror(errno));
+            return;
+        }
         pthread_t thread_id;
         running = true;
         int count = 0;
@@ -942,7 +1079,7 @@ namespace shttps {
 
             struct sockaddr_storage cli_addr;
             socklen_t cli_size = sizeof(cli_addr);
-            int newsockfs = ::accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+            int newsockfs = accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
 
             if (newsockfs <= 0) {
                 syslog(LOG_ERR, "Socket error  at [%s: %d]: %m", __file__, __LINE__);
@@ -1125,7 +1262,7 @@ namespace shttps {
         }
 
         // Close the semaphore.
-        ::sem_close(_semaphore);
+        sem_close(_semaphore);
 
         // std::cerr << "signal_result is " << signal_result << std::endl;
     }

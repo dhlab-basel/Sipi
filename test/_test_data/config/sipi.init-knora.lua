@@ -113,13 +113,52 @@ function pre_flight(prefix, identifier, cookie)
         elseif response_json.permissionCode == 1 then
             -- restricted view permission on file
             -- either watermark or size (depends on project, should be returned with permission code by Sipi responder)
-            return 'restrict:size=' .. config.thumb_size, filepath
+            return {type = 'restrict', size = config.thumb_size}, filepath
         elseif response_json.permissionCode >= 2 then
             -- full view permissions on file
             return 'allow', filepath
         else
             -- invalid permission code
             return 'deny'
+        end
+    end
+
+    if prefix == 'auth' then
+        filepath = config.imgroot .. '/unit/' .. identifier
+        if server.cookies['sipi-auth'] then
+            access_info = server.cookies['sipi-auth']
+            success, token_val = server.decode_jwt(access_info)
+            if not success then
+                server.sendStatus(500)
+                server.log(token_val, server.loglevel.LOG_ERR)
+                return false
+            end
+            if token_val['allow'] then
+                return 'allow', filepath
+            end
+        elseif server.header['authorization'] then
+            access_info = string.sub(server.header['authorization'], 8)
+            success, token_val = server.decode_jwt(access_info)
+            if not success then
+                server.sendStatus(500)
+                server.log(token_val, server.loglevel.LOG_ERR)
+                return false
+            end
+            if token_val['allow'] then
+                return 'allow', filepath
+            end
+        else
+            return {
+                type = 'login',
+                cookieUrl = 'https://localhost/iiif-cookie.html',
+                tokenUrl = 'https://localhost/iiif-token.php',
+                confirmLabel =  'Login to SIPI',
+                description = 'This Example requires a demo login!',
+                failureDescription = '<a href="http://example.org/policy">Access Policy</a>',
+                failureHeader = 'Authentication Failed',
+                header = 'Please Log In',
+                label = 'Login to SIPI',
+            }, filepath
         end
     end
 

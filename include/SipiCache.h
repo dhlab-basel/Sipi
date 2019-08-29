@@ -56,6 +56,7 @@ namespace Sipi {
          */
         typedef struct {
             size_t img_w, img_h;
+            int numpages;
             char canonical[256];
             char origpath[256];
             char cachepath[256];
@@ -75,6 +76,7 @@ namespace Sipi {
          */
         typedef struct _CacheRecord {
             size_t img_w, img_h;
+            int numpages;
             std::string origpath;
             std::string cachepath;
 #if defined(HAVE_ST_ATIMESPEC)
@@ -93,6 +95,7 @@ namespace Sipi {
         typedef struct {
             size_t img_w;
             size_t img_h;
+            int numpages;
 #if defined(HAVE_ST_ATIMESPEC)
             struct timespec mtime; //!< entry time into cache
 #else
@@ -194,7 +197,7 @@ namespace Sipi {
          * \param[in] cachepath_p Path of the cache file
          */
         void add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p,
-                 size_t img_w_p, size_t img_h_p);
+                 size_t img_w_p, size_t img_h_p, int numpages_p = 0);
 
         /*!
          * Remove one file from the cache
@@ -250,7 +253,7 @@ namespace Sipi {
          * \param[out] img_w Width of original image in pixels
          * \param[out] img_h Height of original image in pixels
          */
-        bool getSize(const std::string &origname_p, size_t &img_w, size_t &img_h);
+        bool getSize(const std::string &origname_p, size_t &img_w, size_t &img_h, int &numpages);
     };
 }
 
