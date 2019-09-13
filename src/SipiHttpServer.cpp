@@ -879,7 +879,7 @@ namespace Sipi {
                     (actual_mimetype == "image/jpeg") ||
                     (actual_mimetype == "image/png") ||
                     (actual_mimetype == "image/jpx") ||
-                    (actual_mimetype == "image/jp2")) { // no PDF here!! They are servced as blob
+                    (actual_mimetype == "image/jp2")) { // no PDF here!! They are served as blob
                     conn_obj.setBuffer();
                     conn_obj.status(Connection::SEE_OTHER);
                     const std::string host = conn_obj.header("host");
