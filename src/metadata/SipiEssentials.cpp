@@ -175,7 +175,6 @@ namespace Sipi {
 
     void SipiEssentials::parse(const std::string &str) {
         std::vector<std::string> result = split(str, "|");
-        //shttps::explode(str, '|', result.begin());
         _origname = result[0];
         _mimetype = result[1];
         std::string _hash_type_str = result[2];
