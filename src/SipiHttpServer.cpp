@@ -386,7 +386,7 @@ namespace Sipi {
         // test if we have access to the file
         //
         if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
-            throw SipiError(__file__, __LINE__, "Cannot read image file!");
+            throw SipiError(__file__, __LINE__, "Cannot read image file: " + infile);
         }
         pre_flight_info["infile"] = infile;
         return pre_flight_info;
@@ -646,8 +646,9 @@ namespace Sipi {
         if (info.numpages > 0) {
             json_object_set_new(root, "numpages", json_integer(info.numpages));
         }
+        json_object_set_new(root, "internalMimeType", json_string(info.internalmimetype.c_str()));
         if (info.success == SipiImgInfo::ALL) {
-            json_object_set_new(root, "originalMimeType", json_string(info.mimetype.c_str()));
+            json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
             json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
         }
         char *json_str = json_dumps(root, JSON_INDENT(3));
@@ -879,7 +880,7 @@ namespace Sipi {
                     (actual_mimetype == "image/jpeg") ||
                     (actual_mimetype == "image/png") ||
                     (actual_mimetype == "image/jpx") ||
-                    (actual_mimetype == "image/jp2")) { // no PDF here!! They are servced as blob
+                    (actual_mimetype == "image/jp2")) { // no PDF here!! They are served as blob
                     conn_obj.setBuffer();
                     conn_obj.status(Connection::SEE_OTHER);
                     const std::string host = conn_obj.header("host");

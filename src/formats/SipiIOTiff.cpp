@@ -1037,7 +1037,7 @@ namespace Sipi {
             char *emdatastr;
             if (1 == TIFFGetField(tif, TIFFTAG_SIPIMETA, &emdatastr)) {
                 SipiEssentials se(emdatastr);
-                info.mimetype = se.mimetype();
+                info.origmimetype = se.mimetype();
                 info.origname = se.origname();
                 info.success = SipiImgInfo::ALL;
             }

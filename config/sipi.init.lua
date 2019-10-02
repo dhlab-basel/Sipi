@@ -308,8 +308,14 @@ function pre_flight(prefix,identifier,cookie)
 
     return 'allow', filepath
 
-end
-    --[[
+--[[
+
+    if config.prefix_as_path then
+        filepath = config.imgroot .. '/' .. prefix .. '/' .. identifier
+    else
+        filepath = config.imgroot .. '/' .. identifier
+    end
+
     if server.cookies['sipi-auth'] then
         print('preflight: IIIF cookie')
         access_info = server.cookies['sipi-auth']
@@ -346,7 +352,6 @@ end
             label = 'Login to SIPI',
         }, filepath
     end
-
-end
 --]]
+end
 -------------------------------------------------------------------------------

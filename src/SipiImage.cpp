@@ -355,17 +355,20 @@ namespace Sipi {
         std::transform(fext.begin(), fext.end(), _fext.begin(), ::tolower);
 
         SipiImgInfo info;
-        if ((_fext == "tif") || (_fext == "tiff")) {
+        std::string mimetype = shttps::Parsing::getFileMimetype(filepath).first;
+
+        if ((mimetype == "image/tiff") || (mimetype == "image/x-tiff")) {
             info = io[std::string("tif")]->getDim(filepath, pagenum);
-        } else if ((_fext == "jpg") || (_fext == "jpeg")) {
+        } else if ((mimetype == "image/jpeg") || (mimetype == "image/pjpeg")) {
             info = io[std::string("jpg")]->getDim(filepath, pagenum);
-        } else if (_fext == "png") {
+        } else if (mimetype == "image/png") {
             info = io[std::string("png")]->getDim(filepath, pagenum);
-        } else if ((_fext == "jp2") || (_fext == "jpx")) {
+        } else if ((mimetype == "image/jp2") || (mimetype == "image/jpx")) {
             info = io[std::string("jpx")]->getDim(filepath, pagenum);
-        } else if (_fext == "pdf") {
+        } else if (mimetype == "application/pdf") {
             info = io[std::string("pdf")]->getDim(filepath, pagenum);
         }
+        info.internalmimetype = mimetype;
 
         if (info.success == SipiImgInfo::FAILURE) {
             for (auto const &iterator : io) {
