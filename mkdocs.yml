@@ -1,0 +1,21 @@
+site_name: SIPI Documentation
+
+nav:
+  - Release-Notes: 0-release-notes/index.md
+  - Overview: overview.md
+  - Building: building.md
+  - Running: running.md
+  - Lua: lua.md
+  - Developing: developing.md
+
+theme:
+  name: material
+  logo: 'assets/images/dasch-icon-white.svg'
+  favicon: 'assets/images/dasch-favicon.ico'
+  palette:
+    primary: 'deep blue'
+    accent: 'deep blue'
+  feature:
+    tabs: false
+extra_css:
+  - 'assets/style/theme.css'
