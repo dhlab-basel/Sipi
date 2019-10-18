@@ -1,12 +1,12 @@
 site_name: SIPI Documentation
 
 nav:
-  - Release-Notes: 0-release-notes/index.md
   - Overview: overview.md
   - Building: building.md
   - Running: running.md
   - Lua: lua.md
   - Developing: developing.md
+  - Release-Notes: 0-release-notes/index.md
 
 theme:
   name: material
