@@ -56,8 +56,9 @@ namespace Sipi {
         int width;
         int height;
         int numpages;
+        std::string internalmimetype;
         std::string origname;
-        std::string mimetype;
+        std::string origmimetype;
 
         SipiImgInfo(void) {
             success = FAILURE;

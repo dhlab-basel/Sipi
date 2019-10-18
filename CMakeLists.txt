@@ -30,7 +30,7 @@ include(CheckIncludeFiles)
 project(sipi)
 
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
-set(SIPI_RELEASE "Sipi Version v1.5.0-SNAPSHOT (build ${SIPIDATE})")
+set(SIPI_RELEASE "Sipi Version v2.0.0-SNAPSHOT (build ${SIPIDATE})")
 
 # ------------------------------------------------------------------------------
 # Set our path variables

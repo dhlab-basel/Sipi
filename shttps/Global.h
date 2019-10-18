@@ -40,17 +40,6 @@ namespace shttps {
     }
     //-------------------------------------------------------------------------
 
-    template<class OutIt>
-    void explode(std::string const &input, char sep, OutIt output) {
-        std::istringstream buffer(input);
-        std::string temp;
-
-        while (std::getline(buffer, temp, sep)) {
-            *output++ = temp;
-        }
-    }
-    //-------------------------------------------------------------------------
-
 
     inline std::string getFileName(const std::string &s) {
         char sep = '/';

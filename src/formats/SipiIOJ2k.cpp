@@ -648,7 +648,7 @@ namespace Sipi {
             const char *cstr = comment.get_text();
             if (strncmp(cstr, "SIPI:", 5) == 0) {
                 SipiEssentials se(cstr + 5);
-                info.mimetype = se.mimetype();
+                info.origmimetype = se.mimetype();
                 info.origname = se.origname();
                 info.success = SipiImgInfo::ALL;
                 break;

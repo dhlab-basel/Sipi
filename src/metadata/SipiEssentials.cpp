@@ -157,12 +157,27 @@ namespace Sipi {
         _icc_profile = base64Encode(icc_profile_p);
     }
 
+    // for string delimiter
+    std::vector<std::string> split (std::string s, std::string delimiter) {
+        size_t pos_start = 0, pos_end, delim_len = delimiter.length();
+        std::string token;
+        std::vector<std::string> res;
+
+        while ((pos_end = s.find (delimiter, pos_start)) != std::string::npos) {
+            token = s.substr (pos_start, pos_end - pos_start);
+            pos_start = pos_end + delim_len;
+            res.push_back (token);
+        }
+
+        res.push_back (s.substr (pos_start));
+        return res;
+    }
+
     void SipiEssentials::parse(const std::string &str) {
-        std::vector<std::string> result(6);
-        shttps::explode(str, '|', result.begin());
-        _origname = *result.begin();
-        _mimetype = *(result.begin() + 1);
-        std::string _hash_type_str = *(result.begin() + 2);
+        std::vector<std::string> result = split(str, "|");
+        _origname = result[0];
+        _mimetype = result[1];
+        std::string _hash_type_str = result[2];
         if (_hash_type_str == "none") _hash_type = shttps::HashType::none;
         else if (_hash_type_str == "md5") _hash_type = shttps::HashType::md5;
         else if (_hash_type_str == "sha1") _hash_type = shttps::HashType::sha1;
@@ -170,13 +185,13 @@ namespace Sipi {
         else if (_hash_type_str == "sha384") _hash_type = shttps::HashType::sha384;
         else if (_hash_type_str == "sha512") _hash_type = shttps::HashType::sha512;
         else _hash_type = shttps::HashType::none;
-        _data_chksum = *(result.begin() + 3);
+        _data_chksum = result[3];
 
         if (result.size() > 5) {
-            std::string tmp_use_icc = *(result.begin() + 4);
+            std::string tmp_use_icc = result[4];
             _use_icc = (tmp_use_icc == "USE_ICC");
             if (_use_icc) {
-                _icc_profile = *(result.begin() + 5);
+                _icc_profile = result[5];
             }
             else {
                 _icc_profile = std::string();
