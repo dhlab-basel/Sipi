@@ -64,6 +64,11 @@ OR
 $ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja .. && ninja && ctest --verbose"
 ```
 
+# Releases
+
+Releases are published on Dockerhub: https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/sipi
+
+
 # Contact Information
 
 Lukas Rosenthaler `<lukas.rosenthaler@unibas.ch>`
