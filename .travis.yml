@@ -38,7 +38,7 @@ jobs:
         # login into docker hub, build image, and push but only when on the "develop" branch or tagged
         # when on 'develop' then $TRAVIS_BRANCH = develop
         # when on 'tag' then $TRAVIS_BRANCH = tag, e.g., v1.2.0
-        - echo $DOCKER_PASS | docker login -u $DOCKER_USER --pasword-stdin
+        - echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
         - docker build -t $REPO:$TRAVIS_BRANCH .
         - docker tag $REPO:$TRAVIS_BRANCH $REPO:latest
         - docker push $REPO
