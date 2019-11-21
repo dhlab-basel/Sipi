@@ -1,0 +1,31 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: decrypt archive containing the kakadu library
+        run: openssl aes-256-cbc -K ${{ secrets.VendorEncryptionKey }} -iv ${{ secrets.VendorEncrytionIV }} -in vendor/v7_A_7-01382N.zip.enc -out vendor/v7_A_7-01382N.zip -d
+      - name: run compile and tests inside docker
+        run: docker run -it --rm -v $GITHUB_WORKSPACE:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
+  # publish only for develop and tags
+  publish:
+    name: Publish to Dockerhub
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/tags/*'
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 50
+      - name: login to dockerhub
+        run: echo ${{ secrets.DockerhubToken }} | docker login -u ${{ secrets.DockerUser }} --password-stdin
+      - name: build and publish image
+        run: make publish-sipi-image
