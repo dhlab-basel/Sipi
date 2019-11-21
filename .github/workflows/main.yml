@@ -13,7 +13,7 @@ jobs:
       - name: decrypt archive containing the kakadu library
         run: openssl aes-256-cbc -K ${{ secrets.VendorEncryptionKey }} -iv ${{ secrets.VendorEncrytionIV }} -in vendor/v7_A_7-01382N.zip.enc -out vendor/v7_A_7-01382N.zip -d
       - name: run compile and tests inside docker
-        run: docker run -it --rm -v $GITHUB_WORKSPACE:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+        run: docker run --rm -v $GITHUB_WORKSPACE:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
   # publish only for develop and tags
   publish:
