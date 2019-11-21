@@ -26,7 +26,7 @@ Freely distributable binary releases will be available soon.
 
 # Documentation
 
-The manual is online at http://dhlab-basel.github.io/Sipi/.
+The manual is online at [https://sipi.io](https://sipi.io).
 
 To build it locally, you will need [Sphinx](http://www.sphinx-doc.org/en/stable/index.html).
 In the `manual` subdirectory of the source tree, type:
@@ -66,7 +66,7 @@ $ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/
 
 # Releases
 
-Releases are published on Dockerhub: https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/sipi
+Releases are published on Dockerhub: [daschswiss/sipi](https://hub.docker.com/r/daschswiss/sipi)
 
 
 # Contact Information
