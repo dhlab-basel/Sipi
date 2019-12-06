@@ -370,6 +370,7 @@ add_executable(sipi
         src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
         src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
         src/SipiCommon.cpp include/SipiCommon.h
+        src/MimetypeCheck.cpp include/MimetypeCheck.h
         shttps/Global.h
         shttps/Error.cpp shttps/Error.h
         shttps/Hash.cpp shttps/Hash.h
@@ -381,7 +382,7 @@ add_executable(sipi
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp src/MimetypeCheck.cpp include/MimetypeCheck.h)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
 
 add_dependencies(sipi
         icc_profiles)
