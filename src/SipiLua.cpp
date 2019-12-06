@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <SipiCache.h>
 #include <SipiFilenameHash.h>
+#include <MimetypeCheck.h>
 
 #include "shttps/Connection.h"
 #include "SipiImage.h"
@@ -645,7 +646,7 @@ namespace Sipi {
         bool check;
 
         try {
-            check = SipiImage::checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+            //check = MimetypeCheck::checkMimeTypeConsistency(*path, given_mimetype, given_filename);
         } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;

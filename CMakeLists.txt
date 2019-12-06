@@ -381,7 +381,7 @@ add_executable(sipi
         shttps/Parsing.cpp shttps/Parsing.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
+        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp src/MimetypeCheck.cpp include/MimetypeCheck.h)
 
 add_dependencies(sipi
         icc_profiles)

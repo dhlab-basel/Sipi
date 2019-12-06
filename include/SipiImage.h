@@ -196,7 +196,6 @@ class SipiImageError : public std::exception {
         SkipMetadata skip_metadata; //!< If true, all metadata is stripped off
 
     public:
-        static std::unordered_map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
         /*!
          * Default constructor. Creates an empty image
          */
@@ -219,13 +218,6 @@ class SipiImageError : public std::exception {
          * \param[in] photo_p The photometric interpretation
          */
         SipiImage(size_t nx_p, size_t ny_p, size_t nc_p, size_t bps_p, PhotometricInterpretation photo_p);
-
-        /*!
-         * Checks if the actual mimetype of an image file corresponds to the indicated mimetype and the extension of the filename.
-         * This function is used to check if information submitted with a file are actually valid.
-         */
-        static bool checkMimeTypeConsistency(const std::string &path, const std::string &given_mimetype,
-                                             const std::string &filename);
 
         /*!
          * Getter for nx
