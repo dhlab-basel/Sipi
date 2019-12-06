@@ -34,6 +34,7 @@ add_executable(configuration
         ${SRCS}
         ${PROJECT_SOURCE_DIR}/src/SipiConf.cpp ${PROJECT_SOURCE_DIR}/include/SipiConf.h
         ${PROJECT_SOURCE_DIR}/src/SipiError.cpp ${PROJECT_SOURCE_DIR}/include/SipiError.h
+        ${PROJECT_SOURCE_DIR}/src/MimetypeCheck.cpp ${PROJECT_SOURCE_DIR}/include/MimetypeCheck.h
         ${PROJECT_SOURCE_DIR}/shttps/Global.h
         ${PROJECT_SOURCE_DIR}/shttps/Error.cpp ${PROJECT_SOURCE_DIR}/shttps/Error.h
         ${PROJECT_SOURCE_DIR}/shttps/Hash.cpp ${PROJECT_SOURCE_DIR}/shttps/Hash.h

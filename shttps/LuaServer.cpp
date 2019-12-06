@@ -48,6 +48,8 @@
 #include "Connection.h"
 #include "Server.h"
 #include "Error.h"
+#include "SipiImage.h"
+#include "MimetypeCheck.h"
 //#include "ChunkReader.h"
 
 #include "sole.hpp"
@@ -2334,15 +2336,15 @@ namespace shttps {
 
         bool check;
 
-        /*try {
-            check = SipiImage::checkMimeTypeConsistency(*filepath, given_mimetype, given_filename);
-        } catch (SipiImageError &err) {
+        try {
+            check = Sipi::MimetypeCheck::checkMimeTypeConsistency(filepath, given_mimetype, given_filename);
+        } catch (Sipi::SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
             ss << "SipiImage.mimetype_consistency(): " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
-        }*/
+        }
 
         lua_pushboolean(L, true); // status
         lua_pushboolean(L, check); // result
