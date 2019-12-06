@@ -615,7 +615,7 @@ namespace Sipi {
 
     /*!
      * Lua usage:
-     *    SipiImage.mimetype_consistency(img, "image/jpeg", "myfile.jpg")
+     *    SipiImage:mimetype_consistency("image/jpeg", "myfile.jpg")
      */
     static int SImage_mimetype_consistency(lua_State *L) {
         int top = lua_gettop(L);
@@ -645,7 +645,7 @@ namespace Sipi {
         bool check;
 
         try {
-            check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+            check = SipiImage::checkMimeTypeConsistency(*path, given_mimetype, given_filename);
         } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;

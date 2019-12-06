@@ -2305,6 +2305,52 @@ namespace shttps {
     }
     //=========================================================================
 
+    /**
+     * Lua: success, check = server.mimetype_consistency("/path/to/file.bin", "image.jpg", "myfile.jpg")
+     */
+    static int lua_mimetype_consistency(lua_State *L) {
+        int top = lua_gettop(L);
+
+        if (top != 3) {
+            lua_pop(L, top); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "SipiImage.mimetype_consistency(): Incorrect number of arguments");
+            return 2;
+        }
+
+        // get the indicated mimetype and the original filename
+        const char *filepath = lua_tostring(L, 1);
+        const char *given_mimetype = lua_tostring(L, 2);
+        const char *given_filename = lua_tostring(L, 3);
+
+        lua_pop(L, top); // clear stack
+
+        std::cout << "consistency_check" << std::endl;
+        std::cout << filepath << std::endl;
+        std::cout << given_mimetype << std::endl;
+        std::cout << given_filename << std::endl;
+
+        // do the consistency check
+
+        bool check;
+
+        /*try {
+            check = SipiImage::checkMimeTypeConsistency(*filepath, given_mimetype, given_filename);
+        } catch (SipiImageError &err) {
+            lua_pushboolean(L, false);
+            std::stringstream ss;
+            ss << "SipiImage.mimetype_consistency(): " << err;
+            lua_pushstring(L, ss.str().c_str());
+            return 2;
+        }*/
+
+        lua_pushboolean(L, true); // status
+        lua_pushboolean(L, check); // result
+
+        return 2;
+
+    }
+
     /*!
      * Lua: success, mimetype = server.file_mimetype(path)
      */
@@ -2677,6 +2723,10 @@ namespace shttps {
 
         lua_pushstring(L, "parse_mimetype"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_parse_mimetype); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "mimetype_consistency"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_mimetype_consistency); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "file_mimetype"); // table1 - "index_L1"
