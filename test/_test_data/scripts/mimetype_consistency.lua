@@ -20,21 +20,43 @@
 
 require "send_response"
 
+local mimetype_test_data = {
+    {
+        filepath = config.imgroot .. '/unit/' .. 'lena512.tif',
+        mimetype = "image/tiff",
+        filename = "lena512.tif"
+    },
+    {
+        filepath = config.imgroot .. '/unit/' .. 'CV+Pub_LukasRosenthaler_p3.jpg',
+        mimetype = "image/jpeg",
+        filename = "CV+Pub_LukasRosenthaler.jpg"
+    },
+    {
+        filepath = config.imgroot .. '/unit/' .. 'CV+Pub_LukasRosenthaler.pdf',
+        mimetype = "application/pdf",
+        filename = "CV+Pub_LukasRosenthaler.pdf"
+    }
+}
 
-local filepath = config.imgroot .. '/unit/' .. 'lena512.tif'
+result = {}
 
-local success, check
-success, check = server.mimetype_consistency(filepath, 'image/tiff', 'lena512.tif')
+for i, test_data_item in ipairs(mimetype_test_data) do
 
-if not success then
-    server.send_error(500, 'server.mimetype_consistency failed')
-    return false
+    local success, check
+    success, check = server.mimetype_consistency(test_data_item.filepath, test_data_item.mimetype, test_data_item.filename)
+
+    if not success then
+        server.send_error(500, 'server.mimetype_consistency failed')
+        return false
+    end
+
+    if not check then
+        server.sendStatus(500)
+        return -1
+    end
+
+    table.insert(result, { test_data_item, "OK" })
+
 end
 
-if check then
-    server.sendStatus(200)
-    return true
-else
-    server.sendStatus(500)
-    return 200
-end
+send_success(result)
