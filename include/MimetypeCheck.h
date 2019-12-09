@@ -46,6 +46,42 @@ namespace Sipi {
 
     };
 
+    class MimetypeCheckError : public std::exception {
+
+    private:
+        std::string file; //!< Source file where the error occurs in
+        int line; //!< Line within the source file
+        int errnum; //!< error number if a system call is the reason for the error
+        std::string errmsg;
+
+    public:
+        /*!
+        * Constructor
+        * \param[in] file_p The source file name (usually __FILE__)
+        * \param[in] line_p The line number in the source file (usually __LINE__)
+        * \param[in] msg_p Error message describing the problem
+        * \param[in] errnum_p Errnum, if a unix system call is the reason for throwing this exception
+        */
+        inline MimetypeCheckError(const char *file_p, int line_p, const std::string &msg_p, int errnum_p = 0) : file(
+                file_p), line(line_p), errnum(errnum_p), errmsg(msg_p) {}
+
+        inline std::string to_string(void) const {
+            std::ostringstream errStream;
+            errStream << "MimetypeCheckError at [" << file << ": " << line << "]";
+            if (errnum != 0) errStream << " (system error: " << std::strerror(errnum) << ")";
+            errStream << ": " << errmsg;
+            return errStream.str();
+        }
+        //============================================================================
+
+        inline friend std::ostream &operator<<(std::ostream &outStream, const MimetypeCheckError &rhs) {
+            std::string errStr = rhs.to_string();
+            outStream << errStr << std::endl; // TODO: remove the endl, the logging code should do it
+            return outStream;
+        }
+        //============================================================================
+
+    };
 }
 
 #endif

@@ -2320,17 +2320,12 @@ namespace shttps {
             return 2;
         }
 
-        // get the indicated mimetype and the original filename
+        // get the filepath, the indicated mimetype and the original filename
         const char *filepath = lua_tostring(L, 1);
         const char *given_mimetype = lua_tostring(L, 2);
         const char *given_filename = lua_tostring(L, 3);
 
         lua_pop(L, top); // clear stack
-
-        std::cout << "consistency_check" << std::endl;
-        std::cout << filepath << std::endl;
-        std::cout << given_mimetype << std::endl;
-        std::cout << given_filename << std::endl;
 
         // do the consistency check
 
@@ -2338,10 +2333,10 @@ namespace shttps {
 
         try {
             check = Sipi::MimetypeCheck::checkMimeTypeConsistency(filepath, given_mimetype, given_filename);
-        } catch (Sipi::SipiImageError &err) {
+        } catch (Sipi::MimetypeCheckError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
-            ss << "SipiImage.mimetype_consistency(): " << err;
+            ss << "MimetypeCheck::checkMimeTypeConsistency:" << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
         }

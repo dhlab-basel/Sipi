@@ -647,10 +647,10 @@ namespace Sipi {
 
         try {
             check = MimetypeCheck::checkMimeTypeConsistency(*path, given_mimetype, given_filename);
-        } catch (SipiImageError &err) {
+        } catch (MimetypeCheckError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
-            ss << "SipiImage.mimetype_consistency(): " << err;
+            ss << "MimetypeCheck.checkMimeTypeConsistency(): " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
         }

@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <string>
+#include <Error.h>
 #include "shttps/Global.h"
 #include "shttps/Parsing.h"
 #include "MimetypeCheck.h"
@@ -72,10 +73,10 @@ namespace Sipi {
         } catch (std::out_of_range &e) {
             std::stringstream ss;
             ss << "Unsupported file type: \"" << filename;
-            //throw SipiImageError(__file__, __LINE__, ss.str());
-        } /*catch (shttps::Error &err) {
-            throw SipiImageError(__file__, __LINE__, err.to_string());
-        }*/
+            throw MimetypeCheckError(__file__, __LINE__, ss.str());
+        } catch (shttps::Error &err) {
+            throw MimetypeCheckError(__file__, __LINE__, err.to_string());
+        }
 
         return true;
     }
