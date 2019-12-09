@@ -242,5 +242,10 @@ routes = {
         method = 'GET',
         route = '/sqlite',
         script = 'test_sqlite.lua'
+    },
+    {
+        method = 'GET',
+        route = '/mimetype_consistency',
+        script = 'mimetype_consistency.lua'
     }
 }
