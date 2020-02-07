@@ -8,8 +8,8 @@ include(ExternalProject)
 ExternalProject_Add(
         project_fmt
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://github.com/fmtlib/fmt/releases/download/5.0.0/fmt-5.2.1.zip
-        SOURCE_DIR ${COMMON_SRCS}/fmt-5.2.1
+        URL https://github.com/fmtlib/fmt/releases/download/6.1.2/fmt-6.1.2.zip
+        SOURCE_DIR ${COMMON_SRCS}/fmt-6.1.2
         CMAKE_ARGS -DFMT_DOC=OFF -DCMAKE_PREFIX_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
 )
 
