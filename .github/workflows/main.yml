@@ -2,9 +2,6 @@ name: CI
 
 on: [push]
 
-env:
-  KNORA_GDB_LICENSE: ${{ github.workspace }}/ci/graphdb.license
-
 jobs:
   test:
     name: Build and Test
@@ -22,10 +19,10 @@ jobs:
           path: ci
       - name: Copy ci-assets
         run: |
-          ls $GITHUB_WORKSPACE
+          ls $GITHUB_WORKSPACE/ci
           cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_2-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_2-01727L.zip
       - name: run compile and tests inside docker
-        run: make test
+        run: make ci-test
 
   # publish only for develop and tags
   publish:

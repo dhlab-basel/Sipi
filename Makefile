@@ -29,9 +29,9 @@ build-sipi-image: ## build sipi docker image
 publish-sipi-image: build-sipi-image ## publish sipi docker image to Dockerhub
 	docker push $(SIPI_REPO)
 
-.PHONY: test
-test: ## compile and run tests inside Docker
-	docker run -it --rm -v $(CURRENT_DIR):/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+.PHONY: ci-test
+ci-test: ## compile and run tests inside Docker
+	docker run -i --rm -v $(CURRENT_DIR):/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
 .PHONY: clean
 clean: ## cleans the project directory
