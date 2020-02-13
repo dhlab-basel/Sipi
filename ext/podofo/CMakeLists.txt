@@ -8,6 +8,7 @@ ExternalProject_Add(project_podofo
         # DEPENDS freetype_shared
         DEPENDS fontconfig
         # DEPENDS fontconfig_shared
+        DEPENDS jpeg
         INSTALL_DIR ${COMMON_LOCAL}
         #URL_HASH SHA256=c75e3c4a0811bf700d92c82319373b7a825a2331c12b8b37d41eb58e4f18eafb
         URL https://sourceforge.net/projects/podofo/files/latest/download

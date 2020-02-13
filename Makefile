@@ -2,6 +2,7 @@
 # Be sure to place this BEFORE `include` directives, if any.
 THIS_FILE := $(lastword $(MAKEFILE_LIST))
 CURRENT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+CORES ?= $(shell sysctl -n hw.ncpu || echo 1)
 
 include vars.mk
 
@@ -29,9 +30,21 @@ build-sipi-image: ## build sipi docker image
 publish-sipi-image: build-sipi-image ## publish sipi docker image to Dockerhub
 	docker push $(SIPI_REPO)
 
-.PHONY: ci-test
-ci-test: ## compile and run tests inside Docker
+.PHONY: test-ci
+test-ci: ## compile and run tests inside Docker (Github CI version)
 	docker run -i --rm -v $(CURRENT_DIR):/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
+.PHONY: test-docker
+test-docker: ## compile and run tests inside Docker
+	docker run -it --rm -v $(CURRENT_DIR):/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
+.PHONY: test-using-max-cores
+test-using-max-cores:  ## compile and run tests locally (multit-hreaded)
+	mkdir -p $(CURRENT_DIR)/build && cd $(CURRENT_DIR)/build && cmake .. && make -j$(CORES) && ctest --verbose
+
+.PHONY: test
+test:  ## compile and run tests locally (single-threaded).
+	mkdir -p $(CURRENT_DIR)/build && cd $(CURRENT_DIR)/build && cmake .. && make && ctest --verbose
 
 .PHONY: clean
 clean: ## cleans the project directory

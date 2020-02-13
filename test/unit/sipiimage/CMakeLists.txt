@@ -79,9 +79,8 @@ target_link_libraries(sipiimage
         exiv2
         exiv2-xmp
         expat
-        webp
-        jpeg
         tiff
+        webp
         jbigkit
         png
         kdu_aux
@@ -98,6 +97,7 @@ target_link_libraries(sipiimage
         poppler
         podofo
         idn
+        jpeg
         fontconfig
         harfbuzz
         freetype

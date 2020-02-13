@@ -23,7 +23,13 @@ ExternalProject_Add(project_tiff
         URL http://download.osgeo.org/libtiff/tiff-4.1.0.tar.gz
         SOURCE_DIR ${COMMON_SRCS}/libtiff-4.1.0
         PATCH_COMMAND patch ${COMMON_SRCS}/libtiff-4.1.0/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
-        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_C_STANDARD_LIBRARIES="-lpthread" -DCMAKE_PREFIX_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        CMAKE_ARGS  ${CMAKE_CREATE_SHARED}
+                    -DCMAKE_C_STANDARD_LIBRARIES="-lpthread"
+                    -DCMAKE_PREFIX_PATH=${COMMON_LOCAL}
+                    -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+                    -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+                    -DWEBP_LIBRARY=${CONFIGURE_LIBDIR}/libwebp${CMAKE_STATIC_LIBRARY_SUFFIX}
+                    -DWEBP_INCLUDE_DIR=${CONFIGURE_INCDIR}
         INSTALL_COMMAND make test
         COMMAND make install
         COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.1.0/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
