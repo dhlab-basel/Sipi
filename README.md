@@ -26,7 +26,7 @@ Freely distributable binary releases will be available soon.
 
 # Documentation
 
-The manual is online at http://dhlab-basel.github.io/Sipi/.
+The manual is online at https://sipi.io.
 
 To build it locally, you will need [Sphinx](http://www.sphinx-doc.org/en/stable/index.html).
 In the `manual` subdirectory of the source tree, type:
@@ -41,27 +41,17 @@ You will then find the manual under `manual/_build/html`.
 
 All should be run from inside the root of the repository.
 
-## Build under macOS
+## Build and run inside Docker - recommended
+```bash
+$ make compile
+$ make test
+$ make run
+```
+
+## Build under macOS - not recommended. You are on your own. We warned you ;-)
 
 ```bash
 $ (mkdir -p ./build-mac && cd build-mac && cmake .. && make && ctest --verbose)
-OR
-$ (mkdir -p ./build-mac && cd build-mac && cmake -G Ninja .. && ninja && ctest --verbose)
-```
-
-## Build inside Docker using Clang/LLVM
-```bash
-$ docker run -it --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
-OR
-$ docker run -it --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake -G Ninja .. && ninja && ctest --verbose"
-```
-
-## Build inside Docker using ccache
-
-```bash
-$ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. && make && ctest --verbose"
-OR
-$ docker run -v $PWD:/sipi -v ~/ccache:/ccache -e CCACHE_DIR=/ccache dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake -G Ninja .. && ninja && ctest --verbose"
 ```
 
 # Releases
