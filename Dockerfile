@@ -2,8 +2,10 @@ FROM dhlabbasel/sipi-base:18.04
 
 MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
 
+WORKDIR /sipi
+
 # Add everything to image.
-COPY . /sipi
+COPY . .
 
 # Install and clean-up SIPI.
 RUN mkdir -p /sipi/build-linux && \
@@ -17,8 +19,6 @@ RUN mkdir -p /sipi/build-linux && \
     rm -rf /sipi/build-linux
 
 EXPOSE 1024
-
-WORKDIR /sipi
 
 ENTRYPOINT [ "/sipi/sipi" ]
 
