@@ -20,10 +20,12 @@ compile: ## compile SIPI inside Docker
 
 .PHONY: test
 test: ## compile and run tests inside Docker
+	@mkdir -p ${PWD}/images
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
+	@mkdir -p ${PWD}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh -c "/sipi/build-linux/sipi --config=/sipi/config/sipi.config.lua"
 
 .PHONY: clean
