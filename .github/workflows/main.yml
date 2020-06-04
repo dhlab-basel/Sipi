@@ -1,0 +1,49 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - name: Checkout private ci-assets
+        uses: actions/checkout@v2
+        with:
+          repository: dasch-swiss/dsp-ci-assets
+          token: ${{ secrets.GitHub_PAT }} # `GitHub_PAT` is a secret that contains your PAT
+          path: ci
+      - name: Copy ci-assets
+        run: |
+          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_3-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_3-01727L.zip
+      - name: run compile and tests inside docker
+        run: make test-ci
+
+  # publish only for develop and tags
+  publish:
+    name: Publish to Dockerhub
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags')
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v1
+        with:
+          fetch-depth: 50
+      - name: checkout private ci-assets
+        uses: actions/checkout@v2
+        with:
+          repository: dasch-swiss/dsp-ci-assets
+          token: ${{ secrets.GitHub_PAT }} # `GitHub_PAT` is a secret that contains your PAT
+          path: ci
+      - name: copy ci-assets
+        run: |
+          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_2-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_2-01727L.zip
+      - name: build and publish image
+        run: |
+          echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+          make publish-sipi-image

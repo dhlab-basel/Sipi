@@ -219,6 +219,7 @@ add_subdirectory(${EXT_PROJECTS_DIR}/xz)
 add_subdirectory(${EXT_PROJECTS_DIR}/zlib)
 add_subdirectory(${EXT_PROJECTS_DIR}/jpeg)
 add_subdirectory(${EXT_PROJECTS_DIR}/jbigkit)
+add_subdirectory(${EXT_PROJECTS_DIR}/webp)
 add_subdirectory(${EXT_PROJECTS_DIR}/tiff)
 add_subdirectory(${EXT_PROJECTS_DIR}/expat)
 add_subdirectory(${EXT_PROJECTS_DIR}/png)
@@ -394,6 +395,7 @@ target_link_libraries(sipi ${LIBS}
         exiv2-xmp
         expat
         tiff
+        webp
         jbigkit
         png
         kdu_aux

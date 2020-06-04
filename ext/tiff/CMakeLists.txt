@@ -17,15 +17,22 @@ endif()
 ExternalProject_Add(project_tiff
         DEPENDS jpeg
         DEPENDS xz
+        DEPENDS webp
         INSTALL_DIR ${COMMON_LOCAL}
         TEST_BEFORE_INSTALL 1
-        URL http://download.osgeo.org/libtiff/tiff-4.0.9.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/libtiff-4.0.9
-        PATCH_COMMAND patch ${COMMON_SRCS}/libtiff-4.0.9/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
-        CMAKE_ARGS ${CMAKE_CREATE_SHARED} -DCMAKE_PREFIX_PATH=${COMMON_LOCAL} -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL} -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+        URL http://download.osgeo.org/libtiff/tiff-4.1.0.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/libtiff-4.1.0
+        PATCH_COMMAND patch ${COMMON_SRCS}/libtiff-4.1.0/libtiff/tif_dirinfo.c < ${COMMON_PATCHES}/tiff-4.0.4.patch
+        CMAKE_ARGS  ${CMAKE_CREATE_SHARED}
+                    -DCMAKE_C_STANDARD_LIBRARIES="-lpthread"
+                    -DCMAKE_PREFIX_PATH=${COMMON_LOCAL}
+                    -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
+                    -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}
+                    -DWEBP_LIBRARY=${CONFIGURE_LIBDIR}/libwebp${CMAKE_STATIC_LIBRARY_SUFFIX}
+                    -DWEBP_INCLUDE_DIR=${CONFIGURE_INCDIR}
         INSTALL_COMMAND make test
         COMMAND make install
-        COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.0.9/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
+        COMMAND ${CMAKE_COMMAND} -E copy ${COMMON_SRCS}/libtiff-4.1.0/libtiff/tif_dir.h ${COMMON_LOCAL}/include/
         BUILD_IN_SOURCE 1
 )
 ExternalProject_Get_Property(project_tiff install_dir)

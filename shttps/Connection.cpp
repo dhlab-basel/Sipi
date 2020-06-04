@@ -589,10 +589,10 @@ namespace shttps {
                                     unordered_map<string, string> opts = parse_header_options(value, true);
                                     unordered_map<string, string>::iterator it;
 
-                                    for (it = opts.begin(); it != opts.end(); it++) {
-                                        //cerr << "OPTS: " << it->first << "=" << it->second << endl;
+                                    //for (it = opts.begin(); it != opts.end(); it++) {
+                                        //std::cerr << "OPTS: " << it->first << "=" << it->second << std::endl;
                                         //How do I access each element without knowing any of its string-int values?
-                                    }
+                                    //}
 
                                     if (opts.count("form-data") == 0) {
                                         // something is wrong!
@@ -718,7 +718,6 @@ namespace shttps {
 
                                     if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
                                         ++cnt;
-
                                         if (cnt == nlboundary.length()) {
                                             // OK, we have read the whole file...
                                             break; // break enclosing while loop
@@ -733,7 +732,11 @@ namespace shttps {
                                         }
 
                                         cnt = 0;
-                                        outf.put((char) inbyte);
+                                        if ((cnt < nlboundary.length()) && (inbyte == nlboundary[cnt])) {
+                                            ++cnt;
+                                        } else {
+                                            outf.put((char) inbyte);
+                                        }
 
                                         if (!outf.good()) {
                                             throw Error(__file__, __LINE__, "Could not write to output file!");

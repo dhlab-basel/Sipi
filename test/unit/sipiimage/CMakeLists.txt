@@ -80,6 +80,7 @@ target_link_libraries(sipiimage
         exiv2-xmp
         expat
         tiff
+        webp
         jbigkit
         png
         kdu_aux
