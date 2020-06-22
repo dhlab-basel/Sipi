@@ -29,6 +29,25 @@
 
 namespace Sipi {
 
+    /**
+     * Error class for handling invalid IIIF size parameters that should result in returning a HTTP error code
+     */
+    class SipiSizeError {
+    private:
+        int http_code;
+        std::string description;
+    public:
+        inline SipiSizeError(int http_code, const std::string &description) : http_code(http_code), description(description) {};
+
+        inline int getHttpCode(void) { return http_code; }
+
+        inline std::string getDescription(void) { return description; }
+
+        inline std::string to_string() const {
+            return "SipiSizeError: " + description;
+        };
+    };
+
     /*!
      * \class SipiSize
      * This class handles both the Size (or scale) parameter of a IIIF-request, but also deals
@@ -46,6 +65,7 @@ namespace Sipi {
     class SipiSize {
     public:
         typedef enum {
+            UNDEFINED, //!< Is not initialized
             FULL,      //!< The full size of the image is served, IIIF: "full" or "max"
             PIXELS_XY, //!< Both X and Y is given, the image may be distorted, IIIF: "xxx,yyy"
             PIXELS_X,  //!< Only the X dimension is given, the Y dimension is calculated (no distortion), IIIF: "xxx,"
@@ -58,6 +78,7 @@ namespace Sipi {
     private:
         static size_t limitdim; //!< maximal dimension of an image
         SizeType size_type; //!< Holds the type of size/scaling parameters given
+        bool upscaling;
         float percent;      //!< if the scaling is given in percent, this holds the value
         int reduce;         //!< if the scaling is given by a reduce value
         bool redonly;       //!< we *only* have a reduce in the resulting size
@@ -69,21 +90,21 @@ namespace Sipi {
         /*!
          * Default constructor (full size)
          */
-        inline SipiSize() { size_type = SizeType::FULL; }
+        SipiSize() : size_type(SizeType::UNDEFINED), upscaling(false), percent(0.0F), reduce(0), nx(0), ny(0), w(0), h(0), canonical_ok(false) {}
 
         /*!
          * Constructor with reduce parameter (reduce=0: full image, reduce=1: 1/2, reduce=2: 1/4,…)
          *
          * \param[in] reduce_p Reduce parameter
          */
-        inline SipiSize(int reduce_p) : reduce(reduce_p) { size_type = SizeType::REDUCE; }
+        SipiSize(int reduce_p) : size_type(SizeType::REDUCE), reduce(reduce_p) {}
 
         /*!
          * Constructor with percentage parameter
          *
          * \param[in] percent_p Percentage parameter
          */
-        inline SipiSize(float percent_p) : percent(percent_p) { size_type = SizeType::PERCENTS; }
+        SipiSize(float percent_p) : size_type(SizeType::PERCENTS), percent(percent_p) {}
 
         /*!
          * Construcor taking size/scale part of IIIF url as parameter
@@ -95,22 +116,22 @@ namespace Sipi {
         /*!
          * Comparison operator ">"
          */
-        bool operator>(const SipiSize &s);
+        bool operator>(const SipiSize &s) const;
 
         /*!
          * Comparison operator ">="
          */
-        bool operator>=(const SipiSize &s);
+        bool operator>=(const SipiSize &s) const;
 
         /*!
          * Comparison operator "<"
          */
-        bool operator<(const SipiSize &s);
+        bool operator<(const SipiSize &s) const;
 
         /*!
          * Comparison operator "<="
          */
-        bool operator<=(const SipiSize &s);
+        bool operator<=(const SipiSize &s) const;
 
         /*!
          * Get the coordinate type that has bee used for construction of the region
@@ -118,6 +139,13 @@ namespace Sipi {
          * \returns CoordType
          */
         inline SizeType getType() { return size_type; };
+
+        /*!
+         * Test, if size object has been initialized with a IIIF string
+         *
+         * \returns true, if object has not been initialized by a IIIF string
+         */
+        inline bool undefined() const { return (nx == 0) && (ny == 0) && (percent == 0.0F); }
 
         /*!
          * Get the size to which the image should be scaled

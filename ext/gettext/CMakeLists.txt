@@ -8,9 +8,9 @@ include(ExternalProject)
 ExternalProject_Add(
         project_gettext
         INSTALL_DIR ${COMMON_LOCAL}
-        URL http://ftp.gnu.org/pub/gnu/gettext/gettext-0.20.1.tar.gz
-        SOURCE_DIR ${COMMON_SRCS}/gettext--0.20.1
-        CONFIGURE_COMMAND   ${COMMON_SRCS}/gettext--0.20.1/configure
+        URL http://ftp.gnu.org/pub/gnu/gettext/gettext-0.20.2.tar.gz
+        SOURCE_DIR ${COMMON_SRCS}/gettext--0.20.2
+        CONFIGURE_COMMAND   ${COMMON_SRCS}/gettext--0.20.2/configure
                             --prefix=${COMMON_LOCAL}
                             --enable-static
                             --libdir=${CONFIGURE_LIBDIR}

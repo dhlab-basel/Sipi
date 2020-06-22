@@ -76,23 +76,35 @@ class TestServer:
 
     def test_file_bytes(self, manager):
         """return an unmodified JPG file"""
-        manager.compare_server_bytes("/knora/Leaves.jpg/full/full/0/default.jpg", manager.data_dir_path("knora/Leaves.jpg"))
+        manager.compare_server_bytes("/knora/Leaves.jpg/full/max/0/default.jpg", manager.data_dir_path("knora/Leaves.jpg"))
 
     def test_restrict(self, manager):
         """return a restricted image in a smaller size"""
-        image_info = manager.get_image_info("/knora/RestrictLeaves.jpg/full/full/0/default.jpg")
+        image_info = manager.get_image_info("/knora/RestrictLeaves.jpg/full/max/0/default.jpg")
         page_geometry = [line.strip().split()[-1] for line in image_info.splitlines() if line.strip().startswith("Page geometry:")][0]
         assert page_geometry == "128x128+0+0"
 
     def test_deny(self, manager):
         """return 401 Unauthorized if the user does not have permission to see the image"""
-        manager.expect_status_code("/knora/DenyLeaves.jpg/full/full/0/default.jpg", 401)
+        manager.expect_status_code("/knora/DenyLeaves.jpg/full/max/0/default.jpg", 401)
+
+    def test_read_write(selfself, manager):
+        """read an image file, convert it to JPEG2000 and write it"""
+
+        expected_result = {
+            "status": 0,
+            "message": "OK"
+        }
+
+        response_json = manager.get_json("/read_write_lua")
+
+        assert response_json == expected_result
 
     def test_thumbnail(self, manager):
         """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
         filename = response_json["filename"]
-        manager.expect_status_code("/thumbs/{}.jpg/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/thumbs/{}.jpg/full/max/0/default.jpg".format(filename), 200)
 
         # given the temporary filename, create the file
         params = {
@@ -105,8 +117,8 @@ class TestServer:
         filename_full = response_json2["filename_full"]
         filename_thumb = response_json2["filename_thumb"]
 
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+        manager.expect_status_code("/knora/{}/full/max/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/max/0/default.jpg".format(filename_thumb), 200)
 
     def test_image_conversion(self, manager):
         """ convert and store an image file"""
@@ -122,8 +134,8 @@ class TestServer:
         filename_full = response_json["filename_full"]
         filename_thumb = response_json["filename_thumb"]
 
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_full), 200)
-        manager.expect_status_code("/knora/{}/full/full/0/default.jpg".format(filename_thumb), 200)
+        manager.expect_status_code("/knora/{}/full/max/0/default.jpg".format(filename_full), 200)
+        manager.expect_status_code("/knora/{}/full/max/0/default.jpg".format(filename_thumb), 200)
 
     def test_knora_info_validation(self, manager):
         """pass the knora.json request tests"""
@@ -138,7 +150,7 @@ class TestServer:
 
         response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
         filename = response_json["filename"]
-        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/unit/{}/full/max/0/default.jpg".format(filename), 200)
 
         response_json = manager.get_json("/unit/{}/knora.json".format(filename))
 
@@ -147,65 +159,50 @@ class TestServer:
     def test_json_info_validation(self, manager):
         """pass the info.json request tests"""
 
+
         expected_result = {
-            "@context": "http://iiif.io/api/image/2/context.json",
-            "@id": "http://127.0.0.1:1024/images/lena512.jp2",
-            "protocol": "http://iiif.io/api/image",
-            "width": 512,
-            "height": 512,
-            "sizes": [
-                {
-                    "width": 256,
-                    "height": 256
-                },
-                {
-                    "width": 128,
-                    "height": 128
-                }
+            '@context': 'http://iiif.io/api/image/3/context.json',
+            'id': 'http://127.0.0.1:1024/unit/_lena512.jp2',
+            'type': 'ImageService3',
+            'protocol': 'http://iiif.io/api/image',
+            'profile': 'level2',
+            'width': 512,
+            'height': 512,
+            'sizes': [
+                {'width': 256, 'height': 256},
+                {'width': 128, 'height': 128}
             ],
-            "profile": [
-                "http://iiif.io/api/image/2/level2.json",
-                {
-                    "formats": [
-                        "tif",
-                        "jpg",
-                        "png",
-                        "jp2",
-                        "pdf"
-                    ],
-                    "qualities": [
-                        "color",
-                        "gray"
-                    ],
-                    "supports": [
-                        "color",
-                        "cors",
-                        "mirroring",
-                        "profileLinkHeader",
-                        "regionByPct",
-                        "regionByPx",
-                        "rotationArbitrary",
-                        "rotationBy90s",
-                        "sizeAboveFull",
-                        "sizeByWhListed",
-                        "sizeByForcedWh",
-                        "sizeByH",
-                        "sizeByPct",
-                        "sizeByW",
-                        "sizeByWh"
-                    ]
-                }
+            'tiles': [{'width': 512, 'height': 512, 'scaleFactors': [1, 2, 3, 4, 5, 6, 7]}],
+            'extraFormats': ['tif', 'pdf', 'jp2'],
+            'preferredFormats': ['jpg', 'tif', 'jp2', 'png'],
+            'extraFeatures': [
+                'baseUriRedirect',
+                'canonicalLinkHeader',
+                'cors',
+                'jsonldMediaType',
+                'mirroring',
+                'profileLinkHeader',
+                'regionByPct',
+                'regionByPx',
+                'regionSquare',
+                'rotationArbitrary',
+                'rotationBy90s',
+                'sizeByConfinedWh',
+                'sizeByH',
+                'sizeByPct',
+                'sizeByW',
+                'sizeByWh',
+                'sizeUpscaling'
             ]
         }
 
         response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
         filename = response_json["filename"]
 
-        manager.expect_status_code("/unit/{}/full/full/0/default.jpg".format(filename), 200)
+        manager.expect_status_code("/unit/{}/full/max/0/default.jpg".format(filename), 200)
 
         response_json = manager.get_json("/unit/{}/info.json".format(filename))
-
-        expected_result["@id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
+        expected_result["id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
         assert response_json == expected_result
 
     def test_sqlite_api(self, manager):
@@ -286,7 +283,65 @@ class TestServer:
             ]
         }
 
+        expected_result = {
+            '@context': 'http://iiif.io/api/image/3/context.json',
+            'id': 'http://127.0.0.1:1024/auth/lena512.jp2',
+            'type': 'ImageService3',
+            'protocol': 'http://iiif.io/api/image',
+            'profile': 'level2',
+            'service': [
+                {
+                    '@context': 'http://iiif.io/api/auth/1/context.json',
+                    '@id': 'https://localhost/iiif-cookie.html',
+                    'profile': 'http://iiif.io/api/auth/1/login',
+                    'header': 'Please Log In', 'failureDescription': '<a href="http://example.org/policy">Access Policy</a>',
+                    'confirmLabel': 'Login to SIPI',
+                    'failureHeader': 'Authentication Failed',
+                    'description': 'This Example requires a demo login!',
+                    'label': 'Login to SIPI',
+                    'service': [
+                        {
+                            '@id': 'https://localhost/iiif-token.php',
+                            'profile': 'http://iiif.io/api/auth/1/token'
+                        }
+                    ]
+                }
+            ],
+            'width': 512,
+            'height': 512,
+            'sizes': [
+                {'width': 256, 'height': 256},
+                {'width': 128, 'height': 128}
+            ],
+            'tiles': [{
+                'width': 512,
+                'height': 512,
+                'scaleFactors': [1, 2, 3, 4, 5, 6, 7]
+            }],
+            'extraFormats': ['tif', 'pdf', 'jp2'],
+            'preferredFormats': ['jpg', 'tif', 'jp2', 'png'],
+            'extraFeatures': [
+                'baseUriRedirect',
+                'canonicalLinkHeader',
+                'cors',
+                'jsonldMediaType',
+                'mirroring',
+                'profileLinkHeader',
+                'regionByPct',
+                'regionByPx',
+                'regionSquare',
+                'rotationArbitrary',
+                'rotationBy90s',
+                'sizeByConfinedWh',
+                'sizeByH',
+                'sizeByPct',
+                'sizeByW',
+                'sizeByWh',
+                'sizeUpscaling']}
+
+
         json_result = manager.get_auth_json("/auth/lena512.jp2/info.json")
+
         assert json_result == expected_result
 
     def test_pdf_server(self, manager):
@@ -308,7 +363,7 @@ class TestServer:
             {
                 "concurrent_requests": 5,
                 "total_requests": 10,
-                "url_path": "/knora/{}/full/full/0/default.jpg".format(filename)
+                "url_path": "/knora/{}/full/max/0/default.jpg".format(filename)
             },
             {
                 "concurrent_requests": 5,
@@ -318,17 +373,17 @@ class TestServer:
             {
                 "concurrent_requests": 5,
                 "total_requests": 10,
-                "url_path": "/knora/{}/full/full/90/default.jpg".format(filename)
+                "url_path": "/knora/{}/full/max/90/default.jpg".format(filename)
             },
             {
                 "concurrent_requests": 25,
                 "total_requests": 30,
-                "url_path": "/knora/{}/pct:10,10,40,40/full/0/default.jpg".format(filename)
+                "url_path": "/knora/{}/pct:10,10,40,40/max/0/default.jpg".format(filename)
             },
             {
                 "concurrent_requests": 25,
                 "total_requests": 30,
-                "url_path": "/knora/{}/pct:10,10,50,30/full/180/default.jpg".format(filename)
+                "url_path": "/knora/{}/pct:10,10,50,30/max/180/default.jpg".format(filename)
             }
         ]
 

@@ -84,6 +84,7 @@ namespace Sipi {
         nc = img_p.nc;
         bps = img_p.bps;
         es = img_p.es;
+        photo = img_p.photo;
         size_t bufsiz;
 
         switch (bps) {
@@ -111,6 +112,7 @@ namespace Sipi {
         icc = std::make_shared<SipiIcc>(*img_p.icc);
         iptc = std::make_shared<SipiIptc>(*img_p.iptc);
         exif = std::make_shared<SipiExif>(*img_p.exif);
+        emdata = img_p.emdata;
         skip_metadata = img_p.skip_metadata;
         conobj = img_p.conobj;
     }

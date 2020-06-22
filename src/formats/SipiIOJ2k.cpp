@@ -84,6 +84,10 @@ namespace Sipi {
 
         bool write(const kdu_byte *buf, int num_bytes);
 
+        bool close();
+
+        inline bool prefer_large_writes() { return false; }
+
         inline void set_target_size(kdu_long num_bytes) {}; // we just ignore it
     };
     //-------------------------------------------------------------------------
@@ -101,7 +105,7 @@ namespace Sipi {
     // Distructor which cleans up !!!!!!!!!! We still have to determine what has to be cleaned up!!!!!!!!!!
     //........................................................................
     J2kHttpStream::~J2kHttpStream() {
-        // cleanup everything thats necessary...
+        // cleanup everything...
     };
     //-------------------------------------------------------------------------
 
@@ -117,6 +121,15 @@ namespace Sipi {
         return true;
     };
     //-------------------------------------------------------------------------
+
+    bool J2kHttpStream::close() {
+        try {
+            conobj->flush();
+        } catch (int i) {
+            return false;
+        }
+        return true;
+    }
 
     static kdu_core::kdu_byte xmp_uuid[] = {0xBE, 0x7A, 0xCF, 0xCB, 0x97, 0xA9, 0x42, 0xE8, 0x9C, 0x71, 0x99, 0x94,
                                             0x91, 0xE3, 0xAF, 0xAC};
@@ -307,6 +320,12 @@ namespace Sipi {
         int __nx, __ny;
         siz->get(Ssize, 0, 0, __ny);
         siz->get(Ssize, 0, 1, __nx);
+
+        /*
+        int __clayers;
+        __clayers = codestream.get_min_dwt_levels( );
+        std::cerr << "Clayers=" << __clayers << std::endl;
+        */
 
         //
         // is there a region of interest defined ? If yes, get the cropping parameters...
@@ -586,10 +605,14 @@ namespace Sipi {
         if ((size != nullptr) && (!redonly)) {
             switch (scaling_quality.jk2) {
                 case HIGH: img->scale(nnx, nny);
+                    std::cerr << "===>HIGH SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
                     break;
                 case MEDIUM: img->scaleMedium(nnx, nny);
+                    std::cerr << "===>MEDIUM SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
                     break;
                 case LOW: img->scaleFast(nnx, nny);
+                    std::cerr << "===>FAST SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
+                    break;
             }
 
         }
@@ -643,6 +666,13 @@ namespace Sipi {
         info.width = (size_t) tmp_width;
         info.success = SipiImgInfo::DIMS;
 
+        int __tnx, __tny;
+        siz->get(Stiles, 0, 0, __tny);
+        siz->get(Stiles, 0, 1, __tnx);
+        info.tile_width = __tnx;
+        info.tile_height = __tny;
+        info.clevels = codestream.get_min_dwt_levels();
+
         kdu_codestream_comment comment = codestream.get_comment();
         while (comment.exists()) {
             const char *cstr = comment.get_text();
@@ -659,7 +689,6 @@ namespace Sipi {
         codestream.destroy();
         input->close();
         jpx_in.close(); // Not really necessary here.
-
 
         return info;
     }
@@ -720,6 +749,8 @@ namespace Sipi {
 
         int num_threads;
 
+        kdu_membroker membroker;
+
         if ((num_threads = kdu_get_num_processors()) < 2) num_threads = 0;
 
         try {
@@ -730,43 +761,80 @@ namespace Sipi {
             siz.set(Sdims, 0, 1, (int) img->nx);   // Width of first image component
             siz.set(Sprecision, 0, 0, (int) img->bps);  // Bits per sample (usually 8 or 16)
             siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
+
+            //
+            // tiling has to be done here
+            //
+            int tw = 0, th = 0;
+            if ((params != nullptr) && (!params->empty())) {
+                if (params->find(J2K_Stiles) != params->end()) {
+                    int n = std::sscanf(params->at(J2K_Stiles).c_str(), "{%d,%d}", &tw, &th);
+                    if (n != 2) {
+                        throw SipiImageError(__file__, __LINE__, "Tiling parameter invalid!");
+                    }
+                    std::stringstream ss;
+                    ss << "Stiles=" << params->at(J2K_Stiles);
+                    siz.parse_string(ss.str().c_str());
+                }
+            } else {
+                const int mindim = img->ny < img->nx ? img->ny : img->nx;
+                if (mindim < 2048) {
+                    tw = th = 256;
+                } else if (mindim < 4096) {
+                    tw = th = 512;
+                } else {
+                    tw = th = 1024;
+                }
+                if (mindim > 1024) {
+                    std::stringstream ss;
+                    ss << "Stiles={" << tw << "," << th << "}";
+                    siz.parse_string(ss.str().c_str());
+                }
+            }
+
             kdu_params *siz_ref = &siz;
             siz_ref->finalize();
 
-            kdu_stripe_compressor compressor;
             kdu_compressed_target *output = nullptr;
-            jp2_family_tgt jp2_ultimate_tgt;
-            jpx_target jpx_out;
-            jpx_codestream_target jpx_stream;
-            jpx_layer_target jpx_layer;
-            jp2_dimensions jp2_family_dimensions;
-            jp2_palette jp2_family_palette;
-            jp2_resolution jp2_family_resolution;
-            jp2_channels jp2_family_channels;
-            jp2_colour jp2_family_colour;
 
-            J2kHttpStream *http = nullptr;
+            jp2_family_tgt jp2_ultimate_tgt;
+
             if (filepath == "HTTP") {
                 shttps::Connection *conobj = img->connection();
-                http = new J2kHttpStream(conobj);
-                jp2_ultimate_tgt.open(http);
+                J2kHttpStream *http = new J2kHttpStream(conobj);
+                jp2_ultimate_tgt.open(http, &membroker);
             } else {
-                jp2_ultimate_tgt.open(filepath.c_str());
+                jp2_ultimate_tgt.open(filepath.c_str(), &membroker);
             }
-            jpx_out.open(&jp2_ultimate_tgt);
-            jpx_stream = jpx_out.add_codestream();
-            jpx_layer = jpx_out.add_layer();
 
-            jp2_family_dimensions = jpx_stream.access_dimensions();
-            jp2_family_palette = jpx_stream.access_palette();
-            jp2_family_resolution = jpx_layer.access_resolution();
-            jp2_family_channels = jpx_layer.access_channels();
-            jp2_family_colour = jpx_layer.add_colour();
+            jpx_target jpx_out;
+            jpx_out.open(&jp2_ultimate_tgt, &membroker);
+            jpx_codestream_target jpx_stream = jpx_out.add_codestream();
+            jpx_layer_target jpx_layer = jpx_out.add_layer();
+
+            //jp2_palette jp2_family_palette = jpx_stream.access_palette();
+            jp2_resolution jp2_family_resolution = jpx_layer.access_resolution();
 
             output = jpx_stream.access_stream();
 
+            kdu_thread_env env;
+            kdu_thread_env *env_ref;
+
+            if (num_threads > 0) {
+                env.create();
+                for (int nt = 1; nt < num_threads; nt++) {
+                    if (!env.add_thread()) {
+                        num_threads = nt; // Unable to create all the threads requested
+                        break;
+                    }
+                }
+                env_ref = &env;
+            } else {
+                env_ref = nullptr;
+            }
+
             kdu_codestream codestream;
-            codestream.create(&siz, output);
+            codestream.create(&siz, output, nullptr, 0, 0, env_ref, &membroker);
 
             // Set up any specific coding parameters and finalize them.
             int num_clayers;
@@ -784,6 +852,8 @@ namespace Sipi {
                     std::stringstream ss;
                     ss << "Sprofile=" << params->at(J2K_Sprofile);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Sprofile=PART2");
                 }
 
                 if (params->find(J2K_Clayers) != params->end()) {
@@ -791,36 +861,49 @@ namespace Sipi {
                     std::stringstream ss;
                     ss << "Clayers=" << params->at(J2K_Clayers);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Clayers=8");
+                    num_clayers = 8;
                 }
 
                 if (params->find(J2K_Clevels) != params->end()) {
                     std::stringstream ss;
                     ss << "Clevels=" << params->at(J2K_Clevels);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
                 }
 
                 if (params->find(J2K_Corder) != params->end()) {
                     std::stringstream ss;
                     ss << "Corder=" << params->at(J2K_Corder);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Corder=RPCL");
                 }
 
                 if (params->find(J2K_Cprecincts) != params->end()) {
                     std::stringstream ss;
                     ss << "Cprecincts=" << params->at(J2K_Cprecincts);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Cprecincts={256,256},{256,256},{128,128}");
                 }
 
                 if (params->find(J2K_Cblk) != params->end()) {
                     std::stringstream ss;
                     ss << "Cblk=" << params->at(J2K_Cblk);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Cblk={64,64}");
                 }
 
                 if (params->find(J2K_Cuse_sop) != params->end()) {
                     std::stringstream ss;
                     ss << "Cuse_sop=" << params->at(J2K_Cuse_sop);
                     codestream.access_siz()->parse_string(ss.str().c_str());
+                } else {
+                    codestream.access_siz()->parse_string("Cuse_sop=yes");
                 }
 
                 if (params->find(J2K_rates) != params->end()) {
@@ -840,6 +923,7 @@ namespace Sipi {
                 codestream.access_siz()->parse_string("Cprecincts={256,256}");
                 codestream.access_siz()->parse_string("Cblk={64,64}");
                 codestream.access_siz()->parse_string("Cuse_sop=yes");
+                codestream.access_siz()->parse_string("Cuse_eph=yes");
             }
 
             //codestream.access_siz()->parse_string("Stiles={1024,1024}");
@@ -860,6 +944,7 @@ namespace Sipi {
 
             codestream.access_siz()->finalize_all(); // Set up coding defaults
 
+            jp2_dimensions jp2_family_dimensions = jpx_stream.access_dimensions();
             jp2_family_dimensions.init(&siz); // initalize dimension box
 
             //
@@ -900,6 +985,7 @@ namespace Sipi {
             //
             SipiEssentials es = img->essential_metadata();
 
+            jp2_colour jp2_family_colour = jpx_layer.add_colour();
             if (img->icc != nullptr) {
                 PredefinedProfiles icc_type = img->icc->getProfileType();
                 try {
@@ -1015,6 +1101,7 @@ namespace Sipi {
                 comment.put_text(emdata.c_str());
             }
 
+            jp2_channels jp2_family_channels = jpx_layer.access_channels();
             jp2_family_channels.init(img->nc - img->es.size());
             for (int c = 0; c < img->nc - img->es.size(); c++) {
                 jp2_family_channels.set_colour_mapping(c, c);
@@ -1056,24 +1143,17 @@ namespace Sipi {
                 }
             }
 
-            //jpx_out.write_headers();
+            jpx_out.write_headers();
             jp2_output_box *out_box = jpx_stream.open_stream();
 
             codestream.access_siz()->finalize_all();
 
-            kdu_thread_env env, *env_ref = nullptr;
-            if (num_threads > 0) {
-                env.create();
-                for (int nt = 1; nt < num_threads; nt++) {
-                    if (!env.add_thread()) num_threads = nt; // Unable to create all the threads requested
-                }
-                env_ref = &env;
-            }
 
             //
             // here we calculate the JPEG2000/kakadu parameters for num_layer...
             // see kdu_compress, derived fromn code there
             //
+            /*
             int num_layers = 0;
             std::vector<kdu_long> layer_sizes;
             kdu_long *layer_sizes_ptr = nullptr;
@@ -1095,32 +1175,32 @@ namespace Sipi {
             } else if (num_clayers > 0) {
                 for (int i = 0; i < num_clayers; i++) {
                     layer_sizes.push_back(0);
-                    layer_sizes_ptr = layer_sizes.data();
-                    num_layers = layer_sizes.size();
                 }
+                layer_sizes_ptr = layer_sizes.data();
+                num_layers = layer_sizes.size();
             } else {
                 layer_sizes_ptr = nullptr;
                 num_layers = 0;
             }
-
+            */
             // Now compress the image in one hit, using `kdu_stripe_compressor'
+            kdu_stripe_compressor compressor;
+            compressor.mem_configure(&membroker);
             compressor.start(codestream,
-                    num_layers,       // num_layer_specs
-                    layer_sizes_ptr, // layer_sizes
+                    0, //num_layers,       // num_layer_specs
+                    nullptr, //layer_sizes_ptr, // layer_sizes
                     nullptr, // layer_slopes
                     0,       // min_slope_threshold
-                    true,   // no_prediction
+                    true,    // no_prediction
                     is_reversible,    //force_precise [YES, if reversible=yes]
                     true,    // record_layer_info_in_comment
                     0.0,     // size_tolerance
                     img->nc, // num_components
                     false,   // want_fastest [NO]
                     env_ref);
-            int *stripe_heights = new int[img->nc];
-            for (size_t i = 0; i < img->nc; i++) {
-                stripe_heights[i] = img->ny;
-            }
 
+            //int *stripe_heights = new int[img->nc];
+            int stripe_heights[5];
             int *precisions;
             bool *is_signed;
             if (img->bps == 16) {
@@ -1131,14 +1211,33 @@ namespace Sipi {
                     precisions[i] = img->bps;
                     is_signed[i] = false;
                 }
+                for (size_t i = 0; i < img->nc; i++) {
+                    stripe_heights[i] = img->ny;
+                }
                 compressor.push_stripe(buf, stripe_heights, nullptr, nullptr, nullptr, precisions, is_signed);
             } else if (img->bps == 8) {
-                kdu_byte *buf = (kdu_byte *) img->pixels;
-                compressor.push_stripe(buf, stripe_heights);
+                if (th == 0) th = img->ny;
+                size_t stripe_start = 0;
+                do {
+                    kdu_byte *buf = (kdu_byte *) img->pixels + stripe_start * img->nc * img->nx;
+                    for (size_t i = 0; i < img->nc; i++) {
+                        stripe_heights[i] = th;
+                    }
+                    compressor.push_stripe(buf, stripe_heights);
+                    stripe_start += th;
+                } while((img->ny - stripe_start) >= th);
+                if ((img->ny - stripe_start) > 0) {
+                    kdu_byte *buf = (kdu_byte *) img->pixels + stripe_start * img->nc * img->nx;
+                    for (size_t i = 0; i < img->nc; i++) {
+                        stripe_heights[i] = img->ny - stripe_start;
+                    }
+                    compressor.push_stripe(buf, stripe_heights);
+                    stripe_start += img->ny - stripe_start;
+                }
             } else {
                 throw SipiImageError(__file__, __LINE__, "Unsupported number of bits/sample!");
             }
-            compressor.finish(num_layers, NULL, NULL, env_ref);
+            compressor.finish(0, NULL, NULL, env_ref);
             // Finally, cleanup
             codestream.destroy(); // All done: simple as that.
             output->close(); // Not really necessary here.
@@ -1146,16 +1245,18 @@ namespace Sipi {
             if (jp2_ultimate_tgt.exists()) {
                 jp2_ultimate_tgt.close();
             }
-            delete[] stripe_heights;
+            //delete[] stripe_heights;
             if (img->bps == 16) {
                 delete[] precisions;
                 delete[] is_signed;
             }
-
-            delete http;
+            if (http != nullptr) {
+                delete http;
+            }
         } catch (kdu_exception e) {
             throw SipiImageError(__file__, __LINE__, "Problem writing a JPEG2000 image!");
         }
+
         return;
     }
 } // namespace Sipi

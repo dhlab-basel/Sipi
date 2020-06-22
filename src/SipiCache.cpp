@@ -119,6 +119,9 @@ namespace Sipi {
                 CacheRecord cr;
                 cr.img_w = fr.img_w;
                 cr.img_h = fr.img_h;
+                cr.tile_w = fr.img_w;
+                cr.tile_h = fr.tile_h;
+                cr.clevels = fr.clevels;
                 cr.numpages = fr.numpages;
                 cr.origpath = fr.origpath;
                 cr.cachepath = fr.cachepath;
@@ -128,7 +131,7 @@ namespace Sipi {
                 cachesize += fr.fsize;
                 nfiles++;
                 cachetable[fr.canonical] = cr;
-                syslog(LOG_INFO, "FIle \"%s\" adding to cache", cr.cachepath.c_str());
+                syslog(LOG_INFO, "File \"%s\" adding to cache", cr.cachepath.c_str());
             }
         }
 
@@ -167,7 +170,7 @@ namespace Sipi {
             try {
                 (void) sizetable.at(ele.second.origpath);
             } catch (const std::out_of_range &oor) {
-                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h, ele.second.numpages, ele.second.mtime};
+                SipiCache::SizeRecord tmp_cr = {ele.second.img_w, ele.second.img_h, ele.second.tile_w, ele.second.tile_h, ele.second.clevels,  ele.second.numpages, ele.second.mtime};
                 sizetable[ele.second.origpath] = tmp_cr;
             }
         }
@@ -184,6 +187,9 @@ namespace Sipi {
                 SipiCache::FileCacheRecord fr;
                 fr.img_w = ele.second.img_w;
                 fr.img_h = ele.second.img_h;
+                fr.tile_w = ele.second.tile_w;
+                fr.tile_h = ele.second.tile_h;
+                fr.clevels = ele.second.clevels;
                 fr.numpages = ele.second.numpages;
                 (void) snprintf(fr.canonical, 256, "%s", ele.first.c_str());
                 (void) snprintf(fr.origpath, 256, "%s", ele.second.origpath.c_str());
@@ -356,8 +362,16 @@ namespace Sipi {
     }
     //============================================================================
 
-    void SipiCache::add(const std::string &origpath_p, const std::string &canonical_p, const std::string &cachepath_p,
-                        size_t img_w_p, size_t img_h_p, int numpages_p) {
+    void SipiCache::add(
+            const std::string &origpath_p,
+            const std::string &canonical_p,
+            const std::string &cachepath_p,
+            size_t img_w_p,
+            size_t img_h_p,
+            size_t tile_w_p,
+            size_t tile_h_p,
+            int clevels_p,
+            int numpages_p) {
         size_t pos = cachepath_p.rfind('/');
         std::string cachepath;
 
@@ -373,6 +387,9 @@ namespace Sipi {
 
         fr.img_w = sr.img_w = img_w_p;
         fr.img_h = sr.img_h = img_h_p;
+        fr.tile_w = sr.tile_w = tile_w_p;
+        fr.tile_h = sr.tile_h = tile_h_p;
+        fr.clevels = sr.clevels = clevels_p;
         fr.numpages = sr.numpages = numpages_p;
         fr.origpath = origpath_p;
         fr.cachepath = cachepath;
@@ -421,7 +438,7 @@ namespace Sipi {
         }
         catch(const std::out_of_range& oor) {
          */
-        SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p, numpages_p};
+        SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p, tile_w_p, tile_h_p, clevels_p, numpages_p};
         sizetable[origpath_p] = tmp_cr;
         //}
 
@@ -489,7 +506,14 @@ namespace Sipi {
     }
     //============================================================================
 
-    bool SipiCache::getSize(const std::string &origname_p, size_t &img_w, size_t &img_h, int &numpages) {
+    bool SipiCache::getSize(
+            const std::string &origname_p,
+            size_t &img_w,
+            size_t &img_h,
+            size_t &tile_w,
+            size_t &tile_h,
+            int &clevels,
+            int &numpages) {
         struct stat fileinfo;
         if (stat(origname_p.c_str(), &fileinfo) != 0) {
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origname_p + "\"!", errno);
@@ -511,6 +535,9 @@ namespace Sipi {
 
             img_w = sr.img_w;
             img_h = sr.img_h;
+            tile_w = sr.tile_w;
+            tile_h = sr.tile_h;
+            clevels = sr.clevels;
             numpages = sr.numpages;
         } catch (const std::out_of_range &oor) {
             return false;
