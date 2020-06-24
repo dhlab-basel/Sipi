@@ -25,11 +25,11 @@ docs-install-requirements: ## install requirements for documentation
 .PHONY: build-sipi-image
 build-sipi-image: ## build and publish Sipi Docker image locally
 	docker build -t $(SIPI_IMAGE) .
-	docker tag $(SIPI_IMAGE) $(REPO):latest
+	docker tag $(SIPI_IMAGE) $(SIPI_REPO):latest
 
 .PHONY: publish-sipi-image
 publish-sipi-image: build-sipi-image ## publish Sipi Docker image to Docker-Hub
-	docker push $(REPO)
+	docker push $(SIPI_REPO)
 
 .PHONY: compile
 compile: ## compile SIPI inside Docker
