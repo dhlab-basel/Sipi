@@ -40,6 +40,11 @@ test: ## compile and run tests inside Docker
 	@mkdir -p ${PWD}/images
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
+.PHONY: test-ci
+test-ci: ## compile and run tests inside Docker
+	@mkdir -p ${PWD}/images
+	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
 	@mkdir -p ${PWD}/images
