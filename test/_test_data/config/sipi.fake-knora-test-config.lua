@@ -184,6 +184,11 @@ j2k_profiles = {
 --
 routes = {
     {
+        method = 'GET',
+        route = '/read_write_lua',
+        script = 'read_write_lua.lua'
+    },
+    {
         method = 'POST',
         route = '/make_thumbnail',
         script = 'make_thumbnail.lua'

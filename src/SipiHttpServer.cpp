@@ -45,6 +45,9 @@
 
 #include "SipiImage.h"
 #include "SipiError.h"
+#include "iiifparser/SipiSize.h"
+#include "iiifparser/SipiRegion.h"
+#include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiQualityFormat.h"
 #include "iiifparser/SipiIdentifier.h"
 #include "PhpSession.h"
@@ -418,7 +421,7 @@ namespace Sipi {
 
 
         json_t *root = json_object();
-        json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/2/context.json"));
+        json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/3/context.json"));
 
         std::string host = conn_obj.header("host");
         std::string id;
@@ -428,9 +431,10 @@ namespace Sipi {
         else {
             id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
         }
-        json_object_set_new(root, "@id", json_string(id.c_str()));
-
+        json_object_set_new(root, "id", json_string(id.c_str()));
+        json_object_set_new(root, "type", json_string("ImageService3"));
         json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
+        json_object_set_new(root, "profile", json_string("level2"));
 
         //
         // IIIF Authentication API stuff
@@ -484,11 +488,15 @@ namespace Sipi {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Pre_flight_script has login type but no cookieUrl!");
                 return;
             }
-            json_object_set_new(root, "service", service);
+            json_t *services = json_array();
+            json_array_append_new(services, service);
+            json_object_set_new(root, "service", services);
             http_status = Connection::StatusCodes::UNAUTHORIZED;
         }
 
         size_t width, height;
+        size_t t_width, t_height;
+        int clevels;
         int numpages = 0;
 
         //
@@ -496,7 +504,7 @@ namespace Sipi {
         //
         std::shared_ptr<SipiCache> cache = serv->cache();
 
-        if ((cache == nullptr) || !cache->getSize(access["infile"], width, height, pagenum)) {
+        if ((cache == nullptr) || !cache->getSize(access["infile"], width, height, t_width, t_height, clevels, pagenum)) {
             Sipi::SipiImage tmpimg;
             Sipi::SipiImgInfo info;
             try {
@@ -512,9 +520,15 @@ namespace Sipi {
             }
             width = info.width;
             height = info.height;
+            t_width = info.tile_width;
+            t_height = info.tile_height;
+            clevels = info.clevels;
             numpages = info.numpages;
         }
 
+        //
+        // basic info
+        //
         json_object_set_new(root, "width", json_integer(width));
         json_object_set_new(root, "height", json_integer(height));
         if (numpages > 0) {
@@ -522,8 +536,8 @@ namespace Sipi {
         }
 
         json_t *sizes = json_array();
-
-        for (int i = 1; i < 5; i++) {
+        const int cnt = clevels > 0 ? clevels : 5;
+        for (int i = 1; i < cnt; i++) {
             SipiSize size(i);
             size_t w, h;
             int r;
@@ -535,41 +549,74 @@ namespace Sipi {
             json_object_set_new(sobj, "height", json_integer(h));
             json_array_append_new(sizes, sobj);
         }
-
         json_object_set_new(root, "sizes", sizes);
-        json_t *profile_arr = json_array();
-        json_array_append_new(profile_arr, json_string("http://iiif.io/api/image/2/level2.json"));
-        json_t *profile = json_object();
-        const char *formats_str[] = {"tif", "jpg", "png", "jp2", "pdf"};
-        json_t *formats = json_array();
 
-        for (unsigned int i = 0; i < sizeof(formats_str) / sizeof(char *); i++) {
-            json_array_append_new(formats, json_string(formats_str[i]));
+        if (t_width > 0 && t_height > 0) {
+            json_t *tiles = json_array();
+            json_t *tileobj = json_object();
+            json_object_set_new(tileobj, "width", json_integer(t_width));
+            json_object_set_new(tileobj, "height", json_integer(t_height));
+            json_t *scaleFactors = json_array();
+            for (int i = 1; i < cnt; i++) {
+                json_array_append_new(scaleFactors, json_integer(i));
+            }
+            json_object_set_new(tileobj, "scaleFactors", scaleFactors);
+            json_array_append_new(tiles, tileobj);
+            json_object_set_new(root, "tiles", tiles);
         }
 
-        json_object_set_new(profile, "formats", formats);
-        const char *qualities_str[] = {"color", "gray"};
-        json_t *qualities = json_array();
+        const char *extra_formats_str[] = {"tif", "pdf", "jp2"};
+        json_t *extra_formats = json_array();
+        for (unsigned int i = 0; i < sizeof(extra_formats_str) / sizeof(char *); i++) {
+            json_array_append_new(extra_formats, json_string(extra_formats_str[i]));
+        }
+        json_object_set_new(root, "extraFormats", extra_formats);
 
+        json_t *prefformats = json_array(); // ToDo: should be settable from LUA preflight (get info from DB)
+        json_array_append_new(prefformats, json_string("jpg"));
+        json_array_append_new(prefformats, json_string("tif"));
+        json_array_append_new(prefformats, json_string("jp2"));
+        json_array_append_new(prefformats, json_string("png"));
+        json_object_set_new(root, "preferredFormats", prefformats);
+
+/*
+        const char *extra_qualities_str[] = {"bitonal"};
+        json_t *qualities = json_array();
         for (unsigned int i = 0; i < sizeof(qualities_str) / sizeof(char *); i++) {
             json_array_append_new(qualities, json_string(qualities_str[i]));
         }
+        json_object_set_new(root, "extraQualities", qualities);
+*/
 
-        json_object_set_new(profile, "qualities", qualities);
 
-        const char *supports_str[] = {"color", "cors", "mirroring", "profileLinkHeader", "regionByPct", "regionByPx",
-                                      "rotationArbitrary", "rotationBy90s", "sizeAboveFull", "sizeByWhListed",
-                                      "sizeByForcedWh", "sizeByH", "sizeByPct", "sizeByW", "sizeByWh"};
-
-        json_t *supports = json_array();
-
-        for (unsigned int i = 0; i < sizeof(supports_str) / sizeof(char *); i++) {
-            json_array_append_new(supports, json_string(supports_str[i]));
+        //
+        // extra features
+        //
+        const char *extraFeaturesList[] = {
+                "baseUriRedirect",
+                "canonicalLinkHeader",
+                "cors",
+                "jsonldMediaType",
+                "mirroring",
+                "profileLinkHeader",
+                "regionByPct",
+                "regionByPx",
+                "regionSquare",
+                "rotationArbitrary",
+                "rotationBy90s",
+                "sizeByConfinedWh",
+                "sizeByH",
+                "sizeByPct",
+                "sizeByW",
+                "sizeByWh",
+                "sizeUpscaling"
+        };
+        json_t *extraFeatures = json_array();
+        for (unsigned int i = 0; i < sizeof(extraFeaturesList) / sizeof(char *); i++) {
+            json_array_append_new(extraFeatures, json_string(extraFeaturesList[i]));
         }
 
-        json_object_set_new(profile, "supports", supports);
-        json_array_append_new(profile_arr, profile);
-        json_object_set_new(root, "profile", profile_arr);
+        json_object_set_new(root, "extraFeatures", extraFeatures);
         char *json_str = json_dumps(root, JSON_INDENT(3));
 
         conn_obj.status(http_status);
@@ -577,7 +624,7 @@ namespace Sipi {
         conn_obj.header("Access-Control-Allow-Origin", "*");
         const std::string contenttype = conn_obj.header("accept");
         if (!contenttype.empty() && (contenttype == "application/ld+json")) {
-            conn_obj.header("Content-Type", "application/ld+json");
+            conn_obj.header("Content-Type", "application/ld+json;profile=\"http://iiif.io/api/image/3/context.json\"");
         } else {
             conn_obj.header("Content-Type", "application/json");
             conn_obj.header("Link",
@@ -664,10 +711,16 @@ namespace Sipi {
 
 
     std::pair<std::string, std::string>
-    SipiHttpServer::get_canonical_url(size_t tmp_w, size_t tmp_h, const std::string &host, const std::string &prefix,
-                                      const std::string &identifier, std::shared_ptr<SipiRegion> region,
-                                      std::shared_ptr<SipiSize> size, SipiRotation &rotation,
-                                      SipiQualityFormat &quality_format, int pagenum) {
+    SipiHttpServer::get_canonical_url(
+            size_t tmp_w,
+            size_t tmp_h,
+            const std::string &host,
+            const std::string &prefix,
+            const std::string &identifier,
+            std::shared_ptr<SipiRegion> region,
+            std::shared_ptr<SipiSize> size,
+            SipiRotation &rotation,
+            SipiQualityFormat &quality_format, int pagenum) {
         static const int canonical_len = 127;
 
         char canonical_region[canonical_len + 1];
@@ -684,7 +737,11 @@ namespace Sipi {
         region->canonical(canonical_region, canonical_len);
 
         if (size->getType() != SipiSize::FULL) {
-            size->get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            try {
+                size->get_size(tmp_w, tmp_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            } catch(Sipi::SipiSizeError &err) {
+                throw SipiError(__file__, __LINE__, "SipiSize error!");
+            }
         }
 
         size->canonical(canonical_size, canonical_len);
@@ -803,7 +860,11 @@ namespace Sipi {
     //=========================================================================
 
 
-    static void process_get_request(Connection &conn_obj, shttps::LuaServer &luaserver, void *user_data, void *dummy) {
+    static void process_get_request(
+            Connection &conn_obj,
+            shttps::LuaServer &luaserver,
+            void *user_data,
+            void *dummy) {
         SipiHttpServer *serv = (SipiHttpServer *) user_data;
 
         bool prefix_as_path = serv->prefix_as_path();
@@ -1042,7 +1103,6 @@ namespace Sipi {
         //
         // getting rotation parameters
         //
-
         SipiRotation rotation;
 
         try {
@@ -1066,7 +1126,6 @@ namespace Sipi {
             return;
         }
 
-        //
         // here we start the lua script which checks for permissions
         //
         std::string infile;  // path to the input file on the server
@@ -1179,17 +1238,18 @@ namespace Sipi {
         float angle;
         bool mirror = rotation.get_rotation(angle);
 
-        //
         // get cache info
         //
         std::shared_ptr<SipiCache> cache = serv->cache();
         size_t img_w = 0, img_h = 0;
+        size_t tile_w = 0, tile_h = 0;
+        int clevels = 0;
         int numpages = 0;
         int pagenum = sid.getPage();
 
         if ((in_format == SipiQualityFormat::PDF) && (pagenum < 1)) {
             if (size->getType() != SipiSize::FULL) {
-                send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"full\"");
+                send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"max\"");
                 return;
             }
 
@@ -1214,7 +1274,7 @@ namespace Sipi {
             //
             // get image dimensions, needed for get_canonical...
             //
-            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h, numpages)) {
+            if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h, tile_w, tile_h, clevels, numpages)) {
                 Sipi::SipiImage tmpimg;
                 Sipi::SipiImgInfo info;
                 try {
@@ -1229,16 +1289,27 @@ namespace Sipi {
                 }
                 img_w = info.width;
                 img_h = info.height;
+                tile_w = info.tile_width;
+                tile_h = info.tile_height;
+                clevels = info.clevels;
                 numpages = info.numpages;
             }
 
             size_t tmp_r_w, tmp_r_h;
             int tmp_red;
             bool tmp_ro;
-            size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
-            restriction_size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            try {
+                size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+                restriction_size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+            } catch(Sipi::SipiSizeError &err) {
+                send_error(conn_obj, Connection::BAD_REQUEST, err.to_string());
+                return;
+            } catch (Sipi::SipiError &err) {
+                send_error(conn_obj, Connection::BAD_REQUEST, err);
+                return;
+            }
 
-            if (*size > *restriction_size) {
+            if (!restriction_size->undefined() && (*size > *restriction_size)) {
                 size = restriction_size;
             }
         }
@@ -1259,7 +1330,6 @@ namespace Sipi {
         std::string canonical_header = tmppair.first;
         std::string canonical = tmppair.second;
 
-        //
         // now we check if we can send the file directly
         //
         if ((region->getType() == SipiRegion::FULL) && (size->getType() == SipiSize::FULL) && (angle == 0.0) &&
@@ -1321,7 +1391,6 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported");
         }
         */
-
         syslog(LOG_DEBUG, "Checking for cache...");
 
         if (cache != nullptr) {
@@ -1620,7 +1689,7 @@ namespace Sipi {
             if (cache_open) {
                 conn_obj.closeCacheFile();
                 syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
-                cache->add(infile, canonical, cachefile, img_w, img_h, numpages);
+                cache->add(infile, canonical, cachefile, img_w, img_h, tile_w, tile_h, clevels, numpages);
             }
 
         } catch (Sipi::SipiError &err) {

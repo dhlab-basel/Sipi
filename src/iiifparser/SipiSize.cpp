@@ -51,32 +51,37 @@ namespace Sipi {
     size_t SipiSize::limitdim = 32000;
 
     SipiSize::SipiSize(std::string str) {
-        nx = ny = 0;
+        nx = ny = w = h =0;
         percent = 0.F;
         canonical_ok = false;
+        reduce = 0;
 
         try {
-            if (str.empty() || str == "full" || str == "max") {
+            upscaling = str[0] == '^';
+            if (upscaling) {
+                str.erase(0, 1);
+            }
+
+            bool exclamation_mark = str[0] == '!';
+            if (exclamation_mark) {
+                str.erase(0, 1);
+            }
+
+            if (str.empty() || str == "max") {
                 size_type = SizeType::FULL;
             } else if (str.find("pct") != std::string::npos) {
+                if (exclamation_mark) throw SipiError(__file__, __LINE__, "Invalid IIIF size parameter: \"!" + str + "\": \"!\" not allowed here!");
                 size_type = SizeType::PERCENTS;
                 std::string percent_str = str.substr(4);
                 percent = shttps::Parsing::parse_float(percent_str);
-
                 if (percent < 0.0) percent = 1.0;
-                if (percent > 100.0) percent = 100.0;
             } else if (str.find("red") != std::string::npos) {
+                if (exclamation_mark) throw SipiError(__file__, __LINE__, "Invalid IIIF size parameter: \"!" + str + "\": \"!\" not allowed here!");
                 size_type = SizeType::REDUCE;
                 std::string reduce_str = str.substr(4);
                 reduce = static_cast<int>(shttps::Parsing::parse_int(reduce_str));
                 if (reduce < 0) reduce = 0;
             } else {
-                bool exclamation_mark = str[0] == '!';
-
-                if (exclamation_mark) {
-                    str.erase(0, 1);
-                }
-
                 size_t comma_pos = str.find(',');
 
                 if (comma_pos == std::string::npos) {
@@ -91,23 +96,22 @@ namespace Sipi {
                     throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
                 }
 
-                if (width_str.empty()) {
+                if (width_str.empty()) { // ",h" or "^,h"
+                    if (exclamation_mark) throw SipiError(__file__, __LINE__, "Invalid IIIF size parameter: \"!" + str + "\": \"!\" not allowed here!");
                     ny = shttps::Parsing::parse_int(height_str);
-
                     if (ny == 0) {
                         throw SipiError(__file__, __LINE__, "IIIF height cannot be zero");
                     }
-
                     size_type = SizeType::PIXELS_Y;
-                } else if (height_str.empty()) {
+                } else if (height_str.empty()) { // "w," or "^w,"
+                    if (exclamation_mark) throw SipiError(__file__, __LINE__, "Invalid IIIF size parameter: \"!" + str + "\": \"!\" not allowed here!");
                     nx = shttps::Parsing::parse_int(width_str);
-
                     if (nx == 0) {
                         throw SipiError(__file__, __LINE__, "IIIF width cannot be zero");
                     }
 
                     size_type = SizeType::PIXELS_X;
-                } else {
+                } else { // "w,h" or "^w,h" or "!w,h" or "^!w,h"
                     nx = shttps::Parsing::parse_int(width_str);
                     ny = shttps::Parsing::parse_int(height_str);
 
@@ -135,16 +139,15 @@ namespace Sipi {
 
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator>(const SipiSize &s) {
+    bool SipiSize::operator>(const SipiSize &s) const {
         if (!canonical_ok) {
             throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
-
         return ((w > s.w) || (h > s.h));
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator>=(const SipiSize &s) {
+    bool SipiSize::operator>=(const SipiSize &s) const {
         if (!canonical_ok) {
             throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
@@ -153,7 +156,7 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator<(const SipiSize &s) {
+    bool SipiSize::operator<(const SipiSize &s) const {
         if (!canonical_ok) {
             throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
@@ -162,7 +165,7 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-    bool SipiSize::operator<=(const SipiSize &s) {
+    bool SipiSize::operator<=(const SipiSize &s) const {
         if (!canonical_ok) {
             throw SipiError(__file__, __LINE__, "Final size not yet determined");
         }
@@ -171,18 +174,30 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-    SipiSize::SizeType
-    SipiSize::get_size(size_t img_w, size_t img_h, size_t &w_p, size_t &h_p, int &reduce_p, bool &redonly_p) {
+    SipiSize::SizeType SipiSize::get_size(
+            size_t img_w,
+            size_t img_h,
+            size_t &w_p,
+            size_t &h_p,
+            int &reduce_p,
+            bool &redonly_p) {
         redonly = false;
         if (reduce_p == -1) reduce_p = INT_MAX;
         int max_reduce = reduce_p;
         reduce_p = 0;
 
-
         float img_w_float = static_cast<float>(img_w);
         float img_h_float = static_cast<float>(img_h);
 
         switch (size_type) {
+            case SipiSize::UNDEFINED: {
+                w = 0;
+                h = 0;
+                reduce_p = 0;
+                redonly_p = true;
+                canonical_ok = true;
+                break;
+            }
             case SipiSize::PIXELS_XY: {
                 //
                 // first we check how far the new image width and image height can be reached by a reduce factor
@@ -190,40 +205,49 @@ namespace Sipi {
                 int sf_w = 1;
                 int reduce_w = 0;
                 bool exact_match_w = true;
-                w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
-
-                while ((w > nx) && (reduce_w < max_reduce)) {
-                    sf_w *= 2;
+                if (nx > img_w) {
+                    if (!upscaling) throw SipiSizeError(400, "Upscaling not allowed!");
+                } else {
                     w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
-                    reduce_w++;
-                }
 
-                if (w < nx) {
-                    // we do not have an exact match. Go back one level with reduce
-                    exact_match_w = false;
-                    sf_w /= 2;
-                    reduce_w--;
+                    while ((w > nx) && (reduce_w < max_reduce)) {
+                        sf_w *= 2;
+                        w = static_cast<size_t>(ceilf(img_w_float / static_cast<float>(sf_w)));
+                        reduce_w++;
+                    }
+
+                    if (w < nx) {
+                        // we do not have an exact match. Go back one level with reduce
+                        exact_match_w = false;
+                        sf_w /= 2;
+                        reduce_w--;
+                    }
+                    if (w > nx) exact_match_w = false;
                 }
-                if (w > nx) exact_match_w = false;
 
                 int sf_h = 1;
                 int reduce_h = 0;
                 bool exact_match_h = true;
-                h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
-
-                while ((h > ny) && (reduce_w < max_reduce)) {
-                    sf_h *= 2;
+                if (ny > img_h) {
+                    if (!upscaling) throw SipiSizeError(400, "Upscaling not allowed!");
+                } else {
                     h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
-                    reduce_h++;
-                }
 
-                if (h < ny) {
-                    // we do not have an exact match. Go back one level with reduce
-                    exact_match_h = false;
-                    sf_h /= 2;
-                    reduce_h--;
+                    while ((h > ny) && (reduce_w < max_reduce)) {
+                        sf_h *= 2;
+                        h = static_cast<size_t>(ceilf(img_h_float / static_cast<float>(sf_h)));
+                        reduce_h++;
+                    }
+
+                    if (h < ny) {
+                        // we do not have an exact match. Go back one level with reduce
+                        exact_match_h = false;
+                        sf_h /= 2;
+                        reduce_h--;
+                    }
+                    if (h > ny) exact_match_h = false;
+
                 }
-                if (h > ny) exact_match_h = false;
 
                 if (exact_match_w && exact_match_h && (reduce_w == reduce_h)) {
                     reduce_p = reduce_w;
@@ -268,6 +292,9 @@ namespace Sipi {
                 } else {
                     h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
+                if (!upscaling && (w > img_w || h > img_h)) {
+                    throw SipiSizeError(400, "Upscaling not allowed!");
+                }
                 break;
             }
 
@@ -303,12 +330,15 @@ namespace Sipi {
                 } else {
                     w = static_cast<size_t>(ceilf(static_cast<float>(img_w * ny) / img_h_float));
                 }
+                if (!upscaling && (w > img_w || h > img_h)) throw SipiSizeError(400, "Upscaling not allowed!");
                 break;
             }
 
             case SipiSize::PERCENTS: {
                 w = static_cast<size_t>(ceilf(img_w * percent / 100.F));
                 h = static_cast<size_t>(ceilf(img_h * percent / 100.F));
+
+                if (!upscaling && (w > img_w || h > img_h)) throw SipiSizeError(400, "Upscaling not allowed!");
 
                 reduce_p = 0;
                 float r = 100.F / percent;
@@ -365,6 +395,7 @@ namespace Sipi {
 
                     r = img_h_float / static_cast<float>(h);
                 }
+                if (!upscaling && (w > img_w || h > img_h)) throw SipiSizeError(400, "Upscaling not allowed!");
 
                 float s = 1.0;
                 reduce_p = 0;
@@ -389,6 +420,11 @@ namespace Sipi {
             }
         }
 
+        if (w > img_w || h > img_h) {
+            upscaling = true;
+        } else {
+            upscaling = false;
+        }
 
         w_p = w;
         h_p = h;
@@ -417,38 +453,30 @@ namespace Sipi {
         }
 
         switch (size_type) {
-            case SipiSize::PIXELS_XY: {
-                n = snprintf(buf, buflen, "%ld,%ld", w, h);
+            case SipiSize::UNDEFINED: {
+                throw SipiError(__file__, __LINE__, "Error creating size string!");
                 break;
             }
-
-            case SipiSize::PIXELS_X: {
-                n = snprintf(buf, buflen, "%ld,", w);
-                break;
-            }
-
-            case SipiSize::PIXELS_Y: {
-                n = snprintf(buf, buflen, "%ld,", w);
-                break;
-            }
-
+            case SipiSize::PERCENTS:
+            case SipiSize::REDUCE:
+            case SipiSize::PIXELS_X:
+            case SipiSize::PIXELS_Y:
+            case SipiSize::PIXELS_XY:
             case SipiSize::MAXDIM: {
-                n = snprintf(buf, buflen, "%ld,", w);
-                break;
-            }
-
-            case SipiSize::PERCENTS: {
-                n = snprintf(buf, buflen, "%ld,", w);
-                break;
-            }
-
-            case SipiSize::REDUCE: {
-                n = snprintf(buf, buflen, "%ld,", w);
+                if (upscaling) {
+                    n = snprintf(buf, buflen, "^%ld,%ld", w, h);
+                } else {
+                    n = snprintf(buf, buflen, "%ld,%ld", w, h);
+                }
                 break;
             }
 
             case SipiSize::FULL: {
-                n = snprintf(buf, buflen, "full"); // replace with "max" for version 3.0 of iiif
+                if (upscaling) {
+                    n = snprintf(buf, buflen, "^max");
+                } else {
+                    n = snprintf(buf, buflen, "max");
+                }
             }
         }
 
@@ -462,10 +490,35 @@ namespace Sipi {
     // Output to stdout for debugging etc.
     //
     std::ostream &operator<<(std::ostream &outstr, const SipiSize &rhs) {
-        outstr << "IIIF-Server Size parameter:";
-        outstr << "  Size type: " << rhs.size_type;
-        outstr << " | percent = " << std::to_string(rhs.percent) << " | nx = " << std::to_string(rhs.nx) << " | ny = "
-               << std::to_string(rhs.ny) << " | reduce = " << rhs.reduce;
+        switch(rhs.size_type) {
+            case SipiSize::UNDEFINED:
+                outstr << "  Size type: UNDEFINED";
+                break;
+            case SipiSize::FULL:
+                outstr << "  Size type: FULL";
+                break;
+            case SipiSize::PIXELS_XY:
+                outstr << "  Size type: PIXELS_XY";
+                break;
+            case SipiSize::PIXELS_X:
+                outstr << "  Size type: PIXELS_X";
+                break;
+            case SipiSize::PIXELS_Y:
+                outstr << "  Size type: PIXELS_Y";
+                break;
+            case SipiSize::MAXDIM:
+                outstr << "  Size type: MAXDIM";
+                break;
+            case SipiSize::PERCENTS:
+                outstr << "  Size type: PERCENTS";
+                break;
+            case SipiSize::REDUCE:
+                outstr << "  Size type: REDUCE";
+                break;
+        }
+        outstr << " | percent = " << rhs.percent << " | nx = " << rhs.nx << " | ny = " << rhs.ny;
+        outstr << " | w = " << rhs.w << " | h = " << rhs.h;
+        outstr << " | reduce = " << rhs.reduce;
         return outstr;
     };
     //-------------------------------------------------------------------------

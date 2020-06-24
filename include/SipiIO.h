@@ -55,15 +55,21 @@ namespace Sipi {
         enum { FAILURE = 0, DIMS = 1, ALL = 2 } success;
         int width;
         int height;
+        int tile_width;
+        int tile_height;
+        int clevels;
         int numpages;
         std::string internalmimetype;
         std::string origname;
         std::string origmimetype;
 
-        SipiImgInfo(void) {
+        SipiImgInfo() {
             success = FAILURE;
             width = 0;
             height = 0;
+            tile_width = 0;
+            tile_height = 0;
+            clevels = 0;
             numpages = 0;
         };
     };
@@ -78,6 +84,7 @@ namespace Sipi {
         J2K_Cprecincts,
         J2K_Cblk,
         J2K_Cuse_sop,
+        J2K_Stiles,
         J2K_rates
     } SipiCompressionParamName;
     typedef std::unordered_map<int, std::string> SipiCompressionParams;

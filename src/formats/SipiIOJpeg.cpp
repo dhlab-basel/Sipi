@@ -29,6 +29,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cmath>
+#include <syslog.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -51,7 +52,7 @@ static const char __file__[] = __FILE__;
 
 
 namespace Sipi {
-    static std::mutex inlock;
+    //static std::mutex inlock;
 
     inline bool getbyte(int &c, FILE *f) {
         if ((c = getc(f)) == EOF) {

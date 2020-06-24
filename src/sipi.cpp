@@ -385,7 +385,7 @@ int main(int argc, char *argv[]) {
     // Parameters for JPEG2000 compression (see kakadu kdu_compress for details!)
     //
     std::string j2k_Sprofile;
-    sipiopt.add_option("--Sprofile", j2k_Sprofile, "Restricted profile to which the code-stream conforms.")
+    sipiopt.add_option("--Sprofile", j2k_Sprofile, "Restricted profile to which the code-stream conforms [Default: PART2].")
                                                    ->check(CLI::IsMember({"PROFILE0", "PROFILE1", "PROFILE2", "PART2",
                                                                           "CINEMA2K", "CINEMA4K", "BROADCAST", "CINEMA2S", "CINEMA4S",
                                                                           "CINEMASS", "IMF"}, CLI::ignore_case));
@@ -396,27 +396,29 @@ int main(int argc, char *argv[]) {
                                              "that the final quality layer should include all compressed bits.");
 
     int j2k_Clayers;
-    sipiopt.add_option("--Clayers", j2k_Clayers, "J2KNumber of quality layers.");
+    sipiopt.add_option("--Clayers", j2k_Clayers, "J2K: Number of quality layers [Default: 8].");
 
     int j2k_Clevels;
-    sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages.");
+    sipiopt.add_option("--Clevels", j2k_Clevels, "J2K: Number of wavelet decomposition levels, or stages [default: 8].");
 
     std::string j2k_Corder;
     sipiopt.add_option("--Corder", j2k_Corder, "J2K: Progression order. The four character identifiers have the following interpretation: "
                                                "L=layer; R=resolution; C=component; P=position. The first character in the identifier refers to the "
-                                               "index which progresses most slowly, while the last refers to the index which progresses most quickly.")
+                                               "index which progresses most slowly, while the last refers to the index which progresses most quickly [Default: RPCL].")
                                                ->check(CLI::IsMember({"LRCP", "RLCP", "RPCL", "PCRL", "CPRL"}, CLI::ignore_case));
 
+    std::string j2k_Stiles;
+    sipiopt.add_option("--Stiles", j2k_Stiles, "J2K: Tiles dimensions \"{tx,ty} [Default: {256,256}]\".");
+
     std::string j2k_Cprecincts;
-    sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions (must be powers of 2).");
+    sipiopt.add_option("--Cprecincts", j2k_Cprecincts, "J2K: Precinct dimensions \"{px,py}\" (must be powers of 2) [Default: {256,256}].");
 
     std::string j2k_Cblk;
     sipiopt.add_option("--Cblk", j2k_Cblk, "J2K: Nominal code-block dimensions (must be powers of 2, no less than 4 and "
-                                           "no greater than 1024, whose product may not exceed 4096).");
+                                           "no greater than 1024, whose product may not exceed 4096) [Default: {64,64}].");
 
     bool j2k_Cuse_sop;
-    sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers).");
-
+    sipiopt.add_option("--Cuse_sop", j2k_Cuse_sop, "J2K Cuse_sop: Include SOP markers (i.e., resync markers) [Default: yes].");
 
     //
     // used for rendering only one page of multipage PDF or TIFF (NYI for tif...)
@@ -770,6 +772,7 @@ int main(int argc, char *argv[]) {
         if (!sipiopt.get_option("--Cprecincts")->empty()) comp_params[Sipi::J2K_Cprecincts] = j2k_Cprecincts;
         if (!sipiopt.get_option("--Cblk")->empty()) comp_params[Sipi::J2K_Cblk] = j2k_Cblk;
         if (!sipiopt.get_option("--Cuse_sop")->empty()) comp_params[Sipi::J2K_Cuse_sop] = j2k_Cuse_sop ? "yes" : "no";
+        if (!sipiopt.get_option("--Stiles")->empty()) comp_params[Sipi::J2K_Stiles] = j2k_Stiles;
         if (!sipiopt.get_option("--rates")->empty()) {
             std::stringstream ss;
             for (auto &rate: j2k_rates) {

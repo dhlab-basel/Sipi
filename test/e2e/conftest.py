@@ -103,7 +103,7 @@ class SipiTestManager:
         self.start_nginx_command = "nginx -p {} -c nginx.conf".format(self.nginx_working_dir)
         self.stop_nginx_command = "nginx -p {} -c nginx.conf -s stop".format(self.nginx_working_dir)
 
-        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=2.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
+        self.iiif_validator_command = "iiif-validate.py -s localhost:{} -p {} -i 67352ccc-d1b0-11e1-89ae-279075081939.jp2 --version=3.0 -v".format(self.sipi_port, self.iiif_validator_prefix)
 
         self.compare_command = "compare -metric {} {} {} null:"
         self.compare_out_re = re.compile(r"^(\d+) \(([0-9.]+)\).*$")

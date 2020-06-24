@@ -1,4 +1,6 @@
 include(CheckCXXCompilerFlag)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCMAKE_CXX_STANDARD=17")
+
 check_cxx_compiler_flag("-fvisibility-inlines-hidden" SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
 if(SUPPORTS_FVISIBILITY_INLINES_HIDDEN_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden")
