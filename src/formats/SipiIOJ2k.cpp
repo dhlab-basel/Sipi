@@ -799,9 +799,10 @@ namespace Sipi {
 
             jp2_family_tgt jp2_ultimate_tgt;
 
+            J2kHttpStream *http = nullptr;
             if (filepath == "HTTP") {
                 shttps::Connection *conobj = img->connection();
-                J2kHttpStream *http = new J2kHttpStream(conobj);
+                http = new J2kHttpStream(conobj);
                 jp2_ultimate_tgt.open(http, &membroker);
             } else {
                 jp2_ultimate_tgt.open(filepath.c_str(), &membroker);
