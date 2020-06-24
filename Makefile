@@ -1,3 +1,11 @@
+# Determine this makefile's path.
+# Be sure to place this BEFORE `include` directives, if any.
+# THIS_FILE := $(lastword $(MAKEFILE_LIST))
+THIS_FILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+
+include vars.mk
+
 .PHONY: docs-build
 docs-build: ## build docs into the local 'site' folder
 	mkdocs build
@@ -13,6 +21,15 @@ docs-publish: ## build and publish docs to Github Pages
 .PHONY: docs-install-requirements
 docs-install-requirements: ## install requirements for documentation
 	pip3 install -r requirements.txt
+
+.PHONY: build-sipi-image
+build-sipi-image: ## build and publish Sipi Docker image locally
+	docker build -t $(SIPI_IMAGE) .
+	docker tag $(SIPI_IMAGE) $(REPO):latest
+
+.PHONY: publish-sipi-image
+publish-sipi-image: build-sipi-image ## publish Sipi Docker image to Docker-Hub
+	docker push $(REPO)
 
 .PHONY: compile
 compile: ## compile SIPI inside Docker
