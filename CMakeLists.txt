@@ -372,6 +372,7 @@ add_executable(sipi
         src/iiifparser/SipiRegion.cpp include/iiifparser/SipiRegion.h
         src/iiifparser/SipiSize.cpp include/iiifparser/SipiSize.h
         src/SipiCommon.cpp include/SipiCommon.h
+        src/MimetypeCheck.cpp include/MimetypeCheck.h
         shttps/Global.h
         shttps/Error.cpp shttps/Error.h
         shttps/Hash.cpp shttps/Hash.h

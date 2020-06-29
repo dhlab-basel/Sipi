@@ -54,15 +54,6 @@ namespace Sipi {
                                                                                {"png", std::make_shared<SipiIOPng>()},
                                                                                {"pdf", std::make_shared<SipiIOPdf>()}};
 
-    std::unordered_map<std::string, std::string> SipiImage::mimetypes = {{"jpx",  "image/jp2"},
-                                                                         {"jp2",  "image/jp2"},
-                                                                         {"jpg",  "image/jpeg"},
-                                                                         {"jpeg", "image/jpeg"},
-                                                                         {"tiff", "image/tiff"},
-                                                                         {"tif",  "image/tiff"},
-                                                                         {"png",  "image/png"},
-                                                                         {"pdf",  "application/pdf"}};
-
     SipiImage::SipiImage() {
         nx = 0;
         ny = 0;
@@ -221,46 +212,6 @@ namespace Sipi {
     }
 
     //============================================================================
-
-    /*!
-     * This function compares the actual mime type of a file (based on its magic number) to
-     * the given mime type (sent by the client) and the extension of the given filename (sent by the client)
-     */
-    bool SipiImage::checkMimeTypeConsistency(const std::string &path, const std::string &given_mimetype,
-                                             const std::string &filename) {
-        try {
-            std::string actual_mimetype = shttps::Parsing::getFileMimetype(path).first;
-
-            if (actual_mimetype != given_mimetype) {
-                //std::cerr << actual_mimetype << " does not equal " << given_mimetype << std::endl;
-                return false;
-            }
-
-            size_t dot_pos = filename.find_last_of(".");
-
-            if (dot_pos == std::string::npos) {
-                //std::cerr << "invalid filename " << filename << std::endl;
-                return false;
-            }
-
-            std::string extension = filename.substr(dot_pos + 1);
-            std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower); // convert file extension to lower case (uppercase letters in file extension have to be converted for mime type comparison)
-            std::string mime_from_extension = Sipi::SipiImage::mimetypes.at(extension);
-
-            if (mime_from_extension != actual_mimetype) {
-                //std::cerr << "filename " << filename << "has not mime type " << actual_mimetype << std::endl;
-                return false;
-            }
-        } catch (std::out_of_range &e) {
-            std::stringstream ss;
-            ss << "Unsupported file type: \"" << filename;
-            throw SipiImageError(__file__, __LINE__, ss.str());
-        } catch (shttps::Error &err) {
-            throw SipiImageError(__file__, __LINE__, err.to_string());
-        }
-
-        return true;
-    }
 
     void SipiImage::read(std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
                          bool force_bps_8, ScalingQuality scaling_quality) {

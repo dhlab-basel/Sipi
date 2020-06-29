@@ -57,6 +57,7 @@ add_executable(
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiRegion.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiRegion.h
         ${PROJECT_SOURCE_DIR}/src/iiifparser/SipiSize.cpp ${PROJECT_SOURCE_DIR}/include/iiifparser/SipiSize.h
         ${PROJECT_SOURCE_DIR}/src/SipiCommon.cpp ${PROJECT_SOURCE_DIR}/include/SipiCommon.h
+        ${PROJECT_SOURCE_DIR}/src/MimetypeCheck.cpp ${PROJECT_SOURCE_DIR}/include/MimetypeCheck.h
         ${PROJECT_SOURCE_DIR}/shttps/Global.h
         ${PROJECT_SOURCE_DIR}/shttps/Error.cpp ${PROJECT_SOURCE_DIR}/shttps/Error.h
         ${PROJECT_SOURCE_DIR}/shttps/Hash.cpp ${PROJECT_SOURCE_DIR}/shttps/Hash.h

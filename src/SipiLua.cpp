@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <SipiCache.h>
 #include <SipiFilenameHash.h>
+#include <MimetypeCheck.h>
 
 #include "shttps/Connection.h"
 #include "SipiImage.h"
@@ -622,7 +623,7 @@ namespace Sipi {
 
     /*!
      * Lua usage:
-     *    SipiImage.mimetype_consistency(img, "image/jpeg", "myfile.jpg")
+     *    SipiImage:mimetype_consistency("image/jpeg", "myfile.jpg")
      */
     static int SImage_mimetype_consistency(lua_State *L) {
         int top = lua_gettop(L);
@@ -652,11 +653,11 @@ namespace Sipi {
         bool check;
 
         try {
-            check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
-        } catch (SipiImageError &err) {
+            check = MimetypeCheck::checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+        } catch (MimetypeCheckError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
-            ss << "SipiImage.mimetype_consistency(): " << err;
+            ss << "MimetypeCheck.checkMimeTypeConsistency(): " << err;
             lua_pushstring(L, ss.str().c_str());
             return 2;
         }
