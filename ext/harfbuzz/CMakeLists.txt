@@ -12,8 +12,8 @@ ExternalProject_Add(project_harfbuzz
         DEPENDS freetype
         DEPENDS bzip2
         INSTALL_DIR ${COMMON_LOCAL}
-        URL https://www.freedesktop.org/software/harfbuzz/release/harfbuzz-2.6.1.tar.xz
-        SOURCE_DIR ${COMMON_SRCS}/harfbuzz-2.6.1
+        URL https://www.freedesktop.org/software/harfbuzz/release/harfbuzz-2.6.4.tar.xz
+        SOURCE_DIR ${COMMON_SRCS}/harfbuzz-2.6.4
         CMAKE_ARGS  -DBUILD_SHARED_LIBS:BOOL=OFF
                     -DCMAKE_INSTALL_PREFIX=${COMMON_LOCAL}
                     -DCMAKE_INSTALL_LIBDIR=${CONFIGURE_LIBDIR}

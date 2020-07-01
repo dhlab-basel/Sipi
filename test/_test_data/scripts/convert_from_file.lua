@@ -96,6 +96,7 @@ if not success then
     return
 end
 
+
 local success, submitted_mimetype = server.parse_mimetype(originalMimetype)
 
 if not success then
@@ -112,11 +113,10 @@ end
 
 -- if check returns false, the user's input is invalid
 if not check then
-
     send_error(400, MIMETYPES_INCONSISTENCY)
-
     return
 end
+
 
 fullImgName = baseName .. '.jpx'
 
@@ -126,7 +126,6 @@ fullImgName = baseName .. '.jpx'
 success, newFilePath = helper.filename_hash(fullImgName);
 if not success then
     server.sendStatus(500)
-    server.log(gaga, server.loglevel.LOG_ERR)
     return false
 end
 
@@ -135,7 +134,10 @@ if not success then
     server.log("fullImg:dims() failed: " .. fullDIms, server.loglevel.LOG_ERR)
     return
 end
+
+server.log('convert_from_file 1 ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
 fullImg:write(knoraDir .. newFilePath)
+server.log('convert_from_file 1 =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
 
 -- create thumbnail (jpg)
 success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
@@ -163,7 +165,9 @@ if not success then
     return false
 end
 
+server.log('convert_from_file 2 ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
 success, errmsg = thumbImg:write(knoraDir .. newThumbPath)
+server.log('convert_from_file 2 =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
 if not success then
     server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
     return

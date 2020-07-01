@@ -43,6 +43,7 @@
 
 #include "curl/curl.h"
 #include "Global.h"
+#include "Parsing.h"
 #include "SockStream.h"
 #include "LuaServer.h"
 #include "Connection.h"
@@ -1004,7 +1005,6 @@ namespace shttps {
                                           {"moveFile",      lua_fs_mvfile},
                                           {0,               0}};
     //=========================================================================
-
 
     /*!
      * Generates a random version 4 uuid string
@@ -2330,7 +2330,7 @@ namespace shttps {
             } catch (const std::out_of_range &oor) {
                 lua_settop(L, 0); // clear stack
                 lua_pushboolean(L, false);
-                lua_pushstring(L, "'server.file_mimetype()()': Could not read data of uploaded file. Invalid index?");
+                lua_pushstring(L, "'server.file_mimetype()': Could not read data of uploaded file. Invalid index?");
                 return 2;
             }
         }
@@ -2358,6 +2358,71 @@ namespace shttps {
             lua_pushstring(L, error_msg.str().c_str());
             return 2;
         }
+    }
+    //=========================================================================
+
+    /*!
+     * LUA: success, mimetype = server.file_mimeconsistency(path)
+     *      success, mimetype = server.file_mimconsistency(index)
+     */
+    static int lua_file_mimeconsistency(lua_State *L) {
+        lua_getglobal(L, luaconnection);
+        Connection *conn = (Connection *) lua_touserdata(L, -1);
+        lua_remove(L, -1); // remove from stack
+        int top = lua_gettop(L);
+
+        if (top < 1) {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimetype(): no path given");
+            return 2;
+        }
+
+        std::string path;
+        std::string filename;
+        std::string expected_mimetype = "";
+        if (lua_isinteger(L, 1)) {
+            std::vector<shttps::Connection::UploadedFile> uploads = conn->uploads();
+            int tmpfile_id = static_cast<int>(lua_tointeger(L, 1));
+            try {
+                path = uploads.at(tmpfile_id - 1).tmpname; // In Lua, indexes are 1-based.
+                filename = uploads.at(tmpfile_id - 1).origname;
+                expected_mimetype = uploads.at(tmpfile_id - 1).mimetype;
+            } catch (const std::out_of_range &oor) {
+                lua_settop(L, 0); // clear stack
+                lua_pushboolean(L, false);
+                lua_pushstring(L, "'server.file_mimeconsistency()': Could not read data of uploaded file. Invalid index?");
+                return 2;
+            }
+        }
+        else if (lua_isstring(L, 1)) {
+            path = lua_tostring(L, 1);
+            filename = path;
+        }
+        else {
+            lua_settop(L, 0); // clear stack
+            lua_pushboolean(L, false);
+            lua_pushstring(L, "server.file_mimeconsistency(): path is not a string");
+            return 2;
+        }
+
+        lua_pop(L, top);
+        lua_settop(L, 0); // clear stack
+
+        bool consistency;
+        try {
+            consistency = Parsing::checkMimeTypeConsistency(path, filename, expected_mimetype);
+        } catch (Error &err) {
+            lua_pushboolean(L, false);
+            std::ostringstream error_msg;
+            error_msg << "server.file_mimeconsistency() failed: " << err.to_string();
+            lua_pushstring(L, error_msg.str().c_str());
+            return 2;
+        }
+
+        lua_pushboolean(L, true);
+        lua_pushboolean(L, consistency);
+        return 2;
     }
     //=========================================================================
 
@@ -2681,6 +2746,10 @@ namespace shttps {
 
         lua_pushstring(L, "file_mimetype"); // table1 - "index_L1"
         lua_pushcfunction(L, lua_file_mimetype); // table1 - "index_L1" - function
+        lua_rawset(L, -3); // table1
+
+        lua_pushstring(L, "file_mimeconsistency"); // table1 - "index_L1"
+        lua_pushcfunction(L, lua_file_mimeconsistency); // table1 - "index_L1" - function
         lua_rawset(L, -3); // table1
 
         lua_pushstring(L, "log"); // table1 - "index_L1"

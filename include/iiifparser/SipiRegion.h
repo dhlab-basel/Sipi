@@ -38,6 +38,7 @@ namespace Sipi {
     public:
         typedef enum {
             FULL,        //!< no region, full image
+            SQUARE,      //!< largest square
             COORDS,      //!< region given by x, y, width, height
             PERCENTS     //!< region (x,y,width height) given in percent of full image
         } CoordType;

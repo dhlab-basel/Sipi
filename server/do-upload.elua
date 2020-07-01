@@ -155,7 +155,7 @@ end
     end
     for imgindex,fn in pairs(newfilename) do
         server.print('<tr><td>', fn,
-            '</td><td><a href="', protocol, server.host, '/images/', fn, '/full/full/0/default.jpg"><img src="', protocol, server.host, '/images/', fn,'/full/,250/0/default.jpg" /></a></td></tr>')
+            '</td><td><a href="', protocol, server.host, '/images/', fn, '/full/max/0/default.jpg"><img src="', protocol, server.host, '/images/', fn,'/full/,250/0/default.jpg" /></a></td></tr>')
     end
 
 </lua>

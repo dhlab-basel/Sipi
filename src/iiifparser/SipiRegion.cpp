@@ -42,6 +42,11 @@ static const char __file__[] = __FILE__;
 
 namespace Sipi {
 
+    /**
+     * IIIF Version 3 compliant Region class
+     *
+     * @param str Region string from IIIF URL
+     */
     SipiRegion::SipiRegion(std::string str) {
         int n;
         if (str.empty() || (str == "full")) {
@@ -51,6 +56,13 @@ namespace Sipi {
             rw = 0.F;
             rh = 0.F;
             canonical_ok = true; // "full" is a canonical value
+        } else if (str == "square") {
+            coord_type = SipiRegion::SQUARE;
+            rx = 0.F;
+            ry = 0.F;
+            rw = 0.F;
+            rh = 0.F;
+            canonical_ok = false;
         } else if (str.find("pct:") != std::string::npos) {
             coord_type = SipiRegion::PERCENTS;
             std::string tmpstr = str.substr(4);
@@ -74,6 +86,17 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
+    /**
+     * Get the cropping coordinates
+     *
+     * @param nx [in] Width of image
+     * @param ny [in] Height of image
+     * @param p_x [out] Start of cropping X
+     * @param p_y [out] Start of cropping Y
+     * @param p_w [out] Width of cropping
+     * @param p_h [out] Height of cropping
+     * @return Region type
+     */
     SipiRegion::CoordType SipiRegion::crop_coords(size_t nx, size_t ny, int &p_x, int &p_y, size_t &p_w, size_t &p_h) {
         switch (coord_type) {
             case COORDS: {
@@ -81,6 +104,18 @@ namespace Sipi {
                 y = floor(ry + 0.5F);
                 w = floor(rw + 0.5F);
                 h = floor(rh + 0.5F);
+                break;
+            }
+            case SQUARE: {
+                if (nx > ny) { // landscape format
+                    x = floor((nx - ny) / 2.0F);
+                    y = 0;
+                    w = h = ny;
+                } else { // portrait format or square
+                    x = 0;
+                    y = floor((ny - nx) / 2.0F);
+                    w = h = nx;
+                }
                 break;
             }
             case PERCENTS: {
@@ -140,7 +175,12 @@ namespace Sipi {
     }
     //-------------------------------------------------------------------------
 
-
+    /**
+     * Get canonical region definition
+     *
+     * @param buf String buffer to write result into
+     * @param buflen  Length of string buffer
+     */
     void SipiRegion::canonical(char *buf, int buflen) {
         if (!canonical_ok && (coord_type != FULL)) {
             std::string msg = "Canonical coordinates not determined";
@@ -152,6 +192,7 @@ namespace Sipi {
                 (void) snprintf(buf, buflen, "full");
                 break;
             }
+            case SQUARE:
             case COORDS:
             case PERCENTS: {
                 (void) snprintf(buf, buflen, "%d,%d,%ld,%ld", x, y, w, h);
@@ -165,12 +206,20 @@ namespace Sipi {
     // Output to stdout for debugging etc.
     //
     std::ostream &operator<<(std::ostream &outstr, const SipiRegion &rhs) {
+        std::string ct;
+        switch (rhs.coord_type) {
+            case SipiRegion::FULL: ct = "FULL"; break;
+            case SipiRegion::SQUARE: ct = "SQUARE"; break;
+            case SipiRegion::COORDS: ct = "COORDS"; break;
+            case SipiRegion::PERCENTS: ct = "PERCENTS"; break;
+        }
         outstr << "IIIF-Server Region:";
-        outstr << "  Coordinate type: " << rhs.coord_type;
-        outstr << " | rx = " << std::to_string(rhs.rx) << " | ry = " << std::to_string(rhs.ry) << " | rw = "
-               << std::to_string(rhs.rw) << " | rh = " << std::to_string(rhs.rh);
+        outstr << "  Coordinate type: " << ct;
+        outstr << " | rx = " << rhs.rx << " | ry = " << rhs.ry << " | rw = "
+               << rhs.rw << " | rh = " << rhs.rh;
         return outstr;
     }
     //-------------------------------------------------------------------------
 
 }
+

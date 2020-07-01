@@ -4,21 +4,18 @@ include(ExternalProject)
 
 message(STATUS ${CONFIGURE_LIBDIR})
 #
-# compiling kakadu
-#
-# Patch the makefile to skip comiling the Java interface – we don't need it...
+# compiling kakadu (without JAVA interface)
 #
 
 ExternalProject_Add(
         project_kakadu
         INSTALL_DIR ${COMMON_LOCAL}
-        DOWNLOAD_COMMAND unzip -o -d ${COMMON_SRCS} ${COMMON_VENDOR}/v8_0_3-01727L.zip
-        PATCH_COMMAND patch -d ${COMMON_SRCS}/v8_0_3-01727L/managed/make -p0 < ${COMMON_PATCHES}/${KDU_MAKE}.patch
+        DOWNLOAD_COMMAND unzip -o -d ${COMMON_SRCS} ${COMMON_VENDOR}/v8_0_5-01727L.zip
         CONFIGURE_COMMAND ""
-        BUILD_COMMAND make --directory=${COMMON_SRCS}/v8_0_3-01727L/make/ -f ${KDU_MAKE}
-        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_3-01727L/lib/${KDU_ARCH} ${CONFIGURE_LIBDIR}
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_3-01727L/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_3-01727L/managed/all_includes ${COMMON_LOCAL}/include
+        BUILD_COMMAND make --directory=${COMMON_SRCS}/v8_0_5-01727L/make/ -f ${KDU_MAKE} all_but_jni
+        INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_5-01727L/lib/${KDU_ARCH} ${CONFIGURE_LIBDIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_5-01727L/bin/${KDU_ARCH} ${COMMON_LOCAL}/bin
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${COMMON_SRCS}/v8_0_5-01727L/managed/all_includes ${COMMON_LOCAL}/include
 )
 
 ExternalProject_Get_Property(project_kakadu install_dir)

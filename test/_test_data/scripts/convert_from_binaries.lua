@@ -152,7 +152,9 @@ if mediatype == IMAGE then
         return false
     end
 
+    server.log('convert_from_binaries ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
     success, errmsg = fullImg:write(knoraDir .. newFilePath)
+    server.log('convert_from_binaries  =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
     if not success then
         server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
         return

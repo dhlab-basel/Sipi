@@ -360,6 +360,18 @@ path is known. The second form can be used for uploads by passing the
 file index. It returns `true, table` on success or `false, errormsg` on
 failure. The table has 2 members: - `mimetype` - `charset`
 
+### server.file\_mimeconsistency
+
+    success, is_consistent = server.file_mimeconsistency(path)
+    success, is_consistent = server.file_mimeconsistency(index)
+    
+Checks if the file extension and the mimetype determined by the magic
+of the file is consistent. The first form requires a path (including the
+filename with extension), the second can be used for checking uploads by 
+passing the file index. It returns `true, is_consistent` on success or
+`false, errormsg` in case of an error. `is_consistent` is true if the
+mimetype corresponds to the file extension.
+
 ### server.requireAuth
 
     success, table = server.requireAuth()
@@ -437,13 +449,17 @@ Example:
 
 ### server.copyTmpfile
 
-    success, errormsg = server.copyTmpfile()
+    success, errormsg = server.copyTmpfile(from, to)
 
 Sipi saves each uploaded file in a temporary location (given by the
 config variable `tmpdir`) and deletes it after the request has been
 served. This function is used to copy the file to another location where
 it can be retrieved later. Returns `true, nil` on success or
 `false, errormsg` on failure.
+
+Parameters:
+- `from`:    an index (integer value) of array server.uploads.
+- `target`:  an absolute path
 
 ### server.systime
 

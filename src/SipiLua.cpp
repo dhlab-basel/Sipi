@@ -32,6 +32,7 @@
 #include <SipiFilenameHash.h>
 
 #include "shttps/Connection.h"
+#include "shttps/Parsing.h"
 #include "SipiImage.h"
 #include "SipiLua.h"
 #include "SipiHttpServer.h"
@@ -361,8 +362,9 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static SImage *pushSImage(lua_State *L) {
+    static SImage *pushSImage(lua_State *L, const SImage &simage) {
         SImage *img = (SImage *) lua_newuserdata(L, sizeof(SImage));
+        *img = simage;
         luaL_getmetatable(L, SIMAGE);
         lua_setmetatable(L, -2);
         return img;
@@ -526,9 +528,10 @@ namespace Sipi {
         }
 
         lua_pushboolean(L, true); // result code
-        SImage *img = pushSImage(L);
-        img->image = new SipiImage();
-        img->filename = new std::string(imgpath);
+        SImage simg;
+        simg.image = new SipiImage();
+        simg.filename = new std::string(imgpath);
+        SImage *img = pushSImage(L, simg);
 
         try {
             if (!original.empty()) {
@@ -537,6 +540,10 @@ namespace Sipi {
                 img->image->read(imgpath, pagenum, region, size);
             }
         } catch (SipiImageError &err) {
+            delete img->image;
+            img->image = nullptr;
+            delete img->filename;
+            img->filename = nullptr;
             lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
             std::stringstream ss;
@@ -552,10 +559,9 @@ namespace Sipi {
 
     static int SImage_dims(lua_State *L) {
         size_t nx, ny;
-        int top = lua_gettop(L);
 
-        if (top != 1) {
-            lua_pop(L, top);
+        if (lua_gettop(L) != 1) {
+            lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.dims(): Incorrect number of arguments");
             return 2;
@@ -569,7 +575,7 @@ namespace Sipi {
                 info = img.getDim(imgpath);
             }
             catch (InfoError &e) {
-                lua_pop(L, top);
+                lua_pop(L, lua_gettop(L));
                 lua_pushboolean(L, false);
                 std::stringstream ss;
                 ss << "SipiImage.dims(): Couldn't get dimensions";
@@ -577,7 +583,7 @@ namespace Sipi {
                 return 2;
             }
             catch (SipiImageError &err) {
-                lua_pop(L, top);
+                lua_pop(L, lua_gettop(L));
                 lua_pushboolean(L, false);
                 std::stringstream ss;
                 ss << "SipiImage.dims(): " << err;
@@ -589,7 +595,7 @@ namespace Sipi {
         } else {
             SImage *img = checkSImage(L, 1);
             if (img == nullptr) {
-                lua_pop(L, top);
+                lua_pop(L, lua_gettop(L));
                 lua_pushboolean(L, false);
                 lua_pushstring(L, "SipiImage.dims(): not a valid image");
                 return 2;
@@ -597,6 +603,8 @@ namespace Sipi {
             nx = img->image->getNx();
             ny = img->image->getNy();
         }
+
+        lua_pop(L, lua_gettop(L));
 
         lua_pushboolean(L, true);
         lua_createtable(L, 0, 2); // table
@@ -645,7 +653,7 @@ namespace Sipi {
         bool check;
 
         try {
-            check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+            check = shttps::Parsing::checkMimeTypeConsistency(*path, given_filename, given_mimetype);
         } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
@@ -812,12 +820,11 @@ namespace Sipi {
      * SipiImage.write(img, <filepath> [, compression_parameter])
      */
     static int SImage_write(lua_State *L) {
-        int top = lua_gettop(L);
 
         SImage *img = checkSImage(L, 1);
 
         if (!lua_isstring(L, 2)) {
-            lua_pop(L, top);
+            lua_pop(L, lua_gettop(L));
             lua_pushboolean(L, false);
             lua_pushstring(L, "SipiImage.write(): Incorrect arguments");
             return 2;
@@ -826,19 +833,19 @@ namespace Sipi {
         const char *imgpath = lua_tostring(L, 2);
 
         Sipi::SipiCompressionParams comp_params;
-        if (top > 2) { // we do have compressin parameters
+        if (lua_gettop(L) > 2) { // we do have compressing parameters
             if (lua_istable(L, 3)) {
                 lua_pushnil(L);
                 while (lua_next(L, 3) != 0) {
                     if (!lua_isstring(L, -2)) {
-                        lua_pop(L, top);
+                        lua_pop(L, lua_gettop(L));
                         lua_pushboolean(L, false);
                         lua_pushstring(L, "SipiImage.write(): Incorrect compression value name: Must be string!");
                         return 2;
                     }
                     const char *key = lua_tostring(L, -2);
                     if (!lua_isstring(L, -1)) {
-                        lua_pop(L, top);
+                        lua_pop(L, lua_gettop(L));
                         lua_pushboolean(L, false);
                         lua_pushstring(L, "SipiImage.write(): Incorrect compression value: Must be string!");
                         return 2;
@@ -928,7 +935,8 @@ namespace Sipi {
                 }
             }
         }
-        lua_pop(L, top);
+
+        lua_pop(L, lua_gettop(L));
 
         std::string filename = imgpath;
         size_t pos_ext = filename.find_last_of(".");
@@ -962,6 +970,7 @@ namespace Sipi {
         } else if ((extension == "j2k") || (extension == "jpx") || (extension == "jp2")) {
             ftype = "jpx";
         } else {
+            lua_pop(L, lua_gettop(L));
             lua_pushstring(L, "SipiImage.write(): unsupported file format");
             return lua_error(L);
         }
@@ -974,7 +983,7 @@ namespace Sipi {
             try {
                 img->image->write(ftype, "HTTP", comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
-                lua_pop(L, top);
+                lua_pop(L, lua_gettop(L));
                 lua_pushboolean(L, false);
                 lua_pushstring(L, err.to_string().c_str());
                 return 2;
@@ -983,7 +992,7 @@ namespace Sipi {
             try {
                 img->image->write(ftype, imgpath, comp_params.size() > 0 ? &comp_params : nullptr);
             } catch (SipiImageError &err) {
-                lua_pop(L, top);
+                lua_pop(L, lua_gettop(L));
                 lua_pushboolean(L, false);
                 lua_pushstring(L, err.to_string().c_str());
                 return 2;
