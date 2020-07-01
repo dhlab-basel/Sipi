@@ -262,6 +262,14 @@ namespace shttps {
         }
 
         if (top > 1) {
+            if (sqlite3_reset(stmt->stmt_handle) != SQLITE_OK) {
+                lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
+                return lua_error(L);
+            }
+            if (sqlite3_clear_bindings(stmt->stmt_handle) != SQLITE_OK) {
+                lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
+                return lua_error(L);
+            }
             for (int i = 2; i <= top; i++) {
                 int status;
                 if (lua_isinteger(L, i)) {
@@ -342,6 +350,7 @@ namespace shttps {
         //
         // if we had bindings, we have to reset the prepared statment
         //
+        /*
         if (top > 1) {
             if (sqlite3_reset(stmt->stmt_handle) != SQLITE_OK) {
                 lua_pushstring(L, sqlite3_errmsg(stmt->sqlite_handle));
@@ -352,6 +361,7 @@ namespace shttps {
                 return lua_error(L);
             }
         }
+         */
         return 1;
     }
     //=========================================================================

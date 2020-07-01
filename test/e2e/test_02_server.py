@@ -290,7 +290,10 @@ class TestServer:
     def test_sqlite_api(self, manager):
         """Test sqlite API"""
         expected_result = {
-            "result": "Dies ist ein erster Text"
+            "result": {
+                "512": "Dies ist ein erster Text",
+                "1024": "Un der zweite Streich folgt sogleich"
+            }
         }
         json_result = manager.get_json("/sqlite")
         assert json_result == expected_result

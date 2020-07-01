@@ -22,10 +22,15 @@ require "send_response"
 
 function test_db()
     local db = sqlite("./test.db", "RW")
-    local qry = db << "SELECT * FROM image WHERE id = ?"
+    local qry = db << "SELECT * FROM image WHERE id = ?1 OR id = ?2 ORDER BY id"
     local id = 512
-    local row = qry(id);
-    return row[1]
+    local result = {}
+    local row = qry(id, 1024)
+    while row do
+        result[row[0]] = row[1]
+        row = qry()
+    end
+    return result
 end
 
 function err (x)
