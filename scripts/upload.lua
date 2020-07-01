@@ -100,7 +100,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         filebody = filename:match("(.+)%..+")
         newfilename[imgindex] = "_" .. filebody .. '.jp2'
 
-        iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/unit/' ..newfilename[imgindex]
+        iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/images/' .. newfilename[imgindex]
         iiifurls["filename"] = newfilename[imgindex]
 
         --
@@ -116,8 +116,7 @@ for imgindex,imgparam in pairs(server.uploads) do
         --
         -- Create the destination path
         --
-        --fullfilepath = config.imgroot .. '/unit/' .. newfilepath
-        fullfilepath = config.imgroot .. newfilepath
+        fullfilepath = config.imgroot .. '/' .. newfilepath
 
         --
         -- write the file to the destination
@@ -138,11 +137,10 @@ for imgindex,imgparam in pairs(server.uploads) do
             return false
         end
 
-        --fullfilepath = config.imgroot .. '/unit/' .. newfilepath
-        fullfilepath = config.imgroot .. newfilepath
+        fullfilepath = config.imgroot .. '/' .. newfilepath
         server.copyTmpfile(index, fullfilepath)
 
-        iiifurls[filename] = protocol .. server.host .. '/unit/' .. newfilepath
+        iiifurls[filename] = protocol .. server.host .. '/images/' .. newfilepath
         iiifurls["filename"] = filename
     end
 
