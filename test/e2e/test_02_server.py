@@ -303,6 +303,11 @@ class TestServer:
         expected_result["id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
         assert response_json == expected_result
 
+        #response_json = manager.get_json("/unit/{}/info.json".format(filename), use_ssl=True)
+        #expected_result["id"] = "https://127.0.0.1:1024/unit/{}".format(filename)
+        #assert response_json == expected_result
+
+
     def test_sqlite_api(self, manager):
         """Test sqlite API"""
         expected_result = {
