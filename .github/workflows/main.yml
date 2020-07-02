@@ -1,6 +1,9 @@
 name: CI
 
-on: [push]
+on:
+  push:
+  release:
+    types: [published]
 
 jobs:
   test:
@@ -10,7 +13,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v1
         with:
-          fetch-depth: 1
+          fetch-depth: 50
       - name: Checkout private ci-assets
         uses: actions/checkout@v2
         with:
@@ -19,16 +22,16 @@ jobs:
           path: ci
       - name: Copy ci-assets
         run: |
-          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_3-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_3-01727L.zip
+          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_5-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_5-01727L.zip
       - name: run compile and tests inside docker
         run: make test-ci
 
-  # publish only for develop and tags
+  # publish only on release
   publish:
     name: Publish to Dockerhub
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags')
+    if: github.event_name == 'release' && startsWith(github.ref, 'refs/tags')
     steps:
       - name: checkout source
         uses: actions/checkout@v1
@@ -42,8 +45,12 @@ jobs:
           path: ci
       - name: copy ci-assets
         run: |
-          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_2-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_2-01727L.zip
+          cp $GITHUB_WORKSPACE/ci/kakadu/v8_0_5-01727L.zip $GITHUB_WORKSPACE/vendor/v8_0_5-01727L.zip
       - name: build and publish image
         run: |
           echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
           make publish-sipi-image
+      - name: Update release notes
+        uses: lakto/gren-action@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

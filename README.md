@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/dhlab-basel/Sipi.svg?branch=develop)](https://travis-ci.org/dhlab-basel/Sipi)
+[![Build Status](https://github.com/dasch-swiss/sipi/workflows/CI/badge.svg?branch=develop)](https://github.com/dasch-swiss/sipi/actions)
 
 # Overview
 
@@ -26,16 +26,16 @@ Freely distributable binary releases will be available soon.
 
 # Documentation
 
-The manual is online at https://sipi.io.
+The documentation is online at https://sipi.io.
 
-To build it locally, you will need [Sphinx](http://www.sphinx-doc.org/en/stable/index.html).
-In the `manual` subdirectory of the source tree, type:
+To build it locally, you will need [MkDocs](https://www.mkdocs.org/).
+In the root the source tree, type:
 
 ```
-make html
+make docs-build
 ```
 
-You will then find the manual under `manual/_build/html`.
+You will then find the manual under `site/index.html`.
 
 # Building from source
 
@@ -56,7 +56,7 @@ $ (mkdir -p ./build-mac && cd build-mac && cmake .. && make && ctest --verbose)
 
 # Releases
 
-Releases are published on Dockerhub: https://cloud.docker.com/u/dhlabbasel/repository/docker/dhlabbasel/sipi
+Releases are published on Dockerhub: https://hub.docker.com/repository/docker/daschswiss/sipi
 
 
 # Contact Information
