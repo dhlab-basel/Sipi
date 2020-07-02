@@ -705,6 +705,9 @@ namespace Sipi {
             if (info.success == SipiImgInfo::ALL) {
                 json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
                 json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
+            } else if (actual_mimetype == "application/pdf") {
+                json_object_set_new(root, "originalMimeType", json_string(info.internalmimetype.c_str()));
+                json_object_set_new(root, "originalFilename", json_string(infile.c_str()));
             }
             char *json_str = json_dumps(root, JSON_INDENT(3));
             conn_obj.sendAndFlush(json_str, strlen(json_str));

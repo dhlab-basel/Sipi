@@ -52,4 +52,5 @@ C++ and runs on Linux (including [Debian](https://www.debian.org/),
 [Ubuntu](https://www.ubuntu.com/), and
 [CentOS](https://www.centos.org/)) and Mac OS X.
 
-Freely distributable binary releases are available.
+Freely distributable binary releases are available
+[here](https://hub.docker.com/repository/docker/daschswiss/knora-sipi) as docker image.

@@ -100,6 +100,22 @@ class TestServer:
 
         assert response_json == expected_result
 
+    def test_jpg_with_comment(selfself, manager):
+        """process an uploaded jpeg file with comment block properly"""
+
+        expected_result = {
+            "width": 373,
+            "height": 496,
+            "internalMimeType": "image/jpx",
+            "originalMimeType": "image/jpeg",
+            "originalFilename": "HasCommentBlock.JPG"
+        }
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/HasCommentBlock.JPG"), "image/jpeg")
+        filename = response_json["filename"]
+        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+        assert response_json == expected_result
+
+
     def test_mimeconsistency(self, manager):
         """upload any file and check mimetype consistency"""
 

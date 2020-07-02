@@ -936,7 +936,6 @@ namespace Sipi {
             }
         }
 
-        lua_pop(L, lua_gettop(L));
 
         std::string filename = imgpath;
         size_t pos_ext = filename.find_last_of(".");
@@ -998,6 +997,8 @@ namespace Sipi {
                 return 2;
             }
         }
+
+        lua_pop(L, lua_gettop(L));
 
         lua_pushboolean(L, true);
         lua_pushnil(L);

@@ -21,6 +21,16 @@ if not success then
     return
 end
 
+-- the following write must fail
+outfilename = '/gaga/gaga.jpx'
+success, error = img:write(outfilename)
+if outfilename ~= '/gaga/gaga.jpx' then
+    server.log("failing SipiImage.write() changed input parameter ", server.loglevel.LOG_ERR)
+    send_error(500, "failing SipiImage.write() changed input parameter: ")
+    return
+end
+
+
 result = {
     status = 0,
     message = 'OK'
