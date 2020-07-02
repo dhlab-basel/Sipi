@@ -936,7 +936,6 @@ namespace Sipi {
             }
         }
 
-
         std::string filename = imgpath;
         size_t pos_ext = filename.find_last_of(".");
         size_t pos_start = filename.find_last_of("/");

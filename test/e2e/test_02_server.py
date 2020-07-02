@@ -88,6 +88,7 @@ class TestServer:
         """return 401 Unauthorized if the user does not have permission to see the image"""
         manager.expect_status_code("/knora/DenyLeaves.jpg/full/max/0/default.jpg", 401)
 
+
     def test_read_write(self, manager):
         """read an image file, convert it to JPEG2000 and write it"""
 
@@ -166,6 +167,7 @@ class TestServer:
             response_json = manager.post_file("/api/mimetest", manager.data_dir_path(test["filepath"]), test["mimetype"])
             assert response_json == test["expected_result"]
 
+
     def test_thumbnail(self, manager):
         """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
         response_json = manager.post_file("/make_thumbnail", manager.data_dir_path("knora/Leaves.jpg"), "image/jpeg")
@@ -236,7 +238,6 @@ class TestServer:
                 manager.expect_status_code("/unit/{}".format(filename), 200)
             response_json = manager.get_json("/unit/{}/knora.json".format(filename))
             assert response_json == test["expected_result"]
-
 
         #expected_result = {
         #    "width": 512,
