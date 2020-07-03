@@ -1,3 +1,11 @@
+# Determine this makefile's path.
+# Be sure to place this BEFORE `include` directives, if any.
+# THIS_FILE := $(lastword $(MAKEFILE_LIST))
+THIS_FILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+
+include vars.mk
+
 .PHONY: docs-build
 docs-build: ## build docs into the local 'site' folder
 	mkdocs build
@@ -14,6 +22,15 @@ docs-publish: ## build and publish docs to Github Pages
 docs-install-requirements: ## install requirements for documentation
 	pip3 install -r requirements.txt
 
+.PHONY: build-sipi-image
+build-sipi-image: ## build and publish Sipi Docker image locally
+	docker build -t $(SIPI_IMAGE) .
+	docker tag $(SIPI_IMAGE) $(SIPI_REPO):latest
+
+.PHONY: publish-sipi-image
+publish-sipi-image: build-sipi-image ## publish Sipi Docker image to Docker-Hub
+	docker push $(SIPI_REPO)
+
 .PHONY: compile
 compile: ## compile SIPI inside Docker
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make"
@@ -22,6 +39,11 @@ compile: ## compile SIPI inside Docker
 test: ## compile and run tests inside Docker
 	@mkdir -p ${PWD}/images
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
+.PHONY: test-ci
+test-ci: ## compile and run tests inside Docker
+	@mkdir -p ${PWD}/images
+	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)

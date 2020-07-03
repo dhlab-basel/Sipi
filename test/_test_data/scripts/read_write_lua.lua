@@ -30,7 +30,6 @@ if outfilename ~= '/gaga/gaga.jpx' then
     return
 end
 
-
 result = {
     status = 0,
     message = 'OK'
