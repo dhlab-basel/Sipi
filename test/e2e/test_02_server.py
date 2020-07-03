@@ -164,7 +164,7 @@ class TestServer:
         ]
 
         for test in testdata:
-            response_json = manager.post_file("/api/mimetest", manager.data_dir_path(test["filepath"]), test["mimetype"])
+            response_json = manager.post_file("/test/luafunctions", manager.data_dir_path(test["filepath"]), test["mimetype"])
             assert response_json == test["expected_result"]
 
 
