@@ -146,19 +146,19 @@ class TestServer:
                 }
             },
             {
-                "filepath": "knora/hello.gresource.xml",
+                "filepath": "knora/hello.resource.xml",
                 "mimetype": "application/xml",
                 "expected_result": {
                     "consistency": True,
-                    "origname": "hello.gresource.xml"
+                    "origname": "hello.resource.xml"
                 }
             },
             {
-                "filepath": "knora/hello.gresource.xml",
+                "filepath": "knora/hello.resource.xml",
                 "mimetype": "text/xml",
                 "expected_result": {
                     "consistency": True,
-                    "origname": "hello.gresource.xml"
+                    "origname": "hello.resource.xml"
                 }
             }
         ]
