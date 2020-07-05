@@ -25,6 +25,7 @@ import os
 import os.path
 import time
 import datetime
+import sys
 
 # Tests basic functionality of the Sipi server.
 

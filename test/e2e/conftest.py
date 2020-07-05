@@ -34,6 +34,7 @@ import shutil
 import psutil
 import re
 import hashlib
+import glob
 
 
 def pytest_addoption(parser):
@@ -52,6 +53,7 @@ def manager(request):
     yield manager
     manager.stop_sipi()
     manager.stop_nginx()
+    manager.cleanup()
 
 
 class SipiTestManager:
@@ -496,6 +498,21 @@ class SipiTestManager:
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT) # redirect stderr to stdout
 
+    def cleanup(self):
+        """Cleanup all files created"""
+        fileList = glob.glob(self.data_dir + '/knora/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
+
+        fileList = glob.glob(self.data_dir + '/unit/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
+        fileList = glob.glob(self.data_dir + '/thumbs/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""
 
@@ -533,3 +550,4 @@ def pytest_itemcollected(item):
     suf = node.__doc__.strip() if node.__doc__ else node.__name__
     if pref or suf:
         item._nodeid = "{}: {} should {}".format(pref, component, suf)
+

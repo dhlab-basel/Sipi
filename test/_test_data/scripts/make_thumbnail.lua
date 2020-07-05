@@ -85,6 +85,7 @@ for imgindex, imgparam in pairs(server.uploads) do
         send_error(500, "Couldn't generate uuid62!")
         return -1
     end
+    tmpName = '_' .. tmpName
 
     local tmpPath =  tmpDir .. tmpName
 

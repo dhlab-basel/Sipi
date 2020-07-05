@@ -72,10 +72,9 @@ if not success then
     server.log("Source: " .. sourcePath .. "not readable, " .. readable, server.loglevel.LOG_ERR)
     return
 end
+
 if not readable then
-
     send_error(500, FILE_NOT_READBLE .. sourcePath)
-
     return
 end
 
@@ -98,14 +97,12 @@ end
 
 
 local success, submitted_mimetype = server.parse_mimetype(originalMimetype)
-
 if not success then
     send_error(400, "Couldn't parse mimetype: " .. originalMimetype)
     return -1
 end
 
 success, check = fullImg:mimetype_consistency(submitted_mimetype.mimetype, originalFilename)
-
 if not success then
     server.log("fullImg:mimetype_consistency() failed: " .. check, server.loglevel.LOG_ERR)
     return
@@ -118,7 +115,7 @@ if not check then
 end
 
 
-fullImgName = baseName .. '.jpx'
+fullImgName = '_' .. baseName .. '.jpx'
 
 --
 -- create new full quality image file path with sublevels:
@@ -135,9 +132,7 @@ if not success then
     return
 end
 
-server.log('convert_from_file 1 ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
 fullImg:write(knoraDir .. newFilePath)
-server.log('convert_from_file 1 =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
 
 -- create thumbnail (jpg)
 success, thumbImg = SipiImage.new(sourcePath, { size = config.thumb_size })
@@ -153,7 +148,7 @@ if not success then
 end
 
 
-thumbImgName = baseName .. '.jpg'
+thumbImgName = '_' .. baseName .. '.jpg'
 
 --
 -- create new thumnail image file path with sublevels:
@@ -165,9 +160,7 @@ if not success then
     return false
 end
 
-server.log('convert_from_file 2 ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
 success, errmsg = thumbImg:write(knoraDir .. newThumbPath)
-server.log('convert_from_file 2 =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
 if not success then
     server.log("thumbImg:write failed: " .. errmsg, server.loglevel.LOG_ERR)
     return
