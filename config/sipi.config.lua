@@ -273,5 +273,10 @@ routes = {
         method = 'GET',
         route = '/api/token',
         script = 'token.lua'
+    },
+    {
+        method = 'GET',
+        route = '/test/luafunctions',
+        script = 'test_functions.lua'
     }
 }

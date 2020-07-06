@@ -32,6 +32,7 @@
 #include <SipiFilenameHash.h>
 
 #include "shttps/Connection.h"
+#include "shttps/Parsing.h"
 #include "SipiImage.h"
 #include "SipiLua.h"
 #include "SipiHttpServer.h"
@@ -652,7 +653,7 @@ namespace Sipi {
         bool check;
 
         try {
-            check = img->image->checkMimeTypeConsistency(*path, given_mimetype, given_filename);
+            check = shttps::Parsing::checkMimeTypeConsistency(*path, given_filename, given_mimetype);
         } catch (SipiImageError &err) {
             lua_pushboolean(L, false);
             std::stringstream ss;
@@ -935,8 +936,6 @@ namespace Sipi {
             }
         }
 
-        lua_pop(L, lua_gettop(L));
-
         std::string filename = imgpath;
         size_t pos_ext = filename.find_last_of(".");
         size_t pos_start = filename.find_last_of("/");
@@ -997,6 +996,8 @@ namespace Sipi {
                 return 2;
             }
         }
+
+        lua_pop(L, lua_gettop(L));
 
         lua_pushboolean(L, true);
         lua_pushnil(L);

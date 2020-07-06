@@ -36,62 +36,114 @@ myimg = {}
 newfilename = {}
 iiifurls = {}
 
+if server.secure then
+    protocol = 'https://'
+else
+    protocol = 'http://'
+end
+
 
 for imgindex,imgparam in pairs(server.uploads) do
-    success, mimeinfo = server.file_mimetype(imgindex)
+
+    --
+    -- first we check the mimetype consistency
+    --
+    success, mime_ok = server.file_mimeconsistency(imgindex)
     if not success then
-        send_error(500, mimeinfo)
+        server.log(newfilepath, server.loglevel.error)
+        send_error(500, mime_ok)
         return false
     end
 
-    if mimeinfo['mimetype'] == 'application/pdf' then
-        newfilename = config.docroot .. '/' .. imgparam["origname"]
-        success, errormsg = server.fs.moveFile(imgindex, newfilename)
+
+    if not mime_ok then
+        success, mimetypeobj = server.file_mimetype(imgindex)
         if not success then
-            send_error(500, errormsg)
+            server.log("Couldn't determine mimetype!", server.loglevel.error)
+            send_error(500, mime_ok)
             return false
         end
-        send_success({ name = imgparam["origname"] })
-        return true
-    end
-
-    --
-    -- create a new Lua image object. This reads the image into an
-    -- internal in-memory representation independent of the original
-    -- image format.
-    --
-    success, myimg[imgindex] = SipiImage.new(imgindex)
-    if not success then
-        server.log(myimg[imgindex], server.loglevel.error)
-        send_error(500, myimg[imgindex])
-        return false
-    end
-
-    newfilename[imgindex] = imgparam["origname"]:match "(.+)%..+" .. '.jp2'
-
-    if server.secure then
-        protocol = 'https://'
+        mimetype = mimetypeobj.mimetype
     else
-        protocol = 'http://'
+        mimetype = imgparam["mimetype"]
     end
-    iiifurls[newfilename[imgindex]] = protocol .. server.host .. '/images/' .. newfilename[imgindex]
-    iiifurls["filename"] = newfilename[imgindex]
 
     --
-    -- here we add the subdirs that are necessary if Sipi is configured to use subdirs
+    -- generate a UUID
     --
-    success, newfilepath = helper.filename_hash(newfilename[imgindex]);
+    local success, uuid62 = server.uuid62()
     if not success then
-        send_error(500, newfilepath)
+        server.log(uuid62, server.loglevel.error)
+        send_error(500, uuid62)
         return false
     end
 
-    fullfilepath = config.imgroot .. '/' .. newfilepath
 
-    local status, errmsg = myimg[imgindex]:write(fullfilepath)
-    if not status then
-        server.print('Error converting image to j2k: ', filename, ' ** ', errmsg)
+    if mimetype == "image/tiff" or
+            mimetype == "image/jpeg" or
+            mimetype == "image/png" or
+            mimetype == "image/jpx" or
+            mimetype == "image/jp2" then
+        --
+        -- create a new Lua image object. This reads the image into an
+        -- internal in-memory representation independent of the original
+        -- image format.
+        --
+        success, myimg[imgindex] = SipiImage.new(imgindex)
+        if not success then
+            server.log(myimg[imgindex], server.loglevel.error)
+            send_error(500, myimg[imgindex])
+            return false
+        end
+
+        filename = imgparam["origname"]
+        filebody = filename:match("(.+)%..+")
+        newfilename[imgindex] = "_" .. filebody .. '.jp2'
+
+        iiifurls[uuid62 .. ".jp2"] = protocol .. server.host .. '/images/' .. newfilename[imgindex]
+        iiifurls["filename"] = newfilename[imgindex]
+
+        --
+        -- here we add the subdirs that are necessary if Sipi is configured to use subdirs
+        --
+        success, newfilepath = helper.filename_hash(newfilename[imgindex]);
+        if not success then
+            server.log(newfilepath, server.loglevel.error)
+            server.send_error(500, newfilepath)
+            return false
+        end
+
+        --
+        -- Create the destination path
+        --
+        fullfilepath = config.imgroot .. '/' .. newfilepath
+
+        --
+        -- write the file to the destination
+        --
+        local status, errmsg = myimg[imgindex]:write(fullfilepath)
+        if not status then
+            server.print('Error converting image to j2k: ', filename, ' ** ', errmsg)
+        end
+    else
+        filename = imgparam["origname"]
+        --
+        -- here we add the subdirs that are necessary if Sipi is configured to use subdirs
+        --
+        success, newfilepath = helper.filename_hash(filename)
+        if not success then
+            server.log(newfilepath, server.loglevel.error)
+            server.send_error(500, newfilepath)
+            return false
+        end
+
+        fullfilepath = config.imgroot .. '/' .. newfilepath
+        server.copyTmpfile(index, fullfilepath)
+
+        iiifurls[filename] = protocol .. server.host .. '/images/' .. newfilepath
+        iiifurls["filename"] = filename
     end
+
 end
 
 send_success(iiifurls)

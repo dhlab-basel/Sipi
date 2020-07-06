@@ -22,10 +22,17 @@ require "send_response"
 
 function test_db()
     local db = sqlite("./db/test.db", "RW")
-    local qry = db << "SELECT * FROM image WHERE id = ?"
-    local id = 512
-    local row = qry(id);
-    return row[1]
+    --local qry = db << "SELECT * FROM image WHERE id < ? ORDER BY id"
+    local qry = db << "SELECT * FROM image WHERE id = ?1 OR id = ?2 ORDER BY id"
+    local result = {}
+    local row = qry(1024, 512)
+    while row do
+        result[row[0]] = row[1]
+        row = qry()
+    end
+    qry = ~qry
+    db = ~db
+    return result
 end
 
 function err (x)
@@ -33,7 +40,9 @@ function err (x)
     return false
 end
 
-local status, res = xpcall(test_db, err)
+--local status, res = xpcall(test_db, err)
+res = test_db()
+status = true
 if not status then
     send_error(500, res)
     return false

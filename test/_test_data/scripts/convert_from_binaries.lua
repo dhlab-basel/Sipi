@@ -140,7 +140,7 @@ if mediatype == IMAGE then
         return
     end
 
-    fullImgName = baseName .. '.jpx'
+    fullImgName = '_' .. baseName .. '.jpx'
 
     --
     -- create new full quality image file path with sublevels:
@@ -152,9 +152,7 @@ if mediatype == IMAGE then
         return false
     end
 
-    server.log('convert_from_binaries ->->->->->->->->->->->->->->->->->->->->', server.loglevel.LOG_ERR)
     success, errmsg = fullImg:write(knoraDir .. newFilePath)
-    server.log('convert_from_binaries  =>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>=>', server.loglevel.LOG_ERR)
     if not success then
         server.log("fullImg:write() failed: " .. errmsg, server.loglevel.LOG_ERR)
         return
@@ -175,7 +173,7 @@ if mediatype == IMAGE then
         return
     end
 
-    thumbImgName = baseName .. '.jpg'
+    thumbImgName = '_' .. baseName .. '.jpg'
 
     --
     -- create new thumnail image file path with sublevels:
@@ -258,7 +256,7 @@ elseif mediatype == TEXT then
         return
     end
 
-    local filePath = fileDir .. filename
+    local filePath = '_'.. fileDir .. filename
 
     local success, result = server.fs.copyFile(sourcePath, filePath)
     if not success then

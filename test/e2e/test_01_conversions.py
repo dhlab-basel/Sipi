@@ -31,9 +31,9 @@ class TestConversions:
 
     reference_tif_tmpl = "iso-15444-4/reference_jp2/jp2_{}.tif"
     reference_jp2_tmpl = "iso-15444-4/testfiles_jp2/file{}.jp2"
-    sipi_jp2_tmpl = "sipi_file{}.jp2"
-    sipi_tif_tmpl = "sipi_jp2_{}.tif"
-    sipi_round_trip_tmpl = "sipi_sipi_jp2_{}.tif"
+    sipi_jp2_tmpl = "_sipi_file{}.jp2"
+    sipi_tif_tmpl = "_sipi_jp2_{}.tif"
+    sipi_round_trip_tmpl = "_sipi_sipi_jp2_{}.tif"
 
     def test_iso_15444_4_decode_jp2(self, manager):
         """convert ISO/IEC 15444-4 reference JPEG2000 images to TIFF"""

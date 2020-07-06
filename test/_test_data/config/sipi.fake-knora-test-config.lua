@@ -244,6 +244,11 @@ routes = {
         script = 'test_mimetype_func.lua'
     },
     {
+        method = 'POST',
+        route = '/api/mimetest',
+        script = 'mimetest.lua'
+    },
+    {
         method = 'GET',
         route = '/sqlite',
         script = 'test_sqlite.lua'

@@ -666,45 +666,72 @@ namespace Sipi {
         conn_obj.header("Content-Type", "application/json");
 
         json_t *root = json_object();
-        int width, height;
-        //
-        // get cache info
-        //
-        std::shared_ptr<SipiCache> cache = serv->cache();
+        std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+        if ((actual_mimetype == "image/tiff") ||
+            (actual_mimetype == "image/jpeg") ||
+            (actual_mimetype == "image/png") ||
+            (actual_mimetype == "image/jpx") ||
+            (actual_mimetype == "image/jp2") ||
+            (actual_mimetype == "application/pdf")) {
 
-        Sipi::SipiImage tmpimg;
-        Sipi::SipiImgInfo info;
-        try {
-            info = tmpimg.getDim(infile, pagenum);
-        }
-        catch (SipiImageError &err) {
-            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
-            return;
-        }
-        if (info.success == SipiImgInfo::FAILURE) {
-            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
-            return;
-        }
-        width = info.width;
-        height = info.height;
+            int width, height;
+            //
+            // get cache info
+            //
+            //std::shared_ptr<SipiCache> cache = serv->cache();
 
-        json_object_set_new(root, "width", json_integer(width));
-        json_object_set_new(root, "height", json_integer(height));
-        if (info.numpages > 0) {
-            json_object_set_new(root, "numpages", json_integer(info.numpages));
-        }
-        json_object_set_new(root, "internalMimeType", json_string(info.internalmimetype.c_str()));
-        if (info.success == SipiImgInfo::ALL) {
-            json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
-            json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
-        }
-        char *json_str = json_dumps(root, JSON_INDENT(3));
-        conn_obj.sendAndFlush(json_str, strlen(json_str));
-        free(json_str);
+            Sipi::SipiImage tmpimg;
+            Sipi::SipiImgInfo info;
+            try {
+                info = tmpimg.getDim(infile, pagenum);
+            }
+            catch (SipiImageError &err) {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                return;
+            }
+            if (info.success == SipiImgInfo::FAILURE) {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
+                return;
+            }
+            width = info.width;
+            height = info.height;
 
-        // TODO: and all the other CJSON obj?
-        json_decref(root);
+            json_object_set_new(root, "width", json_integer(width));
+            json_object_set_new(root, "height", json_integer(height));
+            if (info.numpages > 0) {
+                json_object_set_new(root, "numpages", json_integer(info.numpages));
+            }
+            json_object_set_new(root, "internalMimeType", json_string(info.internalmimetype.c_str()));
+            if (info.success == SipiImgInfo::ALL) {
+                json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
+                json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
+            } else if (actual_mimetype == "application/pdf") {
+                json_object_set_new(root, "originalMimeType", json_string(info.internalmimetype.c_str()));
+                json_object_set_new(root, "originalFilename", json_string(infile.c_str()));
+            }
+            char *json_str = json_dumps(root, JSON_INDENT(3));
+            conn_obj.sendAndFlush(json_str, strlen(json_str));
+            free(json_str);
 
+            // TODO: and all the other CJSON obj?
+            json_decref(root);
+        }
+        else {
+            json_object_set_new(root, "mimeType", json_string(actual_mimetype.c_str()));
+
+            struct stat fstatbuf;
+            if (stat(infile.c_str(), &fstatbuf) != 0) {
+                throw Error(__file__, __LINE__, "Cannot fstat file!");
+            }
+            json_object_set_new(root, "fileSize", json_integer(fstatbuf.st_size));
+
+            char *json_str = json_dumps(root, JSON_INDENT(3));
+            conn_obj.sendAndFlush(json_str, strlen(json_str));
+            free(json_str);
+
+            // TODO: and all the other CJSON obj?
+            json_decref(root);
+        }
         syslog(LOG_INFO, "knora.json created from: %s", infile.c_str());
     }
     //=========================================================================

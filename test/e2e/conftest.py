@@ -34,6 +34,7 @@ import shutil
 import psutil
 import re
 import hashlib
+import glob
 
 
 def pytest_addoption(parser):
@@ -52,6 +53,7 @@ def manager(request):
     yield manager
     manager.stop_sipi()
     manager.stop_nginx()
+    manager.cleanup()
 
 
 class SipiTestManager:
@@ -86,8 +88,10 @@ class SipiTestManager:
         self.sipi_command = "{} --config config/{}".format(self.sipi_executable, self.sipi_config_file)
         self.data_dir = os.path.abspath(test_config["data-dir"])
         self.sipi_port = sipi_config["port"]
+        self.sipi_ssl_port = sipi_config["ssl_port"]
         self.iiif_validator_prefix = sipi_config["iiif-validator-prefix"]
         self.sipi_base_url = "http://127.0.0.1:{}".format(self.sipi_port)
+        self.sipi_ssl_base_url = "https://127.0.0.1:{}".format(self.sipi_ssl_port)
         self.sipi_ready_output = sipi_config["ready-output"]
         self.sipi_start_wait = int(sipi_config["start-wait"])
         self.sipi_stop_wait = int(sipi_config["stop-wait"])
@@ -214,6 +218,15 @@ class SipiTestManager:
         """
 
         return "{}{}".format(self.sipi_base_url, url_path)
+
+    def make_sipi_ssl_url(self, url_path):
+        """
+        Makes a URL for a request to Sipi.
+
+        url_path: a path that will be appended to the Sipi base URL to make the request.
+        """
+
+        return "{}{}".format(self.sipi_ssl_base_url, url_path)
 
     def download_file(self, url_path, suffix=None, headers=None):
         """
@@ -376,14 +389,17 @@ class SipiTestManager:
                 raise SipiTestError("post request with image file to {} failed: {}".format(sipi_url, response.json()["message"]))
             return response.json()
 
-    def get_json(self, url_path):
+    def get_json(self, url_path, use_ssl = False):
         """
         Sends a request which expects JSON
         :param url_path: a path that will be appended to the Sipi base URL to make the request.
         :return: the json response as a dict.
         """
 
-        sipi_url = self.make_sipi_url(url_path)
+        if use_ssl:
+            sipi_url = self.make_sipi_ssl_url(url_path)
+        else:
+            sipi_url = self.make_sipi_url(url_path)
 
         try:
             response = requests.get(sipi_url)
@@ -392,8 +408,11 @@ class SipiTestManager:
             raise SipiTestError("post request to {} failed: {}".format(sipi_url, response.json()["message"]))
         return response.json()
 
-    def get_auth_json(self, url_path):
-        sipi_url = self.make_sipi_url(url_path)
+    def get_auth_json(self, url_path, use_ssl = False):
+        if use_ssl:
+            sipi_url = self.make_sipi_ssl_url(url_path)
+        else:
+            sipi_url = self.make_sipi_url(url_path)
 
         try:
             response = requests.get(sipi_url)
@@ -479,6 +498,21 @@ class SipiTestManager:
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT) # redirect stderr to stdout
 
+    def cleanup(self):
+        """Cleanup all files created"""
+        fileList = glob.glob(self.data_dir + '/knora/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
+
+        fileList = glob.glob(self.data_dir + '/unit/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
+        fileList = glob.glob(self.data_dir + '/thumbs/_*')
+        for filePath in fileList:
+            os.remove(filePath)
+
 class SipiTestError(Exception):
     """Indicates an error in a Sipi test."""
 
@@ -516,3 +550,4 @@ def pytest_itemcollected(item):
     suf = node.__doc__.strip() if node.__doc__ else node.__name__
     if pref or suf:
         item._nodeid = "{}: {} should {}".format(pref, component, suf)
+

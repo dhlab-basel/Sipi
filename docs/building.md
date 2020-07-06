@@ -7,7 +7,7 @@
 To build Sipi from source code, you must have
 [Kakadu](http://kakadusoftware.com/), a JPEG 2000 development toolkit
 that is not provided with Sipi and must be licensed separately. The
-Kakadu source code archive `v7_A_7-01382N.zip` must be placed in the
+Kakadu source code archive `v8_0_5-01727L.zip` must be placed in the
 `vendor` subdirectory of the source tree before building Sipi.
 
 Sipi's build process requires [CMake](https://cmake.org/) (minimal

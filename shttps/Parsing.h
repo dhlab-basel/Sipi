@@ -25,6 +25,8 @@
 
 #include <string>
 #include <regex>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace shttps {
 
@@ -32,6 +34,8 @@ namespace shttps {
      * \brief Parsing utilities.
      */
     namespace Parsing {
+        //static std::unordered_map<std::string, std::string> mimetypes; //! format (key) to mimetype (value) conversion map
+
         /*!
          * Parses a string containing a MIME type and optional character set, such as the Content-Type header defined by
          * <https://tools.ietf.org/html/rfc7231#section-3.1.1>.
@@ -49,6 +53,21 @@ namespace shttps {
          *          and the charset as second part. Access as val.first and val.second!
          */
         std::pair<std::string, std::string> getFileMimetype(const std::string &fpath);
+
+        bool checkMimeTypeConsistency(const std::string &path);
+
+        /*!
+         *
+         * @param path Path to file (
+         * @param filename Original filename with extension
+         * @param given_mimetype The mimetype given by the browser
+         * @return true, if consistent, else false
+         */
+        bool checkMimeTypeConsistency(
+                const std::string &path,
+                const std::string &filename,
+                const std::string &given_mimetype = "");
+
 
         /*!
          * Parses an integer.

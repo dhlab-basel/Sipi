@@ -54,6 +54,7 @@ namespace Sipi {
                                                                                {"png", std::make_shared<SipiIOPng>()},
                                                                                {"pdf", std::make_shared<SipiIOPdf>()}};
 
+    /* ToDo: remove if everything is OK
     std::unordered_map<std::string, std::string> SipiImage::mimetypes = {{"jpx",  "image/jp2"},
                                                                          {"jp2",  "image/jp2"},
                                                                          {"jpg",  "image/jpeg"},
@@ -62,6 +63,7 @@ namespace Sipi {
                                                                          {"tif",  "image/tiff"},
                                                                          {"png",  "image/png"},
                                                                          {"pdf",  "application/pdf"}};
+                                                                         */
 
     SipiImage::SipiImage() {
         nx = 0;
@@ -226,6 +228,7 @@ namespace Sipi {
      * This function compares the actual mime type of a file (based on its magic number) to
      * the given mime type (sent by the client) and the extension of the given filename (sent by the client)
      */
+     /* ToDo: Delete
     bool SipiImage::checkMimeTypeConsistency(const std::string &path, const std::string &given_mimetype,
                                              const std::string &filename) {
         try {
@@ -261,7 +264,7 @@ namespace Sipi {
 
         return true;
     }
-
+    */
     void SipiImage::read(std::string filepath, int pagenum, std::shared_ptr<SipiRegion> region, std::shared_ptr<SipiSize> size,
                          bool force_bps_8, ScalingQuality scaling_quality) {
         size_t pos = filepath.find_last_of('.');

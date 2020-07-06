@@ -556,8 +556,10 @@ namespace Sipi {
         while (marker) {
             if (marker->marker == JPEG_COM) {
                 std::string emdatastr((char *) marker->data, marker->data_length);
-                SipiEssentials se(emdatastr);
-                img->essential_metadata(se);
+                if (emdatastr.compare(0, 5, "SIPI:", 5) == 0) {
+                    SipiEssentials se(emdatastr);
+                    img->essential_metadata(se);
+                }
             } else if (marker->marker == JPEG_APP0 + 1) { // EXIF, XMP MARKER....
                 //
                 // first we try to find the exif part

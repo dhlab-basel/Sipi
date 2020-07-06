@@ -55,6 +55,11 @@ cmdline: ## run SIPI inside Docker (does not compile)
 	@mkdir -p ${PWD}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
 
+.PHONY: cmdline-debug
+cmdline-debug: ## run SIPI inside Docker (does not compile)
+	@mkdir -p ${PWD}/images
+	docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
+
 .PHONY: clean
 clean: ## cleans the project directory
 	@rm -rf build-linux/

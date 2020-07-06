@@ -1,0 +1,385 @@
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DHLab Stellen Ist 2019,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,DHLab intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad % ,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,21027,27328,DGK2477,Digital Humanities Sammeltopf,Hillenbrand Gabriel,,Administrativperson,,22%,0%,0%,22%,NEIN,0.4,4,5.9,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,14,?,?,?,?,Kälin Irene ,,Administrativperson,"PHD-Administration, Per 1.9.2019: 20%",20%,0%,0%,20%,NEIN,0.3,4,5.3,Mehrplatzbüro,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,12455,45899,GK4805,Digital Humanities Lab,Kuster Vettiger Gabriela,,Administrativperson,,50%,0%,0%,50%,JA,1,4,13.3,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,26,20375,2525,GK4805,Digital Humanities Lab,Rosenthaler Lukas,,Associate Professor,,50%,0%,0%,50%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,21988,25655,GK4805,Digital Humanities Lab,Aeschlimann Andreas,,Doktorierende/r,60% (in Abklärung),60%,0%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,18105,41153,NGK2163,Bernoulli-Euler Online (BEOL),Alassi Sepideh,,Doktorierende/r,,0%,100%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,22317,50652,DGK2790,DP Digital Humanities,Bucher Magdalena,,Hilfsassistent/in,Stundenlohn,0%,0%,0%,0%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,15554,40612,DGK2477,Digital Humanities Sammeltopf,Buder Stefanie,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,22703,49788,NGK2278,WordWeb / Intertextuality in Drama,Heeg Stefanie,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,21,15553,47533,GX1102,Fakultärer Mittelpool Phil.-Hist.,Meier Daniela,,Hilfsassistent/in,(Masterstudiumsadmin),28%,0%,0%,28%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,27,22898,50247,NGK2280,Mining Goodreads: a text similarity-base,Ruh Lina,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,20205,44925,GK4805,Digital Humanities Lab,Häner Céline,,Lehrling Technik/Labor,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,?,?,?,?,Gasser Brigitte ,,PostDoc,Aufbau Research Adviser,0%,40%,0%,40%,NEIN,0.7,6,8,Mehrplatzbüro,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,20070,44583,GK4805,Digital Humanities Lab,Herrmann Berenike,,PostDoc,,60%,0%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,18,22741,49285,NGK2280,Mining Goodreads: a text similarity-base,Lendvai Piroska Kornelia,,PostDoc,,0%,20%,0%,20%,NEIN,0.3,6,2.7,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,20,22583,49277,NGK2276,Geteiltes Lesen. Literatur digital lesen,Maria Kraxenberger,,PostDoc,65% (ersetzt Brigitte Gasser),65%,0%,0%,65%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,22,22375,41183,NGK2281,Forschungslogiken i. d. textbasierten Di,Messerli Thomas,,PostDoc,per 1.2. 5%,0%,60%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,23,21358,46865,NGK2253,Wirkungsgeschichte von Goethes Werk,Nickol Thomas,,PostDoc,extern: Uni Göttingen,0%,100%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,24,22529,49192,NGK2280,Mining Goodreads: a text similarity-base,Rebora Simone,,PostDoc,,0%,20%,0%,20%,NEIN,0.3,6,2.7,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,17,17015,44571,GK4805,Digital Humanities Lab,Lauer Gerhard,,Professor,,100%,0%,0%,100%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,31,17926,49151,DGK2477,Digital Humanities Sammeltopf,Vögelin Samuel ,,Übriges Personal (nicht SIUS),Praktikant,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,19824,44173,DGK2790,DP Digital Humanities,Chiquet Vera,,Wissensch. Mitarb.,35% (rutscht dann ganz ins DaSCH),35%,0%,0%,35%,NEIN,0.6,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,2044,1438,GK4805,Digital Humanities Lab,Fornaro Peter,,Wissensch. Mitarb.,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,22289,6286,NGK2278,WordWeb / Intertextuality in Drama,Hohl Trillini Regula,,Wissensch. Mitarb.,,60%,0%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,15,20756,45737,BGK1074,Berufungszusage Lauer - GK4805,Kuijpers Moniek,,Wissensch. Mitarb.,,70%,0%,0%,70%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,19,22986,50345,NGK2280,Mining Goodreads: a text similarity-base,Lusetti Massimo,,Wissensch. Mitarb.,,0%,20%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,25,22987,50344,NGK2280,Mining Goodreads: a text similarity-base,Renner Lukas,,Wissensch. Mitarb.,,0%,20%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,28,22897,41048,NGK2280,Mining Goodreads: a text similarity-base,Tadres Jonathan,,Wissensch. Mitarb.,,0%,20%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,29,22588,49432,NGK2278,WordWeb / Intertextuality in Drama,Tissaveerasingham Vijeinath,,Wissensch. Mitarb.,,0%,80%,0%,80%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,30,2078,1840,DGK2477,Digital Humanities Sammeltopf,Tschakert Alexandra,,Wissensch. Mitarb.,,20%,0%,0%,20%,NEIN,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,32,22988,50342,NGK2280,Mining Goodreads: a text similarity-base,Vogelsanger Johanna Letizia,,Wissensch. Mitarb.,,0%,20%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,33,20728,41647,BGK1075,Berufungszusage Rosenthaler - GK4805,Zbinden Erwin,,Wissensch. Mitarb.,,50%,0%,0%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,21071,22046,GX1102,Fakultärer Mittelpool Phil.-Hist.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,1550%,,21,,226,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,Projekte laufen Mitte 2020 aus,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,Bitte prüfen,,,Projekte laufen Ende 2020 aus,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DHLab Stellen Soll 2020,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,DHLab intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad % ,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,21027,27328,DGK2477,Digital Humanities Sammeltopf,Hillenbrand Gabriel,,Administrativperson,10%,22%,0%,0%,22%,NEIN,0.4,4,5.9,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,12455,45899,GK4805,Digital Humanities Lab,Kuster Vettiger Gabriela,,Administrativperson,,50%,0%,0%,50%,JA,1,4,13.3,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,20375,2525,GK4805,Digital Humanities Lab,Rosenthaler Lukas,,Associate Professor,,50%,0%,0%,50%,JA,1,2,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,21988,25655,GK4805,Digital Humanities Lab,Aeschlimann Andreas,,Doktorierende/r,,60%,0%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,17,?,?,?,?,NN 3,,Doktorierende/r,"Europäisches Projekt, asap",0%,0%,100%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,15554,40612,DGK2477,Digital Humanities Sammeltopf,Buder Stefanie,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.3,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,15553,47533,GX1102,Fakultärer Mittelpool Phil.-Hist.,Meier Daniela,,Hilfsassistent/in,,28%,0%,0%,28%,NEIN,0.5,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,15,?,?,?,?,NN 1,,Hilfsassistent/in,"neues Projekt Lauer, ab ?",0%,0%,30%,30%,NEIN,0.5,0,0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,?,?,?,?,NN 2,,Hilfsassistent/in,"neues Projekt Lauer, ab ?",0%,0%,30%,30%,NEIN,0.5,0,0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,20205,44925,GK4805,Digital Humanities Lab,Häner Céline,,Lehrling Technik/Labor,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,?,?,?,?,Gasser Brigitte ,,PostDoc,,0%,40%,0%,40%,NEIN,0.7,6,8,Mehrplatzbüro,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,20070,44583,GK4805,Digital Humanities Lab,Herrmann Berenike,,PostDoc,,60%,0%,0%,60%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,12,21358,46865,NGK2253,Wirkungsgeschichte von Goethes Werk,Nickol Thomas,,PostDoc,extern: Uni Göttingen,0%,100%,0%,100%,JA,0,6,0,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,17015,44571,GK4805,Digital Humanities Lab,Lauer Gerhard,,Professor,,100%,0%,0%,100%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,2044,1438,GK4805,Digital Humanities Lab,Fornaro Peter,,Wissensch. Mitarb.,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,20756,45737,BGK1074,Berufungszusage Lauer - GK4805,Kuijpers Moniek,,Wissensch. Mitarb.,,70%,0%,0%,70%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,14,2078,1840,DGK2477,Digital Humanities Sammeltopf,Tschakert Alexandra,,Wissensch. Mitarb.,,20%,0%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,21071,22046,GX1102,Fakultärer Mittelpool Phil.-Hist.,Anna Diack,,Hilfsassistent/in,12%,12%,0%,0%,12%,NEIN,,6,,,,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,992%,,12,,109,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DHLab Stellen Soll 2021-2024,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,DHLab intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad % ,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,21988,25655,GK4805,Digital Humanities Lab,N.N,,Doktorierende/r,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,15554,40612,DGK2477,Digital Humanities Sammeltopf,Buder Stefanie,,Hilfsassistent/in,,0%,0%,20%,20%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,2044,1438,GK4805,Digital Humanities Lab,Fornaro Peter*,,Wissensch. Mitarb.,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,?,?,?,?,Gasser Brigitte ,,PostDoc,,0%,40%,0%,40%,NEIN,0.7,6,8,Mehrplatzbüro,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,20205,44925,GK4805,Digital Humanities Lab,Häner Céline,,Lehrling Technik/Labor,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,20070,44583,GK4805,Digital Humanities Lab,Herrmann Berenike,,PostDoc,,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,21027,27328,DGK2477,Digital Humanities Sammeltopf,Hillenbrand Gabriel,,Administrativperson,10%,0%,0%,22%,22%,NEIN,0.4,0,5.9,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,21071,22046,GX1102,Fakultärer Mittelpool Phil.-Hist.,Hillenbrand Gabriel,,hilfsassistent/in,12%,12%,0%,0%,12%,ja,0.2,0,3.2,,,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,20756,45737,BGK1074,Berufungszusage Lauer - GK4805,Kuijpers Moniek,,Wissensch. Mitarb.,,70%,0%,0%,70%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,12455,45899,GK4805,Digital Humanities Lab,Kuster Vettiger Gabriela,,Administrativperson,,50%,0%,0%,50%,JA,1,4,13.3,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,17015,44571,GK4805,Digital Humanities Lab,Lauer Gerhard,,Professor,,100%,0%,0%,100%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,12,15553,47533,GX1102,Fakultärer Mittelpool Phil.-Hist.,Meier Daniela,,Hilfsassistent/in,,28%,0%,0%,28%,NEIN,0.0,0,0.0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,21358,46865,NGK2253,Wirkungsgeschichte von Goethes Werk,Nickol Thomas,,PostDoc,extern: Uni Göttingen,0%,100%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,14,20375,2525,GK4805,Digital Humanities Lab,Rosenthaler Lukas*,,Associate Professor,,100%,0%,0%,100%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,15,2078,1840,DGK2477,Digital Humanities Sammeltopf,Tschakert Alexandra,,Wissensch. Mitarb.,,,0%,20%,20%,NEIN,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,?,?,NGK2332,SNF Projekt,NN 1,,Doktorierende/r,"neues Projekt Herrmann, ab 2020",0%,0%,100%,100%,JA,1.0,0,0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,?,?,NGK2332,SNF Projekt,Priska Hadayani Rüegg,,Hilfsassistent/in,"neues Projekt Herrmann, ab 2020",0%,0%,25%,25%,NEIN,0.4,0,0,-,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,17,,,NGK2332,SNF Projekt,NN,,Hilfsassistent/in,"neues Projekt Herrmann, ab 2020",0%,0%,25%,25%,NEIN,0.4,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,18,?,?,DGK3014,H2020,NN,,doktorierende/r,"Europäisches Projekt, ab 2020",0%,0%,100%,100%,JA,1.0,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,19,?,?,?,?,NN 4,,?,"Research Adviser RISE, 2021",100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,20,?,?,?,?,NN 5,,?,"Research Adviser RISE, 2021",100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,21,?,?,?,?,NN 6,,?,"Research Adviser RISE, 2021",100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,22,?,?,?,?,NN 7,,?,"Research Adviser RISE, 2021",100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,23,?,?,?,?,NN 8,,?,"neues Projekt, anstelle weggefallerner 400% ?!**",0%,0%,50%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,24,?,?,?,?,NN 9,,?,"neues Projekt, anstelle weggefallerner 400% ?!",0%,0%,50%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,25,?,?,?,?,NN 10,,?,"neues Projekt, anstelle weggefallerner 400% ?!",0%,0%,50%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,26,?,?,?,?,NN 11,,?,"neues Projekt, anstelle weggefallerner 400% ?!",0%,0%,50%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,27,21071,22046,GX1102,Fakultärer Mittelpool Phil.-Hist.,Anna Diack,,Hilfsassistent/in,,12%,0%,0%,12%,NEIN,0.2,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,29,,,,Fakultärer Mittelpool Phil.-Hist.,Christian Weber,,Hilfsassistent/in,,12%,0%,0%,12%,NEIN,0.2,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,30,,,,PhD Programm DH,Vera Chiquet,,Wissensch. Mitarb.,,35%,0%,0%,35%,NEIN,0.6,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,31,,,,PhD Programm DH,Irene Kähli,,Administrativperson,,20%,0%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,32,,,,SNF Projekt,Thomas Messerli,,Wissensch. Mitarb.,,5%,0%,0%,5%,NEIN,0.1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,33,,,,SNF Projekt,Simone Rebora,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,34,,,,SNF Projekt,Lesther Zulauf,,Hilfsassistent/in,,12%,0%,0%,12%,NEIN,0.2,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,35,,,,Projekt KGS,Laura Citacu,,Hilfsassistent/in,,20%,0%,0%,20%,NEIN,0.3,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,*Fornaro / Rosenthaler ein Doppelbüro mit Besprechungsmöglichkeit.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,"**Beantragt sind derzeit diverse Projekte von B. Herrmann, G. Lauer, M. Kuijpers und  P. Fornaro",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,Genauer tatsächlicher Personalbedarf ist derzeit unklar,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+DHLab,,,,,,,,,
+,,,2019,,,2020,,,2021-2024
+,,,,,,,,,
+Kategorie,,Stellen,AP,,Stellen,AP,,Stellen,AP
+,,,,,,,,,
+Professoren,,2,2,,,,,,
+Wiss. MA,,11,9,,,,,,
+Assistierende,,8,6,,,,,,
+Administration/Technik,,3,2,,,,,,
+sonstige,,2,2,,,,,,
+BSc,,0,0,,,,,,
+MSc,,2,2,,,,,,
+ohne Anspruch,,5,0,,,,,,
+,,,,,,,,,
+,,,,,,,,,
+Summe,,33,23,0,0,0,0,0,0
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DaSCH Ist Stellen 2019 (bis inkl. 3/2020),,,,"Quelle SAP 09/2019, Angaben DHLab/DaSCH 12/2019",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,Organisationsstruktur DaSCH intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad %,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,19823,44172,NGK2317,Data and Service Center for the Humanities,Chiquet Vera,,Wissensch. Mitarb.,US / Projektbetreuung,0%,55%,0%,55%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,?,?,NGK2317,Data and Service Center for the Humanities,Gautschy Rita ,,Wissensch. Mitarb.,TU / Schulung,0%,50%,0%,50%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,18983,31589,DGK2821,Data and Service Center for the Humanities,Geer Benjamin Lewis,,PostDoc,RaD / Entwicklung,0%,0%,100%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,18457,25388,DGK2821,Data and Service Center for the Humanities,Kilchenmann André,,PostDoc,RaD / Entwicklung,0%,0%,100%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,12455,45899,GK4805 / NGK2317,Digital Humanities Lab (10%)/ DaSCH(30%)*,Kuster Gabriela ,,Administrativperson,QM / Qualitätssicherung & ES / Sekretariat,10%,30%,0%,40%,JA,1.0,4,10.7,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,21726,47851,DGK3011,Data and Service Center for the Humanities (SUID),Laurens Flavie,,Wissensch. Mitarb.,RaD / Entwicklung,0%,100%,0%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,?,?,NGK2317,Data and Service Center for the Humanities,Nemmour Kathum ,,?,RaD / Entwicklung,0%,40%,0%,40%,NEIN,0.7,?,5.3,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,20375,2525,GK4805,Digital Humanities Lab,Rosenthaler Lukas,,Associate Professor,MD / Geschäftliche Leitung,50%,0%,0%,50%,JA,1,2,18,Einzelbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,18237,12713,NGK2317,Data and Service Center for the Humanities,Schweizer Tobias,,Wissensch. Mitarb.,RaD / Entwicklung,0%,80%,0%,80%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,15553,49131,NGK2317,Data and Service Center for the Humanities,Stöckli Lukas,,Hilfsassistent/in,Ops / Betrieb,0%,50%,0%,50%,JA,1,0,0,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,17825,8490,DGK2821,Data and Service Center for the Humanities,Subotic Ivan,,PostDoc,DoT / Technische Leitung,0%,0%,100%,100%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,12,21357,45669,DGK2821,Data and Service Center for the Humanities**,Tissaveerasingham Vijeinath,,Wissensch. Mitarb.,US / Projektbetreuung,0%,0%,20%,20%,JA,1.0,6,2.7,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,20728,41647,NGK2317,Data and Service Center for the Humanities,Zbinden Erwin,,Wissensch. Mitarb.,DoF / Administrative Leitung,0%,50%,0%,50%,JA,1,6,8,Mehrplatzbüro,Dekanat Phil. Historische Fakultät,Digital Humanities Lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,835%,,13,,101,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,"*Derzeit total 80%: 30% für DaSCH direkt und 50% für DHLab admin, wovon 10%  für DaSCH-Admin anfällt. Beides am gleichen Arbeitsplatz",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,"** Derzeit Total 100%: 20% für DaSCH direkt, 80% für ein SNF-Projekt mit DaSCH-Bezug. Beides am gleichen Arbeitsplatz",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DaSCH Soll Stellen 2020,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,Organisationsstruktur DaSCH intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad %,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,?,?,?,?,Alassi Sepideh,,Doktorierende/r,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,?,?,?,?,Chiquet Vera,,Wissensch. Mitarb.,US / Projektbetreuung,55%,0%,0%,55%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,?,?,?,?,Delez Michael ,,?,RaD / Entwicklung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,?,?,?,?,Gautschy Rita ,,Wissensch. Mitarb.,TU / Schulung,50%,0%,0%,50%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,?,?,?,?,Geer Benjamin Lewis,,PostDoc,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,?,?,?,?,Kilchenmann André,,PostDoc,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,?,?,?,?,Kuster Gabriela ,,Administrativperson,QM / Qualitätssicherung & ES / Sekretariat,50%,0%,0%,50%,JA,1,4,13.3,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,?,?,?,?,Laurens Flavie,,Wissensch. Mitarb.,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,?,?,?,?,Nemmour Kathum ,,?,RaD / Entwicklung,50%,0%,0%,50%,JA,0.8,?,6.7,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,?,?,?,?,Rosenthaler Lukas,,Associate Professor,MD / Geschäftliche Leitung,50%,0%,0%,50%,JA,1,6,18,Einzelbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,?,?,?,?,Schweizer Tobias,,Wissensch. Mitarb.,RaD / Entwicklung,90%,0%,0%,90%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,12,?,?,?,?,Stöckli Lukas,,Hilfsassistent/in,Ops / Betrieb,70%,0%,0%,70%,JA,1,0,0,-,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,?,?,?,?,Subotic Daniela ,,?,US / Projektbetreuung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,14,?,?,?,?,Subotic Ivan,,PostDoc,DoT / Technische Leitung,100%,0%,0%,100%,JA,1,6,8,Einzelbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,15,?,?,?,?,Tissaveerasingham Vijeinath,,Wissensch. Mitarb.,US / Projektbetreuung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,?,?,?,?,Peter Fornaro,,Wissensch. Mitarb.,DoF / Administrative Leitung,50%,0%,0%,50%,JA,1,6,8,Einzelbürop,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,17,?,?,?,?,NN 1,,Administrativperson,ES / Sekretariat,20%,0%,0%,20%,NEIN,0.3,4,2.7,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,1285%,,16,,137,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,DaSCH Soll Stellen 2021-2024,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,, <,,,,,,,,,,,,,,,Personen,,,,,,,,,,,,,>, <,,,,,,,,Räume IST,,,,,,,>, <,,,,,Räume SOLL,,>,
+,Index,Planstelle,Person-Vertrag,Kostenstelle                CO-Objekt,,"Personenname
+(Name, Vorname)",Personalkategorie ,Personalkategorie SAP,Organisationsstruktur DaSCH intern,"Finanzierung 
+Uni","Finanzierung  
+SNF","Finanzierung 
+Drittmittel",Beschäftigungsgrad %,persönlicher Arbeitsplatz,Arbeitsplatzanspruch,Funktionskategorie (FIM),Bürofläche m2,Raumtyp,"Übergeordnete
+Organisationseinheit ","Untergeordnete 
+Organisationseinheit",Forschungsgruppe (deutsch),Abkürzungt  (deu.),Forschungsgruppe (englisch),Abkürzungt  (engl.),OE Ergänzung 2,Vorgänger,Austritt,Ausschreibung,Nachfolger,Antritt,"Arbeitsplatz 1
+ Gebäude",Arbeitsplatz 1 Raumnummer,"Arbeitsplatz 1
+ Fläche IST","Arbeitsplatz 1
+ Fläche KORRIGIERT","Arbeitsplatz 1
+AP-Nr. WSW",Maximal-Belegung,Belegungsgrad,"Arbeitsplatz 2
+ Gebäude",Arbeitsplatz 2 Raumnummer,"Arbeitsplatz  2  
+Fläche","Arbeitsplatz 2  
+AP-Nr. WSW","Labor 
+Gebäude","Labor 
+Raumnummer","Labor 
+Fläche","Gewächshaus
+Ort","Infrastruktur
+Art (soweit erf.)","Arbeitsplatz 1 SOLL
+ Gebäude",Arbeitsplatz 1 SOLL Raumnummer,"Arbeitsplatz 1 SOLL
+Fläche ","Labor SOLL 
+Gebäude","Labor SOLL 
+Raumnummer","Labor SOLL 
+Fläche","Infrastruktur SOLL
+Art (soweit erf.)","Infrastruktur SOLL
+Ort",Bemerkungen
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,1,?,?,?,?,Alassi Sepideh,,Doktorierende/r,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,2,?,?,?,?,Chiquet Vera,,Wissensch. Mitarb.,US / Projektbetreuung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,3,?,?,?,?,Delez Michael ,,?,RaD / Entwicklung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,4,?,?,?,?,Gautschy Rita ,,Wissensch. Mitarb.,TU / Schulung,50%,0%,0%,50%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,5,?,?,?,?,Geer Benjamin Lewis,,PostDoc,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,6,?,?,?,?,Kilchenmann André,,PostDoc,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,7,?,?,?,?,Kuster Gabriela ,,Administrativperson,QM / Qualitätssicherung & ES / Sekretariat,70%,0%,0%,70%,JA,1,4,16,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,8,?,?,?,?,Laurens Flavie,,Wissensch. Mitarb.,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,9,?,?,?,?,Nemmour Kathum ,,?,RaD / Entwicklung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,10,?,?,?,?,Rosenthaler Lukas,,Associate Professor,MD / Geschäftliche Leitung,50%,0%,0%,50%,JA,1,6,18,Einzelbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,11,?,?,?,?,Schweizer Tobias,,Wissensch. Mitarb.,RaD / Entwicklung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,12,?,?,?,?,Stöckli Lukas,,Hilfsassistent/in,Ops / Betrieb,100%,0%,0%,100%,JA,1,0,0,-,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,13,?,?,?,?,Subotic Daniela ,,?,US / Projektbetreuung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,14,?,?,?,?,Subotic Ivan,,PostDoc,DoT / Technische Leitung,100%,0%,0%,100%,JA,1,6,8,Einzelbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,15,?,?,?,?,Tissaveerasingham Vijeinath,,Wissensch. Mitarb.,US / Projektbetreuung,100%,0%,0%,100%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,16,?,?,?,?,Fornaro Peter,,Wissensch. Mitarb.,DoF / Administrative Leitung,100%,0%,0%,100%,JA,1,6,8,Einzelbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,17,?,?,?,?,NN 1,,Administrativperson,ES / Sekretariat,80%,0%,0%,80%,JA,1,4,16,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,18,?,?,?,?,NN 2,,?,RaD / Entwicklung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,19,?,?,?,?,NN 3,,?,Ops / Betrieb,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,20,?,?,?,?,NN 4,,?,Ops / Betrieb,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,21,?,?,?,?,NN 5,,Wissensch. Mitarb.,TU / Schulung,50%,0%,0%,50%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,22,?,?,?,?,NN 6,,Wissensch. Mitarb.,QM / Qualitätssicherung,50%,0%,0%,50%,JA,1,6,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,23,?,?,?,?,NN 7 (Eric Sommerhalder) ,,?,US / Projektbetreuung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,24,?,?,?,?,NN 8,,?,US / Projektbetreuung,100%,0%,0%,100%,JA,1,?,8,Mehrplatzbüro,?,?,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,NN 9,,Administrativperson,Dariah Geschäftsstelle Schweiz (bekannt seit 9.12.2019),0%,0%,60%,60%,JA,1,?,8,Mehrplatzbüro,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,1470%,,25,,218,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+
+,,,,

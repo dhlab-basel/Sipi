@@ -20,6 +20,47 @@
 
 require "send_response"
 
+result = {}
+
+-- Check mimetypes of files
+
+local test_files = {
+    {
+        filename = 'big.pdf',
+        expected_mimetype = "application/pdf"
+    },
+    {
+        filename = 'test.csv',
+        expected_mimetype = "text/plain"
+    }
+}
+
+for i, fileitem in ipairs(test_files) do
+    local success, mimetype = server.file_mimetype(config.imgroot .. "/unit/" .. fileitem.filename)
+    if not success then
+        send_error(400, "Couldn't get mimetype: " .. mimetype)
+        return -1
+    end
+
+    if mimetype.mimetype ~= fileitem.expected_mimetype then
+        send_error(400, "File has '" .. mimetype.mimetype .. "', but expected '" .. fileitem.expected_mimetype .. "'!")
+        return -1
+    end
+    table.insert(result, { {filename = fileitem.filename, mimetype = mimetype}, "OK" })
+end
+
+for i, fileitem in ipairs(test_files) do
+    local tmpname = config.imgroot .. "/unit/" .. fileitem.filename
+    local success, is_ok = server.file_mimeconsistency(tmpname, fileitem.expected_mimetype, fileitem.filename)
+    if not success then
+        send_error(400, "Couldn't get mimetype consistency: " .. is_ok)
+        return -1
+    end
+
+    table.insert(result, { {filename = fileitem.filename, is_ok = (is_ok and "OK" or "NOT OK")}, "OK" })
+end
+
+
 success, mimeinfo = server.file_mimetype(config.imgroot .. '/unit/' .. 'lena512.tif')
 if not success then
     server.send_error(500, mimetype)

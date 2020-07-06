@@ -25,6 +25,7 @@ import os
 import os.path
 import time
 import datetime
+import sys
 
 # Tests basic functionality of the Sipi server.
 
@@ -88,7 +89,8 @@ class TestServer:
         """return 401 Unauthorized if the user does not have permission to see the image"""
         manager.expect_status_code("/knora/DenyLeaves.jpg/full/max/0/default.jpg", 401)
 
-    def test_read_write(selfself, manager):
+
+    def test_read_write(self, manager):
         """read an image file, convert it to JPEG2000 and write it"""
 
         expected_result = {
@@ -99,6 +101,73 @@ class TestServer:
         response_json = manager.get_json("/read_write_lua")
 
         assert response_json == expected_result
+
+    def test_jpg_with_comment(selfself, manager):
+        """process an uploaded jpeg file with comment block properly"""
+
+        expected_result = {
+            "width": 373,
+            "height": 496,
+            "internalMimeType": "image/jpx",
+            "originalMimeType": "image/jpeg",
+            "originalFilename": "HasCommentBlock.JPG"
+        }
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/HasCommentBlock.JPG"), "image/jpeg")
+        filename = response_json["filename"]
+        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+        assert response_json == expected_result
+
+
+    def test_mimeconsistency(self, manager):
+        """upload any file and check mimetype consistency"""
+
+        testdata = [
+            {
+                "filepath": "knora/Leaves.jpg",
+                "mimetype": "image/jpeg",
+                "expected_result": {
+                    "consistency": True,
+                    "origname": "Leaves.jpg"
+                }
+            },
+            {
+                "filepath": "knora/Leaves8NotJpeg.jpg",
+                "mimetype": "image/jpeg",
+                "expected_result": {
+                    "consistency": False,
+                    "origname": "Leaves8NotJpeg.jpg"
+                }
+            },
+            {
+                "filepath": "knora/csv_test.csv",
+                "mimetype": "text/comma-separated-values",
+                "expected_result": {
+                    "consistency": True,
+                    "origname": "csv_test.csv"
+                }
+            },
+            {
+                "filepath": "knora/hello.resource.xml",
+                "mimetype": "application/xml",
+                "expected_result": {
+                    "consistency": True,
+                    "origname": "hello.resource.xml"
+                }
+            },
+            {
+                "filepath": "knora/hello.resource.xml",
+                "mimetype": "text/xml",
+                "expected_result": {
+                    "consistency": True,
+                    "origname": "hello.resource.xml"
+                }
+            }
+        ]
+
+        for test in testdata:
+            response_json = manager.post_file("/api/mimetest", manager.data_dir_path(test["filepath"]), test["mimetype"])
+            assert response_json == test["expected_result"]
+
 
     def test_thumbnail(self, manager):
         """accept a POST request to create a thumbnail with Content-Type: multipart/form-data"""
@@ -140,21 +209,52 @@ class TestServer:
     def test_knora_info_validation(self, manager):
         """pass the knora.json request tests"""
 
-        expected_result = {
-            "width": 512,
-            "height": 512,
-            "originalFilename": "lena512.tif",
-            "originalMimeType": "image/tiff",
-            "internalMimeType": "image/jpx"
-        }
+        testdata = [
+            {
+                "filepath": "unit/lena512.tif",
+                "mimetype": "image/tiff",
+                "expected_result": {
+                    "width": 512,
+                    "height": 512,
+                    "originalFilename": "lena512.tif",
+                    "originalMimeType": "image/tiff",
+                    "internalMimeType": "image/jpx"
+                }
+            },{
+                "filepath": "unit/test.csv",
+                "mimetype": "text/plain",
+                "expected_result": {
+                    "mimeType": "text/plain",
+                    "fileSize": 39697
+                }
+            }
+        ]
 
-        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
-        filename = response_json["filename"]
-        manager.expect_status_code("/unit/{}/full/max/0/default.jpg".format(filename), 200)
+        for test in testdata:
+            response_json = manager.post_file("/api/upload", manager.data_dir_path(test["filepath"]), test["mimetype"])
+            filename = response_json["filename"]
+            if test["mimetype"] == "image/tiff":
+                manager.expect_status_code("/unit/{}/full/max/0/default.jpg".format(filename), 200)
+            else:
+                manager.expect_status_code("/unit/{}".format(filename), 200)
+            response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+            assert response_json == test["expected_result"]
 
-        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+        #expected_result = {
+        #    "width": 512,
+        #    "height": 512,
+        #    "originalFilename": "lena512.tif",
+        #    "originalMimeType": "image/tiff",
+        #    "internalMimeType": "image/jpx"
+        #}
 
-        assert response_json == expected_result
+        #response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/lena512.tif"), "image/tiff")
+        #filename = response_json["filename"]
+        #manager.expect_status_code("/unit/{}/full/max/0/default.jpg".format(filename), 200)
+
+        #response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+
+        #assert response_json == expected_result
 
     def test_json_info_validation(self, manager):
         """pass the info.json request tests"""
@@ -205,10 +305,18 @@ class TestServer:
         expected_result["id"] = "http://127.0.0.1:1024/unit/{}".format(filename)
         assert response_json == expected_result
 
+        #response_json = manager.get_json("/unit/{}/info.json".format(filename), use_ssl=True)
+        #expected_result["id"] = "https://127.0.0.1:1024/unit/{}".format(filename)
+        #assert response_json == expected_result
+
+
     def test_sqlite_api(self, manager):
         """Test sqlite API"""
         expected_result = {
-            "result": "Dies ist ein erster Text"
+            "result": {
+                "512": "Dies ist ein erster Text",
+                "1024": "Un der zweite Streich folgt sogleich"
+            }
         }
         json_result = manager.get_json("/sqlite")
         assert json_result == expected_result
