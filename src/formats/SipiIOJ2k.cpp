@@ -605,13 +605,13 @@ namespace Sipi {
         if ((size != nullptr) && (!redonly)) {
             switch (scaling_quality.jk2) {
                 case HIGH: img->scale(nnx, nny);
-                    std::cerr << "===>HIGH SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
+                    //std::cerr << "===>HIGH SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
                     break;
                 case MEDIUM: img->scaleMedium(nnx, nny);
-                    std::cerr << "===>MEDIUM SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
+                    //std::cerr << "===>MEDIUM SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
                     break;
                 case LOW: img->scaleFast(nnx, nny);
-                    std::cerr << "===>FAST SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
+                    //std::cerr << "===>FAST SCALING to nnx=" << nnx << " nny=" << nny << std::endl;
                     break;
             }
 
