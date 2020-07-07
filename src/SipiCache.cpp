@@ -289,6 +289,14 @@ namespace Sipi {
             for (const auto &ele : alist) {
                 syslog(LOG_DEBUG, "Purging from cache \"%s\"...", cachetable[ele.canonical].cachepath.c_str());
                 std::string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
+
+                {
+                    std::lock_guard<std::mutex> file_locking_guard(filelock);
+                    std::unordered_set<std::string>::const_iterator got = blocked_files.find (delpath);
+                    if (got != blocked_files.end()) continue; // file is currently being checked for being in cache
+
+                }
+
                 ::remove(delpath.c_str());
                 cachesize -= cachetable[ele.canonical].fsize;
                 --nfiles;
@@ -338,10 +346,21 @@ namespace Sipi {
         if (tcompare(mtime, fr.mtime) > 0) { // original file is newer than cache, we have to replace it..
             return res; // return empty string, means "replace the file in the cache!"
         } else {
-            return _cachedir + "/" + fr.cachepath;
+            std::lock_guard<std::mutex> file_locking_guard(filelock);
+            std::string res = _cachedir + "/" + fr.cachepath;
+            blocked_files.insert(res);
+            return res;
         }
     }
     //============================================================================
+
+    void SipiCache::deblock(const std::string &filename) {
+        std::lock_guard<std::mutex> file_locking_guard(filelock);
+        std::unordered_set<std::string>::const_iterator got = blocked_files.find (filename);
+        if (got != blocked_files.end()) {
+            blocked_files.erase(filename);
+        }
+    }
 
     /*!
      * Creates a new cache file with a unique name.
