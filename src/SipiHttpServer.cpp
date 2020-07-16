@@ -959,7 +959,7 @@ namespace Sipi {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
 
-            syslog(LOG_DEBUG, "GET %s: file %s", uri.c_str(), infile.c_str());
+            syslog(LOG_DEBUG, "---GET %s: file: %s", uri.c_str(), infile.c_str());
 
             if (access(infile.c_str(), R_OK) == 0) {
                 std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
@@ -1422,7 +1422,10 @@ namespace Sipi {
 
         if (cache != nullptr) {
             syslog(LOG_DEBUG, "Cache found, testing for canonical %s", canonical.c_str());
-            std::string cachefile = cache->check(infile, canonical);
+            //!>
+            //!> here we check if the file is in the cache. If so, it's being blocked from deletion
+            //!>
+            std::string cachefile = cache->check(infile, canonical, true); // we block the file from being deleted if successfull
 
             if (!cachefile.empty()) {
                 syslog(LOG_DEBUG, "Using cachefile %s", cachefile.c_str());
@@ -1462,18 +1465,23 @@ namespace Sipi {
 
                 try {
                     syslog(LOG_DEBUG, "Sending cachefile %s", cachefile.c_str());
+                    //!> send the file from cache
                     conn_obj.sendFile(cachefile);
+                    //!> from now on the cache file can be deleted again
                 } catch (shttps::InputFailure err) {
                     // -1 was thrown
                     syslog(LOG_WARNING, "Browser unexpectedly closed connection");
+                    cache->deblock(cachefile);
                     return;
                 } catch (Sipi::SipiError &err) {
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                    cache->deblock(cachefile);
                     return;
                 }
-
+                cache->deblock(cachefile);
                 return;
             }
+            cache->deblock(cachefile);
         }
 
         syslog(LOG_WARNING, "Nothing found in cache, reading and transforming file...");
@@ -1542,13 +1550,17 @@ namespace Sipi {
         conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
         std::string cachefile;
 
-        if (cache != nullptr) {
-            cachefile = cache->getNewCacheFileName();
-            syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
-        }
-
         try {
-            bool cache_open = false;
+            if (cache != nullptr) {
+                try {
+                    //!> open the cache file to write into.
+                    cachefile = cache->getNewCacheFileName();
+                    conn_obj.openCacheFile(cachefile);
+                    syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
+                } catch (const shttps::Error &err) {
+                    // ToDo: react to it....
+                }
+            }
             switch (quality_format.format()) {
                 case SipiQualityFormat::JPG: {
                     conn_obj.status(Connection::OK);
@@ -1563,27 +1575,10 @@ namespace Sipi {
                     img.convertToIcc(icc, 8);
                     conn_obj.setChunkedTransfer();
 
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                        cache_open = true;
-                    }
-
                     syslog(LOG_DEBUG, "Before writing JPG...");
 
                     Sipi::SipiCompressionParams qp = {{JPEG_QUALITY, std::to_string(serv->jpeg_quality())}};
-                    try {
-                        img.write("jpg", "HTTP", &qp);
-                    } catch (SipiImageError &err) {
-                        syslog(LOG_ERR, "%s", err.to_string().c_str());
-
-                        if (cache != nullptr) {
-                            conn_obj.closeCacheFile();
-                            cache_open = false;
-                            unlink(cachefile.c_str());
-                        }
-
-                        break;
-                    }
+                    img.write("jpg", "HTTP", &qp);
                     syslog(LOG_DEBUG, "After writing JPG...");
                     break;
                 }
@@ -1594,24 +1589,8 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
 
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                        cache_open = true;
-                    }
-
                     syslog(LOG_DEBUG, "Before writing J2K...");
-
-                    try {
-                        img.write("jpx", "HTTP");
-                    } catch (SipiImageError &err) {
-                        syslog(LOG_ERR, "%s", err.to_string().c_str());
-
-                        if (cache != nullptr) {
-                            conn_obj.closeCacheFile();
-                            cache_open = false;
-                            unlink(cachefile.c_str());
-                        }
-                    }
+                    img.write("jpx", "HTTP");
                     syslog(LOG_DEBUG, "After writing J2K...");
                     break;
                 }
@@ -1622,25 +1601,8 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
 
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                        cache_open = true;
-                    }
-
                     syslog(LOG_DEBUG, "Before writing TIF...");
-
-                    try {
-                        img.write("tif", "HTTP");
-                    } catch (SipiImageError &err) {
-                        syslog(LOG_ERR, "%s", err.to_string().c_str());
-
-                        if (cache != nullptr) {
-                            conn_obj.closeCacheFile();
-                            cache_open = false;
-                            unlink(cachefile.c_str());
-                        }
-                        break;
-                    }
+                    img.write("tif", "HTTP");
                     syslog(LOG_DEBUG, "After writing TIF...");
                     break;
                 }
@@ -1651,25 +1613,8 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
 
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                        cache_open = true;
-                    }
-
                     syslog(LOG_DEBUG, "Before writing PNG...");
-
-                    try {
-                        img.write("png", "HTTP");
-                    } catch (SipiImageError &err) {
-                        syslog(LOG_ERR, "%s", err.to_string().c_str());
-
-                        if (cache != nullptr) {
-                            conn_obj.closeCacheFile();
-                            cache_open = false;
-                            unlink(cachefile.c_str());
-                        }
-                        break;
-                    }
+                    img.write("png", "HTTP");
                     syslog(LOG_DEBUG, "After writing PNG...");
                     break;
                 }
@@ -1680,23 +1625,8 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
 
-                    if (cache != nullptr) {
-                        conn_obj.openCacheFile(cachefile);
-                        cache_open = true;
-                    }
                     syslog(LOG_DEBUG, "Before writing PDF...");
-                    try {
-                        img.write("pdf", "HTTP");
-                    } catch (SipiImageError &err) {
-                        syslog(LOG_ERR, "%s", err.to_string().c_str());
-
-                        if (cache != nullptr) {
-                            conn_obj.closeCacheFile();
-                            cache_open = false;
-                            unlink(cachefile.c_str());
-                        }
-                        break;
-                    }
+                    img.write("pdf", "HTTP");
                     syslog(LOG_DEBUG, "After writing PDF...");
                    break;
                 }
@@ -1713,19 +1643,26 @@ namespace Sipi {
                 }
             }
 
-            if (cache_open) {
+            if (conn_obj.isCacheFileOpen()) {
                 conn_obj.closeCacheFile();
                 syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
+                //!>
+                //!> ATTENTION!!! Here we change the list of available cache files
+                //!>
                 cache->add(infile, canonical, cachefile, img_w, img_h, tile_w, tile_h, clevels, numpages);
             }
 
         } catch (Sipi::SipiError &err) {
+            if (cache != nullptr) {
+                conn_obj.closeCacheFile();
+                unlink(cachefile.c_str());
+            }
             send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
             return;
         }
 
         conn_obj.flush();
-        syslog(LOG_INFO, "GET %s: file %s", uri.c_str(), infile.c_str());
+        syslog(LOG_INFO, "+++GET %s: file: %s", uri.c_str(), infile.c_str());
         return;
     }
     //=========================================================================
@@ -1783,7 +1720,7 @@ namespace Sipi {
     //=========================================================================
 
     void SipiHttpServer::run(void) {
-
+        syslog(LOG_DEBUG, "In SipiHttpServer::run");
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Sipi server starting");
         //

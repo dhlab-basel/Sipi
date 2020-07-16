@@ -1137,6 +1137,7 @@ int main(int argc, char *argv[]) {
                 server.addRoute(shttps::Connection::GET, "/test", TestHandler, &server);
             }
 
+            syslog(LOG_DEBUG, "Starting SipiHttpServer::run()");
             server.run();
         } catch (shttps::Error &err) {
             std::cerr << err << std::endl;

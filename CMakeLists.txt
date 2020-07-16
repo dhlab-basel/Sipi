@@ -381,9 +381,14 @@ add_executable(sipi
         shttps/LuaServer.cpp shttps/LuaServer.h
         shttps/LuaSqlite.cpp shttps/LuaSqlite.h
         shttps/Parsing.cpp shttps/Parsing.h
+        shttps/ThreadControl.cpp shttps/ThreadControl.h
+        shttps/SocketControl.cpp shttps/SocketControl.h
         shttps/Server.cpp shttps/Server.h
         shttps/jwt.c shttps/jwt.h
-        shttps/makeunique.h src/SipiFilenameHash.cpp include/SipiFilenameHash.h src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp)
+        shttps/makeunique.h
+        src/SipiFilenameHash.cpp include/SipiFilenameHash.h
+        src/formats/SipiIOPdf.cpp include/formats/SipiIOPdf.h
+        include/iiifparser/SipiIdentifier.h src/iiifparser/SipiIdentifier.cpp )
 
 add_dependencies(sipi
         icc_profiles)
@@ -461,12 +466,12 @@ enable_testing()
 # custom target to only run 'e2e' tests
 add_custom_target(e2e
         DEPENDS sipi
-        COMMAND pytest --sipi-exec=${CMAKE_BINARY_DIR}/sipi
+        COMMAND pytest -s --sipi-exec=${CMAKE_BINARY_DIR}/sipi
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e)
 
 # enables running of 'e2e' tests when `make test` is executed
 add_test(NAME all_python_based_e2e_tests
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/e2e
-        COMMAND pytest --sipi-exec=$<TARGET_FILE:sipi>)
+        COMMAND pytest -s --sipi-exec=$<TARGET_FILE:sipi>)
 
 add_subdirectory(test/unit)

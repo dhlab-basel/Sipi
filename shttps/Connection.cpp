@@ -296,9 +296,8 @@ namespace shttps {
 
                 if (name == "connection") {
                     unordered_map<string, string> opts = parse_header_options(value, true);
-                    if (opts.count("keep-alive") == 1) {
-                        _keep_alive = true;
-                    }
+                    _keep_alive = true;
+                    //_keep_alive = opts.count("keep-alive") == 1;
                     _keep_alive = opts.count("close") != 1;
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
@@ -1179,9 +1178,11 @@ namespace shttps {
     //=============================================================================
 
     void Connection::closeCacheFile(void) {
-        cachefile->close();
-        delete cachefile;
-        cachefile = nullptr;
+        if (cachefile != nullptr) {
+            cachefile->close();
+            delete cachefile;
+            cachefile = nullptr;
+        }
     }
     //=============================================================================
 
@@ -1261,7 +1262,7 @@ namespace shttps {
             //
             // we have no buffer, so an immediate action is required
             //
-            if (!header_sent) { // we have not yet sent a header -> to it
+            if (!header_sent) { // we have not yet sent a header -> do it
                 if (_chunked_transfer_out) {
                     //
                     // chunked transfer -> send header and chunk
@@ -1278,7 +1279,7 @@ namespace shttps {
                     if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 } else {
                     //
-                    // nomal (unchunked) transfer -> send header with length of data and then send the data
+                    // normal (unchunked) transfer -> send header with length of data and then send the data
                     //
                     send_header(n); // sends content length if not buffer nor chunked
                     os->write((char *) buffer, n);
@@ -1374,6 +1375,7 @@ namespace shttps {
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
+                outbuf_nbytes = 0;
             } else {
                 //
                 // we don't use a buffer (or the buffer is empty) -> send the data immediatly
@@ -1386,7 +1388,6 @@ namespace shttps {
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
-                outbuf_nbytes = 0;
             }
 
             os->flush();

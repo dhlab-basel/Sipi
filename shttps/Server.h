@@ -29,6 +29,7 @@
 
 #include <map>
 #include <vector>
+#include <queue>
 #include <mutex>
 #include <csignal>
 
@@ -38,6 +39,7 @@
 #include <pthread.h> //for threading , link with lpthread
 #include <semaphore.h>
 #include <syslog.h>
+#include <poll.h>
 
 #include <atomic>
 #include <netdb.h>      // Needed for the socket functions
@@ -57,6 +59,9 @@
 
 #include "Connection.h"
 #include "LuaServer.h"
+
+#include "ThreadControl.h"
+#include "SocketControl.h"
 
 
 #include "lua.hpp"
@@ -79,6 +84,11 @@ namespace shttps {
     typedef enum {
         CONTINUE, CLOSE
     } ThreadStatus;
+
+
+
+
+
 
 
     /*!
@@ -130,17 +140,6 @@ namespace shttps {
             void *func_dataptr;
         } GlobalFunc;
 
-        /*!
-         * Struct to hold the information about threads and open sockets, used for proper shutdown
-         */
-        typedef struct {
-            int sid;    //!< socket id
-#           ifdef SHTTPS_ENABLE_SSL
-            SSL *ssl_sid; //!< Pointer to SLL socket struct
-#           endif
-            int commpipe_write; //!< socket id of pipe connecting main thread
-        } GenericSockId;
-
 #       ifdef SHTTPS_ENABLE_SSL
 
         /*!
@@ -150,10 +149,10 @@ namespace shttps {
         protected:
             SSL *cSSL;
         public:
-            inline SSLError(const char *file, const int line, const char *msg, SSL *cSSL_p = nullptr) : Error(file,
-                                                                                                              line,
-                                                                                                              msg),
-                                                                                                        cSSL(cSSL_p) {};
+            inline SSLError(const char *file,
+                            const int line,
+                            const char *msg,
+                            SSL *cSSL_p = nullptr) : Error(file, line, msg), cSSL(cSSL_p) {};
 
             inline SSLError(const char *file, const int line, const std::string &msg, SSL *cSSL_p = nullptr) : Error(
                     file, line, msg), cSSL(cSSL_p) {};
@@ -216,13 +215,11 @@ namespace shttps {
 #       endif
 
         int stoppipe[2];
+
         std::string _tmpdir; //!< path to directory, where uplaods are being stored
         std::string _scriptdir; //!< Path to directory, where scripts for the "Lua"-routes are found
         unsigned _nthreads; //!< maximum number of parallel threads for processing requests
-        std::string semname; //!< name of the semaphore for restricting the number of threads
-        sem_t *_semaphore; //!< semaphore
-        std::atomic<int> _semcnt; //!< current value of semaphore (sem_getvalue() is not available on all systems)
-        std::map<pthread_t, GenericSockId> thread_ids; //!< Map of active worker threads
+        std::map<pthread_t, SocketControl::SocketInfo> thread_ids; //!< Map of active worker threads
         int _keep_alive_timeout;
         bool running; //!< Main runloop should keep on going
         std::map<std::string, RequestHandler> handler[9]; // request handlers for the different 9 request methods
@@ -234,6 +231,8 @@ namespace shttps {
         size_t _max_post_size;
 
         RequestHandler getHandler(Connection &conn, void **handler_data_p);
+
+        SocketControl::SocketInfo accept_connection(int sock, bool ssl = false);
 
         std::string _logfilename;
         std::string _loglevel;
@@ -247,29 +246,6 @@ namespace shttps {
         */
         Server(int port_p, unsigned nthreads_p = 4, const std::string userid_str = "",
                const std::string &logfile_p = "shttps.log", const std::string &loglevel_p = "DEBUG");
-
-        /*!
-        * Decrease the semaphore, wait if semaphore would be smaller than zero
-        */
-        inline void semaphore_wait() {
-            _semcnt--;
-            ::sem_wait(_semaphore);
-        }
-
-        /*!
-        * Increase the semaphore
-        */
-        inline void semaphore_leave() {
-            _semcnt++;
-            ::sem_post(_semaphore);
-        }
-
-        /*!
-        * Get the semaphore value
-        */
-        inline int semaphore_get() {
-            return _semcnt;
-        }
 
         inline int port(void) { return _port; }
 
@@ -412,17 +388,6 @@ namespace shttps {
         virtual void run();
 
         /*!
-         * Stop the server gracefully (all destructors are called etc.) and the
-         * cache file is updated. This function is asynchronous-safe, so it may be called
-         * from within a signal handler.
-         */
-        inline void stop(void) {
-            // POSIX declares write() to be asynchronous-safe.
-            // See https://www.securecoding.cert.org/confluence/display/c/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
-            write(stoppipe[1], "@", 1);
-        }
-
-        /*!
          * Set the default value for the keep alive timout. This is the time in seconds
          * a HTTP connection (socket) remains up without action before being closed by
          * the server. A keep-alive header will change this value
@@ -436,18 +401,12 @@ namespace shttps {
          */
         inline int keep_alive_timeout(void) { return _keep_alive_timeout; }
 
-        /*!
-         * Return the internal semaphore structure
-         *
-         * \returns The semaphore controlling the maximal number of threads
-         */
-        inline sem_t *semaphore(void) { return _semaphore; }
-
+        /*
         void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id);
 
 #       ifdef SHTTPS_ENABLE_SSL
 
-        void add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL);
+        void thread_push(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL);
 
 #       endif
 
@@ -462,7 +421,7 @@ namespace shttps {
 #       endif
 
         void remove_thread(pthread_t thread_id_p);
-
+*/
         /*!
          * Sets the path to the initialization script (lua script) which is executed for each request
          *
@@ -519,7 +478,7 @@ namespace shttps {
          */
         ThreadStatus
         processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure,
-                       int &keep_alive);
+                       int &keep_alive, bool socket_reuse = false);
 
         /*!
         * Return the user data that has been added previously
@@ -533,7 +492,23 @@ namespace shttps {
         */
         inline void user_data(void *user_data_p) { _user_data = user_data_p; }
 
-        void debugmsg(const std::string &msg);
+        static void debugmsg(const int line, const std::string &msg);
+
+        /*!
+         * Stop the server gracefully (all destructors are called etc.) and the
+         * cache file is updated. This function is asynchronous-safe, so it may be called
+         * from within a signal handler.
+         */
+        inline void stop(void) {
+            // POSIX declares write() to be asynchronous-safe.
+            // See https://www.securecoding.cert.org/confluence/display/c/SIG30-C.+Call+only+asynchronous-safe+functions+within+signal+handlers
+            SocketControl::SocketInfo sockid(SocketControl::EXIT, SocketControl::STOP_SOCKET);
+            SocketControl::send_control_message(stoppipe[1], sockid);
+
+            debugmsg(__LINE__, "Sent stop message to stoppipe[1]=" + std::to_string(stoppipe[1]));
+        }
+
+
     };
 
 }

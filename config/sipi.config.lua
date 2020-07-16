@@ -132,14 +132,14 @@ sipi = {
     -- The cache will be purged if either the maximal size or maximal number
     -- of files is reached
     --
-    cachesize = '200M',
+    cachesize = '20M',
 
     --
     -- maximal number of files to be cached
     -- The cache will be purged if either the maximal size or maximal number
     -- of files is reached
     --
-    cache_nfiles = 250,
+    cache_nfiles = 8,
 
     --
     -- if the cache becomes full, the given percentage of file space is marked for reuse
@@ -192,6 +192,7 @@ sipi = {
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
     loglevel = "DEBUG",
+    --loglevel = "ERROR",
 
     --
     -- The maximum allowed age of temporary files (in seconds) before they are deleted. Defaults to one day.

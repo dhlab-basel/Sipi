@@ -26,6 +26,7 @@
 
 #include <ctime>
 #include <unordered_map>
+#include <unordered_set>
 #include <mutex>
 #include <string>
 #include <sys/time.h>
@@ -110,6 +111,7 @@ namespace Sipi {
 #endif
         } SizeRecord;
 
+
         /*!
          * This is the prototype function to used as parameter for the method SipiCache::loop
          * which is applied to all cached files.
@@ -122,6 +124,7 @@ namespace Sipi {
         std::string _cachedir; //!< path to the cache directory
         std::unordered_map<std::string, CacheRecord> cachetable; //!< Internal map of all cached files
         std::unordered_map<std::string, SizeRecord> sizetable; //!< Internal map of original file paths and image size
+        std::unordered_map<std::string, int> blocked_files;
         unsigned long long cachesize; //!< number of bytes in the cache
         unsigned long long max_cachesize; //!< maximum number of bytes that can be cached
         unsigned nfiles; //!< number of files in cache
@@ -187,7 +190,10 @@ namespace Sipi {
          * \returns Returns an empty string if the file is not in the cache or if the file needs to be replaced.
          *          Otherwise returns tha path to the cached file.
          */
-        std::string check(const std::string &origpath_p, const std::string &canonical_p);
+        std::string check(const std::string &origpath_p, const std::string &canonical_p, bool block_file = false);
+
+        void deblock(std::string res);
+
 
         /*!
          * Creates a new cache file with a unique name.
