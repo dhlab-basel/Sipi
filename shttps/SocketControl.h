@@ -95,13 +95,19 @@ namespace shttps {
 
         };
 
+        struct socket_info_hash {
+            size_t operator()(SocketInfo const &sockid) const noexcept {
+                return (sockid.sid);
+            }
+        };
 
 
     private:
         std::mutex sockets_mutex; //!> protecting mutex
         std::vector<pollfd> open_sockets; //!> open sockets waiting for reading
-        std::vector<SocketInfo> generic_open_sockets;//!> open socket-info's waiting for readinng
+        std::vector<SocketInfo> generic_open_sockets;//!> open socket-info's waiting for reading
         std::queue<SocketInfo> waiting_sockets; //!> Sockets that have input and are waiting for the thread
+        //std::unordered_set<SocketInfo, socket_info_hash> working_sockets; //!> Socket's that are currently working
         int n_msg_sockets; //!> Number of sockets communicating with the threads
         int stop_sock_id; //!> Index of the stopsocket (the thread that catches signals sens to this socket)
         int http_sock_id; //!> Index of the HTTP socckel
@@ -144,6 +150,8 @@ namespace shttps {
 
         int get_dyn_socket_base() { return dyn_socket_base; }
 
+        int size() { return generic_open_sockets.size(); }
+
         const pollfd &operator[](int index);
 
         void remove(int pos, SocketInfo &sockid);
@@ -166,6 +174,8 @@ namespace shttps {
         static SocketInfo receive_control_message(int pipe_id);
 
         void broadcast_exit();
+
+        void close_all_dynsocks(int (*closefunc)(const SocketInfo&));
 
     };
 

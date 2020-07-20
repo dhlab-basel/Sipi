@@ -437,7 +437,6 @@ namespace Sipi {
         std::stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w_p=" << w_p << " h_p=" << h_p << " reduce=" << reduce_p
            << " reduce only=" << redonly;
-        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         canonical_ok = true;
 

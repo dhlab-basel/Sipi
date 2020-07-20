@@ -784,7 +784,6 @@ namespace shttps {
 
                         std::istream ins(sockstream.get());
                         std::ostream os(sockstream.get());
-
                         //
                         // let's process the current request
                         //
@@ -803,7 +802,6 @@ namespace shttps {
                         tstatus = tdata->serv->processRequest(&ins, &os, tmpstr, msg.peer_port,
                                                               false, keep_alive);
 #endif
-
                         //
                         // send the finished message
                         //
@@ -1014,11 +1012,13 @@ namespace shttps {
             // blocking poll on input sockets waiting for *new* connections
             //
             pollfd *sockets = socket_control.get_sockets_arr();
-            if (poll(sockets, socket_control.get_sockets_size(), poll_timeout) < 0) {
+            int nsocks;
+            if ((nsocks = poll(sockets, socket_control.get_sockets_size(), poll_timeout)) < 0) {
                 syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: %m", __file__, __LINE__);
                 running = false;
                 break;
             }
+
             for (int i = 0; i < socket_control.get_sockets_size(); i++) {
                 if (sockets[i].revents) {
                     if (sockets[i].revents & POLLIN) {
@@ -1063,6 +1063,7 @@ namespace shttps {
                                 case SocketControl::FINISHED_AND_CLOSE: {
                                     //
                                     // A thread finished and expects the socket to be closed
+                                    //
                                     close_socket(msg); // close the socket
                                     //
                                     // see if we have sockets waiting for a thread.If yes, we reuse this thread directly
@@ -1127,6 +1128,7 @@ namespace shttps {
                             socket_control.remove(socket_control.get_ssl_socket_id(), sockid); // remove the SSL socket
 #endif
                             //poll_timeout = 3000; // limit timeout for poll
+                            socket_control.close_all_dynsocks(close_socket);
                             socket_control.broadcast_exit(); // broadcast EXIT to all worker threads
                             running = false;
                         } else if (i == socket_control.get_http_socket_id()) {
@@ -1241,7 +1243,6 @@ namespace shttps {
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
         if (ins->eof() || os->eof()) return CLOSE;
-
         try {
             Connection conn(this, ins, os, _tmpdir);
 

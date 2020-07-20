@@ -1623,6 +1623,8 @@ namespace shttps {
             os->flush(); // last (empty) chunk
             if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
+        *os << "\r\n";
+        os->flush();
         _finished = true;
     }
     //=============================================================================

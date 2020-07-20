@@ -637,7 +637,6 @@ namespace Sipi {
         //TODO and all the other CJSON obj?
         json_decref(root);
 
-        syslog(LOG_INFO, "info.json created from: %s", access["infile"].c_str());
     }
     //=========================================================================
 
@@ -732,7 +731,6 @@ namespace Sipi {
             // TODO: and all the other CJSON obj?
             json_decref(root);
         }
-        syslog(LOG_INFO, "knora.json created from: %s", infile.c_str());
     }
     //=========================================================================
 
@@ -790,7 +788,6 @@ namespace Sipi {
                     (void) snprintf(canonical_rotation, canonical_len, "%1.1f", angle);
                 }
             }
-            syslog(LOG_DEBUG, "Rotation (canonical): %s", canonical_rotation);
         } else {
             (void) snprintf(canonical_rotation, canonical_len, "0");
         }
@@ -959,11 +956,8 @@ namespace Sipi {
                 infile = serv->imgroot() + "/" + identifier.filepath();
             }
 
-            syslog(LOG_DEBUG, "---GET %s: file: %s", uri.c_str(), infile.c_str());
-
             if (access(infile.c_str(), R_OK) == 0) {
                 std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
-                syslog(LOG_DEBUG, "MIMETYPE= %s: file %s", actual_mimetype.c_str(), infile.c_str());
                 if ((actual_mimetype == "image/tiff") ||
                     (actual_mimetype == "image/jpeg") ||
                     (actual_mimetype == "image/png") ||
@@ -1103,10 +1097,7 @@ namespace Sipi {
 
         try {
             region = std::make_shared<SipiRegion>(params[iiif_region]);
-            std::stringstream ss;
-            ss << *region;
-            syslog(LOG_DEBUG, "%s", ss.str().c_str());
-        } catch (Sipi::SipiError &err) {
+         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
         }
@@ -1119,9 +1110,6 @@ namespace Sipi {
 
         try {
             size = std::make_shared<SipiSize>(params[iiif_size]);
-            std::stringstream ss;
-            ss << *size;
-            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
@@ -1134,9 +1122,6 @@ namespace Sipi {
 
         try {
             rotation = SipiRotation(params[iiif_rotation]);
-            std::stringstream ss;
-            ss << rotation;
-            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
@@ -1145,9 +1130,6 @@ namespace Sipi {
         SipiQualityFormat quality_format;
         try {
             quality_format = SipiQualityFormat(params[iiif_qualityformat]);
-            std::stringstream ss;
-            ss << quality_format;
-            syslog(LOG_DEBUG, "%s", ss.str().c_str());
         } catch (Sipi::SipiError &err) {
             send_error(conn_obj, Connection::BAD_REQUEST, err);
             return;
@@ -1248,7 +1230,6 @@ namespace Sipi {
         SipiQualityFormat::FormatType in_format = SipiQualityFormat::UNSUPPORTED;
 
         std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
-        syslog(LOG_DEBUG, "MIMETYPE= %s: file %s", actual_mimetype.c_str(), infile.c_str());
 
         if (actual_mimetype == "image/tiff") in_format = SipiQualityFormat::TIF;
         if (actual_mimetype == "image/jpeg") in_format = SipiQualityFormat::JPG;
@@ -1363,7 +1344,6 @@ namespace Sipi {
             (!mirror) && watermark.empty() && (quality_format.format() == in_format) &&
             (quality_format.quality() == SipiQualityFormat::DEFAULT) && (sid.getPage() < 1)) {
 
-            syslog(LOG_DEBUG, "Sending unmodified file....");
             conn_obj.status(Connection::OK);
             conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
             conn_obj.header("Link", canonical_header);
@@ -1399,7 +1379,6 @@ namespace Sipi {
             }
 
             try {
-                syslog(LOG_INFO, "Sending file %s", infile.c_str());
                 conn_obj.sendFile(infile);
             } catch (shttps::InputFailure iofail) {
                 // -1 was thrown
@@ -1418,10 +1397,8 @@ namespace Sipi {
             send_error(conn_obj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported");
         }
         */
-        syslog(LOG_DEBUG, "Checking for cache...");
 
         if (cache != nullptr) {
-            syslog(LOG_DEBUG, "Cache found, testing for canonical %s", canonical.c_str());
             //!>
             //!> here we check if the file is in the cache. If so, it's being blocked from deletion
             //!>
@@ -1464,7 +1441,6 @@ namespace Sipi {
                 }
 
                 try {
-                    syslog(LOG_DEBUG, "Sending cachefile %s", cachefile.c_str());
                     //!> send the file from cache
                     conn_obj.sendFile(cachefile);
                     //!> from now on the cache file can be deleted again
@@ -1484,7 +1460,6 @@ namespace Sipi {
             cache->deblock(cachefile);
         }
 
-        syslog(LOG_WARNING, "Nothing found in cache, reading and transforming file...");
         Sipi::SipiImage img;
 
         try {
@@ -1556,7 +1531,6 @@ namespace Sipi {
                     //!> open the cache file to write into.
                     cachefile = cache->getNewCacheFileName();
                     conn_obj.openCacheFile(cachefile);
-                    syslog(LOG_INFO, "Writing new cache file %s", cachefile.c_str());
                 } catch (const shttps::Error &err) {
                     // ToDo: react to it....
                 }
@@ -1574,12 +1548,8 @@ namespace Sipi {
                     Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
                     img.convertToIcc(icc, 8);
                     conn_obj.setChunkedTransfer();
-
-                    syslog(LOG_DEBUG, "Before writing JPG...");
-
                     Sipi::SipiCompressionParams qp = {{JPEG_QUALITY, std::to_string(serv->jpeg_quality())}};
                     img.write("jpg", "HTTP", &qp);
-                    syslog(LOG_DEBUG, "After writing JPG...");
                     break;
                 }
 
@@ -1588,10 +1558,7 @@ namespace Sipi {
                     conn_obj.header("Link", canonical_header);
                     conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
-
-                    syslog(LOG_DEBUG, "Before writing J2K...");
                     img.write("jpx", "HTTP");
-                    syslog(LOG_DEBUG, "After writing J2K...");
                     break;
                 }
 
@@ -1601,9 +1568,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
                     // no chunked transfer needed...
 
-                    syslog(LOG_DEBUG, "Before writing TIF...");
                     img.write("tif", "HTTP");
-                    syslog(LOG_DEBUG, "After writing TIF...");
                     break;
                 }
 
@@ -1613,9 +1578,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
 
-                    syslog(LOG_DEBUG, "Before writing PNG...");
                     img.write("png", "HTTP");
-                    syslog(LOG_DEBUG, "After writing PNG...");
                     break;
                 }
 
@@ -1625,9 +1588,7 @@ namespace Sipi {
                     conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
                     conn_obj.setChunkedTransfer();
 
-                    syslog(LOG_DEBUG, "Before writing PDF...");
                     img.write("pdf", "HTTP");
-                    syslog(LOG_DEBUG, "After writing PDF...");
                    break;
                 }
 
@@ -1645,7 +1606,6 @@ namespace Sipi {
 
             if (conn_obj.isCacheFileOpen()) {
                 conn_obj.closeCacheFile();
-                syslog(LOG_DEBUG, "Adding cachefile %s to internal list", cachefile.c_str());
                 //!>
                 //!> ATTENTION!!! Here we change the list of available cache files
                 //!>
@@ -1662,7 +1622,6 @@ namespace Sipi {
         }
 
         conn_obj.flush();
-        syslog(LOG_INFO, "+++GET %s: file: %s", uri.c_str(), infile.c_str());
         return;
     }
     //=========================================================================
@@ -1720,7 +1679,6 @@ namespace Sipi {
     //=========================================================================
 
     void SipiHttpServer::run(void) {
-        syslog(LOG_DEBUG, "In SipiHttpServer::run");
         int old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Sipi server starting");
         //

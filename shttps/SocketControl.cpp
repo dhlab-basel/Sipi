@@ -143,4 +143,12 @@ namespace shttps {
             ::send(generic_open_sockets[i].sid, &msg, sizeof(SocketInfo), 0);
         }
     }
+
+    void SocketControl::close_all_dynsocks(int (*closefunc)(const SocketInfo&)) {
+        std::unique_lock<std::mutex> mutex_guard(sockets_mutex);
+        for (int i = dyn_socket_base; i < generic_open_sockets.size(); i++) {
+            (void) closefunc(generic_open_sockets[i]);
+            generic_open_sockets.erase(generic_open_sockets.begin() + i);
+        }
+    }
 }
