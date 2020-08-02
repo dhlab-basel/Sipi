@@ -941,7 +941,6 @@ namespace shttps {
      * Run the shttps server
      */
     void Server::run() {
-        int poll_timeout = -1;
         syslog(LOG_DEBUG, "In Server::run");
         // Start a thread just to catch signals sent to the server process.
         pthread_t sighandler_thread;
@@ -1013,7 +1012,7 @@ namespace shttps {
             //
             pollfd *sockets = socket_control.get_sockets_arr();
             int nsocks;
-            if ((nsocks = poll(sockets, socket_control.get_sockets_size(), poll_timeout)) < 0) {
+            if ((nsocks = poll(sockets, socket_control.get_sockets_size(), -1)) < 0) {
                 syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: %m", __file__, __LINE__);
                 running = false;
                 break;
@@ -1127,7 +1126,6 @@ namespace shttps {
 #ifdef SHTTPS_ENABLE_SSL
                             socket_control.remove(socket_control.get_ssl_socket_id(), sockid); // remove the SSL socket
 #endif
-                            //poll_timeout = 3000; // limit timeout for poll
                             socket_control.close_all_dynsocks(close_socket);
                             socket_control.broadcast_exit(); // broadcast EXIT to all worker threads
                             running = false;

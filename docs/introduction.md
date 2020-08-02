@@ -5,7 +5,7 @@ SIPI has a threefold usage:
 - it can act as a standard [IIIF](https://iiif.io) server
     - implementing the IIIF Image API V3 level2
     - implementing the IIIF Authentication API
-    - implementing an extension to provaide access to multiple page PDF's using the IIIF URL syntax
+    - implementing an extension to provide access to multiple page PDF's using the IIIF URL syntax
 - implementing a simple web server
     - serving HTML and other files
     - providing embeded [LUA](https://www.lua.org) scripting
