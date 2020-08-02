@@ -1405,13 +1405,13 @@ namespace shttps {
         // test if we have access to the file
         //
         if (access(path.c_str(), R_OK) != 0) { // test, if file exists
-            throw Error(__file__, __LINE__, "File not readable!");
+            throw Error(__file__, __LINE__, "File not readable:" + path);
         }
 
         struct stat fstatbuf;
 
         if (stat(path.c_str(), &fstatbuf) != 0) {
-            throw Error(__file__, __LINE__, "Cannot fstat file!");
+            throw Error(__file__, __LINE__, "Cannot fstat file: " + path);
         }
 
         size_t fsize = fstatbuf.st_size;
@@ -1420,7 +1420,7 @@ namespace shttps {
         FILE *infile = fopen(path.c_str(), "rb");
 
         if (infile == nullptr) {
-            throw Error(__file__, __LINE__, "File not readable!");
+            throw Error(__file__, __LINE__, "File not readable: " + path);
         }
 
         if (from > 0) {

@@ -72,6 +72,7 @@ namespace Sipi {
      */
     static const std::string pre_flight_func_name = "pre_flight";
 
+
     typedef enum {
         iiif_prefix = 0,            //!< http://{url}/*{prefix}*/{id}/{region}/{size}/{rotation}/{quality}.{format}
         iiif_identifier = 1,        //!< http://{url}/{prefix}/*{id}*/{region}/{size}/{rotation}/{quality}.{format}
@@ -80,6 +81,7 @@ namespace Sipi {
         iiif_rotation = 4,          //!< http://{url}/{prefix}/{id}/{region}/{size}/*{rotation}*/{quality}.{format}
         iiif_qualityformat = 5,     //!< http://{url}/{prefix}/{id}/{region}/{size}/{rotation}/*{quality}.{format}*
     } IiifParams;
+
 
     /*!
      * Sends an HTTP error response to the client, and logs the error if appropriate.
@@ -169,6 +171,18 @@ namespace Sipi {
      * \param err an exception describing the error.
      */
     static void send_error(Connection &conn_obj, Connection::StatusCodes code, const SipiError &err) {
+        send_error(conn_obj, code, err.to_string());
+    }
+    //=========================================================================
+
+    /*!
+     * Sends an HTTP error response to the client, and logs the error if appropriate.
+     *
+     * \param conn_obj the server connection.
+     * \param code the HTTP status code to be returned.
+     * \param err an exception describing the error.
+     */
+    static void send_error(Connection &conn_obj, Connection::StatusCodes code, const Error &err) {
         send_error(conn_obj, code, err.to_string());
     }
     //=========================================================================
@@ -334,13 +348,14 @@ namespace Sipi {
         std::string infile;
 
         SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
+        std::cerr << "************>" << params[iiif_identifier] << std::endl;
         std::unordered_map<std::string, std::string> pre_flight_info;
         if (luaserver.luaFunctionExists(pre_flight_func_name)) {
-
             pre_flight_info = call_pre_flight(conn_obj, luaserver, urldecode(params[iiif_prefix]), sid.getIdentifier()); // may throw SipiError
 
             infile = pre_flight_info["infile"];
 
+/*
             //
             // here we adjust the path for the subdirs
             //
@@ -359,32 +374,19 @@ namespace Sipi {
                         std::string dirpart = infile.substr(0, ppos);
                         std::string filepart = infile.substr(ppos + 1);
                         SipiFilenameHash identifier = SipiFilenameHash(filepart);
-                        infile = dirpart + "/" + identifier.filepath();
+                        infile = dirpart + "/" + urldecode(identifier.filepath()); // !!!!!!!!!!!!!!!!!!!
                     }
                 }
             }
+*/
         } else {
-            SipiFilenameHash identifier = SipiFilenameHash(sid.getIdentifier());
             if (prefix_as_path) {
-                bool use_subdirs = true;
-                for (auto str: serv->dirs_to_exclude()) {
-                    if (str == urldecode(params[iiif_prefix])) {
-                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
-                    }
-                }
-                if (use_subdirs) {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                             identifier.filepath();
-                }
-                else {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                            sid.getIdentifier();
-                }
+                infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" + sid.getIdentifier();
             } else {
-                infile = serv->imgroot() + "/" + identifier.filepath();
+                infile = serv->imgroot() + "/" + urldecode(sid.getIdentifier());
             }
             pre_flight_info["type"] = "allow";
-       }
+        }
         //
         // test if we have access to the file
         //
@@ -406,7 +408,6 @@ namespace Sipi {
         //
         // here we start the lua script which checks for permissions
         //
-
         std::unordered_map<std::string,std::string> access;
         try {
             access = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
@@ -416,25 +417,57 @@ namespace Sipi {
             return;
         }
 
+        std::string actual_mimetype = shttps::Parsing::getFileMimetype(access["infile"]).first;
+
+        bool is_image_file = ((actual_mimetype == "image/tiff") ||
+                              (actual_mimetype == "image/jpeg") ||
+                              (actual_mimetype == "image/png") ||
+                              (actual_mimetype == "image/jpx") ||
+                              (actual_mimetype == "image/jp2") ||
+                              (actual_mimetype == "application/pdf"));
+
+        json_t *root = json_object();
         SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
         int pagenum = sid.getPage();
 
-
-        json_t *root = json_object();
-        json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/3/context.json"));
+        if (is_image_file) {
+            json_object_set_new(root, "@context", json_string("http://iiif.io/api/image/3/context.json"));
+        } else {
+            json_object_set_new(root, "@context", json_string("http://sipi.io/api/file/3/context.json"));
+        }
 
         std::string host = conn_obj.header("host");
         std::string id;
-        if (conn_obj.secure()) {
-            id = std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
-        }
-        else {
-            id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+        if (params[iiif_prefix] == "") {
+            if (conn_obj.secure()) {
+                id = std::string("https://") + host + "/"  + params[iiif_identifier];
+            }
+            else {
+                id = std::string("http://") + host + "/"  + params[iiif_identifier];
+            }
+        } else {
+            if (conn_obj.secure()) {
+                id = std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+            }
+            else {
+                id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+            }
         }
         json_object_set_new(root, "id", json_string(id.c_str()));
-        json_object_set_new(root, "type", json_string("ImageService3"));
-        json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
-        json_object_set_new(root, "profile", json_string("level2"));
+
+        if (is_image_file) {
+            json_object_set_new(root, "type", json_string("ImageService3"));
+            json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
+            json_object_set_new(root, "profile", json_string("level2"));
+        } else {
+            json_object_set_new(root, "mimeType", json_string(actual_mimetype.c_str()));
+
+            struct stat fstatbuf;
+            if (stat(access["infile"].c_str(), &fstatbuf) != 0) {
+                throw Error(__file__, __LINE__, "Cannot fstat file!");
+            }
+            json_object_set_new(root, "fileSize", json_integer(fstatbuf.st_size));
+        }
 
         //
         // IIIF Authentication API stuff
@@ -494,149 +527,148 @@ namespace Sipi {
             http_status = Connection::StatusCodes::UNAUTHORIZED;
         }
 
-        size_t width, height;
-        size_t t_width, t_height;
-        int clevels;
-        int numpages = 0;
+        if (is_image_file) {
+            size_t width, height;
+            size_t t_width, t_height;
+            int clevels;
+            int numpages = 0;
 
-        //
-        // get cache info
-        //
-        std::shared_ptr<SipiCache> cache = serv->cache();
-
-        if ((cache == nullptr) || !cache->getSize(access["infile"], width, height, t_width, t_height, clevels, pagenum)) {
-            Sipi::SipiImage tmpimg;
-            Sipi::SipiImgInfo info;
-            try {
-                info = tmpimg.getDim(access["infile"], pagenum);
+            //
+            // get cache info
+            //
+            std::shared_ptr<SipiCache> cache = serv->cache();
+            if ((cache == nullptr) || !cache->getSize(access["infile"], width, height, t_width, t_height, clevels, pagenum)) {
+                Sipi::SipiImage tmpimg;
+                Sipi::SipiImgInfo info;
+                try {
+                    info = tmpimg.getDim(access["infile"], pagenum);
+                }
+                catch (SipiImageError &err) {
+                    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                    return;
+                }
+                if (info.success == SipiImgInfo::FAILURE) {
+                    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
+                    return;
+                }
+                width = info.width;
+                height = info.height;
+                t_width = info.tile_width;
+                t_height = info.tile_height;
+                clevels = info.clevels;
+                numpages = info.numpages;
             }
-            catch (SipiImageError &err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
-                return;
+
+            //
+            // basic info
+            //
+            json_object_set_new(root, "width", json_integer(width));
+            json_object_set_new(root, "height", json_integer(height));
+            if (numpages > 0) {
+                json_object_set_new(root, "numpages", json_integer(numpages));
             }
-            if (info.success == SipiImgInfo::FAILURE) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
-                return;
-            }
-            width = info.width;
-            height = info.height;
-            t_width = info.tile_width;
-            t_height = info.tile_height;
-            clevels = info.clevels;
-            numpages = info.numpages;
-        }
 
-        //
-        // basic info
-        //
-        json_object_set_new(root, "width", json_integer(width));
-        json_object_set_new(root, "height", json_integer(height));
-        if (numpages > 0) {
-            json_object_set_new(root, "numpages", json_integer(numpages));
-        }
-
-        json_t *sizes = json_array();
-        const int cnt = clevels > 0 ? clevels : 5;
-        for (int i = 1; i < cnt; i++) {
-            SipiSize size(i);
-            size_t w, h;
-            int r;
-            bool ro;
-            size.get_size(width, height, w, h, r, ro);
-            if ((w < 128) && (h < 128)) break;
-            json_t *sobj = json_object();
-            json_object_set_new(sobj, "width", json_integer(w));
-            json_object_set_new(sobj, "height", json_integer(h));
-            json_array_append_new(sizes, sobj);
-        }
-        json_object_set_new(root, "sizes", sizes);
-
-        if (t_width > 0 && t_height > 0) {
-            json_t *tiles = json_array();
-            json_t *tileobj = json_object();
-            json_object_set_new(tileobj, "width", json_integer(t_width));
-            json_object_set_new(tileobj, "height", json_integer(t_height));
-            json_t *scaleFactors = json_array();
+            json_t *sizes = json_array();
+            const int cnt = clevels > 0 ? clevels : 5;
             for (int i = 1; i < cnt; i++) {
-                json_array_append_new(scaleFactors, json_integer(i));
+                SipiSize size(i);
+                size_t w, h;
+                int r;
+                bool ro;
+                size.get_size(width, height, w, h, r, ro);
+                if ((w < 128) && (h < 128)) break;
+                json_t *sobj = json_object();
+                json_object_set_new(sobj, "width", json_integer(w));
+                json_object_set_new(sobj, "height", json_integer(h));
+                json_array_append_new(sizes, sobj);
             }
-            json_object_set_new(tileobj, "scaleFactors", scaleFactors);
-            json_array_append_new(tiles, tileobj);
-            json_object_set_new(root, "tiles", tiles);
+            json_object_set_new(root, "sizes", sizes);
+
+            if (t_width > 0 && t_height > 0) {
+                json_t *tiles = json_array();
+                json_t *tileobj = json_object();
+                json_object_set_new(tileobj, "width", json_integer(t_width));
+                json_object_set_new(tileobj, "height", json_integer(t_height));
+                json_t *scaleFactors = json_array();
+                for (int i = 1; i < cnt; i++) {
+                    json_array_append_new(scaleFactors, json_integer(i));
+                }
+                json_object_set_new(tileobj, "scaleFactors", scaleFactors);
+                json_array_append_new(tiles, tileobj);
+                json_object_set_new(root, "tiles", tiles);
+            }
+
+            const char *extra_formats_str[] = {"tif", "pdf", "jp2"};
+            json_t *extra_formats = json_array();
+            for (unsigned int i = 0; i < sizeof(extra_formats_str) / sizeof(char *); i++) {
+                json_array_append_new(extra_formats, json_string(extra_formats_str[i]));
+            }
+            json_object_set_new(root, "extraFormats", extra_formats);
+
+            json_t *prefformats = json_array(); // ToDo: should be settable from LUA preflight (get info from DB)
+            json_array_append_new(prefformats, json_string("jpg"));
+            json_array_append_new(prefformats, json_string("tif"));
+            json_array_append_new(prefformats, json_string("jp2"));
+            json_array_append_new(prefformats, json_string("png"));
+            json_object_set_new(root, "preferredFormats", prefformats);
+
+            //
+            // extra features
+            //
+            const char *extraFeaturesList[] = {
+                    "baseUriRedirect",
+                    "canonicalLinkHeader",
+                    "cors",
+                    "jsonldMediaType",
+                    "mirroring",
+                    "profileLinkHeader",
+                    "regionByPct",
+                    "regionByPx",
+                    "regionSquare",
+                    "rotationArbitrary",
+                    "rotationBy90s",
+                    "sizeByConfinedWh",
+                    "sizeByH",
+                    "sizeByPct",
+                    "sizeByW",
+                    "sizeByWh",
+                    "sizeUpscaling"
+            };
+            json_t *extraFeatures = json_array();
+            for (unsigned int i = 0; i < sizeof(extraFeaturesList) / sizeof(char *); i++) {
+                json_array_append_new(extraFeatures, json_string(extraFeaturesList[i]));
+            }
+
+            json_object_set_new(root, "extraFeatures", extraFeatures);
+
         }
-
-        const char *extra_formats_str[] = {"tif", "pdf", "jp2"};
-        json_t *extra_formats = json_array();
-        for (unsigned int i = 0; i < sizeof(extra_formats_str) / sizeof(char *); i++) {
-            json_array_append_new(extra_formats, json_string(extra_formats_str[i]));
-        }
-        json_object_set_new(root, "extraFormats", extra_formats);
-
-        json_t *prefformats = json_array(); // ToDo: should be settable from LUA preflight (get info from DB)
-        json_array_append_new(prefformats, json_string("jpg"));
-        json_array_append_new(prefformats, json_string("tif"));
-        json_array_append_new(prefformats, json_string("jp2"));
-        json_array_append_new(prefformats, json_string("png"));
-        json_object_set_new(root, "preferredFormats", prefformats);
-
-/*
-        const char *extra_qualities_str[] = {"bitonal"};
-        json_t *qualities = json_array();
-        for (unsigned int i = 0; i < sizeof(qualities_str) / sizeof(char *); i++) {
-            json_array_append_new(qualities, json_string(qualities_str[i]));
-        }
-        json_object_set_new(root, "extraQualities", qualities);
-*/
-
-
-        //
-        // extra features
-        //
-        const char *extraFeaturesList[] = {
-                "baseUriRedirect",
-                "canonicalLinkHeader",
-                "cors",
-                "jsonldMediaType",
-                "mirroring",
-                "profileLinkHeader",
-                "regionByPct",
-                "regionByPx",
-                "regionSquare",
-                "rotationArbitrary",
-                "rotationBy90s",
-                "sizeByConfinedWh",
-                "sizeByH",
-                "sizeByPct",
-                "sizeByW",
-                "sizeByWh",
-                "sizeUpscaling"
-        };
-        json_t *extraFeatures = json_array();
-        for (unsigned int i = 0; i < sizeof(extraFeaturesList) / sizeof(char *); i++) {
-            json_array_append_new(extraFeatures, json_string(extraFeaturesList[i]));
-        }
-
-        json_object_set_new(root, "extraFeatures", extraFeatures);
-        char *json_str = json_dumps(root, JSON_INDENT(3));
-
         conn_obj.status(http_status);
         conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
         conn_obj.header("Access-Control-Allow-Origin", "*");
         const std::string contenttype = conn_obj.header("accept");
-        if (!contenttype.empty() && (contenttype == "application/ld+json")) {
-            conn_obj.header("Content-Type", "application/ld+json;profile=\"http://iiif.io/api/image/3/context.json\"");
+        if (is_image_file) {
+            if (!contenttype.empty() && (contenttype == "application/ld+json")) {
+                conn_obj.header("Content-Type", "application/ld+json;profile=\"http://iiif.io/api/image/3/context.json\"");
+            } else {
+                conn_obj.header("Content-Type", "application/json");
+                conn_obj.header("Link",
+                                "<http://iiif.io/api/image/3/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+            }
         } else {
-            conn_obj.header("Content-Type", "application/json");
-            conn_obj.header("Link",
-                            "<http://iiif.io/api/image/2/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+            if (!contenttype.empty() && (contenttype == "application/ld+json")) {
+                conn_obj.header("Content-Type", "application/ld+json;profile=\"http://sipi.io/api/file/3/context.json\"");
+            } else {
+                conn_obj.header("Content-Type", "application/json");
+                conn_obj.header("Link",
+                                "<http://sipi.io/api/file/3/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+            }
         }
 
+        char *json_str = json_dumps(root, JSON_INDENT(3));
         conn_obj.sendAndFlush(json_str, strlen(json_str));
         free(json_str);
-
-        //TODO and all the other CJSON obj?
         json_decref(root);
-
+        return;
     }
     //=========================================================================
 
@@ -891,11 +923,13 @@ namespace Sipi {
             void *dummy) {
         SipiHttpServer *serv = (SipiHttpServer *) user_data;
 
+        enum {SERVE_IIIF, SERVE_INFO, SERVE_REDIRECT, SERVE_FILE, SERVE_ERROR} service = SERVE_ERROR;
+
         bool prefix_as_path = serv->prefix_as_path();
 
-        std::string uri = conn_obj.uri();
+        std::string uri = conn_obj.uri(); // Has form "/pre/fix/es.../BAU_1_000441077_2_1.j2k/full/,1000/0/default.jpg"
 
-        std::vector<std::string> params;
+        std::vector<std::string> parts;
         size_t pos = 0;
         size_t old_pos = 0;
 
@@ -913,47 +947,678 @@ namespace Sipi {
                 continue;
             }
 
-            params.push_back(uri.substr(old_pos, pos - old_pos - 1));
+            parts.push_back(uri.substr(old_pos, pos - old_pos - 1));
             old_pos = pos;
         }
 
         if (old_pos != uri.length()) {
-            params.push_back(uri.substr(old_pos, std::string::npos));
+            parts.push_back(uri.substr(old_pos, std::string::npos));
         }
 
-        if (params.size() < 1) {
+        if (parts.size() < 1) {
             send_error(conn_obj, Connection::BAD_REQUEST, "No parameters/path given");
             return;
         }
 
-        params.push_back(uri.substr(old_pos, std::string::npos));
+        for (const auto p: parts) {
+            std::cerr << "---------------->" << p << std::endl;
+        }
+
+        std::vector<std::string> params;
+        if ((pos = parts[parts.size() - 1].find('.', 0)) != std::string::npos) {
+            //
+            // we will serve IIIF syntax based image
+            //
+            std::string fname_body = parts[parts.size() - 1].substr(0, pos);
+            std::string fname_extension = parts[parts.size() - 1].substr(pos + 1, std::string::npos);
+            if ((fname_body == "color") || (fname_body == "gray") || (fname_body == "bitonal") || (fname_body == "default")) {
+                if (parts.size() >= 6) { // we have a prefix
+                    std::stringstream prefix;
+                    for (int i = 0; i < (parts.size() - 5); i++) {
+                        if (i > 0) prefix << "/";
+                        prefix << parts[i];
+                    }
+                    params.push_back(prefix.str()); // iiif_prefix
+                } else if (parts.size() == 5) { // we have no prefix
+                    params.push_back(""); // iiif_prefix
+                } else {
+                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    return;
+                }
+                params.push_back(parts[parts.size() - 5]); // iiif_identifier
+                params.push_back(parts[parts.size() - 4]); // iiif_region
+                params.push_back(parts[parts.size() - 3]); // iiif_size
+                params.push_back(parts[parts.size() - 2]); // iiif_rotation
+                params.push_back(parts[parts.size() - 1]); // iiif_qualityformat
+                service = SERVE_IIIF;
+            } else if ((fname_body == "info") && (fname_extension == "json")) {
+                std::cerr << "******************* info.json" << std::endl;
+                //
+                // we have something like "http:://{server}/{prefix}/{id}/info.json
+                //
+                if (parts.size() >= 3) { // we have a prefix
+                    std::stringstream prefix;
+                    for (int i = 0; i < (parts.size() - 2); i++) {
+                        if (i > 0) prefix << "/";
+                        prefix << parts[i];
+                    }
+                    params.push_back(prefix.str()); // iiif_prefix
+                } else if (parts.size() == 2) { // we have no prefix
+                    params.push_back(""); // iiif_prefix
+                } else {
+                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    return;
+                }
+                params.push_back(parts[parts.size() - 2]); // iiif_identifier
+                service = SERVE_INFO;
+            } else {
+                //
+                // we have something like "http:://{server}/{prefix}/{id}" with id as "body.ext"
+                //
+                if (parts.size() >= 2) { // we have a prefix
+                    std::stringstream prefix;
+                    for (int i = 0; i < (parts.size() - 1); i++) {
+                        if (i > 0) prefix << "/";
+                        prefix << parts[i];
+                    }
+                    params.push_back(prefix.str()); // iiif_prefix
+                } else if (parts.size() == 1) { // we have no prefix
+                    params.push_back(""); // iiif_prefix
+                } else {
+                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    return;
+                }
+                params.push_back(parts[parts.size() - 1]); // iiif_identifier
+                service = SERVE_REDIRECT;
+            }
+        } else if (parts[parts.size() - 1] == "file") {
+            if (parts.size() >= 3) { // we have a prefix
+                //
+                // we have something like "http:://{server}/{prefix}/{id}/file
+                //
+                std::stringstream prefix;
+                for (int i = 0; i < (parts.size() - 2); i++) {
+                    if (i > 0) prefix << "/";
+                    prefix << parts[i];
+                }
+                params.push_back(prefix.str()); // iiif_prefix
+            } else if (parts.size() == 2) { // we have no prefix
+                //
+                // we have something like "http:://{server}/{id}/file
+                //
+                params.push_back(""); // iiif_prefix
+            } else {
+                send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                return;
+            }
+            params.push_back(parts[parts.size() - 2]); // iiif_identifier
+            service = SERVE_FILE;
+        } else {
+            //
+            // we have something like "http:://{server}/{prefix}/{id}" with id as "body_without_ext"
+            //
+            if (parts.size() >= 2) { // we have a prefix
+                std::stringstream prefix;
+                for (int i = 0; i < (parts.size() - 1); i++) {
+                    if (i > 0) prefix << "/";
+                    prefix << parts[i];
+                }
+                params.push_back(prefix.str()); // iiif_prefix
+            } else if (parts.size() == 1) { // we have no prefix
+                params.push_back(""); // iiif_prefix
+            } else {
+                send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                return;
+            }
+            params.push_back(parts[parts.size() - 1]); // iiif_identifier
+            service = SERVE_INFO;
+        }
+
 
         //
         // if we just get the base URL, we redirect to the image info document and the file is
         // a supported image file format. Otherwise we just serve the file as blob.
         // Note: PDF's are in this context blobs and we serve the whole PDF!
         //
-        if (params.size() == 3) {
-            std::string infile;
+        switch (service) {
+            case SERVE_REDIRECT: {
+                conn_obj.setBuffer();
+                conn_obj.status(Connection::SEE_OTHER);
+                const std::string host = conn_obj.host();
+                std::string redirect;
+                if (conn_obj.secure()) {
+                    redirect =
+                            std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier] +
+                            "/info.json";
+                } else {
+                    redirect =
+                            std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier] +
+                            "/info.json";
+                }
 
-            SipiFilenameHash identifier = SipiFilenameHash(urldecode(params[iiif_identifier]));
-            if (prefix_as_path) {
-                bool use_subdirs = true;
-                for (auto str: serv->dirs_to_exclude()) {
-                    if (str == urldecode(params[iiif_prefix])) {
-                        use_subdirs = false; // prefix is in list which is excluded from using subdirs
+                conn_obj.header("Location", redirect);
+                conn_obj.header("Content-Type", "text/plain");
+                conn_obj << "Redirect to " << redirect;
+                syslog(LOG_INFO, "GET: redirect to %s", redirect.c_str());
+                conn_obj.flush();
+                return;
+            }
+
+            case SERVE_INFO: {
+                iiif_send_info(conn_obj, serv, luaserver, params, prefix_as_path);
+                return;
+            }
+
+            case SERVE_FILE: {
+                std::string infile;
+                if (prefix_as_path && (params[iiif_prefix] != "")) {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                             urldecode(params[iiif_identifier]);
+                } else {
+                    infile = serv->imgroot() + "/" + urldecode(params[iiif_identifier]);
+                }
+                if (access(infile.c_str(), R_OK) == 0) {
+                    std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+                    //
+                    // first we get the filesize and time using fstat
+                    //
+                    struct stat fstatbuf;
+
+                    if (stat(infile.c_str(), &fstatbuf) != 0) {
+                        syslog(LOG_ERR, "Cannot fstat file %s ", infile.c_str());
+                        send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR);
+                    }
+                    size_t fsize = fstatbuf.st_size;
+#ifdef __APPLE__
+                    struct timespec rawtime = fstatbuf.st_mtimespec;
+#else
+                    struct timespec rawtime = fstatbuf.st_mtim;
+#endif
+                    char timebuf[100];
+                    std::strftime(timebuf, sizeof timebuf, "%a, %d %b %Y %H:%M:%S %Z", std::gmtime(&rawtime.tv_sec));
+
+                    std::string range = conn_obj.header("range");
+                    if (range.empty()) {
+                        conn_obj.header("Content-Type", actual_mimetype);
+                        conn_obj.header("Cache-Control", "public, must-revalidate, max-age=0");
+                        conn_obj.header("Pragma", "no-cache");
+                        conn_obj.header("Accept-Ranges", "bytes");
+                        conn_obj.header("Content-Length", std::to_string(fsize));
+                        conn_obj.header("Last-Modified", timebuf);
+                        conn_obj.header("Content-Transfer-Encoding: binary");
+                        conn_obj.sendFile(infile);
+                    }
+                    else {
+                        //
+                        // now we parse the range
+                        //
+                        std::regex re("bytes=\\s*(\\d+)-(\\d*)[\\D.*]?");
+                        std::cmatch m;
+                        int start = 0; // lets assume beginning of file
+                        int end = fsize - 1; // lets assume whole file
+                        if (std::regex_match (range.c_str(), m, re)) {
+                            if (m.size() < 2) {
+                                throw Error(__file__, __LINE__, "Range expression invalid!");
+                            }
+                            start = std::stoi(m[1]);
+                            if ((m.size() > 1) && !m[2].str().empty()) {
+                                end = std::stoi(m[2]);
+                            }
+                        }
+                        else {
+                            throw Error(__file__, __LINE__, "Range expression invalid!");
+                        }
+
+                        conn_obj.status(Connection::PARTIAL_CONTENT);
+                        conn_obj.header("Content-Type", actual_mimetype);
+                        conn_obj.header("Cache-Control", "public, must-revalidate, max-age=0");
+                        conn_obj.header("Pragma", "no-cache");
+                        conn_obj.header("Accept-Ranges", "bytes");
+                        conn_obj.header("Content-Length", std::to_string(end - start + 1));
+                        conn_obj.header("Content-Length", std::to_string(end - start + 1));
+                        std::stringstream ss;
+                        ss << "bytes " << start << "-" << end << "/" << fsize;
+                        conn_obj.header("Content-Range", ss.str());
+                        conn_obj.header("Content-Disposition",  std::string("inline; filename=") + urldecode(params[iiif_identifier]));
+                        conn_obj.header("Content-Transfer-Encoding: binary");
+                        conn_obj.header("Last-Modified", timebuf);
+                        conn_obj.sendFile(infile, 8192, start, end);
+                    }
+                    conn_obj.flush();
+                } else {
+                    syslog(LOG_WARNING, "GET: %s not accessible", infile.c_str());
+                    send_error(conn_obj, Connection::NOT_FOUND);
+                    conn_obj.flush();
+                }
+                return;
+            } // case SERVE_FILE
+
+            case SERVE_IIIF: {
+                //
+                // getting the identifier (which in case of a PDF or multipage TIFF my contain a page id (identifier@pagenum)
+                //
+                SipiIdentifier sid = urldecode(params[iiif_identifier]);
+                //
+                // getting IIIF parameters
+                //
+                auto region = std::make_shared<SipiRegion>();
+                auto size = std::make_shared<SipiSize>();
+                SipiRotation rotation;
+                SipiQualityFormat quality_format;
+                try {
+                    region = std::make_shared<SipiRegion>(params[iiif_region]);
+                    size = std::make_shared<SipiSize>(params[iiif_size]);
+                    rotation = SipiRotation(params[iiif_rotation]);
+                    quality_format = SipiQualityFormat(params[iiif_qualityformat]);
+                } catch (Sipi::SipiError &err) {
+                    send_error(conn_obj, Connection::BAD_REQUEST, err);
+                    return;
+                }
+                //
+                // here we start the lua script which checks for permissions
+                //
+                std::string infile;  // path to the input file on the server
+                std::string watermark; // path to watermark file, or empty, if no watermark required
+                auto restriction_size = std::make_shared<SipiSize>(); // size of restricted image... (SizeType::FULL if unrestricted)
+
+                if (luaserver.luaFunctionExists(pre_flight_func_name)) {
+                    std::unordered_map<std::string, std::string> pre_flight_info;
+                    try {
+                        pre_flight_info = call_pre_flight(conn_obj, luaserver, params[iiif_prefix], sid.getIdentifier());
+                    } catch (SipiError &err) {
+                        send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                        return;
+                    }
+                    infile = pre_flight_info["infile"];
+
+                    if (pre_flight_info["type"] != "allow") {
+                        if (pre_flight_info["type"] == "restrict") {
+                            bool ok = false;
+                            try {
+                                watermark = pre_flight_info.at("watermark");
+                                ok = true;
+                            }
+                            catch(const std::out_of_range &err) {
+                                ; // do nothing, no watermark...
+                            }
+                            try {
+                                std::string tmpstr = pre_flight_info.at("size");
+                                restriction_size = std::make_shared<SipiSize>(tmpstr);
+                                ok = true;
+                            }
+                            catch(const std::out_of_range &err) {
+                                ; // do nothing, no size restriction
+                            }
+                            if (!ok) {
+                                send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
+                                return;
+                            }
+                        } else {
+                            send_error(conn_obj, Connection::UNAUTHORIZED, "Unauthorized access");
+                            return;
+                        }
+                    }
+                } else {
+                    if (prefix_as_path && (params[iiif_prefix] != "")) {
+                        infile = serv->imgroot() + "/" + params[iiif_prefix] + "/" + sid.getIdentifier();
+                    } else {
+                        infile = serv->imgroot() + "/" + sid.getIdentifier();
                     }
                 }
-                if (use_subdirs) {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                             identifier.filepath();
+
+                //
+                // determine the mimetype of the file in the SIPI repo
+                //
+                SipiQualityFormat::FormatType in_format = SipiQualityFormat::UNSUPPORTED;
+
+                std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+                if (actual_mimetype == "image/tiff") in_format = SipiQualityFormat::TIF;
+                if (actual_mimetype == "image/jpeg") in_format = SipiQualityFormat::JPG;
+                if (actual_mimetype == "image/png") in_format = SipiQualityFormat::PNG;
+                if ((actual_mimetype == "image/jpx") || (actual_mimetype == "image/jp2"))
+                    in_format = SipiQualityFormat::JP2;
+                if (actual_mimetype == "application/pdf") in_format = SipiQualityFormat::PDF;
+
+                if (access(infile.c_str(), R_OK) != 0) { // test, if file exists
+                    syslog(LOG_INFO, "File %s not found", infile.c_str());
+                    send_error(conn_obj, Connection::NOT_FOUND);
+                    return;
                 }
-                else {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                            urldecode(params[iiif_identifier]);
+
+                float angle;
+                bool mirror = rotation.get_rotation(angle);
+
+                //
+                // get cache info
+                //
+                std::shared_ptr<SipiCache> cache = serv->cache();
+                size_t img_w = 0, img_h = 0;
+                size_t tile_w = 0, tile_h = 0;
+                int clevels = 0;
+                int numpages = 0;
+                int pagenum = sid.getPage();
+
+                if ((in_format == SipiQualityFormat::PDF) && (pagenum < 1)) {
+                    if (size->getType() != SipiSize::FULL) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have size qualifier of \"max\"");
+                        return;
+                    }
+                    if (region->getType() != SipiRegion::FULL) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have region qualifier of \"full\"");
+                        return;
+                    }
+                    if (angle != 0.0) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have rotation qualifier of \"0\"");
+                        return;
+                    }
+
+                    if ((quality_format.quality() != SipiQualityFormat::DEFAULT) ||
+                        (quality_format.format() != SipiQualityFormat::PDF)) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, "PDF must have quality qualifier of \"default.pdf\"");
+                        return;
+                    }
+                } else {
+                    //
+                    // get image dimensions, needed for get_canonical...
+                    //
+                    if ((cache == nullptr) || !cache->getSize(infile, img_w, img_h, tile_w, tile_h, clevels, numpages)) {
+                        Sipi::SipiImage tmpimg;
+                        Sipi::SipiImgInfo info;
+                        try {
+                            info = tmpimg.getDim(infile, pagenum);
+                        } catch (SipiImageError &err) {
+                            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                            return;
+                        }
+                        if (info.success == SipiImgInfo::FAILURE) {
+                            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Couldn't get image dimensions!");
+                            return;
+                        }
+                        img_w = info.width;
+                        img_h = info.height;
+                        tile_w = info.tile_width;
+                        tile_h = info.tile_height;
+                        clevels = info.clevels;
+                        numpages = info.numpages;
+                    }
+
+                    size_t tmp_r_w, tmp_r_h;
+                    int tmp_red;
+                    bool tmp_ro;
+                    try {
+                        size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+                        restriction_size->get_size(img_w, img_h, tmp_r_w, tmp_r_h, tmp_red, tmp_ro);
+                    } catch(Sipi::SipiSizeError &err) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, err.to_string());
+                        return;
+                    } catch (Sipi::SipiError &err) {
+                        send_error(conn_obj, Connection::BAD_REQUEST, err);
+                        return;
+                    }
+
+                    if (!restriction_size->undefined() && (*size > *restriction_size)) {
+                        size = restriction_size;
+                    }
                 }
+
+                //.....................................................................
+                // here we start building the canonical URL
+                //
+                std::pair<std::string, std::string> tmppair;
+                try {
+                    tmppair = serv->get_canonical_url(img_w, img_h, conn_obj.host(), params[iiif_prefix],
+                                                      sid.getIdentifier(), region, size, rotation, quality_format, sid.getPage());
+                } catch (Sipi::SipiError &err) {
+                    send_error(conn_obj, Connection::BAD_REQUEST, err);
+                    return;
+                }
+
+                std::string canonical_header = tmppair.first;
+                std::string canonical = tmppair.second;
+
+                // now we check if we can send the file directly
+                //
+                if ((region->getType() == SipiRegion::FULL) && (size->getType() == SipiSize::FULL) && (angle == 0.0) &&
+                    (!mirror) && watermark.empty() && (quality_format.format() == in_format) &&
+                    (quality_format.quality() == SipiQualityFormat::DEFAULT) && (sid.getPage() < 1)) {
+
+                    conn_obj.status(Connection::OK);
+                    conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
+                    conn_obj.header("Link", canonical_header);
+
+                    // set the header (mimetype)
+                    switch (quality_format.format()) {
+                        case SipiQualityFormat::TIF: conn_obj.header("Content-Type", "image/tiff"); break;
+                        case SipiQualityFormat::JPG: conn_obj.header("Content-Type", "image/jpeg"); break;
+                        case SipiQualityFormat::PNG: conn_obj.header("Content-Type", "image/png"); break;
+                        case SipiQualityFormat::JP2: conn_obj.header("Content-Type", "image/jp2"); break;
+                        case SipiQualityFormat::PDF: conn_obj.header("Content-Type", "application/pdf"); break;
+                        default: {}
+                    }
+                    try {
+                        conn_obj.sendFile(infile);
+                    } catch (shttps::InputFailure iofail) {
+                        syslog(LOG_WARNING, "Browser unexpectedly closed connection");
+                    } catch (Sipi::SipiError &err) {
+                        send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                    }
+                    return;
+                } // finish sending unmodified file in toto
+
+                if (cache != nullptr) {
+                    //!>
+                    //!> here we check if the file is in the cache. If so, it's being blocked from deletion
+                    //!>
+                    std::string cachefile = cache->check(infile, canonical, true); // we block the file from being deleted if successfull
+
+                    if (!cachefile.empty()) {
+                        syslog(LOG_DEBUG, "Using cachefile %s", cachefile.c_str());
+                        conn_obj.status(Connection::OK);
+                        conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
+                        conn_obj.header("Link", canonical_header);
+
+                        // set the header (mimetype)
+                        switch (quality_format.format()) {
+                            case SipiQualityFormat::TIF: conn_obj.header("Content-Type", "image/tiff"); break;
+                            case SipiQualityFormat::JPG: conn_obj.header("Content-Type", "image/jpeg"); break;
+                            case SipiQualityFormat::PNG: conn_obj.header("Content-Type", "image/png"); break;
+                            case SipiQualityFormat::JP2: conn_obj.header("Content-Type", "image/jp2"); break;
+                            case SipiQualityFormat::PDF: {
+                                conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
+                                break;
+                            }
+
+                            default: {
+                            }
+                        }
+
+                        try {
+                            //!> send the file from cache
+                            conn_obj.sendFile(cachefile);
+                            //!> from now on the cache file can be deleted again
+                        } catch (shttps::InputFailure err) {
+                            // -1 was thrown
+                            syslog(LOG_WARNING, "Browser unexpectedly closed connection");
+                            cache->deblock(cachefile);
+                            return;
+                        } catch (Sipi::SipiError &err) {
+                            syslog(LOG_ERR, "Error sending cache file: \"%s\": %s", cachefile.c_str(), err.to_string().c_str());
+                            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                            cache->deblock(cachefile);
+                            return;
+                        }
+                        cache->deblock(cachefile);
+                        return;
+                    }
+                    cache->deblock(cachefile);
+                }
+
+                Sipi::SipiImage img;
+                try {
+                    img.read(infile, sid.getPage(), region, size, quality_format.format() == SipiQualityFormat::JPG, serv->scaling_quality());
+                } catch (const SipiImageError &err) {
+                    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+                    return;
+                }
+
+                //
+                // now we rotate
+                //
+                if (mirror || (angle != 0.0)) {
+                    try {
+                        img.rotate(angle, mirror);
+                    } catch (Sipi::SipiError &err) {
+                        send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                        return;
+                    }
+                }
+
+                if (quality_format.quality() != SipiQualityFormat::DEFAULT) {
+                    switch (quality_format.quality()) {
+                        case SipiQualityFormat::COLOR: img.convertToIcc(SipiIcc(icc_sRGB), 8); break; // for now, force 8 bit/sample
+                        case SipiQualityFormat::GRAY: img.convertToIcc(SipiIcc(icc_GRAY_D50), 8); break; // for now, force 8 bit/sample
+                        case SipiQualityFormat::BITONAL: img.toBitonal(); break;
+                        default: {
+                            send_error(conn_obj, Connection::BAD_REQUEST, "Invalid quality specificer");
+                            return;
+                        }
+                    }
+                }
+
+                //
+                // let's add a watermark if necessary
+                //
+                if (!watermark.empty()) {
+                    watermark = "watermark.tif";
+                    try {
+                        img.add_watermark(watermark);
+                    } catch (Sipi::SipiError &err) {
+                        send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                        return;
+                    }
+                    syslog(LOG_INFO, "GET %s: adding watermark", uri.c_str());
+                }
+
+                img.connection(&conn_obj);
+                conn_obj.header("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
+                std::string cachefile;
+
+                try {
+                    if (cache != nullptr) {
+                        try {
+                            //!> open the cache file to write into.
+                            cachefile = cache->getNewCacheFileName();
+                            conn_obj.openCacheFile(cachefile);
+                        } catch (const shttps::Error &err) {
+                            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                            return;
+                        }
+                    }
+                    switch (quality_format.format()) {
+                        case SipiQualityFormat::JPG: {
+                            conn_obj.status(Connection::OK);
+                            conn_obj.header("Link", canonical_header);
+                            conn_obj.header("Content-Type", "image/jpeg"); // set the header (mimetype)
+
+                            if ((img.getNc() > 3) && (img.getNalpha() > 0)) { // we have an alpha channel....
+                                for (size_t i = 3; i < (img.getNalpha() + 3); i++) img.removeChan(i);
+                            }
+
+                            Sipi::SipiIcc icc = Sipi::SipiIcc(Sipi::icc_sRGB); // force sRGB !!
+                            img.convertToIcc(icc, 8);
+                            conn_obj.setChunkedTransfer();
+                            Sipi::SipiCompressionParams qp = {{JPEG_QUALITY, std::to_string(serv->jpeg_quality())}};
+                            img.write("jpg", "HTTP", &qp);
+                            break;
+                        }
+
+                        case SipiQualityFormat::JP2: {
+                            conn_obj.status(Connection::OK);
+                            conn_obj.header("Link", canonical_header);
+                            conn_obj.header("Content-Type", "image/jp2"); // set the header (mimetype)
+                            conn_obj.setChunkedTransfer();
+                            img.write("jpx", "HTTP");
+                            break;
+                        }
+
+                        case SipiQualityFormat::TIF: {
+                            conn_obj.status(Connection::OK);
+                            conn_obj.header("Link", canonical_header);
+                            conn_obj.header("Content-Type", "image/tiff"); // set the header (mimetype)
+                            // no chunked transfer needed...
+
+                            img.write("tif", "HTTP");
+                            break;
+                        }
+
+                        case SipiQualityFormat::PNG: {
+                            conn_obj.status(Connection::OK);
+                            conn_obj.header("Link", canonical_header);
+                            conn_obj.header("Content-Type", "image/png"); // set the header (mimetype)
+                            conn_obj.setChunkedTransfer();
+
+                            img.write("png", "HTTP");
+                            break;
+                        }
+
+                        case SipiQualityFormat::PDF: {
+                            conn_obj.status(Connection::OK);
+                            conn_obj.header("Link", canonical_header);
+                            conn_obj.header("Content-Type", "application/pdf"); // set the header (mimetype)
+                            conn_obj.setChunkedTransfer();
+
+                            img.write("pdf", "HTTP");
+                            break;
+                        }
+
+                        default: {
+                            // HTTP 400 (format not supported)
+                            syslog(LOG_WARNING, "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png, .pdf");
+                            conn_obj.setBuffer();
+                            conn_obj.status(Connection::BAD_REQUEST);
+                            conn_obj.header("Content-Type", "text/plain");
+                            conn_obj << "Not Implemented!\n";
+                            conn_obj << "Unsupported file format requested! Supported are .jpg, .jp2, .tif, .png, .pdf\n";
+                            conn_obj.flush();
+                        }
+                    }
+
+                    if (conn_obj.isCacheFileOpen()) {
+                        conn_obj.closeCacheFile();
+                        //!>
+                        //!> ATTENTION!!! Here we change the list of available cache files
+                        //!>
+                        cache->add(infile, canonical, cachefile, img_w, img_h, tile_w, tile_h, clevels, numpages);
+                    }
+
+                } catch (Sipi::SipiError &err) {
+                    if (cache != nullptr) {
+                        conn_obj.closeCacheFile();
+                        unlink(cachefile.c_str());
+                    }
+                    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+                    return;
+                }
+
+                conn_obj.flush();
+                return;
+            }
+            case SERVE_ERROR: {
+                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Unknown internal error!");
+                return;
+            }
+        } // switch(service)
+
+
+/*
+        if (service == SERVE_FILE) {
+            std::string infile;
+
+            if (prefix_as_path && (params[iiif_prefix] != "")) {
+                infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
+                        urldecode(params[iiif_identifier]);
             } else {
-                infile = serv->imgroot() + "/" + identifier.filepath();
+                infile = serv->imgroot() + "/" + urldecode(params[iiif_identifier]);
             }
 
             if (access(infile.c_str(), R_OK) == 0) {
@@ -1051,31 +1716,37 @@ namespace Sipi {
                 return;
             }
         }
+*/
 
         //
         // test if there are enough parameters to fullfill the info request
         //
+        /*
         if (params.size() < 3) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Query has too few parameters");
             return;
         }
+        */
 
-        //string prefix = urldecode(params[iiif_prefix]);
-        //string identifier = urldecode(params[iiif_identifier]);
 
         //
         // we have a request for the info json
         //
-        if (params[iiif_region] == "info.json") {
+/*
+        if (service == SERVE_INFO) {
             iiif_send_info(conn_obj, serv, luaserver, params, prefix_as_path);
             return;
         }
+*/
 
+        /*
         if (params[iiif_region] == "knora.json") {
             knora_send_info(conn_obj, serv, luaserver, params, prefix_as_path);
             return;
         }
+        */
 
+        /*
         if (params.size() < 7) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Query has too few parameters");
             return;
@@ -1085,16 +1756,18 @@ namespace Sipi {
             send_error(conn_obj, Connection::NOT_FOUND, "Too many \"/\"'s – imageid not found");
             return;
         }
+        */
 
+/*
         //
         // getting the identifier (which in case of a PDF or multipage TIFF my contain a page id (identifier@pagenum)
-        SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
+        //
+        SipiIdentifier sid = urldecode(params[iiif_identifier]);
 
         //
         // getting region parameters
         //
         auto region = std::make_shared<SipiRegion>();
-
         try {
             region = std::make_shared<SipiRegion>(params[iiif_region]);
          } catch (Sipi::SipiError &err) {
@@ -1105,9 +1778,7 @@ namespace Sipi {
         //
         // getting scaling/size parameters
         //
-
         auto size = std::make_shared<SipiSize>();
-
         try {
             size = std::make_shared<SipiSize>(params[iiif_size]);
         } catch (Sipi::SipiError &err) {
@@ -1119,7 +1790,6 @@ namespace Sipi {
         // getting rotation parameters
         //
         SipiRotation rotation;
-
         try {
             rotation = SipiRotation(params[iiif_rotation]);
         } catch (Sipi::SipiError &err) {
@@ -1135,6 +1805,7 @@ namespace Sipi {
             return;
         }
 
+        //
         // here we start the lua script which checks for permissions
         //
         std::string infile;  // path to the input file on the server
@@ -1143,9 +1814,8 @@ namespace Sipi {
 
         if (luaserver.luaFunctionExists(pre_flight_func_name)) {
             std::unordered_map<std::string, std::string> pre_flight_info;
-
             try {
-                pre_flight_info = call_pre_flight(conn_obj, luaserver, urldecode(params[iiif_prefix]), sid.getIdentifier());
+                pre_flight_info = call_pre_flight(conn_obj, luaserver, params[iiif_prefix], sid.getIdentifier());
             } catch (SipiError &err) {
                 send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                 return;
@@ -1155,6 +1825,8 @@ namespace Sipi {
             //
             // here we adjust the path for the subdirs
             //
+            */
+/*
             if (SipiFilenameHash::getLevels() > 0) {
                 bool use_subdirs = true;
                 if (prefix_as_path) {
@@ -1174,6 +1846,9 @@ namespace Sipi {
                     }
                 }
             }
+            *//*
+
+
 
             if (pre_flight_info["type"] != "allow") {
                 if (pre_flight_info["type"] == "restrict") {
@@ -1203,34 +1878,19 @@ namespace Sipi {
                 }
             }
         } else {
-            SipiFilenameHash identifier = SipiFilenameHash(sid.getIdentifier());
-            if (prefix_as_path) {
-                bool use_subdirs = true;
-                for (auto str: serv->dirs_to_exclude()) {
-                    if (str == urldecode(params[iiif_prefix])) {
-                        use_subdirs = false; // prefix is in list which is excluded from usiong subdirs
-                    }
-                }
-                if (use_subdirs) {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                             identifier.filepath();
-                }
-                else {
-                    infile = serv->imgroot() + "/" + urldecode(params[iiif_prefix]) + "/" +
-                            urldecode(params[iiif_identifier]);
-                }
+            if (prefix_as_path && (params[iiif_prefix] != "")) {
+                infile = serv->imgroot() + "/" + params[iiif_prefix] + "/" + sid.getIdentifier();
             } else {
-                infile = serv->imgroot() + "/" + identifier.filepath();
+                infile = serv->imgroot() + "/" + sid.getIdentifier();
             }
         }
 
         //
-        // determine the extension of the file in the SIPI repo
+        // determine the mimetype of the file in the SIPI repo
         //
         SipiQualityFormat::FormatType in_format = SipiQualityFormat::UNSUPPORTED;
 
         std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
-
         if (actual_mimetype == "image/tiff") in_format = SipiQualityFormat::TIF;
         if (actual_mimetype == "image/jpeg") in_format = SipiQualityFormat::JPG;
         if (actual_mimetype == "image/png") in_format = SipiQualityFormat::PNG;
@@ -1246,6 +1906,7 @@ namespace Sipi {
         float angle;
         bool mirror = rotation.get_rotation(angle);
 
+        //
         // get cache info
         //
         std::shared_ptr<SipiCache> cache = serv->cache();
@@ -1392,11 +2053,13 @@ namespace Sipi {
             return;
         } // finish sending unmodified file in toto
 
-        /*
+        */
+/*
         if (quality_format.format() == SipiQualityFormat::PDF) {
             send_error(conn_obj, Connection::BAD_REQUEST, "Conversion to PDF not yet supported");
         }
-        */
+        *//*
+
 
         if (cache != nullptr) {
             //!>
@@ -1450,6 +2113,7 @@ namespace Sipi {
                     cache->deblock(cachefile);
                     return;
                 } catch (Sipi::SipiError &err) {
+                    syslog(LOG_ERR, "Error sending cache file: \"%s\": %s", cachefile.c_str(), err.to_string().c_str());
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
                     cache->deblock(cachefile);
                     return;
@@ -1622,6 +2286,7 @@ namespace Sipi {
         }
 
         conn_obj.flush();
+*/
         return;
     }
     //=========================================================================
