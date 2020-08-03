@@ -1,7 +1,8 @@
 site_name: SIPI Documentation
 
 nav:
-  - Overview: index.md
+  - Introduction: introduction.md
+  - Basic information and Reference: sipi.md
   - Building: building.md
   - Running: running.md
   - Lua: lua.md

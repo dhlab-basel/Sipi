@@ -228,11 +228,11 @@ class TestServer:
                 }
             },{
                 "filepath": "unit/test.csv",
-                "mimetype": "text/plain",
+                "mimetype": "text/comma-separated-values",
                 "expected_result": {
                     "@context": "http://sipi.io/api/file/3/context.json",
                     "id": "http://127.0.0.1:1024/unit/",
-                    "mimeType": "text/plain",
+                    "mimeType": "text/comma-separated-values",
                     "fileSize": 39697
                 }
             }

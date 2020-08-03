@@ -15,8 +15,7 @@ Version 3.0.0), a C++ compiler that supports the C++11 standard (such as
 [GCC](https://gcc.gnu.org) or [clang](https://clang.llvm.org/)), and
 several libraries that are readily available on supported platforms. The
 test framework requires [Python 3](https://www.python.org/), (version
-3.5 or later), [Apache
-ab](https://httpd.apache.org/docs/2.4/programs/ab.html) (which is
+3.5 or later), [Apache ab](https://httpd.apache.org/docs/2.4/programs/ab.html) (which is
 assumed to be installed by default on macOS Sierra),
 [nginx](https://nginx.org/en/), and a recent version of
 [ImageMagick](http://www.imagemagick.org/). Instructions for installing
@@ -28,6 +27,17 @@ Sipi uses the Adobe ICC Color profiles, which are automatically
 downloaded by the build process into the file `icc.zip`. The user is
 responsible for reading and agreeing with Adobe's license conditions,
 which are specified in the file `Color Profile EULA.pdf`.
+
+### docker
+
+We provide a docker image based on Ubuntu LTS releases, containing all
+dependencies: <https://hub.docker.com/r/dhlabbasel/sipi-base/>
+If you must build sipi, the preferred way is to build it inside a docker image. Docker must be installed on the system.
+Then, in the top directory of the source tree, do
+
+- ```make compile``` will download and compile SIPI within a docker container
+- ```make test`` to run the full test suite
+- ```make run``` to run SIPI in docker image
 
 ### macOS
 

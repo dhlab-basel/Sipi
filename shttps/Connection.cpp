@@ -58,25 +58,43 @@ namespace shttps {
 
     const size_t max_headerline_len = 65535;
 
-    // trim from start
-    static inline std::string &ltrim(std::string &s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    // trim from start (in place)
+    static inline void ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+            return !std::isspace(ch);
+        }));
+    }
+
+    // trim from end (in place)
+    static inline void rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
+    // trim from both ends (in place)
+    static inline void trim(std::string &s) {
+        ltrim(s);
+        rtrim(s);
+    }
+
+    // trim from start (copying)
+    static inline std::string ltrim_copy(std::string s) {
+        ltrim(s);
         return s;
     }
-    //=========================================================================
 
-    // trim from end
-    static inline std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    // trim from end (copying)
+    static inline std::string rtrim_copy(std::string s) {
+        rtrim(s);
         return s;
     }
-    //=========================================================================
 
-    // trim from both ends
-    static inline std::string trim(std::string &s) {
-        return ltrim(rtrim(s));
+    // trim from both ends (copying)
+    static inline std::string trim_copy(std::string s) {
+        trim(s);
+        return s;
     }
-    //=========================================================================
 
     pair<string, string> strsplit(const string &str, const char c) {
         size_t pos;
@@ -289,10 +307,10 @@ namespace shttps {
             } else {
                 size_t pos = line.find(':');
                 string name = line.substr(0, pos);
-                name = trim(name);
+                name = trim_copy(name);
                 asciitolower(name);
                 string value = line.substr(pos + 1);
-                value = header_in[name] = trim(value);
+                value = header_in[name] = trim_copy(value);
 
                 if (name == "connection") {
                     unordered_map<string, string> opts = parse_header_options(value, true);
@@ -329,11 +347,11 @@ namespace shttps {
         size_t pos = 0;
         while ((pos = valstr.find(';', start)) != string::npos) {
             string tmpstr = valstr.substr(start, pos - start);
-            result.push_back(trim(tmpstr));
+            result.push_back(trim_copy(tmpstr));
             start = pos + 1;
         }
         string tmpstr = valstr.substr(start);
-        result.push_back(trim(tmpstr));
+        result.push_back(trim_copy(tmpstr));
 
         return result;
     }
@@ -579,10 +597,10 @@ namespace shttps {
                             while (!line.empty()) {
                                 size_t colon_pos = line.find(':');
                                 string name = line.substr(0, colon_pos);
-                                name = trim(name);
+                                name = trim_copy(name);
                                 asciitolower(name);
                                 string value = line.substr(colon_pos + 1);
-                                value = trim(value);
+                                value = trim_copy(value);
 
                                 if (name == "content-disposition") {
                                     unordered_map<string, string> opts = parse_header_options(value, true);

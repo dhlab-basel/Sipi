@@ -162,6 +162,11 @@ sipi = {
     tmpdir = '/tmp',
 
     --
+    -- The maximum allowed age of temporary files (in seconds) before they are deleted. Defaults to one day.
+    --
+    max_temp_file_age = 86400,
+
+    --
     -- If compiled with SSL support, the path to the certificate (must be .pem file)
     -- The following commands can be used to generate a self-signed certificate
     -- # openssl genrsa -out key.pem 2048
@@ -191,13 +196,8 @@ sipi = {
     --
     -- loglevel, one of "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFORMATIONAL", "DEBUG"
     --
-    loglevel = "DEBUG",
-    --loglevel = "ERROR",
-
-    --
-    -- The maximum allowed age of temporary files (in seconds) before they are deleted. Defaults to one day.
-    --
-    max_temp_file_age = 86400
+    loglevel = "DEBUG"
+    --loglevel = "ERROR"
 }
 
 admin = {

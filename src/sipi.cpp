@@ -472,10 +472,10 @@ int main(int argc, char *argv[]) {
     int optServerport = 80;
     sipiopt.add_option("--serverport", optServerport, "Port of SIPI web server.")->envname("SIPI_SERVERPORT");
 
-    int optSSLport = 442;
+    int optSSLport = 443;
     sipiopt.add_option("--sslport", optSSLport, "SSL-port of the SIPI server.")->envname("SIPI_SSLPORT");
 
-    std::string optHostname;
+    std::string optHostname = "localhost";
     sipiopt.add_option("--hostname", optHostname, "Hostname to use for HTTP server.")->envname("SIPI_HOSTNAME");
 
     int optKeepAlive = 5;
@@ -501,6 +501,9 @@ int main(int argc, char *argv[]) {
 
     std::string optTmpdir = "./tmp";
     sipiopt.add_option("--tmpdir", optTmpdir, "Path to the temporary directory (e.g. for uploads etc.).")->envname("SIPI_TMPDIR")->check(CLI::ExistingDirectory);
+
+    int optMaxTmpAge = 86400;
+    sipiopt.add_option("--maxtmpage", optMaxTmpAge, "The maximum allowed age of temporary files (in seconds) before they are deleted.")->envname("SIPI_MAXTMPAGE");
 
     bool optPathprefix = false;
     sipiopt.add_flag("--pathprefix", optPathprefix, "Flag, if set indicates that the IIIF prefix is part of the path to the image file (deprecated).")->envname("SIPI_PATHPREFIX");
@@ -893,6 +896,12 @@ int main(int argc, char *argv[]) {
                 sipiConf.setTmpDir(optTmpdir);
             } else {
                 if (!sipiopt.get_option("--tmpdir")->empty()) sipiConf.setTmpDir(optTmpdir);
+            }
+
+            if (!config_loaded) {
+                sipiConf.setMaxTempFileAge(optMaxTmpAge);
+            } else {
+                if (!sipiopt.get_option("--maxtmpage")->empty()) sipiConf.setMaxTempFileAge(optMaxTmpAge);
             }
 
             if (!config_loaded) {

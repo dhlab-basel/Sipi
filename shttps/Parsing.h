@@ -26,7 +26,7 @@
 #include <string>
 #include <regex>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 namespace shttps {
 
@@ -54,7 +54,12 @@ namespace shttps {
          */
         std::pair<std::string, std::string> getFileMimetype(const std::string &fpath);
 
-        bool checkMimeTypeConsistency(const std::string &path);
+        /*!
+         *
+         * \param[in] fpath Path to file to check for the mimetype
+         * \returns Best mimetype given magic number and extension
+         */
+        std::string getBestFileMimetype(const std::string &fpath);
 
         /*!
          *

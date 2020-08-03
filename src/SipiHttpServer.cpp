@@ -390,7 +390,7 @@ namespace Sipi {
             return;
         }
 
-        std::string actual_mimetype = shttps::Parsing::getFileMimetype(access["infile"]).first;
+        std::string actual_mimetype = shttps::Parsing::getBestFileMimetype(access["infile"]);
 
         bool is_image_file = ((actual_mimetype == "image/tiff") ||
                               (actual_mimetype == "image/jpeg") ||
@@ -691,7 +691,7 @@ namespace Sipi {
         }
         json_object_set_new(root, "id", json_string(id.c_str()));
 
-        std::string actual_mimetype = shttps::Parsing::getFileMimetype(infile).first;
+        std::string actual_mimetype = shttps::Parsing::getBestFileMimetype(infile);
         if ((actual_mimetype == "image/tiff") ||
             (actual_mimetype == "image/jpeg") ||
             (actual_mimetype == "image/png") ||
@@ -738,7 +738,6 @@ namespace Sipi {
             conn_obj.sendAndFlush(json_str, strlen(json_str));
             free(json_str);
 
-            // TODO: and all the other CJSON obj?
             json_decref(root);
         }
         else {
@@ -754,7 +753,6 @@ namespace Sipi {
             conn_obj.sendAndFlush(json_str, strlen(json_str));
             free(json_str);
 
-            // TODO: and all the other CJSON obj?
             json_decref(root);
         }
     }
