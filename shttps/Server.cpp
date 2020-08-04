@@ -1020,7 +1020,7 @@ namespace shttps {
 
             for (int i = 0; i < socket_control.get_sockets_size(); i++) {
                 if (sockets[i].revents) {
-                    if (sockets[i].revents & POLLIN) {
+                    if ((sockets[i].revents & POLLIN) || (sockets[i].revents & POLLPRI)) {
                         //
                         // we've got input on one of the sockets
                         //
@@ -1206,14 +1206,42 @@ namespace shttps {
                         }
                     } else {
                         // we've got something else...
-                        syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: unknown error, poll code: %d", __file__, __LINE__, sockets[i].revents);
-                        running = false;
-                        break; // accept returned something strange – probably we want to shutdown the server
+                        if (sockets[i].revents & POLLERR) {
+                            syslog(LOG_DEBUG, "-->POLLERR");
+                        }
+                        if (sockets[i].revents & POLLHUP) {
+                            syslog(LOG_DEBUG, "-->POLLHUP");
+                        }
+                        if (sockets[i].revents & POLLIN) {
+                            syslog(LOG_DEBUG, "-->POLLIN");
+                        }
+                        if (sockets[i].revents & POLLNVAL) {
+                            syslog(LOG_DEBUG, "-->POLLNVAL");
+                        }
+                        if (sockets[i].revents & POLLOUT) {
+                            syslog(LOG_DEBUG, "-->POLLOUT");
+                        }
+                        if (sockets[i].revents & POLLPRI) {
+                            syslog(LOG_DEBUG, "-->POLLPRI");
+                        }
+                        if (sockets[i].revents & POLLRDBAND) {
+                            syslog(LOG_DEBUG, "-->POLLRDBAND");
+                        }
+                        if (sockets[i].revents & POLLRDNORM) {
+                            syslog(LOG_DEBUG, "-->POLLRDNORM");
+                        }
+                        if (sockets[i].revents & POLLWRBAND) {
+                            syslog(LOG_DEBUG, "-->POLLWRBAND");
+                        }
+                        if (sockets[i].revents & POLLWRNORM) {
+                            syslog(LOG_DEBUG, "-->POLLWRNORM");
+                        }
+                        //running = false;
+                        //break; // accept returned something strange – probably we want to shutdown the server
                     }
                 }
             }
         }
-
 
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server shutting down");

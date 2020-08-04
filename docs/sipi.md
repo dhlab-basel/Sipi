@@ -224,7 +224,7 @@ The following configuration parameters are used by the SIPI server:
   *Environment variable: `SIPI_JWTKEY`*  
   *Default: `UP 4888, nice 4-8-4 steam engine`*
 
-- `max_post_size=amount`: Maximal size a file upoad may have. The mount has the form "XYZM" with M indication Megabytes.  
+- `max_post_size=amount`: Maximal size a file upoad may have. The amount has the form "XYZM" with M indication Megabytes.  
   *Cmdline option: `--maxpost`*  
   *Environment variable: `SIPI_MAXPOSTSIZE`*  
   *Default: `300M`*
@@ -257,7 +257,106 @@ the canonical IIIF URL. Before an image is being converted, the canonical URL is
 this canonical URL is in the cache directory, the timestamp of the original file in the repository is compated to the
 cached file. If the cached file is newer, it will be served. If the file in the repository is newer, the cache file
 (which is outdated) will be deleted and replaced be the newly converted repository file (that is being sent to the
-client)
+client).
+
+The following configuration parameters determine the behaviour of the cache:
+
+- `cachedir=path`: SIPI may optionally use a cache directory to store converted image in order to avoid computationally
+  intensive conversions if a specific variant is requested several times. Sipi starts with a warning if the cache
+  directory is defined but not existing.  
+  *Cmdline option: `--cachedir`*  
+  *Environment variable: `SIPI_CACHEDIR`*  
+  *Default: `./cache`*
+
+- `cachesize=amount`: The maximal size of the cache. The cache will be purged if either the maximal size or maximal
+  number of files is reached. The amount has the form "<number>M" with M indication Megabytes.  
+  *Cmdline option: `--cachesize`*  
+  *Environment variable: `SIPI_CACHESIZE`*  
+  *Default: `200M`*
+
+- `cache_nfiles=num`: The maximal number of files to be cached. The cache will be purged if either the maximal size
+   or maximal number of files is reached.  
+  *Cmdline option: `--cachenfiles`*  
+  *Environment variable: `SIPI_CACHENFILES`*  
+  *Default: `200`*
+
+- `cache_hysteresis=float`: If the cache becomes full, the given percentage of file space is marked for reuse and purged.  
+  *Cmdline option: `--cachehysteresis`*  
+  *Environment variable: `SIPI_CACHEHYSTERESIS`*  
+  *Default: `0.15`*
+  
+#### Configuration of the HTTP File Server
+SIPI offers  HTTP file server for HTML and other files. Files with the ending `.elua` are HTTP-files with embeded
+LUA code. Everything between the <lua>...</lua> tags is interpreted as LUA code and the output embedded in the
+data stream for the client.
+
+All configurations for the HTTP server are in the `fileserver` table:
+
+- `docroot=path`: Path to the document root of the file server.  
+  *Cmdline option: `--docroot`*  
+  *Environment variable: `SSIPI_DOCROOT`*  
+  *Default: `./server`*
+ 
+- `wwwroute=string`: Route for the file server should respond to requests.That is, a file with the name "dada.html"
+  is accessed with `htp://dnsname/server/data.html`, if the `wwwroute`is set to `/server`.  
+  *Cmdline option: `--wwwroute`*  
+  *Environment variable: `SIPI_WWWROUTE`*  
+  *Default: `/server`*
+  
+#### Configuarion of Administrator Access
+SIPI allows special administrator access for some tasks. In order to allow for this, an administrator has to be defined
+as follows:
+```lua
+admin = {
+    --
+    -- username of admin user
+    --
+    user = 'admin',
+
+    --
+    -- Administration password
+    --
+    password = 'Sipi-Admin'
+}
+```
+If You're using the administrator user, please make sure that the config file is not exposed!
+
+#### Routing Table
+SIPI allows to implement RESTful interfaces or other services based on LUA-scripts which are located in the scripts
+directory. In order to use these LUA-scripts as endpoints, the appropriate routes have to be defined in the
+`routes` table. An entry has the following form:
+- `method`: the HTTP request. Supported are `GET`, `POST`, `PUT` and `DELETE`.
+- `route`: A URL path that may contain `/`'s.
+- `script`: Name of the LUA script in the script directory.
+
+Thus, the routing section of a SIPI configuration file may look as follows:
+
+```lua
+routes = {
+    {
+        method = 'DELETE',
+        route = '/api/cache',
+        script = 'cache.lua'
+    },
+    {
+        method = 'GET',
+        route = '/api/cache',
+        script = 'cache.lua'
+    },
+    {
+        method = 'POST',
+        route = '/api/upload',
+        script = 'upload.lua'
+    },
+    {
+        method = 'GET',
+        route = '/sqlite',
+        script = 'test_sqlite.lua'
+    }
+}
+```
+
+
 
   
  

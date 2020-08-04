@@ -17,10 +17,11 @@
 -- You should have received a copy of the GNU Affero General Public
 -- License along with Sipi.  If not, see <http://www.gnu.org/licenses/>.
 
+server.log("---0---")
 if not authorize_api('admin.sipi.org', 'administrator', config.adminuser) then
     return
 end
-
+server.log("---1---")
 if server.method == 'GET' then
     if server.get and (server.get.sort == 'atasc') then
         flist = cache.filelist('AT_ASC')
@@ -33,7 +34,7 @@ if server.method == 'GET' then
     else
        flist = cache.filelist('AT_ASC')
     end
-
+    server.log("---2---")
 
     local success, jsonstr = server.table_to_json(flist)
     if not success then
@@ -41,10 +42,14 @@ if server.method == 'GET' then
         server.log(jsonstr, server.loglevel.err)
         return false
     end
-
+    server.log("---3---")
+    server.log(jsonstr)
     server.sendHeader('Content-type', 'application/json')
     server.sendStatus(200)
     server.print(jsonstr)
+    server.log("---4a---")
+    server.log(jsonstr)
+    server.log("---4b---")
 elseif server.method == 'DELETE' then
     if server.content and server.content_type == 'application/json' then
         local success, todel = server.json_to_table(server.content)

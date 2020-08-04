@@ -13,6 +13,7 @@ Object.defineProperty(window, "Cookies", {
 
 
 function get_cachelist(sortorder) {
+    console.log('APIURL=', apiurl);
     $.ajax(apiurl + 'cache', {
         method: 'GET',
         headers: {Authorization: 'BEARER ' + token},
@@ -96,6 +97,7 @@ function get_cachelist(sortorder) {
         },
         error: function(xhr, status, error) {
             alert('ERROR: ' + error);
+            console.log(xhr);
         }
     });
 }

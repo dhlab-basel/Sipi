@@ -4,6 +4,8 @@
 
 #include "ThreadControl.h"
 #include <iostream>
+#include <stdio.h>
+#include <string.h>
 
 static const char __file__[] = __FILE__;
 
@@ -41,15 +43,17 @@ namespace shttps {
             thread_push(thread_data);
         }
     }
+    //=========================================================================
 
     ThreadControl::~ThreadControl() {
         for (auto const &thread : thread_list) {
             int err = pthread_join(thread.tid, nullptr);
             if (err != 0) {
-                syslog(LOG_ERR, "pthread_join failed with error code %d", err);
+                syslog(LOG_INFO, "pthread_join failed with error code: %s", strerror(err));
             }
         }
     }
+    //=========================================================================
 
     void ThreadControl::thread_push(const ThreadMasterData &tinfo) {
         std::unique_lock<std::mutex> thread_queue_guard(thread_queue_mutex);
@@ -76,10 +80,12 @@ namespace shttps {
             throw ThreadControlErrors::INVALID_INDEX;
         }
     }
+    //=========================================================================
 
     int ThreadControl::thread_delete(int pos) {
         thread_list.erase(thread_list.begin() + pos);
         return thread_list.size();
     }
+    //=========================================================================
 
 }

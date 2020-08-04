@@ -45,19 +45,52 @@ The possible return values of the `pre_flight` function are as follows.
 Note that Lua function's return value may consist of more than one
 element (see [Multiple Results](http://www.lua.org/pil/5.1.html)):
 
--   Grant full permissions to access the file identified by `filepath`:
-    `return 'allow', filepath`
--   
+- Grant full permissions to access the file identified by `filepath`:
+  ```lua
+  return 'allow', filepath
+  ```
+  
+- Grant restricted access to the file identified by `filepath`, in one of the following ways:
+  - Reduce the image dimensions, e.g. to the default thumbnail dimensions:
+    ```lua
+        return 'restrict:size=' .. "config.thumb_size", filepath
+    ```
+  - Render the image with a watermark:
+    ```lua
+        return restrict:watermark=<path-to-watermark>, filepath
+    ```
 
-    Grant restricted access to the file identified by `filepath`, in one of the following ways:
+- Deny access to the requested file:
+  ```return 'deny'```
+  
+### IIIF Auth API
+The pre_flight is also responsible for activating the IIIF Auth API. In order to do so, the pre_flight script returns
+a table that contains all necessary information. The following fields have to be returned:
+- `type`: String giving the type. Valid are `"login"`, `"clickthrough"`, `""kiosk"` or `"external"`.
+- `cookieUrl`: URL where to get a valid IIIF Auth cookie for this service.
+- `tokenUrl`: URL where to get a valid IIIF Auth token for this service.
+- `confirmLabel`: Label to display in confirmation box.
+- `description`: Description for login window.
+- `failureDescription`: Information, if login fails.
+- `failureHeader`: Header for failure window.
+- `header`: Header of login window
+- `label`: Label of the login window
+In addition, the filepath has to be returns. A full response may look as follows:
 
-    :   -   Reduce the image dimensions, e.g. to the default thumbnail
-            dimensions:
-            `return 'restrict:size=' .. "config.thumb_size", filepath`
-        -   Render the image with a watermark:
-            `return restrict:watermark=<path-to-watermark>, filepath`
+```lua
+return {
+   type = 'login',
+    cookieUrl = 'https://localhost/iiif-cookie.html',
+    tokenUrl = 'https://localhost/iiif-token.php',
+    confirmLabel =  'Login to SIPI',
+    description = 'This Example requires a demo login!',
+    failureDescription = '<a href="http://example.org/policy">Access Policy</a>',
+    failureHeader = 'Authentication Failed',
+    header = 'Please Log In',
+    label = 'Login to SIPI',
+}, filepath
+```
 
--   Deny access to the requested file: `return 'deny'`
 
 In the `pre_flight` function, permission checking can be implemented.
 When Sipi is used with [Knora](http://www.knora.org/), the `pre_flight`

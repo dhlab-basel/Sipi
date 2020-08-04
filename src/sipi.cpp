@@ -523,6 +523,9 @@ int main(int argc, char *argv[]) {
     std::string optCacheSize = "200M";
     sipiopt.add_option("--cachesize", optCacheSize, "Maximal size of cache, e.g. '500M'.")->envname("SIPI_CACHESIZE");
 
+    int optCacheNFiles = 200;
+    sipiopt.add_option("--cachenfiles", "The maximal number of files to be cached.")->envname("SIPI_CACHENFILES");
+
     double optCacheHysteresis = 0.15;
     sipiopt.add_option("--cachehysteresis", optCacheHysteresis, "If the cache becomes full, the given percentage of file space is marked for reuse (0.0 - 1.0).")->envname("SIPI_CACHEHYSTERESIS");
 
@@ -948,6 +951,12 @@ int main(int argc, char *argv[]) {
                 sipiConf.setCacheSize(cache_size);
             } else {
                 if (!sipiopt.get_option("--cachesize")->empty()) sipiConf.setCacheSize(cache_size);
+            }
+
+            if (!config_loaded) {
+                sipiConf.setCacheNFiles(optCacheNFiles);
+            } else {
+                if (!sipiopt.get_option("--cachenfiles")->empty()) sipiConf.setCacheNFiles(optCacheNFiles);
             }
 
             if (!config_loaded) {
