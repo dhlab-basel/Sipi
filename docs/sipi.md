@@ -298,12 +298,12 @@ All configurations for the HTTP server are in the `fileserver` table:
   *Default: `./server`*
  
 - `wwwroute=string`: Route for the file server should respond to requests.That is, a file with the name "dada.html"
-  is accessed with `htp://dnsname/server/data.html`, if the `wwwroute`is set to `/server`.  
+  is accessed with `http://dnsname/server/dada.html`, if the `wwwroute`is set to `/server`.  
   *Cmdline option: `--wwwroute`*  
   *Environment variable: `SIPI_WWWROUTE`*  
   *Default: `/server`*
   
-#### Configuarion of Administrator Access
+#### Configration of Administrator Access
 SIPI allows special administrator access for some tasks. In order to allow for this, an administrator has to be defined
 as follows:
 ```lua

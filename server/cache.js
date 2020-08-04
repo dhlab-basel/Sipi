@@ -13,7 +13,6 @@ Object.defineProperty(window, "Cookies", {
 
 
 function get_cachelist(sortorder) {
-    console.log('APIURL=', apiurl);
     $.ajax(apiurl + 'cache', {
         method: 'GET',
         headers: {Authorization: 'BEARER ' + token},
@@ -80,19 +79,21 @@ function get_cachelist(sortorder) {
                 }
             }
             for (var i in data) {
-                var tline = $('<tr>')
-                    .append($('<td>').append(i))
-                    .append($('<td>').append(data[i].last_access))
-                    .append($('<td>').append(data[i].canonical))
-                    .append($('<td>').append(data[i].origpath))
-                    .append($('<td>').append(data[i].cachepath))
-                    .append($('<td>').append(data[i].size))
-                    .append($('<td>').append(
-                        $('<input>', {type: 'checkbox'})
-                            .addClass('delete')
-                            .data('canonical', data[i].canonical)
-                    ));
-                t.append(tline);
+                if (data[i].canonical != "") {
+                    var tline = $('<tr>')
+                        .append($('<td>').append(i))
+                        .append($('<td>').append(data[i].last_access))
+                        .append($('<td>').append(data[i].canonical))
+                        .append($('<td>').append(data[i].origpath))
+                        .append($('<td>').append(data[i].cachepath))
+                        .append($('<td>').append(data[i].size))
+                        .append($('<td>').append(
+                            $('<input>', {type: 'checkbox'})
+                                .addClass('delete')
+                                .data('canonical', data[i].canonical)
+                        ));
+                    t.append(tline);
+                }
             }
         },
         error: function(xhr, status, error) {
@@ -120,6 +121,7 @@ $(function() {
                 data: JSON.stringify(dels),
                 dataType: 'json',
                 success: function(data, status, xhr) {
+                    console.log(data);
                     if (data.status == 'OK') {
                         get_cachelist('atasc');
                     }
@@ -145,6 +147,8 @@ $(function() {
                 success: function(data, status, xhr) {
                     if (data.status == 'OK') {
                         $('#msgbox').css({display: 'block'}).empty().append('Deleted ' + data.n + ' files!')
+                        $('#nfiles').empty().append(data.nn);
+                        syslog(data)
                         get_cachelist('atasc');
                     }
                     else {

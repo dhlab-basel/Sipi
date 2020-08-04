@@ -415,7 +415,6 @@ namespace shttps {
             //
             throw INPUT_READ_FAIL;
         }
-
         //
         // Parse first line of request
         //
@@ -451,11 +450,6 @@ namespace shttps {
                 header_out["Access-Control-Allow-Origin"] = origin;
                 header_out["Access-Control-Allow-Credentials"] = "true";
             }
-
-            /*for(std::map<std::string,std::string>::iterator it = header_in.begin(); it != header_in.end(); ++it)
-                {
-                    std::cout << it->first << " -> " << it->second << endl;
-                }*/
 
             if (method_in == "OPTIONS") {
                 //
@@ -860,8 +854,63 @@ namespace shttps {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
             } else if (method_in == "DELETE") {
+                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
+                _content_type = content_type_opts[0];
+                if (_chunked_transfer_in) {
+                    char *tmp;
+                    ChunkReader ckrd(ins, _server->max_post_size());
+                    content_length = ckrd.readAll(&tmp);
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    memcpy(_content, tmp, content_length);
+                    free(tmp);
+                    _content[content_length] = '\0';
+                } else if (content_length > 0) {
+                    if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                    }
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    ins->read(_content, content_length);
+
+                    if (ins->fail() || ins->eof()) {
+                        free(_content);
+                        _content = nullptr;
+                        throw INPUT_READ_FAIL;
+                    }
+                    _content[content_length] = '\0';
+                }
                 _method = DELETE;
             } else if (method_in == "TRACE") {
+                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
+                _content_type = content_type_opts[0];
+                if (_chunked_transfer_in) {
+                    char *tmp;
+                    ChunkReader ckrd(ins, _server->max_post_size());
+                    content_length = ckrd.readAll(&tmp);
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    memcpy(_content, tmp, content_length);
+                    free(tmp);
+                    _content[content_length] = '\0';
+                } else if (content_length > 0) {
+                    if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                    }
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    ins->read(_content, content_length);
+
+                    if (ins->fail() || ins->eof()) {
+                        free(_content);
+                        _content = nullptr;
+                        throw INPUT_READ_FAIL;
+                    }
+                }
                 _method = TRACE;
             } else if (method_in == "CONNECT") {
                 _method = CONNECT;

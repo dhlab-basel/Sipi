@@ -1,3 +1,57 @@
+# SIPI Lua interface
+SIPI has an embedded [LUA](http://www.lua.org) interpreter. Each HTTP request to SIPI invokes a new, independent
+lua-instance. Therefore LUA may be used in the following contexts:
+
+- Preflight function (mandatory)
+- Embedded in HTML pages
+- RESTful services using the SIPI routing
+
+Each lua-instance in SIPI includes additional SIPI-specific information:
+
+- global variables about the SIPI configuration
+- information about the current HTTP request
+- SIPI specific functions for
+  - processing the request and send back information
+  - getting image information and transforming images
+  - querying and changing the SIPI runtime configuration (e.g. the cache)
+
+## Pre-flight function
+The pre-fight function is mandatory and located in the init-script (see
+[configuarion options](../sipi/index.html#setup-of-directories-needed) of SIPI). It is executed after the incoming
+IIIF HTTP request data has been processed but before an action to respond to the request has been taken. It should
+be noted that the pre-flight script is only executed for IIIF-specific requests. All other HTTP requests are being
+directed to "normal" HTTP-server part of SIPI. These can utilize the lua functionality by embedding LUA commands
+within the HTML.
+
+The pre-flight function takes 3 parameter:
+
+- `prefix`: This is the prefix that is given on the IIIF url [mandatory]  
+  *http(s)://{server}/__{prefix}__/{id}/{region}/{size}/{rotation}/{quality}.{format}*  
+  Please note that the prefix may contain "/"'s that can be used as path to the repository file
+- `identifier`: The image identifier (which must not correspond to an actual filename in the media files repositoy)
+  [mandatory]
+- `cookie`: A cookie containing authorization information. Usually the cookie cntains a Json Web Token [optional]
+
+The pre-flight function must return at least 2 parameters:
+
+- `permission`: A string or a table indication the permission to read the image. In a simple case it's either the
+  string `"allow"` or `"deny"`.  
+  To allow more flexibility, the following permission tables are supported:  
+    - Restricted access with watermark. The watermark must be a TIFF file with a single 8-bit channel (gray value
+    image). For example:  
+    `{ type = 'restricted', watermark = './wm/mywatermark.tif' }`
+    - Restricted access with size limitation. The size must be a
+      [IIIF size expression](https://iiif.io/api/image/3.0/#42-size). For example:  
+     `{ type = 'restricted', size='!256,256' }`
+    - SIPI also supports the [IIIF Authentification API](https://iiif.io/api/auth/1.0/). See section [IIIF
+      Authentification]() on how to implement this feature in the pre-flight function.
+- `filepath`: The path to the master image file in the media files repository. This pass can be assembled using the
+  `prefix` and `identifier` using any additional information (e.g. accessing a database or using the LUA restful client)
+
+
+  
+
+
 # Customizing Sipi with Lua Scripts
 
 Within Sipi, Lua is used to perform authentication and authorization for
