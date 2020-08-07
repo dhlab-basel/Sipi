@@ -144,6 +144,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushnumber(L, conf->getCacheHysteresis());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "jpeg_quality"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getJpegQuality());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "keep_alive"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getKeepAlive());
     lua_rawset(L, -3); // table1
@@ -168,8 +172,43 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushstring(L, conf->getTmpDir().c_str());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "ssl_certificate"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getSSLCertificate().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "ssl_key"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getSSLKey().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "scriptdir"); // table1 - "index_L1"
     lua_pushstring(L, conf->getScriptDir().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "logfile"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getLogfile().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "loglevel"); // table1 - "index_L1"
+    std::string loglevel = conf->getLoglevel();
+    if (loglevel == "LOG_EMERG") {
+        lua_pushinteger(L, LOG_EMERG);
+    } else if (loglevel == "LOG_ALERT") {
+        lua_pushinteger(L, LOG_ALERT);
+    } else if (loglevel == "LOG_CRIT") {
+        lua_pushinteger(L, LOG_CRIT);
+    } else if (loglevel == "LOG_ERR") {
+        lua_pushinteger(L, LOG_ERR);
+    } else if (loglevel == "LOG_WARNING") {
+        lua_pushinteger(L, LOG_WARNING);
+    } else if (loglevel == "LOG_NOTICE") {
+        lua_pushinteger(L, LOG_NOTICE);
+    } else if (loglevel == "LOG_INFO") {
+        lua_pushinteger(L, LOG_INFO);
+    } else if (loglevel == "LOG_DEBUG") {
+        lua_pushinteger(L, LOG_DEBUG);
+    } else {
+        lua_pushinteger(L, -1);
+    }
     lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "knora_path"); // table1 - "index_L1"
@@ -553,7 +592,7 @@ int main(int argc, char *argv[]) {
     std::string optKnoraPort = "3434";
     sipiopt.add_option("--knoraport", optKnoraPort, "Portnumber for Knora.")->envname("SIPI_KNORAPORT");
 
-    std::string optLogfilePath = "sipi.log";
+    std::string optLogfilePath = "Sipi";
     sipiopt.add_option("--logfile", optLogfilePath, "Name of the logfile (NYI).")->envname("SIPI_LOGFILE");
 
     enum class LogLevel {DEBUG, INFO, NOTICE, WARNING, ERR, CRIT, ALERT, EMERG};

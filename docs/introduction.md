@@ -25,9 +25,28 @@
   by supported.
   
 ### 3. An image format conversion tool
+
+#### Generic format conversions
+
 - image format conversion are supported between TIFF, JPEG2000, JPG, PNG and PDF (PDF with some limitations). SIPI can
   be used either as standalone command line tool or in server mode using [LUA](https://www.lua.org) scripting. SIPI
   preserves most embedded metadata (EXIF, IPTC, TIFF, XMP) and is preserving and/or converting ICC color profiles.
+
+#### Preservation metadata (SIPI specific)
+
+- SIPI is able to add SIPI specific metadata to most file formats. These metadata are relevant for long-term
+  preservation and include the following information:
+    - `original filename`: The original file name before conversion
+    - `original mimetype`: The mimetype of the original image before conversion
+    - `pixel checksum`: A checksum (e.g. SH256) of the original pixel values. This checksum can be used to verify that
+      a format conversion didn't alter the image content.
+    - `icc profile`: (optional) The raw ICC profile as binary string. This field is added if the fileformat has no
+      standard way to embed ICC color profiles (e.g. JPEG).
+  
+### 4. Integrated sqlite3 Database
+SIPI has an integrated sqlite3 database that can be used with special LUA extensions. Thus, SIPI can be used as a
+standalone media server with extended functionality. The sqlite3 database may be used to store metadata about
+images, user data etc.
 
 ## Who is behind SIPI?
 SIPI is developed and maintained by the "Data and Service Center for the Humanities" [(DaSCH)](https://dasch.swiss),
@@ -40,7 +59,7 @@ Universities of Basel and Lausanne.
 - You can compile SIPI from the sources on [github](https://github.com/dasch-swiss/sipi). Since SIPI uses many
   third-party open source libraries, compiling Yourself is tedious and my be frustrating (but possible). *You have to
   provide the licensed source of kakadu by Yourself*. See [kakadu software](https://kakadusoftware.com) on how to get a
-  licensed version of the kakadu code. SIPI should compile on Linux (Ubuntu) and OS X
+  licensed version of the kakadu code. SIPI should compile on Linux (Ubuntu) and (with some hand-work) OS X.
     
 ## SIPI as IIIF-Server
 ### Extensions to the IIIF-Standard

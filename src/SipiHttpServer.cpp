@@ -953,13 +953,34 @@ namespace Sipi {
         }
 
         std::vector<std::string> params;
+
+        //
+        // below are regex expressions for the different parts of the IIIF URL
+        //
+        std::string qualform_ex = "^(color|gray|bitonal|default)\\.(jpg|tif|png|jp2|pdf)$";
+        std::string rotation_ex = "^!?[-+]?[0-9]*\\.?[0-9]*$";
+        std::string size_ex = "^(\\^?max)|(\\^?pct:[0-9]*\\.?[0-9]*)|(\\^?[0-9]*,)|(\\^?,[0-9]*)|(\\^?!?[0-9]*,[0-9]*)$";
+        std::string region_ex = "^(full)|(square)|([0-9]+,[0-9]+,[0-9]+,[0-9]+)|(pct:[0-9]*\\.?[0-9]*,[0-9]*\\.?[0-9]*,[0-9]*\\.?[0-9]*,[0-9]*\\.?[0-9]*)$";
+
+        bool qualform_ok = false;
+        if (parts.size() > 0) qualform_ok = std::regex_match(parts[parts.size() - 1], std::regex(qualform_ex));
+
+        bool rotation_ok = false;
+        if (parts.size() > 1) rotation_ok = std::regex_match(parts[parts.size() - 2], std::regex(rotation_ex));
+
+        bool size_ok = false;
+        if (parts.size() > 2) size_ok = std::regex_match(parts[parts.size() - 3], std::regex(size_ex));
+
+        bool region_ok = false;
+        if (parts.size() > 3) region_ok = std::regex_match(parts[parts.size() - 4], std::regex(region_ex));
+
         if ((pos = parts[parts.size() - 1].find('.', 0)) != std::string::npos) {
+            std::string fname_body = parts[parts.size() - 1].substr(0, pos);
+            std::string fname_extension = parts[parts.size() - 1].substr(pos + 1, std::string::npos);
             //
             // we will serve IIIF syntax based image
             //
-            std::string fname_body = parts[parts.size() - 1].substr(0, pos);
-            std::string fname_extension = parts[parts.size() - 1].substr(pos + 1, std::string::npos);
-            if ((fname_body == "color") || (fname_body == "gray") || (fname_body == "bitonal") || (fname_body == "default")) {
+            if (qualform_ok && rotation_ok && size_ok && region_ok) {
                 if (parts.size() >= 6) { // we have a prefix
                     std::stringstream prefix;
                     for (int i = 0; i < (parts.size() - 5); i++) {
@@ -1021,11 +1042,7 @@ namespace Sipi {
                 //
                 // we have something like "http:://{server}/{prefix}/{id}" with id as "body.ext"
                 //
-                if ((fname_extension == "jpg") ||
-                    (fname_extension == "tif") ||
-                    (fname_extension == "tiff") ||
-                    (fname_extension == "png") ||
-                    (fname_extension == "pdf")) {
+                if (qualform_ok || rotation_ok || size_ok || region_ok) {
                     send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
                     return;
                 }
@@ -1071,6 +1088,10 @@ namespace Sipi {
             //
             // we have something like "http:://{server}/{prefix}/{id}" with id as "body_without_ext"
             //
+            if (qualform_ok || rotation_ok || size_ok || region_ok) {
+                send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                return;
+            }
             if (parts.size() >= 2) { // we have a prefix
                 std::stringstream prefix;
                 for (int i = 0; i < (parts.size() - 1); i++) {
@@ -1085,7 +1106,7 @@ namespace Sipi {
                 return;
             }
             params.push_back(parts[parts.size() - 1]); // iiif_identifier
-            service = SERVE_INFO;
+            service = SERVE_REDIRECT;
         }
 
         //
