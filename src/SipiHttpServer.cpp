@@ -991,7 +991,13 @@ namespace Sipi {
                 } else if (parts.size() == 5) { // we have no prefix
                     params.push_back(""); // iiif_prefix
                 } else {
-                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    std::stringstream errmsg;
+                    errmsg << "IIIF url not correctly formatted:";
+                    if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                    if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                    if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                    if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                    send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                     return;
                 }
                 params.push_back(parts[parts.size() - 5]); // iiif_identifier
@@ -1043,7 +1049,13 @@ namespace Sipi {
                 // we have something like "http:://{server}/{prefix}/{id}" with id as "body.ext"
                 //
                 if (qualform_ok || rotation_ok || size_ok || region_ok) {
-                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    std::stringstream errmsg;
+                    errmsg << "IIIF url not correctly formatted:";
+                    if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                    if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                    if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                    if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                    send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                     return;
                 }
                 if (parts.size() >= 2) { // we have a prefix
@@ -1056,7 +1068,13 @@ namespace Sipi {
                 } else if (parts.size() == 1) { // we have no prefix
                     params.push_back(""); // iiif_prefix
                 } else {
-                    send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                    std::stringstream errmsg;
+                    errmsg << "IIIF url not correctly formatted:";
+                    if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                    if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                    if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                    if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                    send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                     return;
                 }
                 params.push_back(parts[parts.size() - 1]); // iiif_identifier
@@ -1089,7 +1107,13 @@ namespace Sipi {
             // we have something like "http:://{server}/{prefix}/{id}" with id as "body_without_ext"
             //
             if (qualform_ok || rotation_ok || size_ok || region_ok) {
-                send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                std::stringstream errmsg;
+                errmsg << "IIIF url not correctly formatted:";
+                if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                 return;
             }
             if (parts.size() >= 2) { // we have a prefix
@@ -1102,7 +1126,13 @@ namespace Sipi {
             } else if (parts.size() == 1) { // we have no prefix
                 params.push_back(""); // iiif_prefix
             } else {
-                send_error(conn_obj, Connection::BAD_REQUEST, "IIIF url not correctly formatted!");
+                std::stringstream errmsg;
+                errmsg << "IIIF url not correctly formatted:";
+                if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                 return;
             }
             params.push_back(parts[parts.size() - 1]); // iiif_identifier
