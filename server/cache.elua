@@ -1,10 +1,14 @@
 <lua>
+    if server.secure then
+        protocol = 'https://'
+    else
+        protocol = 'http://'
+    end
 
-success,token = authorize_page('admin.sipi.org', 'administrator', config.adminuser, config.password)
-if not success then
-    return
-end
-
+    success,token = authorize_page('admin.sipi.org', 'administrator', config.adminuser, config.password)
+    if not success then
+        return
+    end
 </lua>
 <html>
 <head>
@@ -18,7 +22,7 @@ end
 </head>
 <body>
 <h1>SIPI Admin on <lua>server.print(server.host)</lua></h1>
-<div id="msgbox" style="display:none">GAGA</div>
+<div id="msgbox" style="display:none">no message</div>
 <h2>Server</h2>
 <lua>
 if server.has_openssl then
@@ -32,11 +36,10 @@ end
 <h2>Cache</h2>
 <table>
 <lua>
-server.print("<tr><td>Number of files</td><td>:</td><td>", cache.nfiles(), "</td></tr>")
-server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
-server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
-server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
-
+    server.print("<tr><td>Number of files</td><td>:</td><td><div id=\"nfiles\">", cache.nfiles(), "</div></td></tr>")
+    server.print("<tr><td>Max number of files</td><td>:</td><td>", cache.max_nfiles(), "</td></tr>")
+    server.print("<tr><td>Cache Size</td><td>:</td><td>", cache.size(), "</td></tr>")
+    server.print("<tr><td>Max Cache Size</td><td>:</td><td>", cache.max_size(), "</td></tr>")
 </lua>
 </table>
 <h3>Filelist</h3>

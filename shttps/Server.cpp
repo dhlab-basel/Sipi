@@ -37,7 +37,6 @@
 #include <sys/errno.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <poll.h>
 #include <netinet/in.h>
@@ -63,14 +62,7 @@
 
 static const char __file__[] = __FILE__;
 
-static std::mutex threadlock; // mutex to protect map of active threads
-static std::mutex idlelock; // mutex to protect vector of idle threads (keep alive condition)
 static std::mutex debugio; // mutex to protect debugging messages from threads
-
-static std::vector<pthread_t> idle_thread_ids;
-
-// The signal caught by the sig_thread function, used only for debugging.
-static int signal_result = 0;
 
 namespace shttps {
 
@@ -88,6 +80,7 @@ namespace shttps {
     } TData;
     //=========================================================================
 
+
     /*!
      * Starts a thread just to catch all signals sent to the server process.
      * If it receives SIGINT or SIGTERM, tells the server to stop.
@@ -104,11 +97,8 @@ namespace shttps {
 
         while (true) {
             if ((sigwait(&set, &sig)) != 0) {
-                signal_result = -1;
                 return nullptr;
             }
-
-            signal_result = sig;
 
             // If we get SIGINT or SIGTERM, shut down the server.
             // Ignore any other signals. We must in particular ignore
@@ -473,8 +463,7 @@ namespace shttps {
                     conn.header("Last-Modified", timebuf);
                     conn.header("Content-Transfer-Encoding: binary");
                     conn.sendFile(infile);
-                }
-                else {
+                } else {
                     //
                     // now we parse the range
                     //
@@ -482,7 +471,7 @@ namespace shttps {
                     std::cmatch m;
                     int start = 0; // lets assume beginning of file
                     int end = fsize - 1; // lets assume whole file
-                    if (std::regex_match (range.c_str(), m, re)) {
+                    if (std::regex_match(range.c_str(), m, re)) {
                         if (m.size() < 2) {
                             throw Error(__file__, __LINE__, "Range expression invalid!");
                         }
@@ -490,8 +479,7 @@ namespace shttps {
                         if ((m.size() > 1) && !m[2].str().empty()) {
                             end = std::stoi(m[2]);
                         }
-                    }
-                    else {
+                    } else {
                         throw Error(__file__, __LINE__, "Range expression invalid!");
                     }
 
@@ -505,7 +493,7 @@ namespace shttps {
                     std::stringstream ss;
                     ss << "bytes " << start << "-" << end << "/" << fsize;
                     conn.header("Content-Range", ss.str());
-                    conn.header("Content-Disposition",  std::string("inline; filename=") + infile);
+                    conn.header("Content-Disposition", std::string("inline; filename=") + infile);
                     conn.header("Content-Transfer-Encoding: binary");
                     conn.header("Last-Modified", timebuf);
                     conn.sendFile(infile, 8192, start, end);
@@ -543,16 +531,14 @@ namespace shttps {
      * @param loglevel_p Loglevel, must be one of "DEBUG", "INFO", "NOTICE", "WARNING", "ERR",
      *                   "CRIT", "ALERT" or "EMERG".
      */
-    Server::Server(int port_p, unsigned nthreads_p, const std::string userid_str, const std::string &logfile_p,
+    Server::Server(int port_p,
+                   unsigned nthreads_p,
+                   const std::string userid_str,
+                   const std::string &logfile_p,
                    const std::string &loglevel_p) : _port(port_p), _nthreads(nthreads_p), _logfilename(logfile_p),
                                                     _loglevel(loglevel_p) {
         _ssl_port = -1;
 
-        //
-        // we use a semaphore object to control the number of threads
-        //
-        semname = "shttps";
-        semname += std::to_string(_port);
         _user_data = nullptr;
         running = false;
         _keep_alive_timeout = 20;
@@ -579,7 +565,8 @@ namespace shttps {
             ll = LOG_ERR;
         }
 
-        openlog(loggername, LOG_CONS | LOG_PERROR, LOG_DAEMON);
+        //openlog(loggername, LOG_CONS | LOG_PERROR, LOG_DAEMON);
+        openlog(loggername, LOG_PERROR, LOG_DAEMON);
         setlogmask(LOG_UPTO(ll));
 
         //
@@ -616,22 +603,17 @@ namespace shttps {
                 syslog(LOG_ERR, "Could not get uid of user %s: you must start Sipi as root", userid_str.c_str());
             }
         }
-
-
 #ifdef SHTTPS_ENABLE_SSL
         SSL_load_error_strings();
         SSL_library_init();
         OpenSSL_add_all_algorithms();
 #endif
 
-        sem_unlink(semname.c_str()); // unlink to be sure that we start from scratch
-        _semaphore = sem_open(semname.c_str(), O_CREAT, 0x755, _nthreads);
-        _semcnt = _nthreads;
     }
-    //=========================================================================
+
+
 
 #ifdef SHTTPS_ENABLE_SSL
-
     /**
      * Set the Jason Web Token (jwt) secret that the server will use
      *
@@ -731,68 +713,31 @@ namespace shttps {
     }
     //=========================================================================
 
-    /**
-     * Put a thread to the list of idle threads usinng a lock_guard!
-     * @param tid_p Thread id
-     */
-    static void idle_add(pthread_t tid_p) {
-        std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
 
-        idle_thread_ids.push_back(tid_p);
-    }
-    //=========================================================================
-
-    /**
-     * Remove a socket from the list of idle sockets
-     * @param tid_p Thread id
-     */
-    static void idle_remove(pthread_t tid_p) {
-        int index = 0;
-        bool in_idle = false;
-        std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
-
-        for (auto tid : idle_thread_ids) {
-            if (tid == tid_p) {
-                in_idle = true;
-                break;
-            }
-            index++;
-        }
-
-        if (in_idle) {
-            //
-            // the vector is in idle state, remove it from the idle vector
-            //
-            idle_thread_ids.erase(idle_thread_ids.begin() + index);
-        }
-    }
-    //=========================================================================
 
     /**
      * Close a socket
      * @param tdata Pointer to thread data
      * @return
      */
-    static int close_socket(TData *tdata) {
-
+    static int close_socket(const SocketControl::SocketInfo &sockid) {
 #ifdef SHTTPS_ENABLE_SSL
-        if (tdata->cSSL != nullptr) {
+        if (sockid.ssl_sid != nullptr) {
             int sstat;
-            while ((sstat = SSL_shutdown(tdata->cSSL)) == 0);
+            while ((sstat = SSL_shutdown(sockid.ssl_sid)) == 0);
             if (sstat < 0) {
                 syslog(LOG_WARNING, "SSL socket error: shutdown of socket failed at [%s: %d] with error code %d",
-                       __file__, __LINE__, SSL_get_error(tdata->cSSL, sstat));
+                       __file__, __LINE__, SSL_get_error(sockid.ssl_sid, sstat));
             }
-            SSL_free(tdata->cSSL);
-            tdata->cSSL = nullptr;
+            SSL_free(sockid.ssl_sid);
         }
 #endif
-        if (shutdown(tdata->sock, SHUT_RDWR) < 0) {
+        if (shutdown(sockid.sid, SHUT_RDWR) < 0) {
             syslog(LOG_DEBUG, "Debug: shutting down socket at [%s: %d]: %m failed (client terminated already?)",
                    __file__, __LINE__);
         }
 
-        if (close(tdata->sock) == -1) {
+        if (close(sockid.sid) == -1) {
             syslog(LOG_DEBUG, "Debug: closing socket at [%s: %d]: %m failed (client terminated already?)", __file__,
                    __LINE__);
         }
@@ -801,187 +746,202 @@ namespace shttps {
     }
     //=========================================================================
 
-
-    /*!
-     * Runs a request-handling thread. If there is a "keep_alive" header, the thread
-     * will wait (put in idle state) until the keep alive time passed. Thus, after having
-     * handled the current request, it will be idle for keep-alive time, However, if q new
-     * request comes in and there is no free thread to handle it, the longest idling thread
-     * will be stopped to make room for a thread handling the new request. In addition the
-     * main thread my send a stop-request to all active are idling request handling threads
-     * in order to guarantee an oderly shutdown of the server.
-     *
-     * @param arg a pointer to a TData, which this function will delete before returning.
-     * @return NULL.
-     */
     static void *process_request(void *arg) {
-        TData *tdata = static_cast<TData *>(arg);
-        pthread_t my_tid = pthread_self();
+        ThreadControl::ThreadChildData *tdata = static_cast<ThreadControl::ThreadChildData *>(arg);
+        //pthread_t my_tid = pthread_self();
 
-        //
-        // now we create the socket's SockStream
-        //
-        std::unique_ptr<SockStream> sockstream;
-#ifdef SHTTPS_ENABLE_SSL
-        if (tdata->cSSL != nullptr) {
-            sockstream = make_unique<SockStream>(tdata->cSSL);
-        } else {
-            sockstream = make_unique<SockStream>(tdata->sock);
-        }
-#else
-        sockstream = make_unique<SockStream>(tdata->sock);
-#endif
-        std::istream ins(sockstream.get());
-        std::ostream os(sockstream.get());
 
-        //
-        // prepare the loop that handles this and sibsequent requests from the
-        // same address (if keep  alive is set).
-        //
-        ThreadStatus tstatus;
-        int keep_alive = 1; // we assume first that keep-alive is set
+        pollfd readfds[1];
+        readfds[0] = {tdata->control_pipe, POLLIN, 0};
+
+        int poll_status = -1;
         do {
-            //
-            // let's process the current request
-#ifdef SHTTPS_ENABLE_SSL
-            if (tdata->cSSL != nullptr) {
-                tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, true, keep_alive);
-            } else {
-                tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
+            poll_status = poll(readfds, 1, -1);
+            if (poll_status < 0) {
+                syslog(LOG_ERR, "Blocking poll on control pipe failed at [%s: %d]", __file__, __LINE__);
+                tdata->result = -1;
+                return nullptr;
             }
+            if (readfds[0].revents == POLLIN) {
+                SocketControl::SocketInfo msg = SocketControl::receive_control_message(tdata->control_pipe);
+                switch (msg.type) {
+                    case SocketControl::ERROR:
+                        break; // should never happen!
+                    case SocketControl::PROCESS_REQUEST: {
+                        //
+                        // here we process the request
+                        //
+                        std::unique_ptr<SockStream> sockstream;
+#ifdef SHTTPS_ENABLE_SSL
+                        if (msg.ssl_sid != nullptr) {
+                            sockstream = make_unique<SockStream>(msg.ssl_sid);
+                        } else {
+                            sockstream = make_unique<SockStream>(msg.sid);
+                        }
 #else
-            tstatus = tdata->serv->processRequest(&ins, &os, tdata->peer_ip, tdata->peer_port, false, keep_alive);
+                        sockstream = make_unique<SockStream>(receive_msg.sid);
 #endif
 
-            //
-            // we goot a tstatus of "CLOSE" – finish the loop
-            //
-            if (tstatus == CLOSE) break; // it's CLOSE , let's get out of the loop
-
-            //
-            // tstatus is CONTINUE. Let's check if we got in the meantime a CLOSE message from the main...
-            // we are polling bith the internal channel from the main thread as well as the
-            // internet socket.
-            //
-            pollfd readfds[2];
-            readfds[0] = {tdata->commpipe_read, POLLIN, 0};
-            readfds[1] = {tdata->sock, POLLIN, 0};
-
-            if (poll(readfds, 2, 0) < 0) { // no blocking here!!!
-                syslog(LOG_ERR, "Non-blocking poll failed at [%s: %d]", __file__, __LINE__);
-                tstatus = CLOSE;
-                break; // accept returned something strange – probably we want to shutdown the server
-            }
-
-            if (readfds[1].revents & POLLIN) {
-                // we got data on the internet socket -> go and process it
-                continue;
-            }
-
-            if (readfds[0].revents & POLLIN) { // something on the pipe from the main
-                //
-                // we got a message on the communication channel from the main thread...
-                //
-                if (Server::CommMsg::read(tdata->commpipe_read) != 0) {
-                    keep_alive = -1;
-                    break;
+                        std::istream ins(sockstream.get());
+                        std::ostream os(sockstream.get());
+                        //
+                        // let's process the current request
+                        //
+                        shttps::ThreadStatus tstatus;
+                        int keep_alive = 1;
+                        std::string tmpstr(msg.peer_ip);
+#ifdef SHTTPS_ENABLE_SSL
+                        if (msg.ssl_sid != nullptr) {
+                            tstatus = tdata->serv->processRequest(&ins, &os, tmpstr,
+                                                                  msg.peer_port, true, keep_alive);
+                        } else {
+                            tstatus = tdata->serv->processRequest(&ins, &os, tmpstr,
+                                                                  msg.peer_port, false, keep_alive);
+                        }
+#else
+                        tstatus = tdata->serv->processRequest(&ins, &os, tmpstr, msg.peer_port,
+                                                              false, keep_alive);
+#endif
+                        //
+                        // send the finished message
+                        //
+                        //SocketControl::SocketInfo send_msg = receive_msg;
+                        if (tstatus == CONTINUE) {
+                            msg.type = SocketControl::FINISHED_AND_CONTINUE;
+                        } else {
+                            msg.type = SocketControl::FINISHED_AND_CLOSE;
+                        }
+                        SocketControl::send_control_message(tdata->control_pipe, msg);
+                        break;
+                    }
+                    case SocketControl::EXIT: {
+                        //SocketControl::SocketInfo send_msg = receive_msg;
+                        tdata->result = 0;
+                        //close(tdata->control_pipe);
+                        //SocketControl::send_control_message(tdata->control_pipe, msg);
+                        return nullptr;
+                    }
+                    case SocketControl::NOOP: {
+                        break;
+                    }
+                    default: {
+                        ;
+                    }
                 }
-                keep_alive = -1;
-                if (readfds[1].revents & POLLIN) { // but we already have data on the internet connection...
-                    continue; // continue loop
-                } else {
-                    break;
-                }
+            } else if (readfds[0].revents == POLLHUP) {
+                return nullptr;
+            } else if (readfds[0].revents == POLLERR) {
+                syslog(LOG_ERR, "Thread pool got POLLERR message");
+                return nullptr;
+            } else {
+                syslog(LOG_ERR, "Thread pool got UNKNONW(!) message");
+                return nullptr;
             }
+        } while (true);
 
-            //
-            // we check if a new request is waiting for the semaphore which limits the number of threads
-            //
-            if (tdata->serv->semaphore_get() < 0) { //Another thread is waiting, give him a chance...
-                keep_alive = -1;
-                if (readfds[1].revents & POLLIN) { // but we already have data...
-                    continue; // we have data, we will close after the next round...
-                } else {
-                    break;
-                }
-            }
-
-            //
-            // if we can continue and have a keep_alive, let's set the thread to idle...
-            //
-            idle_add(my_tid);
-
-            //
-            // use poll to wait...
-            //
-            readfds[0] = {tdata->commpipe_read, POLLIN, 0};
-            readfds[1] = {tdata->sock, POLLIN, 0};
-            if (poll(readfds, 2, keep_alive * 1000) < 0) {
-                syslog(LOG_ERR, "Blocking poll failed at [%s: %d]", __file__, __LINE__);
-                tstatus = CLOSE;
-                idle_remove(my_tid);
-                break; // accept returned something strange – probably we want to shutdown the server
-            }
-
-            if (!(readfds[0].revents | readfds[1].revents)) { // we got a timeout from poll
-                //
-                // timeout from poll
-                //
-                tstatus = CLOSE;
-                idle_remove(my_tid);
-                break;
-            }
-
-            if (readfds[0].revents & POLLIN) { // something on the pipe...
-                //
-                // we got a message on the communication channel from the main thread...
-                //
-                if (Server::CommMsg::read(tdata->commpipe_read) != 0) {
-                    keep_alive = -1;
-                    idle_remove(my_tid);
-                    break;
-                }
-
-                keep_alive = -1;
-                idle_remove(my_tid);
-
-                if (readfds[1].revents & POLLIN) { // but we already have data...
-                    continue; // continue loop
-                } else {
-                    break;
-                }
-            }
-        } while (tstatus == CONTINUE);
-
-        //
-        // let's close the socket
-        //
-        close_socket(tdata);
-
-        if (close(tdata->commpipe_read) == -1) {
-            syslog(LOG_ERR, "Commpipe_write close error at [%s: %d]: %m", __file__, __LINE__);
-        }
-
-        int compipe_write = tdata->serv->get_thread_pipe(pthread_self());
-        if (compipe_write > 0) {
-            if (close(compipe_write) == -1) {
-                syslog(LOG_ERR, "Commpipe_write close error at [%s: %d]: %m", __file__, __LINE__);
-            }
-        } else {
-            syslog(LOG_DEBUG, "Thread to stop does not exist");
-        }
-
-        tdata->serv->remove_thread(pthread_self());
-        tdata->serv->semaphore_leave();
-        delete tdata;
         return nullptr;
     }
-    //=========================================================================
+
+
+    SocketControl::SocketInfo Server::accept_connection(int sock, bool ssl) {
+        SocketControl::SocketInfo socket_id;
+        //
+        // accepting new connection (normal socket=
+        //
+        struct sockaddr_storage cli_addr;
+        socklen_t cli_size = sizeof(cli_addr);
+        socket_id.sid = accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
+
+        if (socket_id.sid <= 0) {
+            syslog(LOG_ERR, "Socket error  at [%s: %d]: %m", __file__, __LINE__);
+            // ToDo: Perform appropriate action!
+        }
+        socket_id.type = SocketControl::NOOP;
+        socket_id.socket_type = SocketControl::DYN_SOCKET;
+
+        //
+        // get peer address
+        //
+        if (cli_addr.ss_family == AF_INET) {
+            struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
+            socket_id.peer_port = ntohs(s->sin_port);
+            inet_ntop(AF_INET, &s->sin_addr, socket_id.peer_ip, sizeof(socket_id.peer_ip));
+        } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
+            struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
+            socket_id.peer_port = ntohs(s->sin6_port);
+            inet_ntop(AF_INET6, &s->sin6_addr, socket_id.peer_ip, sizeof(socket_id.peer_ip));
+        } else {
+            socket_id.peer_port = -1;
+        }
+#ifdef SHTTPS_ENABLE_SSL
+        SSL *cSSL = nullptr;
+
+        if (ssl) {
+            SSL_CTX *sslctx;
+            try {
+                if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == nullptr) {
+                    syslog(LOG_ERR, "OpenSSL error: SSL_CTX_new() failed");
+                    throw SSLError(__file__, __LINE__, "OpenSSL error: SSL_CTX_new() failed");
+                }
+                SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
+                if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
+                    std::string msg =
+                            "OpenSSL error: SSL_CTX_use_certificate_file(" + _ssl_certificate + ") failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+                if (SSL_CTX_use_PrivateKey_file(sslctx, _ssl_key.c_str(), SSL_FILETYPE_PEM) != 1) {
+                    std::string msg = "OpenSSL error: SSL_CTX_use_PrivateKey_file(" + _ssl_certificate + ") failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+                if (!SSL_CTX_check_private_key(sslctx)) {
+                    std::string msg = "OpenSSL error: SSL_CTX_check_private_key() failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+                if ((cSSL = SSL_new(sslctx)) == nullptr) {
+                    std::string msg = "OpenSSL error: SSL_new() failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+                if (SSL_set_fd(cSSL, socket_id.sid) != 1) {
+                    std::string msg = "OpenSSL error: SSL_set_fd() failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+
+                //Here is the SSL Accept portion.  Now all reads and writes must use SS
+                if ((SSL_accept(cSSL)) <= 0) {
+                    std::string msg = "OpenSSL error: SSL_accept() failed";
+                    syslog(LOG_ERR, "%s", msg.c_str());
+                    throw SSLError(__file__, __LINE__, msg);
+                }
+            } catch (SSLError &err) {
+                syslog(LOG_ERR, "%s", err.to_string().c_str());
+                int sstat;
+
+                while ((sstat = SSL_shutdown(cSSL)) == 0);
+
+                if (sstat < 0) {
+                    syslog(LOG_WARNING, "SSL socket error: shutdown (2) of socket failed: %d",
+                           SSL_get_error(cSSL, sstat));
+                }
+
+                SSL_free(cSSL);
+                cSSL = nullptr;
+            }
+        }
+        socket_id.ssl_sid = cSSL;
+#endif
+        return socket_id;
+    }
 
     /**
      * Run the shttps server
      */
     void Server::run() {
+        syslog(LOG_DEBUG, "In Server::run");
         // Start a thread just to catch signals sent to the server process.
         pthread_t sighandler_thread;
         sigset_t set;
@@ -991,13 +951,13 @@ namespace shttps {
         sigaddset(&set, SIGPIPE);
 
         int pthread_sigmask_result = pthread_sigmask(SIG_BLOCK, &set, nullptr);
-
         if (pthread_sigmask_result != 0) {
             syslog(LOG_ERR, "pthread_sigmask failed! (err=%d)", pthread_sigmask_result);
         }
 
         //
         // start the thread that handles incoming signals (SIGTERM, SIGPIPE etc.)
+        //
         if (pthread_create(&sighandler_thread, nullptr, &sig_thread, (void *) this) != 0) {
             syslog(LOG_ERR, "Couldn't create thread: %s", strerror(errno));
             return;
@@ -1007,6 +967,9 @@ namespace shttps {
         syslog(LOG_INFO, "Starting shttps server with %d threads", _nthreads);
         setlogmask(old_ll);
 
+        syslog(LOG_INFO, "Creating thread pool....");
+        ThreadControl thread_control(_nthreads, process_request, this);
+        SocketControl socket_control(thread_control);
         //
         // now we are adding the lua routes
         //
@@ -1021,7 +984,7 @@ namespace shttps {
 
         _sockfd = prepare_socket(_port);
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
-        syslog(LOG_INFO, "Server listening on port %d", _port);
+        syslog(LOG_INFO, "Server listening on HTTP port %d", _port);
         setlogmask(old_ll);
 
         if (_ssl_port > 0) {
@@ -1031,240 +994,261 @@ namespace shttps {
             setlogmask(old_ll);
         }
 
-        if (pipe(stoppipe) != 0) {
-            syslog(LOG_ERR, "Couldn't create internal communication pipe: %s", strerror(errno));
+        if (socketpair(PF_LOCAL, SOCK_STREAM, 0, stoppipe) != 0) {
+            syslog(LOG_ERR, "Creating pipe failed at [%s: %d]: %m", __file__, __LINE__);
             return;
         }
-        pthread_t thread_id;
+
+        socket_control.add_stop_socket(stoppipe[0]);
+        socket_control.add_http_socket(_sockfd); // [1] -> normal socket we are listening on
+        if (_ssl_port > 0) {
+            socket_control.add_ssl_socket(_ssl_sockfd);
+        }
+
         running = true;
-        int count = 0;
-
         while (running) {
-            int sock;
-            pollfd readfds[3];
-            int n_readfds = 0;
-            readfds[0] = {_sockfd, POLLIN, 0};
-            n_readfds++;
-            readfds[1] = {stoppipe[0], POLLIN, 0};
-            n_readfds++;
-
-            if (_ssl_port > 0) {
-                readfds[2] = {_ssl_sockfd, POLLIN, 0};
-                n_readfds++;
-            }
-
-            if (poll(readfds, n_readfds, -1) < 0) {
+            //
+            // blocking poll on input sockets waiting for *new* connections
+            //
+            pollfd *sockets = socket_control.get_sockets_arr();
+            int nsocks;
+            if ((nsocks = poll(sockets, socket_control.get_sockets_size(), -1)) < 0) {
                 syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: %m", __file__, __LINE__);
                 running = false;
                 break;
             }
 
-            count++;
+            for (int i = 0; i < socket_control.get_sockets_size(); i++) {
+                if (sockets[i].revents) {
+                    if ((sockets[i].revents & POLLIN) || (sockets[i].revents & POLLPRI)) {
+                        //
+                        // we've got input on one of the sockets
+                        //
+                        if (i < socket_control.get_n_msg_sockets()) {
+                            //
+                            // CONTROL_SOCKET: we got input from an internal thread...
+                            //
+                            SocketControl::SocketInfo msg = SocketControl::receive_control_message(sockets[i].fd);
+                            switch (msg.type) {
+                                case SocketControl::FINISHED_AND_CONTINUE: {
+                                    //
+                                    // A thread finished, but the socket should remain open...
+                                    // If there are waiting sockets, the thread pops one from the queue, else,
+                                    // if there are no waiting sockets, the thread will pause and be put on the list of
+                                    // available threads.
+                                    //
+                                    msg.type = SocketControl::NOOP;
+                                    socket_control.add_dyn_socket(msg); // add socket to list to pe polled ==> CHANGES open_sockets!!
+                                    //
+                                    // see if we have sockets waiting for a thread.If yes, we reuse this thread directly
+                                    //
+                                    SocketControl::SocketInfo sockid;
+                                    if (socket_control.get_waiting(sockid)) {
+                                        //
+                                        // We have a waiting socket. Get it and make the thread processing it!
+                                        //
+                                        sockid.type = SocketControl::PROCESS_REQUEST;
+                                        SocketControl::send_control_message(sockets[i].fd, sockid);
+                                    } else {
+                                        //
+                                        // we have no waiting socket, so
+                                        // push the thread to the list of available threads
+                                        //
+                                        ThreadControl::ThreadMasterData tinfo = thread_control[i]; // get thread info
+                                        thread_control.thread_push(tinfo); // push thread to list of waiting threads
+                                    }
+                                    break;
+                                }
+                                case SocketControl::FINISHED_AND_CLOSE: {
+                                    //
+                                    // A thread finished and expects the socket to be closed
+                                    //
+                                    close_socket(msg); // close the socket
+                                    //
+                                    // see if we have sockets waiting for a thread.If yes, we reuse this thread directly
+                                    //
+                                    SocketControl::SocketInfo sockid;
+                                    if (socket_control.get_waiting(sockid)) {
+                                        //
+                                        // We have a waiting socket. Get it and make the thread processing it!
+                                        //
+                                        sockid.type = SocketControl::PROCESS_REQUEST;
+                                        SocketControl::send_control_message(sockets[i].fd, sockid);
+                                    } else {
+                                        //
+                                        // we have no waiting socket, so
+                                        // push the thread to the list of available threads
+                                        //
+                                        ThreadControl::ThreadMasterData tinfo = thread_control[i]; // get thread info
+                                        thread_control.thread_push(tinfo); // push thread to list of waiting threads
+                                    }
+                                    break;
+                                }
+                                case SocketControl::SOCKET_CLOSED: {
+                                    //
+                                    // a control socket has been closed – we assume the thread just finished
+                                    //
+                                    ::close(thread_control[i].control_pipe);
+                                    thread_control.thread_delete(i);
+                                    break;
+                                }
+                                case SocketControl::EXIT: {
+                                    //
+                                    // a thread sent an EXIT message –– should not happen!!
+                                    //
+                                    syslog(LOG_ERR, "A worker thread sent an EXIT message! This should never happen!");
+                                    break;
+                                }
+                                case SocketControl::ERROR: {
+                                    syslog(LOG_ERR, "A worker thread sent an ERROR message! This should never happen!");
+                                    // ToDo: React to this message
+                                    break;
+                                }
+                                default: {
+                                    syslog(LOG_ERR, "A worker thread sent an non-dentifiable message! This should never happen!");
+                                    // error handling
+                                }
+                            }
+                            // we got input ready from thread....
+                            // we expect  FINISHED or SOCKET_CLOSED
+                        } else if (i == socket_control.get_stop_socket_id()) {
+                            //
+                            // STOP from interrupt thread: got input ready from stoppipe
+                            //
 
-            if (readfds[0].revents & POLLIN) {
-                sock = _sockfd;
-            } else if (readfds[1].revents & POLLIN) {
-                sock = stoppipe[0];
-                char buf[2];
-                read(stoppipe[0], buf, 1);
-                running = false;
-                break;
-            } else if ((_ssl_port > 0) && (readfds[2].revents & POLLIN)) {
-                sock = _ssl_sockfd;
-            } else {
-                syslog(LOG_ERR, "Blocking poll failed at [%s: %d]: unknown error", __file__, __LINE__);
-                running = false;
-                break; // accept returned something strange – probably we want to shutdown the server
-            }
+                            SocketControl::SocketInfo msg = SocketControl::receive_control_message(sockets[i].fd); // read the message from the pipe
+                            if (msg.type != SocketControl::EXIT) {
+                                syslog(LOG_ERR, "Got unexpected message from interrupt");
+                            }
 
-            struct sockaddr_storage cli_addr;
-            socklen_t cli_size = sizeof(cli_addr);
-            int newsockfs = accept(sock, (struct sockaddr *) &cli_addr, &cli_size);
-
-            if (newsockfs <= 0) {
-                syslog(LOG_ERR, "Socket error  at [%s: %d]: %m", __file__, __LINE__);
-                break; // accept returned something strange – probably we want to shutdown the server
-            }
-
-            //
-            // get peer address
-            //
-            char client_ip[INET6_ADDRSTRLEN];
-            int peer_port;
-
-            if (cli_addr.ss_family == AF_INET) {
-                struct sockaddr_in *s = (struct sockaddr_in *) &cli_addr;
-                peer_port = ntohs(s->sin_port);
-                inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof client_ip);
-            } else if (cli_addr.ss_family == AF_INET6) { // AF_INET6
-                struct sockaddr_in6 *s = (struct sockaddr_in6 *) &cli_addr;
-                peer_port = ntohs(s->sin6_port);
-                inet_ntop(AF_INET6, &s->sin6_addr, client_ip, sizeof client_ip);
-            } else {
-                peer_port = -1;
-            }
-
-            old_ll = setlogmask(LOG_MASK(LOG_INFO));
-            syslog(LOG_INFO, "Accepted connection from %s", client_ip);
-            setlogmask(old_ll);
-
-            // Construct a TData for the thread that will handle the request. The TData will
-            // be deleted by process_request() when it completes.
-            TData *thread_data = new TData();
-            thread_data->sock = newsockfs;
-            thread_data->peer_ip = client_ip;
-            thread_data->peer_port = peer_port;
-            thread_data->serv = this;
-
+                            SocketControl::SocketInfo sockid;
+                            socket_control.remove(socket_control.get_http_socket_id(), sockid); // remove the HTTP socket
 #ifdef SHTTPS_ENABLE_SSL
-            SSL *cSSL = nullptr;
-
-            if (sock == _ssl_sockfd) {
-                SSL_CTX *sslctx;
-                try {
-                    if ((sslctx = SSL_CTX_new(SSLv23_server_method())) == nullptr) {
-                        syslog(LOG_ERR, "OpenSSL error: SSL_CTX_new() failed");
-                        throw SSLError(__file__, __LINE__, "OpenSSL error: SSL_CTX_new() failed");
-                    }
-                    SSL_CTX_set_options(sslctx, SSL_OP_SINGLE_DH_USE);
-                    if (SSL_CTX_use_certificate_file(sslctx, _ssl_certificate.c_str(), SSL_FILETYPE_PEM) != 1) {
-                        std::string msg =
-                                "OpenSSL error: SSL_CTX_use_certificate_file(" + _ssl_certificate + ") failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-                    if (SSL_CTX_use_PrivateKey_file(sslctx, _ssl_key.c_str(), SSL_FILETYPE_PEM) != 1) {
-                        std::string msg = "OpenSSL error: SSL_CTX_use_PrivateKey_file(" + _ssl_certificate + ") failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-                    if (!SSL_CTX_check_private_key(sslctx)) {
-                        std::string msg = "OpenSSL error: SSL_CTX_check_private_key() failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-                    if ((cSSL = SSL_new(sslctx)) == nullptr) {
-                        std::string msg = "OpenSSL error: SSL_new() failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-                    if (SSL_set_fd(cSSL, newsockfs) != 1) {
-                        std::string msg = "OpenSSL error: SSL_set_fd() failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-
-                    //Here is the SSL Accept portion.  Now all reads and writes must use SS
-                    if ((SSL_accept(cSSL)) <= 0) {
-                        std::string msg = "OpenSSL error: SSL_accept() failed";
-                        syslog(LOG_ERR, "%s", msg.c_str());
-                        throw SSLError(__file__, __LINE__, msg);
-                    }
-                } catch (SSLError &err) {
-                    syslog(LOG_ERR, "%s", err.to_string().c_str());
-                    int sstat;
-
-                    while ((sstat = SSL_shutdown(cSSL)) == 0);
-
-                    if (sstat < 0) {
-                        syslog(LOG_WARNING, "SSL socket error: shutdown (2) of socket failed: %d",
-                               SSL_get_error(cSSL, sstat));
-                    }
-
-                    SSL_free(cSSL);
-                    cSSL = nullptr;
-                }
-            }
-
-            thread_data->cSSL = cSSL;
+                            socket_control.remove(socket_control.get_ssl_socket_id(), sockid); // remove the SSL socket
 #endif
-
-            if (semaphore_get() <= 0) {
-                //
-                // we would be blocked by the semaphore... Get an idle thread...
-                //
-                {
-                    std::unique_lock<std::mutex> idle_mutex_guard(idlelock);
-
-                    if (idle_thread_ids.size() > 0) {
-                        pthread_t tid = idle_thread_ids.front();
-                        idle_mutex_guard.unlock();
-
-                        int pipe_id = get_thread_pipe(tid);
-
-                        if (pipe_id > 0) {
-                            Server::CommMsg::send(pipe_id);
+                            socket_control.close_all_dynsocks(close_socket);
+                            socket_control.broadcast_exit(); // broadcast EXIT to all worker threads
+                            running = false;
+                        } else if (i == socket_control.get_http_socket_id()) {
+                            //
+                            // external HTTP request coming in
+                            //
+                            // we got input ready from normal listener socket
+                            SocketControl::SocketInfo sockid = accept_connection(sockets[i].fd, false);
+                            socket_control.add_dyn_socket(sockid);
+                            syslog(LOG_INFO, "Accepted connection from %s", sockid.peer_ip); //  ==> CHANGES open_sockets!!
+                        } else if (i == socket_control.get_ssl_socket_id()) {
+                            //
+                            // external SSL request coming in
+                            //
+                            SocketControl::SocketInfo sockid = accept_connection(sockets[i].fd, true);
+                            socket_control.add_dyn_socket(sockid);
+                            syslog(LOG_INFO, "Accepted SSL connection from %s", sockid.peer_ip); //  ==> CHANGES open_sockets!!
                         } else {
-                            syslog(LOG_DEBUG, "The thread to stop no longer exists");
+                            //
+                            // DYN_SOCKET: a client socket (already accepted) has data -> dispatch the processing to a free thread
+                            // or put the request in the waiting queue (waiting for a free thread...)
+                            //
+                            ThreadControl::ThreadMasterData tinfo;
+                            if (thread_control.thread_pop(tinfo)) { // thread available
+                                SocketControl::SocketInfo sockid;
+                                socket_control.remove(i, sockid); //  ==> CHANGES open_sockets!!
+                                sockid.type = SocketControl::PROCESS_REQUEST;
+                                int n = SocketControl::send_control_message(tinfo.control_pipe, sockid);
+                                if (n < 0) {
+                                    syslog(LOG_WARNING, "Got something unexpected...");
+                                }
+                            } else { // no thread available, push socket into waiting queue
+                                socket_control.move_to_waiting(i); //  ==> CHANGES open_sockets!!
+                            }
                         }
+                    } else if (sockets[i].revents & POLLHUP) {
+                        //
+                        // we got a HANGUP from a socket
+                        //
+
+                        if (i >= socket_control.get_dyn_socket_base()) {
+                            //
+                            // ist a hangup from a dynamic client socket!
+                            // we close and remove it
+                            //
+                            SocketControl::SocketInfo sockid;
+                            socket_control.remove(i, sockid); //  ==> CHANGES open_sockets!!
+                            close_socket(sockid);
+                        } else if (i < socket_control.get_n_msg_sockets()) {
+                            //
+                            // it's a hangup from one of the thread sockets -> thread exited
+                            //
+                            SocketControl::SocketInfo sockid;
+                            socket_control.remove(i, sockid); //  ==> CHANGES open_sockets!!
+                            thread_control.thread_delete(i); // delete the thread
+                            if (socket_control.get_n_msg_sockets() == 0) {
+                                running = false;
+                            }
+                        } else if (i == socket_control.get_http_socket_id()) {
+                            //
+                            // The HTTP socked was being closed -> must be EXIT
+                            //
+                            SocketControl::SocketInfo sockid;
+                            socket_control.remove(i, sockid); //  ==> CHANGES open_sockets!!
+#ifdef SHTTPS_ENABLE_SSL
+                        } else if (i == socket_control.get_ssl_socket_id()) {
+                            //
+                            // The HTTP socked was being closed -> must be EXIT - do nothing!
+                            //
+                            SocketControl::SocketInfo sockid;
+                            socket_control.remove(i, sockid); //  ==> CHANGES open_sockets!!
+                        } else {
+#else
+                        } else {
+#endif
+                            syslog(LOG_ERR, "We got a HANGUP from an unknown socket (socket_id = %d)", i);
+                        }
+                    } else {
+                        // we've got something else...
+                        if (sockets[i].revents & POLLERR) {
+                            syslog(LOG_DEBUG, "-->POLLERR");
+                        }
+                        if (sockets[i].revents & POLLHUP) {
+                            syslog(LOG_DEBUG, "-->POLLHUP");
+                        }
+                        if (sockets[i].revents & POLLIN) {
+                            syslog(LOG_DEBUG, "-->POLLIN");
+                        }
+                        if (sockets[i].revents & POLLNVAL) {
+                            syslog(LOG_DEBUG, "-->POLLNVAL");
+                        }
+                        if (sockets[i].revents & POLLOUT) {
+                            syslog(LOG_DEBUG, "-->POLLOUT");
+                        }
+                        if (sockets[i].revents & POLLPRI) {
+                            syslog(LOG_DEBUG, "-->POLLPRI");
+                        }
+                        if (sockets[i].revents & POLLRDBAND) {
+                            syslog(LOG_DEBUG, "-->POLLRDBAND");
+                        }
+                        if (sockets[i].revents & POLLRDNORM) {
+                            syslog(LOG_DEBUG, "-->POLLRDNORM");
+                        }
+                        if (sockets[i].revents & POLLWRBAND) {
+                            syslog(LOG_DEBUG, "-->POLLWRBAND");
+                        }
+                        if (sockets[i].revents & POLLWRNORM) {
+                            syslog(LOG_DEBUG, "-->POLLWRNORM");
+                        }
+                        //running = false;
+                        //break; // accept returned something strange – probably we want to shutdown the server
                     }
                 }
             }
-
-            semaphore_wait();
-            int commpipe[2];
-
-            if (socketpair(PF_LOCAL, SOCK_STREAM, 0, commpipe) != 0) {
-                syslog(LOG_WARNING, "Creating pipe failed at [%s: %d]: %m", __file__, __LINE__);
-                running = false;
-                break;
-            }
-
-            thread_data->commpipe_read = commpipe[1]; // read end;
-
-            pthread_attr_t tattr;
-            pthread_attr_init(&tattr);
-
-            if (pthread_create(&thread_id, &tattr, process_request, (void *) thread_data) < 0) {
-                syslog(LOG_ERR, "Could not create thread at [%s: %d]: %m", __file__, __LINE__);
-                running = false;
-                break;
-            }
-
-#ifdef SHTTPS_ENABLE_SSL
-            if (thread_data->cSSL != nullptr) {
-                add_thread(thread_id, commpipe[0], thread_data->sock, thread_data->cSSL);
-            } else {
-                add_thread(thread_id, commpipe[0], thread_data->sock);
-            }
-#else
-            add_thread(thread_id, commpipe[0], thread_data->sock);
-#endif
         }
 
         old_ll = setlogmask(LOG_MASK(LOG_INFO));
         syslog(LOG_INFO, "Server shutting down");
         setlogmask(old_ll);
-        std::vector<pthread_t> threads_to_join;
-        threads_to_join.push_back(sighandler_thread);
 
-        {
-            std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-
-            // Send the close message to all running threads.
-            for (auto const &tid : thread_ids) {
-                threads_to_join.push_back(tid.first);
-                Server::CommMsg::send(tid.second.commpipe_write);
-            }
-        }
-
-        close(stoppipe[0]);
-        close(stoppipe[1]);
-
-        // We have closed all sockets, now wait for the threads to terminate.
-
-        for (auto const &thread_to_join : threads_to_join) {
-            int err = pthread_join(thread_to_join, nullptr);
-
-            if (err != 0) {
-                syslog(LOG_ERR, "pthread_join failed with error code %d", err);
-            }
-        }
-
-        // Close the semaphore.
-        sem_close(_semaphore);
-
-        // std::cerr << "signal_result is " << signal_result << std::endl;
+        //close(stoppipe[0]);
+        //close(stoppipe[1]);
     }
     //=========================================================================
 
@@ -1277,16 +1261,14 @@ namespace shttps {
     //=========================================================================
 
 
-    ThreadStatus
+    shttps::ThreadStatus
     Server::processRequest(std::istream *ins, std::ostream *os, std::string &peer_ip, int peer_port, bool secure,
-                           int &keep_alive) {
+                           int &keep_alive, bool socket_reuse) {
         if (_tmpdir.empty()) {
             syslog(LOG_WARNING, "_tmpdir is empty");
             throw Error(__file__, __LINE__, "_tmpdir is empty");
         }
-
         if (ins->eof() || os->eof()) return CLOSE;
-
         try {
             Connection conn(this, ins, os, _tmpdir);
 
@@ -1310,7 +1292,6 @@ namespace shttps {
             //
             // Setting up the Lua server
             //
-
             // pattern to be added to the Lua package.path
             // includes Lua files in the Lua script directory
             std::string lua_scriptdir = _scriptdir + "/?.lua";
@@ -1345,7 +1326,6 @@ namespace shttps {
             return CLOSE;
         } catch (Error &err) {
             syslog(LOG_WARNING, "Internal server error: %s", err.to_string().c_str());
-
             try {
                 *os << "HTTP/1.1 500 INTERNAL_SERVER_ERROR\r\n";
                 *os << "Content-Type: text/plain\r\n";
@@ -1356,107 +1336,15 @@ namespace shttps {
             } catch (InputFailure iofail) {
                 syslog(LOG_DEBUG, "Possibly socket closed by peer");
             }
-
             return CLOSE;
         }
     }
     //=========================================================================
 
-    void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id) {
-        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-#ifdef SHTTPS_ENABLE_SSL
-        GenericSockId sid = {sock_id, nullptr, commpipe_write_p};
-#else
-        GenericSockId sid = {sock_id, commpipe_write_p};
-#endif
-        thread_ids[thread_id_p] = sid;
-    }
-    //=========================================================================
-
-#ifdef SHTTPS_ENABLE_SSL
-
-    void Server::add_thread(pthread_t thread_id_p, int commpipe_write_p, int sock_id, SSL *cSSL) {
-        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-
-        GenericSockId sid = {sock_id, cSSL, commpipe_write_p};
-        thread_ids[thread_id_p] = sid;
-    }
-
-#endif
-    //=========================================================================
-
-    int Server::get_thread_sock(pthread_t thread_id_p) {
-        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-
-        try {
-            return thread_ids.at(thread_id_p).sid;
-        } catch (const std::out_of_range &oor) {
-            return -1;
-        }
-    }
-    //=========================================================================
-
-    int Server::get_thread_pipe(pthread_t thread_id_p) {
-        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-
-        try {
-            return thread_ids.at(thread_id_p).commpipe_write;
-        } catch (const std::out_of_range &oor) {
-            return -1;
-        }
-    }
-    //=========================================================================
-
-
-#ifdef SHTTPS_ENABLE_SSL
-
-    SSL *Server::get_thread_ssl(pthread_t thread_id_p) {
-        std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-
-        try {
-            return thread_ids.at(thread_id_p).ssl_sid;
-        } catch (const std::out_of_range &oor) {
-            return nullptr;
-        }
-    }
-    //=========================================================================
-#endif
-
-
-    void Server::remove_thread(pthread_t thread_id_p) {
-        int index = 0;
-        bool in_idle = false;
-
-        {
-            std::lock_guard<std::mutex> idle_mutex_guard(idlelock);
-
-            for (auto tid : idle_thread_ids) {
-                if (tid == thread_id_p) {
-                    in_idle = true;
-                    break;
-                }
-                index++;
-            }
-
-            if (in_idle) {
-                //
-                // the thread is in idle state, remove it from the idle vector
-                //
-                idle_thread_ids.erase(idle_thread_ids.begin() + index);
-            }
-        }
-
-        {
-            std::lock_guard<std::mutex> thread_mutex_guard(threadlock);
-            thread_ids.erase(thread_id_p);
-        }
-    }
-    //=========================================================================
-
-    void Server::debugmsg(const std::string &msg) {
+    void Server::debugmsg(const int line, const std::string &msg) {
         std::lock_guard<std::mutex> debug_mutex_guard(debugio);
 
-        std::cerr << msg << std::endl;
+        std::cerr << "DBG> " << line << " " << msg << std::endl;
     }
     //=========================================================================
 

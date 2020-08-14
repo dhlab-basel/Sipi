@@ -144,6 +144,10 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushnumber(L, conf->getCacheHysteresis());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "jpeg_quality"); // table1 - "index_L1"
+    lua_pushinteger(L, conf->getJpegQuality());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "keep_alive"); // table1 - "index_L1"
     lua_pushinteger(L, conf->getKeepAlive());
     lua_rawset(L, -3); // table1
@@ -168,8 +172,43 @@ static void sipiConfGlobals(lua_State *L, shttps::Connection &conn, void *user_d
     lua_pushstring(L, conf->getTmpDir().c_str());
     lua_rawset(L, -3); // table1
 
+    lua_pushstring(L, "ssl_certificate"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getSSLCertificate().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "ssl_key"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getSSLKey().c_str());
+    lua_rawset(L, -3); // table1
+
     lua_pushstring(L, "scriptdir"); // table1 - "index_L1"
     lua_pushstring(L, conf->getScriptDir().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "logfile"); // table1 - "index_L1"
+    lua_pushstring(L, conf->getLogfile().c_str());
+    lua_rawset(L, -3); // table1
+
+    lua_pushstring(L, "loglevel"); // table1 - "index_L1"
+    std::string loglevel = conf->getLoglevel();
+    if (loglevel == "LOG_EMERG") {
+        lua_pushinteger(L, LOG_EMERG);
+    } else if (loglevel == "LOG_ALERT") {
+        lua_pushinteger(L, LOG_ALERT);
+    } else if (loglevel == "LOG_CRIT") {
+        lua_pushinteger(L, LOG_CRIT);
+    } else if (loglevel == "LOG_ERR") {
+        lua_pushinteger(L, LOG_ERR);
+    } else if (loglevel == "LOG_WARNING") {
+        lua_pushinteger(L, LOG_WARNING);
+    } else if (loglevel == "LOG_NOTICE") {
+        lua_pushinteger(L, LOG_NOTICE);
+    } else if (loglevel == "LOG_INFO") {
+        lua_pushinteger(L, LOG_INFO);
+    } else if (loglevel == "LOG_DEBUG") {
+        lua_pushinteger(L, LOG_DEBUG);
+    } else {
+        lua_pushinteger(L, -1);
+    }
     lua_rawset(L, -3); // table1
 
     lua_pushstring(L, "knora_path"); // table1 - "index_L1"
@@ -472,10 +511,10 @@ int main(int argc, char *argv[]) {
     int optServerport = 80;
     sipiopt.add_option("--serverport", optServerport, "Port of SIPI web server.")->envname("SIPI_SERVERPORT");
 
-    int optSSLport = 442;
+    int optSSLport = 443;
     sipiopt.add_option("--sslport", optSSLport, "SSL-port of the SIPI server.")->envname("SIPI_SSLPORT");
 
-    std::string optHostname;
+    std::string optHostname = "localhost";
     sipiopt.add_option("--hostname", optHostname, "Hostname to use for HTTP server.")->envname("SIPI_HOSTNAME");
 
     int optKeepAlive = 5;
@@ -502,6 +541,9 @@ int main(int argc, char *argv[]) {
     std::string optTmpdir = "./tmp";
     sipiopt.add_option("--tmpdir", optTmpdir, "Path to the temporary directory (e.g. for uploads etc.).")->envname("SIPI_TMPDIR")->check(CLI::ExistingDirectory);
 
+    int optMaxTmpAge = 86400;
+    sipiopt.add_option("--maxtmpage", optMaxTmpAge, "The maximum allowed age of temporary files (in seconds) before they are deleted.")->envname("SIPI_MAXTMPAGE");
+
     bool optPathprefix = false;
     sipiopt.add_flag("--pathprefix", optPathprefix, "Flag, if set indicates that the IIIF prefix is part of the path to the image file (deprecated).")->envname("SIPI_PATHPREFIX");
 
@@ -519,6 +561,9 @@ int main(int argc, char *argv[]) {
 
     std::string optCacheSize = "200M";
     sipiopt.add_option("--cachesize", optCacheSize, "Maximal size of cache, e.g. '500M'.")->envname("SIPI_CACHESIZE");
+
+    int optCacheNFiles = 200;
+    sipiopt.add_option("--cachenfiles", "The maximal number of files to be cached.")->envname("SIPI_CACHENFILES");
 
     double optCacheHysteresis = 0.15;
     sipiopt.add_option("--cachehysteresis", optCacheHysteresis, "If the cache becomes full, the given percentage of file space is marked for reuse (0.0 - 1.0).")->envname("SIPI_CACHEHYSTERESIS");
@@ -547,7 +592,7 @@ int main(int argc, char *argv[]) {
     std::string optKnoraPort = "3434";
     sipiopt.add_option("--knoraport", optKnoraPort, "Portnumber for Knora.")->envname("SIPI_KNORAPORT");
 
-    std::string optLogfilePath = "sipi.log";
+    std::string optLogfilePath = "Sipi";
     sipiopt.add_option("--logfile", optLogfilePath, "Name of the logfile (NYI).")->envname("SIPI_LOGFILE");
 
     enum class LogLevel {DEBUG, INFO, NOTICE, WARNING, ERR, CRIT, ALERT, EMERG};
@@ -896,6 +941,12 @@ int main(int argc, char *argv[]) {
             }
 
             if (!config_loaded) {
+                sipiConf.setMaxTempFileAge(optMaxTmpAge);
+            } else {
+                if (!sipiopt.get_option("--maxtmpage")->empty()) sipiConf.setMaxTempFileAge(optMaxTmpAge);
+            }
+
+            if (!config_loaded) {
                 sipiConf.setPrefixAsPath(optPathprefix);
             } else {
                 if (!sipiopt.get_option("--pathprefix")->empty()) sipiConf.setPrefixAsPath(optPathprefix);
@@ -939,6 +990,12 @@ int main(int argc, char *argv[]) {
                 sipiConf.setCacheSize(cache_size);
             } else {
                 if (!sipiopt.get_option("--cachesize")->empty()) sipiConf.setCacheSize(cache_size);
+            }
+
+            if (!config_loaded) {
+                sipiConf.setCacheNFiles(optCacheNFiles);
+            } else {
+                if (!sipiopt.get_option("--cachenfiles")->empty()) sipiConf.setCacheNFiles(optCacheNFiles);
             }
 
             if (!config_loaded) {
@@ -1137,6 +1194,7 @@ int main(int argc, char *argv[]) {
                 server.addRoute(shttps::Connection::GET, "/test", TestHandler, &server);
             }
 
+            syslog(LOG_DEBUG, "Starting SipiHttpServer::run()");
             server.run();
         } catch (shttps::Error &err) {
             std::cerr << err << std::endl;

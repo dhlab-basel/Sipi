@@ -926,9 +926,11 @@ namespace Sipi {
                           }
                     } else if (key == std::string("rates")) {
                         comp_params[Sipi::J2K_rates] = value;
+                    } else if (key == std::string("quality")) {
+                        comp_params[Sipi::JPEG_QUALITY] = value;
                     } else {
                         lua_pop(L, lua_gettop(L));
-                        lua_pushstring(L, "SipiImage.write(): invalid J2K compression parameter!");
+                        lua_pushstring(L, "SipiImage.write(): invalid compression parameter!");
                         return lua_error(L);
                     }
                     lua_pop(L, 1);

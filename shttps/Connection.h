@@ -703,6 +703,15 @@ namespace shttps {
         void closeCacheFile(void);
 
         /*!
+         * test if a cachefile is open for writing...
+         *
+         * @return true, if cache file is open
+         */
+        inline bool isCacheFileOpen() {
+            return (cachefile != nullptr);
+        }
+
+        /*!
          * Quasi "raw" data transmition. Sens the header if not yet done, and then
          * send the given data directly to the output without buffering etc.
          *

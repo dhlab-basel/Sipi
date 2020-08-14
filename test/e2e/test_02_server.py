@@ -105,16 +105,20 @@ class TestServer:
     def test_jpg_with_comment(selfself, manager):
         """process an uploaded jpeg file with comment block properly"""
 
+        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/HasCommentBlock.JPG"), "image/jpeg")
+        filename = response_json["filename"]
+        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+
         expected_result = {
+            "@context": "http://sipi.io/api/file/3/context.json",
+            "id": "http://127.0.0.1:1024/unit/{}".format(filename),
             "width": 373,
             "height": 496,
             "internalMimeType": "image/jpx",
             "originalMimeType": "image/jpeg",
             "originalFilename": "HasCommentBlock.JPG"
         }
-        response_json = manager.post_file("/api/upload", manager.data_dir_path("unit/HasCommentBlock.JPG"), "image/jpeg")
-        filename = response_json["filename"]
-        response_json = manager.get_json("/unit/{}/knora.json".format(filename))
+
         assert response_json == expected_result
 
 
@@ -214,6 +218,8 @@ class TestServer:
                 "filepath": "unit/lena512.tif",
                 "mimetype": "image/tiff",
                 "expected_result": {
+                    "@context": "http://sipi.io/api/file/3/context.json",
+                    "id": "http://127.0.0.1:1024/unit/",
                     "width": 512,
                     "height": 512,
                     "originalFilename": "lena512.tif",
@@ -222,9 +228,11 @@ class TestServer:
                 }
             },{
                 "filepath": "unit/test.csv",
-                "mimetype": "text/plain",
+                "mimetype": "text/comma-separated-values",
                 "expected_result": {
-                    "mimeType": "text/plain",
+                    "@context": "http://sipi.io/api/file/3/context.json",
+                    "id": "http://127.0.0.1:1024/unit/",
+                    "mimeType": "text/comma-separated-values",
                     "fileSize": 39697
                 }
             }
@@ -238,7 +246,9 @@ class TestServer:
             else:
                 manager.expect_status_code("/unit/{}".format(filename), 200)
             response_json = manager.get_json("/unit/{}/knora.json".format(filename))
-            assert response_json == test["expected_result"]
+            expected_result = test["expected_result"]
+            expected_result["id"] += filename
+            assert response_json == expected_result
 
         #expected_result = {
         #    "width": 512,
@@ -454,7 +464,7 @@ class TestServer:
 
     def test_pdf_server(self, manager):
         """Test serving entire PDF files"""
-        manager.compare_server_bytes("/unit/CV+Pub_LukasRosenthaler.pdf", manager.data_dir_path("unit/CV+Pub_LukasRosenthaler.pdf"))
+        manager.compare_server_bytes("/unit/CV+Pub_LukasRosenthaler.pdf/file", manager.data_dir_path("unit/CV+Pub_LukasRosenthaler.pdf"))
 
     def test_pdf_page_server(self, manager):
         """Test serving a PDF page as TIFF"""

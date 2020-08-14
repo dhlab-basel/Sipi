@@ -1,0 +1,42 @@
+<html>
+    <head>
+        <title>SIPI Configuration Info</title>
+    </head>
+    <body>
+    <h1>SIPI Configuration Info</h1>
+    <h2>Configuration variables</h2>
+    <table>
+        <tr><td>imgroot</td><td>:</td><td><lua>server.print(config.imgroot)</lua></td></tr>
+        <tr><td>docroot</td><td>:</td><td><lua>server.print(server.docroot)</lua></td></tr>
+        <tr><td>hostname</td><td>:</td><td><lua>server.print(config.hostname)</lua></td></tr>
+        <tr><td>scriptdir</td><td>:</td><td><lua>server.print(config.scriptdir)</lua></td></tr>
+        <tr><td>cachedir</td><td>:</td><td><lua>server.print(config.cache_dir)</lua></td></tr>
+        <tr><td>tmpdir</td><td>:</td><td><lua>server.print(config.tmpdir)</lua></td></tr>
+        <tr><td>port</td><td>:</td><td><lua>server.print(config.port)</lua></td></tr>
+        <lua>
+            if server.has_openssl then
+                server.print('<tr><td>SSL port</td><td>:</td><td>' .. config.sslport .. '</td></tr>')
+            end
+        </lua>
+        <tr><td>number of threads:</td><td>:</td><td><lua>server.print(config.n_threads)</lua></td></tr>
+        <tr><td>maximal post size:</td><td>:</td><td><lua>server.print(config.max_post_size)</lua></td></tr>
+    </table>
+    <h2>Client information</h2>
+    <table>
+        <tr><td>Host in request</td><td>:</td><td><lua>server.print(server.host)</lua></td></tr>
+        <tr><td>IP of client</td><td>:</td><td><lua>server.print(server.client_ip)</lua></td></tr>
+        <tr><td>URL path</td><td>:</td><td><lua>server.print(server.uri)</lua></td></tr>
+    </table>
+
+    <p>Important Note: "IP of client" and "Host in request" may indicate the information of a proxy and not
+        of the actual client!</p>
+    <h2>Request Header Information</h2>
+    <table>
+        <lua>
+            for key, val in pairs(server.header) do
+                server.print('<tr><td>' .. key .. '</td><td>:</td><td>' .. val ..'</td></tr>')
+            end
+        </lua>
+    </table>
+    </body>
+</html>

@@ -58,25 +58,43 @@ namespace shttps {
 
     const size_t max_headerline_len = 65535;
 
-    // trim from start
-    static inline std::string &ltrim(std::string &s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    // trim from start (in place)
+    static inline void ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+            return !std::isspace(ch);
+        }));
+    }
+
+    // trim from end (in place)
+    static inline void rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
+    // trim from both ends (in place)
+    static inline void trim(std::string &s) {
+        ltrim(s);
+        rtrim(s);
+    }
+
+    // trim from start (copying)
+    static inline std::string ltrim_copy(std::string s) {
+        ltrim(s);
         return s;
     }
-    //=========================================================================
 
-    // trim from end
-    static inline std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    // trim from end (copying)
+    static inline std::string rtrim_copy(std::string s) {
+        rtrim(s);
         return s;
     }
-    //=========================================================================
 
-    // trim from both ends
-    static inline std::string trim(std::string &s) {
-        return ltrim(rtrim(s));
+    // trim from both ends (copying)
+    static inline std::string trim_copy(std::string s) {
+        trim(s);
+        return s;
     }
-    //=========================================================================
 
     pair<string, string> strsplit(const string &str, const char c) {
         size_t pos;
@@ -289,16 +307,15 @@ namespace shttps {
             } else {
                 size_t pos = line.find(':');
                 string name = line.substr(0, pos);
-                name = trim(name);
+                name = trim_copy(name);
                 asciitolower(name);
                 string value = line.substr(pos + 1);
-                value = header_in[name] = trim(value);
+                value = header_in[name] = trim_copy(value);
 
                 if (name == "connection") {
                     unordered_map<string, string> opts = parse_header_options(value, true);
-                    if (opts.count("keep-alive") == 1) {
-                        _keep_alive = true;
-                    }
+                    _keep_alive = true;
+                    //_keep_alive = opts.count("keep-alive") == 1;
                     _keep_alive = opts.count("close") != 1;
                     if (opts.count("upgrade") == 1) {
                         // upgrade connection, e.g. to websockets...
@@ -330,11 +347,11 @@ namespace shttps {
         size_t pos = 0;
         while ((pos = valstr.find(';', start)) != string::npos) {
             string tmpstr = valstr.substr(start, pos - start);
-            result.push_back(trim(tmpstr));
+            result.push_back(trim_copy(tmpstr));
             start = pos + 1;
         }
         string tmpstr = valstr.substr(start);
-        result.push_back(trim(tmpstr));
+        result.push_back(trim_copy(tmpstr));
 
         return result;
     }
@@ -398,7 +415,6 @@ namespace shttps {
             //
             throw INPUT_READ_FAIL;
         }
-
         //
         // Parse first line of request
         //
@@ -434,11 +450,6 @@ namespace shttps {
                 header_out["Access-Control-Allow-Origin"] = origin;
                 header_out["Access-Control-Allow-Credentials"] = "true";
             }
-
-            /*for(std::map<std::string,std::string>::iterator it = header_in.begin(); it != header_in.end(); ++it)
-                {
-                    std::cout << it->first << " -> " << it->second << endl;
-                }*/
 
             if (method_in == "OPTIONS") {
                 //
@@ -580,10 +591,10 @@ namespace shttps {
                             while (!line.empty()) {
                                 size_t colon_pos = line.find(':');
                                 string name = line.substr(0, colon_pos);
-                                name = trim(name);
+                                name = trim_copy(name);
                                 asciitolower(name);
                                 string value = line.substr(colon_pos + 1);
-                                value = trim(value);
+                                value = trim_copy(value);
 
                                 if (name == "content-disposition") {
                                     unordered_map<string, string> opts = parse_header_options(value, true);
@@ -843,8 +854,63 @@ namespace shttps {
                     throw Error(__file__, __LINE__, "Content type not supported!");
                 }
             } else if (method_in == "DELETE") {
+                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
+                _content_type = content_type_opts[0];
+                if (_chunked_transfer_in) {
+                    char *tmp;
+                    ChunkReader ckrd(ins, _server->max_post_size());
+                    content_length = ckrd.readAll(&tmp);
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    memcpy(_content, tmp, content_length);
+                    free(tmp);
+                    _content[content_length] = '\0';
+                } else if (content_length > 0) {
+                    if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                    }
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    ins->read(_content, content_length);
+
+                    if (ins->fail() || ins->eof()) {
+                        free(_content);
+                        _content = nullptr;
+                        throw INPUT_READ_FAIL;
+                    }
+                    _content[content_length] = '\0';
+                }
                 _method = DELETE;
             } else if (method_in == "TRACE") {
+                vector<string> content_type_opts = process_header_value(header_in["content-type"]);
+                _content_type = content_type_opts[0];
+                if (_chunked_transfer_in) {
+                    char *tmp;
+                    ChunkReader ckrd(ins, _server->max_post_size());
+                    content_length = ckrd.readAll(&tmp);
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    memcpy(_content, tmp, content_length);
+                    free(tmp);
+                    _content[content_length] = '\0';
+                } else if (content_length > 0) {
+                    if ((_server->max_post_size() > 0) && (content_length > _server->max_post_size())) {
+                        throw Error(__file__, __LINE__, "Content bigger than max_post_size");
+                    }
+                    if ((_content = (char *) malloc((content_length + 1) * sizeof(char))) == nullptr) {
+                        throw Error(__file__, __LINE__, "malloc failed!", errno);
+                    }
+                    ins->read(_content, content_length);
+
+                    if (ins->fail() || ins->eof()) {
+                        free(_content);
+                        _content = nullptr;
+                        throw INPUT_READ_FAIL;
+                    }
+                }
                 _method = TRACE;
             } else if (method_in == "CONNECT") {
                 _method = CONNECT;
@@ -1179,9 +1245,11 @@ namespace shttps {
     //=============================================================================
 
     void Connection::closeCacheFile(void) {
-        cachefile->close();
-        delete cachefile;
-        cachefile = nullptr;
+        if (cachefile != nullptr) {
+            cachefile->close();
+            delete cachefile;
+            cachefile = nullptr;
+        }
     }
     //=============================================================================
 
@@ -1261,7 +1329,7 @@ namespace shttps {
             //
             // we have no buffer, so an immediate action is required
             //
-            if (!header_sent) { // we have not yet sent a header -> to it
+            if (!header_sent) { // we have not yet sent a header -> do it
                 if (_chunked_transfer_out) {
                     //
                     // chunked transfer -> send header and chunk
@@ -1278,7 +1346,7 @@ namespace shttps {
                     if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 } else {
                     //
-                    // nomal (unchunked) transfer -> send header with length of data and then send the data
+                    // normal (unchunked) transfer -> send header with length of data and then send the data
                     //
                     send_header(n); // sends content length if not buffer nor chunked
                     os->write((char *) buffer, n);
@@ -1374,6 +1442,7 @@ namespace shttps {
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
+                outbuf_nbytes = 0;
             } else {
                 //
                 // we don't use a buffer (or the buffer is empty) -> send the data immediatly
@@ -1386,7 +1455,6 @@ namespace shttps {
                 os->write((char *) buffer, n);
                 if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
                 if (cachefile != nullptr) cachefile->write((char *) buffer, n);
-                outbuf_nbytes = 0;
             }
 
             os->flush();
@@ -1404,13 +1472,13 @@ namespace shttps {
         // test if we have access to the file
         //
         if (access(path.c_str(), R_OK) != 0) { // test, if file exists
-            throw Error(__file__, __LINE__, "File not readable!");
+            throw Error(__file__, __LINE__, "File not readable:" + path);
         }
 
         struct stat fstatbuf;
 
         if (stat(path.c_str(), &fstatbuf) != 0) {
-            throw Error(__file__, __LINE__, "Cannot fstat file!");
+            throw Error(__file__, __LINE__, "Cannot fstat file: " + path);
         }
 
         size_t fsize = fstatbuf.st_size;
@@ -1419,7 +1487,7 @@ namespace shttps {
         FILE *infile = fopen(path.c_str(), "rb");
 
         if (infile == nullptr) {
-            throw Error(__file__, __LINE__, "File not readable!");
+            throw Error(__file__, __LINE__, "File not readable: " + path);
         }
 
         if (from > 0) {
@@ -1622,6 +1690,8 @@ namespace shttps {
             os->flush(); // last (empty) chunk
             if (os->eof() || os->fail()) throw OUTPUT_WRITE_FAIL;
         }
+        *os << "\r\n";
+        os->flush();
         _finished = true;
     }
     //=============================================================================

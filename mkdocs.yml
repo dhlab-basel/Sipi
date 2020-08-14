@@ -1,10 +1,13 @@
 site_name: SIPI Documentation
 
 nav:
-  - Overview: index.md
+  - Introduction: introduction.md
+  - Basic information and Reference: sipi.md
+  - Lua integration: lua.md
+  - Lua imaging functions: lua-image.md
+  - Sqlite3 integration: sqlite.md
   - Building: building.md
   - Running: running.md
-  - Lua: lua.md
   - Developing: developing.md
   - Release-Notes: 0-release-notes/index.md
 

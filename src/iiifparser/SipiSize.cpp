@@ -55,18 +55,20 @@ namespace Sipi {
         percent = 0.F;
         canonical_ok = false;
         reduce = 0;
+        redonly = false;
+        size_type = SizeType::UNDEFINED;
+
+        upscaling = str[0] == '^';
+        if (upscaling) {
+            str.erase(0, 1);
+        }
+
+        bool exclamation_mark = str[0] == '!';
+        if (exclamation_mark) {
+            str.erase(0, 1);
+        }
 
         try {
-            upscaling = str[0] == '^';
-            if (upscaling) {
-                str.erase(0, 1);
-            }
-
-            bool exclamation_mark = str[0] == '!';
-            if (exclamation_mark) {
-                str.erase(0, 1);
-            }
-
             if (str.empty() || str == "max") {
                 size_type = SizeType::FULL;
             } else if (str.find("pct") != std::string::npos) {
@@ -85,7 +87,7 @@ namespace Sipi {
                 size_t comma_pos = str.find(',');
 
                 if (comma_pos == std::string::npos) {
-                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
+                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: \"" + str + "\"");
                 }
 
                 std::string width_str = str.substr(0, comma_pos);
@@ -93,7 +95,7 @@ namespace Sipi {
 
                 if ((width_str.empty() && height_str.empty()) ||
                     (size_type == SizeType::MAXDIM && (width_str.empty() || height_str.empty()))) {
-                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: " + str);
+                    throw SipiError(__file__, __LINE__, "Could not parse IIIF size parameter: \"" + str + "\" ");
                 }
 
                 if (width_str.empty()) { // ",h" or "^,h"
@@ -435,7 +437,6 @@ namespace Sipi {
         std::stringstream ss;
         ss << "get_size: img_w=" << img_w << " img_h=" << img_h << " w_p=" << w_p << " h_p=" << h_p << " reduce=" << reduce_p
            << " reduce only=" << redonly;
-        syslog(LOG_DEBUG, "%s", ss.str().c_str());
 
         canonical_ok = true;
 

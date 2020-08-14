@@ -35,7 +35,7 @@ import psutil
 import re
 import hashlib
 import glob
-
+import sys
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -121,6 +121,8 @@ class SipiTestManager:
         def check_for_ready_output(line):
             if self.sipi_ready_output in line:
                 self.sipi_started = True
+            else:
+                print(line, file=sys.stderr)
 
         # Stop any existing Sipi process. This could happen if a previous test run crashed.
         for proc in psutil.process_iter():
@@ -141,7 +143,6 @@ class SipiTestManager:
         except OSError:
             pass
 
-        print(self.sipi_command)
 
         # Start a Sipi process and capture its output.
         sipi_args = shlex.split(self.sipi_command)
@@ -527,6 +528,7 @@ class ProcessOutputReader:
         def collect_lines():
             while True:
                 line = self.stream.readline()
+                print(line, file=sys.stderr)
                 if line:
                     self.lines.append(line)
                     self.line_func(line)

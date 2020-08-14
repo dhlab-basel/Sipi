@@ -60,5 +60,5 @@ TEST(Configuration, LoadConfigurationFile)
     EXPECT_EQ(sipiConf.getScriptDir(), "./scripts");
     EXPECT_EQ(sipiConf.getThumbSize(), "!128,128");
     EXPECT_EQ(sipiConf.getTmpDir(), "/tmp");
-    EXPECT_EQ(sipiConf.getLoglevel(), "DEBUG");
+    EXPECT_EQ(sipiConf.getLoglevel(), "ERROR");
 }

@@ -289,11 +289,17 @@ namespace Sipi {
             for (const auto &ele : alist) {
                 syslog(LOG_DEBUG, "Purging from cache \"%s\"...", cachetable[ele.canonical].cachepath.c_str());
                 std::string delpath = _cachedir + "/" + cachetable[ele.canonical].cachepath;
-                ::remove(delpath.c_str());
-                cachesize -= cachetable[ele.canonical].fsize;
-                --nfiles;
-                ++n;
-                (void) cachetable.erase(ele.canonical);
+
+                try {
+                    int cnt = blocked_files.at(delpath);
+                    syslog(LOG_WARNING, "Couldn't remove cache file for %s: file in use (%d)!", ele.canonical.c_str(), cnt);
+                } catch (const std::out_of_range &ex) {
+                    ::unlink(delpath.c_str());
+                    cachesize -= cachetable[ele.canonical].fsize;
+                    --nfiles;
+                    ++n;
+                    (void) cachetable.erase(ele.canonical);
+                }
                 if ((max_cachesize > 0) && (cachesize < cachesize_goal)) break;
                 if ((max_nfiles > 0) && (nfiles < nfiles_goal)) break;
             }
@@ -303,7 +309,7 @@ namespace Sipi {
     }
     //============================================================================
 
-    std::string SipiCache::check(const std::string &origpath_p, const std::string &canonical_p) {
+    std::string SipiCache::check(const std::string &origpath_p, const std::string &canonical_p, bool block_file) {
         struct stat fileinfo;
         SipiCache::CacheRecord fr;
 
@@ -318,30 +324,39 @@ namespace Sipi {
 
         std::string res;
 
-        {
-            std::lock_guard<std::mutex> locking_mutex_guard(locking);
-
-            try {
-                fr = cachetable.at(canonical_p);
-            } catch (const std::out_of_range &oor) {
-                return res; // return empty string, because we didn't find the file in cache
-            }
-
-            //
-            // get the current time (seconds since Epoch)
-            //
-            time_t at;
-            time(&at);
-            fr.access_time = at; // update the access time!
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
+        try {
+            fr = cachetable.at(canonical_p);
+        } catch (const std::out_of_range &oor) {
+            return res; // return empty string, because we didn't find the file in cache
         }
 
-        if (tcompare(mtime, fr.mtime) > 0) { // original file is newer than cache, we have to replace it..
+        //
+        // get the current time (seconds since Epoch)
+        //
+        time_t at;
+        time(&at);
+        cachetable[canonical_p].access_time = at;// update the access time!
+
+        if (tcompare(mtime, fr.mtime) > 0) { // original file is newer than cache, we have to replace it...
             return res; // return empty string, means "replace the file in the cache!"
         } else {
-            return _cachedir + "/" + fr.cachepath;
+            std::string res = _cachedir + "/" + fr.cachepath;
+            if (block_file) {
+                blocked_files[res]++;
+            }
+            return res;
         }
     }
     //============================================================================
+
+    void SipiCache::deblock(std::string res) {
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
+        blocked_files[res]--;
+        if (blocked_files[res] < 1) {
+            blocked_files.erase(res);
+        }
+    }
 
     /*!
      * Creates a new cache file with a unique name.
@@ -394,8 +409,6 @@ namespace Sipi {
         fr.origpath = origpath_p;
         fr.cachepath = cachepath;
 
-        std::lock_guard<std::mutex> locking_mutex_guard(locking);
-
         if (stat(cachepath_p.c_str(), &fileinfo) != 0) {
             throw SipiError(__file__, __LINE__, "Couldn't stat file \"" + origpath_p + "\"!", errno);
         }
@@ -417,14 +430,15 @@ namespace Sipi {
         // we check if there is already a file with the same canonical name. If so,
         // we remove it
         //
+        std::lock_guard<std::mutex> locking_mutex_guard(locking);
         try {
             SipiCache::CacheRecord tmp_fr = cachetable.at(canonical_p);
             std::string toremove = _cachedir + "/" + tmp_fr.cachepath;
-            ::remove(toremove.c_str());
+            ::unlink(toremove.c_str());
             cachesize -= tmp_fr.fsize;
             --nfiles;
         } catch (const std::out_of_range &oor) {
-            // do nothing...
+            ; // do nothing...
         }
 
         purge(false);
@@ -432,15 +446,8 @@ namespace Sipi {
         cachetable[canonical_p] = fr;
         cachesize += fr.fsize;
 
-        /*
-        try {
-            (void) sizetable.at(origpath_p);
-        }
-        catch(const std::out_of_range& oor) {
-         */
         SipiCache::SizeRecord tmp_cr = {img_w_p, img_h_p, tile_w_p, tile_h_p, clevels_p, numpages_p};
         sizetable[origpath_p] = tmp_cr;
-        //}
 
         ++nfiles;
     }
@@ -453,11 +460,19 @@ namespace Sipi {
         try {
             fr = cachetable.at(canonical_p);
         } catch (const std::out_of_range &oor) {
+            syslog(LOG_WARNING, "Couldn't remove cache for %s: not existing!", canonical_p.c_str());
             return false; // return empty string, because we didn't find the file in cache
         }
 
-        syslog(LOG_DEBUG, "Delete from cache \"%s\"...", cachetable[canonical_p].cachepath.c_str());
         std::string delpath = _cachedir + "/" + cachetable[canonical_p].cachepath;
+        try {
+            int cnt = blocked_files.at(delpath);
+            syslog(LOG_WARNING, "Couldn't remove cache for %s: file in use (%d)!", canonical_p.c_str(), cnt);
+            return false;
+        } catch (const std::out_of_range &ex) {
+            ;
+        }
+        syslog(LOG_DEBUG, "Delete from cache \"%s\"...", cachetable[canonical_p].cachepath.c_str());
         ::remove(delpath.c_str());
         cachesize -= cachetable[canonical_p].fsize;
         cachetable.erase(canonical_p);

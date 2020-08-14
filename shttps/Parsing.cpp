@@ -35,8 +35,8 @@ namespace shttps {
 
     namespace Parsing {
 
-        static std::unordered_map <std::string, std::unordered_set<std::string>> mimetypes = {
-                {"jpx",     {"image/jp2", "image/jpx"}},
+        static std::unordered_map <std::string, std::vector<std::string>> mimetypes = {
+                {"jpx",     {"image/jpx", "image/jp2"}},
                 {"jp2",     {"image/jp2", "image/jpx"}},
                 {"jpg",     {"image/jpeg"}},
                 {"jpeg",    {"image/jpeg"}},
@@ -57,14 +57,13 @@ namespace shttps {
                 {"gz",      {"application/gzip"}},
                 {"json",    {"application/json"}},
                 {"js",      {"application/javascript"}},
-                {"xls",     {"application/msexcel",                                               "application/vnd.ms-excel"}},
-                {"xla",     {"application/msexcel",                                               "application/vnd.ms-excel"}},
-                {"xlsx",
-                            {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"}},
-                {"ppt",     {"application/mspowerpoint",                                          "application/vnd.ms-powerpoint"}},
-                {"pptx",    {"application/mspowerpoint",                                          "application/vnd.ms-powerpoint"}},
-                {"pps",     {"application/mspowerpoint",                                          "application/vnd.ms-powerpoint"}},
-                {"pot",     {"application/mspowerpoint",                                          "application/vnd.ms-powerpoint"}},
+                {"xls",     {"application/vnd.ms-excel", "application/msexcel"}},
+                {"xla",     {"application/vnd.ms-excel", "application/msexcel"}},
+                {"xlsx",    {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"}},
+                {"ppt",     {"application/vnd.ms-powerpoint", "application/mspowerpoint"}},
+                {"pptx",    {"application/vnd.ms-powerpoint", "application/mspowerpoint"}},
+                {"pps",     {"application/vnd.ms-powerpoint", "application/mspowerpoint"}},
+                {"pot",     {"application/vnd.ms-powerpoint", "application/mspowerpoint"}},
                 {"doc",     {"application/msword"}},
                 {"docx",    {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}},
                 {"bin",     {"application/octet-stream"}},
@@ -72,13 +71,13 @@ namespace shttps {
                 {"ps",      {"application/postscript"}},
                 {"eps",     {"application/postscript"}},
                 {"ai",      {"application/postscript"}},
-                {"rtf",     {"application/rtf",                                                   "text/rtf"}},
-                {"htm",     {"text/html",                                                         "application/xhtml+xml"}},
-                {"html",    {"text/html",                                                         "application/xhtml+xml"}},
-                {"shtml",   {"text/html",                                                         "application/xhtml+xml"}},
+                {"rtf",     {"application/rtf", "text/rtf"}},
+                {"htm",     {"text/html", "application/xhtml+xml"}},
+                {"html",    {"text/html", "application/xhtml+xml"}},
+                {"shtml",   {"text/html", "application/xhtml+xml"}},
                 {"xhtml",   {"application/xhtml+xml"}},
                 {"css",     {"text/css"}},
-                {"xml",     {"application/xml",                                                   "text/xml"}},
+                {"xml",     {"text/xml", "application/xml"}},
                 {"z",       {"application/x-compress"}},
                 {"tgz",     {"application/x-compress"}},
                 {"dvi",     {"application/x-dvi"}},
@@ -86,7 +85,7 @@ namespace shttps {
                 {"hdf",     {"application/x-hdf"}},
                 {"php",     {"application/x-httpd-php"}},
                 {"phtml",   {"application/x-httpd-php"}},
-                {"tex",     {"application/x-tex",                                                 "application/x-latex"}},
+                {"tex",     {"application/x-tex", "application/x-latex"}},
                 {"latex",   {"application/x-latex"}},
                 {"texi",    {"application/x-texinfo"}},
                 {"texinfo", {"application/x-texinfo"}},
@@ -96,19 +95,21 @@ namespace shttps {
                 {"snd",     {"audio/basic"}},
                 {"mp3",     {"audio/mpeg"}},
                 {"mp4",     {"audio/mp4"}},
-                {"ogg",     {"audio/ogg",                                                         "video/ogg", "application/ogg"}},
-                {"ogv",     {"video/ogg",                                                         "application/ogg"}},
-                {"wav",     {"audio/wav",                                                         "audio/wav", "audio/x-wav", "audio/x-pn-wav"}},
+                {"ogg",     {"application/ogg", "audio/ogg", "video/ogg"}},
+                {"ogv",     {"video/ogg", "application/ogg"}},
+                {"oga",     {"audio/ogg", "application/ogg"}},
+                {"wav",     {"audio/wav", "audio/wav", "audio/x-wav", "audio/x-pn-wav"}},
                 {"aif",     {"audio/x-aiff"}},
                 {"aiff",    {"audio/x-aiff"}},
                 {"aifc",    {"audio/x-aiff"}},
                 {"mid",     {"audio/x-midi"}},
                 {"midi",    {"audio/x-midi"}},
                 {"mp2",     {"audio/x-mpeg"}},
-                {"wrl",     {"model/vrml",                                                        "x-world/x-vrml"}},
+                {"wrl",     {"model/vrml", "x-world/x-vrml"}},
                 {"ics",     {"text/calendar"}},
-                {"csv",     {"text/comma-separated-values",                                       "text/plain"}},
-                {"tsv",     {"text/tab-separated-values",                                         "text/plain"}},
+                {"csv",     {"text/comma-separated-values", "text/plain", "application/vnd.ms-excel",
+                                    "application/csv", "text/csv"}},
+                {"tsv",     {"text/tab-separated-values", "text/plain", "text/x-csv"}},
                 {"txt",     {"text/plain"}},
                 {"rtx",     {"text/richtext"}},
                 {"sgm",     {"text/x-sgml"}},
@@ -164,8 +165,9 @@ namespace shttps {
                 throw Error(__file__, __LINE__, error_msg.str());
             }
         }
+        //=============================================================================================================
 
-        std::pair <std::string, std::string> getFileMimetype(const std::string &fpath) {
+        std::pair <std::string,std::string> getFileMimetype(const std::string &fpath) {
             magic_t handle;
             if ((handle = magic_open(MAGIC_MIME | MAGIC_PRESERVE_ATIME)) == nullptr) {
                 throw Error(__file__, __LINE__, magic_error(handle));
@@ -178,11 +180,42 @@ namespace shttps {
             std::string mimestr(magic_file(handle, fpath.c_str()));
             return parseMimetype(mimestr);
         }
+        //=============================================================================================================
 
+        std::string getBestFileMimetype(const std::string &fpath) {
+            std::string mimetype = getFileMimetype(fpath).first;
+            size_t dot_pos = fpath.find_last_of(".");
+            if (dot_pos != std::string::npos) {
+                std::string extension = fpath.substr(dot_pos + 1);
+                std::vector<std::string> mimes_from_extension;
+                try {
+                    mimes_from_extension = mimetypes.at(extension);
+                } catch (std::out_of_range const& exc) {
+                    return mimetype;
+                }
+                //
+                // check if mimetype from magic number is in list if this extension. If so, return the preferred
+                // mimetype (= first in array). If not, return the mimtype from the magic number (extension could be
+                // wrong!)
+                //
+                bool found = false;
+                for (const auto mt: mimes_from_extension) {
+                    if (mt == mimetype) { found = true; break; }
+                }
+                if (found) {
+                    return mimes_from_extension[0];
+                } else {
+                    return mimetype;
+                }
+            }
+            return mimetype;
+        }
+        //=============================================================================================================
 
         bool checkMimeTypeConsistency(const std::string &path) {
             return checkMimeTypeConsistency(path, path);
         }
+        //=============================================================================================================
 
         bool checkMimeTypeConsistency(
                 const std::string &path,
@@ -202,7 +235,7 @@ namespace shttps {
                 // convert file extension to lower case (uppercase letters in file extension have to be converted for
                 // mime type comparison)
                 std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-                std::unordered_set<std::string> mime_from_extension = mimetypes.at(extension);
+                std::vector<std::string> mime_from_extension = mimetypes.at(extension);
 
                 //
                 // now we get the mimetype determined by the magic number
@@ -212,19 +245,21 @@ namespace shttps {
                 //
                 // now we test if the mimetype given given by the magic number corresponds to a valid mimetype for this extension
                 //
-                std::unordered_set<std::string>::const_iterator got1 = mime_from_extension.find(actual_mimetype.first);
-                if (got1 == mime_from_extension.end()) {
-                    return false;
+                bool got1 = false;
+                for (const auto mt: mime_from_extension) {
+                    if (mt == actual_mimetype.first) { got1 = true; break; }
                 }
+                if (!got1) return false;
 
                 if (!given_mimetype.empty()) {
                     //
                     // now we test if the expected mimetype corresponds to a valid mimetype for this extension
                     //
-                    std::unordered_set<std::string>::const_iterator got2 = mime_from_extension.find(given_mimetype);
-                    if (got2 == mime_from_extension.end()) {
-                        return false;
+                    bool got2 = false;
+                    for (const auto mt: mime_from_extension) {
+                        if (mt == given_mimetype) { got2 = true; break; }
                     }
+                    if (!got2) return false;
                 }
             } catch (std::out_of_range &e) {
                 std::stringstream ss;
@@ -234,6 +269,7 @@ namespace shttps {
 
             return true;
         }
+        //=============================================================================================================
 
         size_t parse_int(std::string &str) {
             try {
@@ -258,6 +294,7 @@ namespace shttps {
                 throw Error(__file__, __LINE__, error_msg.str());
             }
         }
+        //=============================================================================================================
 
         float parse_float(std::string &str) {
             try {
@@ -282,7 +319,7 @@ namespace shttps {
                 throw Error(__file__, __LINE__, error_msg.str());
             }
         }
-
+        //=============================================================================================================
 
     }
 }
