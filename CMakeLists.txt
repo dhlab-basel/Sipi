@@ -30,6 +30,7 @@ include(CheckIncludeFiles)
 project(sipi)
 
 string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
+# FIXME DSP-687 SIPI version strings hardcoded
 set(SIPI_RELEASE "Sipi Version v2.0.0-SNAPSHOT (build ${SIPIDATE})")
 
 # ------------------------------------------------------------------------------

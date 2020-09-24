@@ -15,7 +15,6 @@ sipi
 *~
 *.pyc
 .idea/
-SipiConfig.h
 sipi.log*
 /extsrcs/
 /cmake-build-debug/
