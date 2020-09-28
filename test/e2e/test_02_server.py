@@ -144,7 +144,7 @@ class TestServer:
             },
             {
                 "filepath": "knora/csv_test.csv",
-                "mimetype": "text/comma-separated-values",
+                "mimetype": "text/csv",
                 "expected_result": {
                     "consistency": True,
                     "origname": "csv_test.csv"
@@ -228,11 +228,11 @@ class TestServer:
                 }
             },{
                 "filepath": "unit/test.csv",
-                "mimetype": "text/comma-separated-values",
+                "mimetype": "text/csv",
                 "expected_result": {
                     "@context": "http://sipi.io/api/file/3/context.json",
                     "id": "http://127.0.0.1:1024/unit/",
-                    "mimeType": "text/comma-separated-values",
+                    "internalMimeType": "text/csv",
                     "fileSize": 39697
                 }
             }
