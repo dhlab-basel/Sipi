@@ -433,7 +433,7 @@ namespace Sipi {
             json_object_set_new(root, "protocol", json_string("http://iiif.io/api/image"));
             json_object_set_new(root, "profile", json_string("level2"));
         } else {
-            json_object_set_new(root, "mimeType", json_string(actual_mimetype.c_str()));
+            json_object_set_new(root, "internalMimeType", json_string(actual_mimetype.c_str()));
 
             struct stat fstatbuf;
             if (stat(access["infile"].c_str(), &fstatbuf) != 0) {
@@ -741,7 +741,7 @@ namespace Sipi {
             json_decref(root);
         }
         else {
-            json_object_set_new(root, "mimeType", json_string(actual_mimetype.c_str()));
+            json_object_set_new(root, "internalMimeType", json_string(actual_mimetype.c_str()));
 
             struct stat fstatbuf;
             if (stat(infile.c_str(), &fstatbuf) != 0) {
