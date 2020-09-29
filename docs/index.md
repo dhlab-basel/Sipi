@@ -1,6 +1,6 @@
 # Overview
 
-Sipi is a multihreaded, high-performance, IIIF compatible media server developed by
+Sipi is a multithreaded, high-performance, IIIF compatible media server developed by
 the [Data and Service Center for the Humanities](https://dasch.swiss) at the
 [University of Basel](https://www.unibas.ch/en.html). It is designed to
 be used by archives, libraries, and other institutions that need to
@@ -12,7 +12,7 @@ formats, preserving metadata contained in image files. In particular, if
 images are stored in [JPEG 2000](https://jpeg.org/jpeg2000/) format,
 Sipi can convert them on the fly to formats that are commonly used on
 the Internet. Sipi offers a flexible framework for specifying
-authentication and authorization logic in [Lua](https://www.lua.org/)
+authentication and authorisation logic in [Lua](https://www.lua.org/)
 scripts, and supports restricted access to images, either by reducing
 image dimensions or by adding watermarks. It can easily be integrated
 with [Knora](http://www.knora.org/). In addition SIPI preserves most of
