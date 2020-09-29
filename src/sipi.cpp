@@ -847,8 +847,9 @@ int main(int argc, char *argv[]) {
         //
 
         try {
-            std::cout << std::endl << SIPI_BUILD_DATE << std::endl;
-            std::cout << SIPI_BUILD_VERSION << std::endl;
+            std::cout << std::endl << BUILD_TIMESTAMP << std::endl;
+            std::cout << BUILD_SCM_TAG << std::endl;
+            std::cout << BUILD_SCM_REVISION << std::endl;
 
             Sipi::SipiConf sipiConf;
             bool config_loaded = false;
@@ -1136,8 +1137,9 @@ int main(int argc, char *argv[]) {
                     sipiConf.getLoglevel());
 
             int old_ll = setlogmask(LOG_MASK(LOG_INFO));
-            syslog(LOG_INFO, SIPI_BUILD_DATE);
-            syslog(LOG_INFO, SIPI_BUILD_VERSION);
+            syslog(LOG_INFO, BUILD_TIMESTAMP);
+            syslog(LOG_INFO, BUILD_SCM_TAG);
+            syslog(LOG_INFO, BUILD_SCM_REVISION);
             setlogmask(old_ll);
 
 #           ifdef SHTTPS_ENABLE_SSL

@@ -29,9 +29,6 @@ include(CheckIncludeFiles)
 
 project(sipi)
 
-string(TIMESTAMP SIPIDATE "%Y-%m-%d %H:%M")
-set(SIPI_RELEASE "Sipi Version v2.0.0-SNAPSHOT (build ${SIPIDATE})")
-
 # ------------------------------------------------------------------------------
 # Set our path variables
 # the build folder will hold all downloaded, built, and installed files
@@ -251,19 +248,31 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
+# get current date and time
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%d %H:%M")
+MESSAGE( STATUS "Build timestamp: ${BUILD_TIMESTAMP}" )
+
 # get version from git
 IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
     FIND_PACKAGE(Git)
     IF(GIT_FOUND)
         EXECUTE_PROCESS(
-            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-            OUTPUT_VARIABLE "SIPI_BUILD_VERSION"
-            ERROR_QUIET
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-        MESSAGE( STATUS "Git version: ${SIPI_BUILD_VERSION}" )
+                COMMAND ${GIT_EXECUTABLE} describe --tag --dirty --abbrev=7
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                OUTPUT_VARIABLE "BUILD_SCM_TAG"
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Build SCM tag: ${BUILD_SCM_TAG}" )
+        EXECUTE_PROCESS(
+                COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                OUTPUT_VARIABLE "BUILD_SCM_REVISION"
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        MESSAGE( STATUS "Build SCM revision: ${BUILD_SCM_REVISION}" )
     ELSE(GIT_FOUND)
-        SET(SIPI_BUILD_VERSION 0)
+        SET(BUILD_SCM_REVISION 0)
+        SET(BUILD_SCM_TAG 0)
     ENDIF(GIT_FOUND)
 ENDIF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
 
