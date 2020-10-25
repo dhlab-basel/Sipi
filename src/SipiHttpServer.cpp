@@ -1528,6 +1528,9 @@ namespace Sipi {
                 } catch (const SipiImageError &err) {
                     send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
                     return;
+                } catch (const SipiSizeError &err) {
+                    send_error(conn_obj, Connection::BAD_REQUEST, err.to_string());
+                    return;
                 }
 
                 //
