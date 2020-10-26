@@ -939,12 +939,12 @@ namespace Sipi {
                 continue;
             }
 
-            parts.push_back(uri.substr(old_pos, pos - old_pos - 1));
+            parts.push_back(shttps::urldecode(uri.substr(old_pos, pos - old_pos - 1)));
             old_pos = pos;
         }
 
         if (old_pos != uri.length()) {
-            parts.push_back(uri.substr(old_pos, std::string::npos));
+            parts.push_back(shttps::urldecode(uri.substr(old_pos, std::string::npos)));
         }
 
         if (parts.size() < 1) {
