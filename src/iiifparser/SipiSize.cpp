@@ -294,6 +294,7 @@ namespace Sipi {
                 } else {
                     h = static_cast<size_t>(ceilf(static_cast<float>(img_h * nx) / img_w_float));
                 }
+
                 if (!upscaling && (w > img_w || h > img_h)) {
                     throw SipiSizeError(400, "Upscaling not allowed!");
                 }
@@ -420,12 +421,6 @@ namespace Sipi {
                 redonly = true;
                 break;
             }
-        }
-
-        if (w > img_w || h > img_h) {
-            upscaling = true;
-        } else {
-            upscaling = false;
         }
 
         w_p = w;

@@ -470,6 +470,10 @@ class TestServer:
         """Test serving a PDF page as TIFF"""
         manager.compare_server_images("/unit/CV+Pub_LukasRosenthaler.pdf@3/full/pct:25/0/default.jpg", manager.data_dir_path("unit/CV+Pub_LukasRosenthaler_p3.jpg"))
 
+    def test_upscaling_server(self, manager):
+        """Test upscaling of an image"""
+        manager.compare_server_images("/unit/lena512.jp2/full/^1000,/0/default.tif", manager.data_dir_path("unit/lena512_upscaled.tif"))
+
     def test_concurrency(self, manager):
         """handle many concurrent requests for different URLs (this may take a while, please be patient)"""
 
