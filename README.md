@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/dasch-swiss/sipi/workflows/CI/badge.svg?branch=develop)](https://github.com/dasch-swiss/sipi/actions)
+[![Build Status](https://github.com/dasch-swiss/sipi/workflows/CI/badge.svg?branch=main)](https://github.com/dasch-swiss/sipi/actions)
 
 # Overview
 

@@ -9,7 +9,7 @@
  1. On Github - Create new milestone
  1. On Github - Move any open issues from current release milestone to the next release milestone and so on.
  1. On Github - Close current milestone.
- 1. Push and merge PR to `develop`.
+ 1. Push and merge PR to `main`.
  1. Travis CI will start a [CI build](https://travis-ci.org/dhlab-basel/Sipi/builds) for the new tag and publish
     artifacts to Docker Hub.
  1. On Github - Tag the commit with the version string, e.g., `vX.X.X` and create a release.
