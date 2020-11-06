@@ -1051,10 +1051,10 @@ namespace Sipi {
                 if (qualform_ok || rotation_ok || size_ok || region_ok) {
                     std::stringstream errmsg;
                     errmsg << "IIIF url not correctly formatted:";
-                    if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
-                    if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
-                    if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
-                    if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                    if (!qualform_ok && (parts.size() > 0)) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                    if (!rotation_ok && (parts.size() > 1)) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                    if (!size_ok && (parts.size() > 2)) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                    if (!region_ok && (parts.size() > 3)) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
                     send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                     return;
                 }
@@ -1070,10 +1070,10 @@ namespace Sipi {
                 } else {
                     std::stringstream errmsg;
                     errmsg << "IIIF url not correctly formatted:";
-                    if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
-                    if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
-                    if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
-                    if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                    if (!qualform_ok && (parts.size() > 0)) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                    if (!rotation_ok && (parts.size() > 1)) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                    if (!size_ok && (parts.size() > 2)) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                    if (!region_ok && (parts.size() > 3)) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
                     send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                     return;
                 }
@@ -1109,10 +1109,10 @@ namespace Sipi {
             if (qualform_ok || rotation_ok || size_ok || region_ok) {
                 std::stringstream errmsg;
                 errmsg << "IIIF url not correctly formatted:";
-                if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
-                if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
-                if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
-                if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                if (!qualform_ok && (parts.size() > 0)) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                if (!rotation_ok && (parts.size() > 1)) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                if (!size_ok && (parts.size() > 2)) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                if (!region_ok && (parts.size() > 3)) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
                 send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                 return;
             }
@@ -1128,10 +1128,10 @@ namespace Sipi {
             } else {
                 std::stringstream errmsg;
                 errmsg << "IIIF url not correctly formatted:";
-                if (!qualform_ok) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
-                if (!rotation_ok) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
-                if (!size_ok) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
-                if (!region_ok) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
+                if (!qualform_ok && (parts.size() > 0)) errmsg << " Error in quality: \"" << parts[parts.size() - 1] << "\"!";
+                if (!rotation_ok && (parts.size() > 1)) errmsg << " Error in rotation: \"" << parts[parts.size() - 2] << "\"!";
+                if (!size_ok && (parts.size() > 2)) errmsg << " Error in size: \"" << parts[parts.size() - 3] << "\"!";
+                if (!region_ok && (parts.size() > 3)) errmsg << " Error in region: \"" << parts[parts.size() - 4] << "\"!";
                 send_error(conn_obj, Connection::BAD_REQUEST, errmsg.str());
                 return;
             }

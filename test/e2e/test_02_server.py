@@ -89,6 +89,14 @@ class TestServer:
         """return 401 Unauthorized if the user does not have permission to see the image"""
         manager.expect_status_code("/knora/DenyLeaves.jpg/full/max/0/default.jpg", 401)
 
+    def test_iiifurl_parsing(self, manager):
+        """Return 400 for invalid IIIF URL's"""
+        manager.expect_status_code("/unit//lena512.jp2", 400)
+        manager.expect_status_code("/unit/lena512.jp2/max/0/default.jpg", 400)
+        manager.expect_status_code("/unit/lena512.jp2/full/max/default.jpg", 400)
+        manager.expect_status_code("/unit/lena512.jp2/full/max/!/default.jpg", 400)
+        manager.expect_status_code("/unit/lena512.jp2/full/max/0/jpg", 400)
+
 
     def test_read_write(self, manager):
         """read an image file, convert it to JPEG2000 and write it"""
