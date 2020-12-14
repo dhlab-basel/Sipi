@@ -18,8 +18,8 @@ docs-serve: ## serve docs for local viewing
 docs-publish: ## build and publish docs to Github Pages
 	mkdocs gh-deploy
 
-.PHONY: docs-install-requirements
-docs-install-requirements: ## install requirements for documentation
+.PHONY: install-requirements
+install-requirements: ## install requirements for documentation
 	pip3 install -r requirements.txt
 
 .PHONY: build-sipi-image
@@ -44,6 +44,11 @@ test: ## compile and run tests inside Docker
 test-ci: ## compile and run tests inside Docker
 	@mkdir -p ${PWD}/images
 	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+	@$(MAKE) -f $(THIS_FILE) test-integration
+
+.PHONY: test-integration
+test-integration: build-sipi-image ## run tests against locally published Sipi Docker image
+    pytest -s test/integration
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
