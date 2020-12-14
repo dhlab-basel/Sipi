@@ -48,7 +48,7 @@ test-ci: ## compile and run tests inside Docker
 
 .PHONY: test-integration
 test-integration: build-sipi-image ## run tests against locally published Sipi Docker image
-    pytest -s test/integration
+	pytest -s test/integration
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
