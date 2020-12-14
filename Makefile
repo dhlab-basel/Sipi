@@ -42,7 +42,7 @@ test: ## compile and run tests inside Docker
 
 .PHONY: test-ci
 test-ci: ## compile and run tests inside Docker
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 	@$(MAKE) -f $(THIS_FILE) test-integration
 
@@ -52,17 +52,17 @@ test-integration: build-sipi-image ## run tests against locally published Sipi D
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh -c "/sipi/build-linux/sipi --config=/sipi/config/sipi.config.lua"
 
 .PHONY: cmdline
 cmdline: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
 
 .PHONY: cmdline-debug
 cmdline-debug: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --security-opt apparmor=unconfined --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
 
 .PHONY: clean
