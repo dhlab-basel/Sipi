@@ -44,7 +44,6 @@ test: ## compile and run tests inside Docker
 test-ci: ## compile and run tests inside Docker
 	@mkdir -p ${CURRENT_DIR}/images
 	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
-	@$(MAKE) -f $(THIS_FILE) test-integration
 
 .PHONY: test-integration
 test-integration: build-sipi-image ## run tests against locally published Sipi Docker image
