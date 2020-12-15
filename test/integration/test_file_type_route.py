@@ -9,20 +9,14 @@ from testcontainers.core.container import DockerContainer
 
 def setup_module():
     """ Setup for the Sipi container used in tests. """
-    os.environ["MYSQL_USER"] = "demo"
-    os.environ["MYSQL_DATABASE"] = "custom_db"
-
     project_source_dir = Path(__file__).parent.parent.parent
-    print("project_source_dir: " + str(project_source_dir))
     config_dir = project_source_dir / "config"
-    print("config_dir: " + str(config_dir))
     images_dir = project_source_dir / "test/_test_data/images"
     scripts_dir = project_source_dir / "scripts"
     server_dir = project_source_dir / "server"
 
     container = DockerContainer("daschswiss/sipi:latest")
     container.with_bind_ports(1024, 1024)
-    container.with_env("MYSQL_ROOT_PASSWORD", "root")
     container.with_volume_mapping(config_dir, "/sipi/config")
     container.with_volume_mapping(images_dir, "/sipi/images")
     container.with_volume_mapping(scripts_dir, "/sipi/scripts")
@@ -47,8 +41,6 @@ def test_get_test_html():
     with container:
         time.sleep(1)
         id = container._container.short_id
-        print("id: " + id)
-
         r = requests.get("http://localhost:1024/server/test.html")
         assert r.status_code == 200
 
@@ -58,7 +50,6 @@ def test_file_type():
     container = setup_module()
     with container:
         time.sleep(1)
-
         r = requests.get("http://localhost:1024/test_file_type")
         assert r.status_code == 200
 
