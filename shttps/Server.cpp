@@ -649,6 +649,7 @@ namespace shttps {
         RequestHandler matching_handler = nullptr;
 
         for (item = handler[conn.method()].rbegin(); item != handler[conn.method()].rend(); ++item) {
+          //TODO:: Selects wrong handler if the URI starts with the substring
             size_t len = conn.uri().length() < item->first.length() ? conn.uri().length() : item->first.length();
 
             if (item->first == conn.uri().substr(0, len)) {
