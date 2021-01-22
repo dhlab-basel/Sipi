@@ -767,6 +767,7 @@ namespace Sipi {
             //
             int tw = 0, th = 0;
             if ((params != nullptr) && (!params->empty())) {
+              std::cerr << "=====> img->nx=" << img->nx << " img->ny=" << img->ny << params->at(J2K_Stiles) << std::endl;
                 if (params->find(J2K_Stiles) != params->end()) {
                     const int mindim = img->ny < img->nx ? img->ny : img->nx;
                     int n = std::sscanf(params->at(J2K_Stiles).c_str(), "{%d,%d}", &tw, &th);
