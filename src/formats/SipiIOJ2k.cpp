@@ -767,13 +767,12 @@ void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressio
     siz.set(Ssigned, 0, 0, false); // Image samples are originally unsigned
 
     //
-    // tiling has to be done here
+    // tiling has to be done here. Tile size must be adapted to image dimesions!
     //
     int tw = 0, th = 0;
+    const int mindim = img->ny < img->nx ? img->ny : img->nx;
     if ((params != nullptr) && (!params->empty())) {
-      std::cerr << "=====> img->nx=" << img->nx << " img->ny=" << img->ny << params->at(J2K_Stiles) << std::endl;
       if (params->find(J2K_Stiles) != params->end()) {
-        const int mindim = img->ny < img->nx ? img->ny : img->nx;
         int n = std::sscanf(params->at(J2K_Stiles).c_str(), "{%d,%d}", &tw, &th);
         if (n != 2) {
           throw SipiImageError(__file__, __LINE__, "Tiling parameter invalid!");
@@ -785,15 +784,17 @@ void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressio
         }
       }
     } else {
-      const int mindim = img->ny < img->nx ? img->ny : img->nx;
-      if (mindim < 2048) {
-        tw = th = 256;
-      } else if (mindim < 4096) {
-        tw = th = 512;
-      } else {
+      if (mindim >= 4096) {
         tw = th = 1024;
+      } else if (mindim >= 2048 ) {
+        tw = th = 1024;
+      } else if (mindim >= 1024) {
+        tw = th = 256;
+      } else {
+        tw = th = 0;
       }
       if (mindim > 1024) {
+        const int mindim = img->ny < img->nx ? img->ny : img->nx;
         std::stringstream ss;
         ss << "Stiles={" << tw << "," << th << "}";
         siz.parse_string(ss.str().c_str());
@@ -924,9 +925,20 @@ void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressio
       }
     } else {
       codestream.access_siz()->parse_string("Sprofile=PART2");
-      codestream.access_siz()->parse_string("Clayers=8");
-      num_clayers = 8;
-      codestream.access_siz()->parse_string("Clevels=8"); // resolution levels
+      codestream.access_siz()->parse_string("Clayers=3");
+      if (mindim > 4096) {
+        codestream.access_siz()->parse_string("Clayers=8");
+        num_clayers = 8;
+        codestream.access_siz()->parse_string("Clevels=8"); // resolution levels ***
+      } else if (mindim > 2048) {
+        codestream.access_siz()->parse_string("Clayers=5");
+        num_clayers = 5;
+        codestream.access_siz()->parse_string("Clevels=5"); // resolution levels ***
+      } else if (mindim > 1024) {
+        codestream.access_siz()->parse_string("Clayers=3");
+        num_clayers = 3;
+        codestream.access_siz()->parse_string("Clevels=3"); // resolution levels ***
+      }
       codestream.access_siz()->parse_string("Corder=RPCL");
       codestream.access_siz()->parse_string("Cprecincts={256,256}");
       codestream.access_siz()->parse_string("Cblk={64,64}");
@@ -934,21 +946,6 @@ void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressio
       codestream.access_siz()->parse_string("Cuse_eph=yes");
     }
 
-    //codestream.access_siz()->parse_string("Stiles={1024,1024}");
-    //codestream.access_siz()->parse_string("ORGgen_plt=yes");
-    //codestream.access_siz()->parse_string("ORGtparts=R");
-/*
-            codestream.access_siz()->parse_string("Clevels=6");
-            codestream.access_siz()->parse_string("Clayers=6");
-            codestream.access_siz()->parse_string("Cprecincts={256,256},{256,256},{128,128}");
-//            codestream.access_siz()->parse_string("Stiles={512,512}");
-            codestream.access_siz()->parse_string("Corder=RPCL");
-            codestream.access_siz()->parse_string("ORGgen_plt=yes");
-            codestream.access_siz()->parse_string("ORGtparts=R");
-            codestream.access_siz()->parse_string("Cblk={64,64}");
-            codestream.access_siz()->parse_string("Cuse_sop=yes");
-            codestream.access_siz()->parse_string("Cuse_eph=yes");
-*/
 
     codestream.access_siz()->finalize_all(); // Set up coding defaults
 
