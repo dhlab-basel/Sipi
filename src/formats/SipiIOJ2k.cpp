@@ -768,13 +768,16 @@ namespace Sipi {
             int tw = 0, th = 0;
             if ((params != nullptr) && (!params->empty())) {
                 if (params->find(J2K_Stiles) != params->end()) {
+                    const int mindim = img->ny < img->nx ? img->ny : img->nx;
                     int n = std::sscanf(params->at(J2K_Stiles).c_str(), "{%d,%d}", &tw, &th);
                     if (n != 2) {
                         throw SipiImageError(__file__, __LINE__, "Tiling parameter invalid!");
                     }
-                    std::stringstream ss;
-                    ss << "Stiles=" << params->at(J2K_Stiles);
-                    siz.parse_string(ss.str().c_str());
+                    if ((mindim > tw) && (mindim > th)) {
+                      std::stringstream ss;
+                      ss << "Stiles=" << params->at(J2K_Stiles);
+                      siz.parse_string(ss.str().c_str());
+                    }
                 }
             } else {
                 const int mindim = img->ny < img->nx ? img->ny : img->nx;
