@@ -290,7 +290,7 @@ class TestServer:
                 {'width': 256, 'height': 256},
                 {'width': 128, 'height': 128}
             ],
-            'tiles': [{'width': 512, 'height': 512, 'scaleFactors': [1, 2, 3, 4, 5, 6, 7]}],
+            'tiles': [{'width': 512, 'height': 512, 'scaleFactors': [1, 2, 3, 4]}],
             'extraFormats': ['tif', 'pdf', 'jp2'],
             'preferredFormats': ['jpg', 'tif', 'jp2', 'png'],
             'extraFeatures': [
