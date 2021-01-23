@@ -925,7 +925,6 @@ void SipiIOJ2k::write(SipiImage *img, std::string filepath, const SipiCompressio
       }
     } else {
       codestream.access_siz()->parse_string("Sprofile=PART2");
-      codestream.access_siz()->parse_string("Clayers=3");
       if (mindim > 4096) {
         codestream.access_siz()->parse_string("Clayers=8");
         num_clayers = 8;
