@@ -24,8 +24,11 @@ EXPOSE 1024
 RUN mkdir -p /sipi/images/knora && \
     mkdir -p /sipi/cache
 
-# Copy Sipi binary from build stage
+# Copy Sipi binary and other files from the build stage
 COPY --from=builder /sipi/build-linux/sipi /sipi/sipi
+COPY --from=builder /sipi/config/sipi.config.lua /sipi/config/sipi.config.lua
+COPY --from=builder /sipi/config/sipi.init.lua /sipi/config/sipi.init.lua
+COPY --from=builder /sipi/server/test.html /sipi/server/test.html
 
 ENTRYPOINT [ "/sipi/sipi" ]
 
