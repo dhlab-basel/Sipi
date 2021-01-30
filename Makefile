@@ -29,7 +29,7 @@ build-sipi-image: ## build and publish Sipi Docker image locally
 
 .PHONY: publish-sipi-image
 publish-sipi-image: build-sipi-image ## publish Sipi Docker image to Docker-Hub
-	docker push $(SIPI_REPO)
+	docker push $(SIPI_IMAGE)
 
 .PHONY: compile
 compile: ## compile SIPI inside Docker
