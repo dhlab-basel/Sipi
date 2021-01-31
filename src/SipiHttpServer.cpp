@@ -645,118 +645,163 @@ namespace Sipi {
     }
     //=========================================================================
 
-    static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
-                               std::vector<std::string> &params, bool prefix_as_path) {
-        conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
+static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::LuaServer &luaserver,
+                            std::vector<std::string> &params, bool prefix_as_path) {
+  conn_obj.setBuffer(); // we want buffered output, since we send JSON text...
 
-        conn_obj.header("Access-Control-Allow-Origin", "*");
-        //
-        // here we start the lua script which checks for permissions
-        //
-        std::unordered_map<std::string,std::string> access;
-        try {
-            access = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
-        }
-        catch (SipiError &err) {
-            send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
-            return;
-        }
+  conn_obj.header("Access-Control-Allow-Origin", "*");
+  //
+  // here we start the lua script which checks for permissions
+  //
+  std::unordered_map<std::string, std::string> access;
+  try {
+    access = check_file_access(conn_obj, serv, luaserver, params, prefix_as_path);
+  }
+  catch (SipiError &err) {
+    send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err);
+    return;
+  }
 
-        std::string infile = access["infile"];
+  std::string infile = access["infile"];
 
-        SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
-        int pagenum = sid.getPage();
+  SipiIdentifier sid = SipiIdentifier(params[iiif_identifier]);
+  int pagenum = sid.getPage();
 
-        conn_obj.header("Content-Type", "application/json");
+  conn_obj.header("Content-Type", "application/json");
 
-        json_t *root = json_object();
-        json_object_set_new(root, "@context", json_string("http://sipi.io/api/file/3/context.json"));
+  json_t *root = json_object();
+  json_object_set_new(root, "@context", json_string("http://sipi.io/api/file/3/context.json"));
 
-        std::string host = conn_obj.header("host");
-        std::string id;
-        if (params[iiif_prefix] == "") {
-            if (conn_obj.secure()) {
-                id = std::string("https://") + host + "/"  + params[iiif_identifier];
-            }
-            else {
-                id = std::string("http://") + host + "/"  + params[iiif_identifier];
-            }
-        } else {
-            if (conn_obj.secure()) {
-                id = std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
-            }
-            else {
-                id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
-            }
-        }
-        json_object_set_new(root, "id", json_string(id.c_str()));
-
-        std::string actual_mimetype = shttps::Parsing::getBestFileMimetype(infile);
-        if ((actual_mimetype == "image/tiff") ||
-            (actual_mimetype == "image/jpeg") ||
-            (actual_mimetype == "image/png") ||
-            (actual_mimetype == "image/jpx") ||
-            (actual_mimetype == "image/jp2") ||
-            (actual_mimetype == "application/pdf")) {
-
-            int width, height;
-            //
-            // get cache info
-            //
-            //std::shared_ptr<SipiCache> cache = serv->cache();
-
-            Sipi::SipiImage tmpimg;
-            Sipi::SipiImgInfo info;
-            try {
-                info = tmpimg.getDim(infile, pagenum);
-            }
-            catch (SipiImageError &err) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
-                return;
-            }
-            if (info.success == SipiImgInfo::FAILURE) {
-                send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
-                return;
-            }
-            width = info.width;
-            height = info.height;
-
-            json_object_set_new(root, "width", json_integer(width));
-            json_object_set_new(root, "height", json_integer(height));
-            if (info.numpages > 0) {
-                json_object_set_new(root, "numpages", json_integer(info.numpages));
-            }
-            json_object_set_new(root, "internalMimeType", json_string(info.internalmimetype.c_str()));
-            if (info.success == SipiImgInfo::ALL) {
-                json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
-                json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
-            } else if (actual_mimetype == "application/pdf") {
-                json_object_set_new(root, "originalMimeType", json_string(info.internalmimetype.c_str()));
-                json_object_set_new(root, "originalFilename", json_string(infile.c_str()));
-            }
-            char *json_str = json_dumps(root, JSON_INDENT(3));
-            conn_obj.sendAndFlush(json_str, strlen(json_str));
-            free(json_str);
-
-            json_decref(root);
-        }
-        else {
-            json_object_set_new(root, "internalMimeType", json_string(actual_mimetype.c_str()));
-
-            struct stat fstatbuf;
-            if (stat(infile.c_str(), &fstatbuf) != 0) {
-                throw Error(__file__, __LINE__, "Cannot fstat file!");
-            }
-            json_object_set_new(root, "fileSize", json_integer(fstatbuf.st_size));
-
-            char *json_str = json_dumps(root, JSON_INDENT(3));
-            conn_obj.sendAndFlush(json_str, strlen(json_str));
-            free(json_str);
-
-            json_decref(root);
-        }
+  std::string host = conn_obj.header("host");
+  std::string id;
+  if (params[iiif_prefix] == "") {
+    if (conn_obj.secure()) {
+      id = std::string("https://") + host + "/" + params[iiif_identifier];
+    } else {
+      id = std::string("http://") + host + "/" + params[iiif_identifier];
     }
-    //=========================================================================
+  } else {
+    if (conn_obj.secure()) {
+      id = std::string("https://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+    } else {
+      id = std::string("http://") + host + "/" + params[iiif_prefix] + "/" + params[iiif_identifier];
+    }
+  }
+  json_object_set_new(root, "id", json_string(id.c_str()));
+
+  //
+  // read sidecarfile if available
+  //
+  size_t pos = infile.rfind(".");
+  std::string sidecarname = infile.substr(0, pos) + ".info";
+
+  std::ifstream sidecar(infile + ".info");
+  std::string orig_filename;
+  std::string orig_checksum;
+  std::string derivative_checksum;
+  if (sidecar.good()) {
+    std::stringstream ss;
+    ss << sidecar.rdbuf(); //read the file
+    json_t *scroot;
+    json_error_t error;
+    scroot = json_loads(ss.str().c_str(), 0, &error);
+    const char *key;
+    json_t *value;
+    if (scroot) {
+      void *iter = json_object_iter(scroot);
+      while( iter )
+      {
+        key = json_object_iter_key(iter);
+        value = json_object_iter_value(iter);
+        if (std::strcmp("originalFilename", key)) {
+          orig_filename = json_string_value(value);
+        } else if (std::strcmp("checksumOriginal", key)) {
+          orig_checksum = json_string_value(value);
+        } else if (std::strcmp("checksumDerivative", key)) {
+          derivative_checksum = json_string_value(value);
+        }
+        iter = json_object_iter_next(root, iter);
+      }
+    } else {
+      orig_filename = infile;
+    }
+    json_decref(scroot);
+  } else {
+    orig_filename = infile;
+  }
+
+  if (!orig_checksum.empty()) {
+    json_object_set_new(root, "checksumOriginal", json_string(orig_checksum.c_str()));
+  }
+  if (!derivative_checksum.empty()) {
+    json_object_set_new(root, "checksumDerivative", json_string(derivative_checksum.c_str()));
+  }
+
+  std::string actual_mimetype = shttps::Parsing::getBestFileMimetype(infile);
+  if ((actual_mimetype == "image/tiff") ||
+      (actual_mimetype == "image/jpeg") ||
+      (actual_mimetype == "image/png") ||
+      (actual_mimetype == "image/jpx") ||
+      (actual_mimetype == "image/jp2") ||
+      (actual_mimetype == "application/pdf")) {
+
+    int width, height;
+    //
+    // get cache info
+    //
+    //std::shared_ptr<SipiCache> cache = serv->cache();
+
+    Sipi::SipiImage tmpimg;
+    Sipi::SipiImgInfo info;
+    try {
+      info = tmpimg.getDim(infile, pagenum);
+    }
+    catch (SipiImageError &err) {
+      send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, err.to_string());
+      return;
+    }
+    if (info.success == SipiImgInfo::FAILURE) {
+      send_error(conn_obj, Connection::INTERNAL_SERVER_ERROR, "Error getting image dimensions!");
+      return;
+    }
+    width = info.width;
+    height = info.height;
+
+    json_object_set_new(root, "width", json_integer(width));
+    json_object_set_new(root, "height", json_integer(height));
+    if (info.numpages > 0) {
+      json_object_set_new(root, "numpages", json_integer(info.numpages));
+    }
+    json_object_set_new(root, "internalMimeType", json_string(info.internalmimetype.c_str()));
+    if (info.success == SipiImgInfo::ALL) {
+      json_object_set_new(root, "originalMimeType", json_string(info.origmimetype.c_str()));
+      json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
+    } else if (actual_mimetype == "application/pdf") {
+      json_object_set_new(root, "originalMimeType", json_string(info.internalmimetype.c_str()));
+      json_object_set_new(root, "originalFilename", json_string(infile.c_str()));
+    }
+    char *json_str = json_dumps(root, JSON_INDENT(3));
+    conn_obj.sendAndFlush(json_str, strlen(json_str));
+    free(json_str);
+
+  } else {
+    json_object_set_new(root, "internalMimeType", json_string(actual_mimetype.c_str()));
+
+    struct stat fstatbuf;
+    if (stat(infile.c_str(), &fstatbuf) != 0) {
+      throw Error(__file__, __LINE__, "Cannot fstat file!");
+    }
+    json_object_set_new(root, "fileSize", json_integer(fstatbuf.st_size));
+    json_object_set_new(root, "originalFilename", json_string(orig_filename.c_str()));
+
+    char *json_str = json_dumps(root, JSON_INDENT(3));
+    conn_obj.sendAndFlush(json_str, strlen(json_str));
+    free(json_str);
+
+  }
+  json_decref(root);
+}
+//=========================================================================
 
 
     std::pair<std::string, std::string>
