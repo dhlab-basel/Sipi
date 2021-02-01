@@ -695,7 +695,7 @@ static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::
   size_t pos = infile.rfind(".");
   std::string sidecarname = infile.substr(0, pos) + ".info";
 
-  std::ifstream sidecar(infile + ".info");
+  std::ifstream sidecar(sidecarname);
   std::string orig_filename;
   std::string orig_checksum;
   std::string derivative_checksum;
@@ -709,18 +709,17 @@ static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::
     json_t *value;
     if (scroot) {
       void *iter = json_object_iter(scroot);
-      while( iter )
-      {
+      while(iter) {
         key = json_object_iter_key(iter);
         value = json_object_iter_value(iter);
-        if (std::strcmp("originalFilename", key)) {
+        if (std::strcmp("originalFilename", key) == 0) {
           orig_filename = json_string_value(value);
-        } else if (std::strcmp("checksumOriginal", key)) {
+        } else if (std::strcmp("checksumOriginal", key) == 0) {
           orig_checksum = json_string_value(value);
-        } else if (std::strcmp("checksumDerivative", key)) {
+        } else if (std::strcmp("checksumDerivative", key) == 0) {
           derivative_checksum = json_string_value(value);
         }
-        iter = json_object_iter_next(root, iter);
+        iter = json_object_iter_next(scroot, iter);
       }
     } else {
       orig_filename = infile;
@@ -778,7 +777,7 @@ static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::
       json_object_set_new(root, "originalFilename", json_string(info.origname.c_str()));
     } else if (actual_mimetype == "application/pdf") {
       json_object_set_new(root, "originalMimeType", json_string(info.internalmimetype.c_str()));
-      json_object_set_new(root, "originalFilename", json_string(infile.c_str()));
+      json_object_set_new(root, "originalFilename", json_string(orig_filename.c_str()));
     }
     char *json_str = json_dumps(root, JSON_INDENT(3));
     conn_obj.sendAndFlush(json_str, strlen(json_str));
