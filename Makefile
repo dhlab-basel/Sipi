@@ -18,8 +18,8 @@ docs-serve: ## serve docs for local viewing
 docs-publish: ## build and publish docs to Github Pages
 	mkdocs gh-deploy
 
-.PHONY: docs-install-requirements
-docs-install-requirements: ## install requirements for documentation
+.PHONY: install-requirements
+install-requirements: ## install requirements for documentation
 	pip3 install -r requirements.txt
 
 .PHONY: build-sipi-image
@@ -29,11 +29,15 @@ build-sipi-image: ## build and publish Sipi Docker image locally
 
 .PHONY: publish-sipi-image
 publish-sipi-image: build-sipi-image ## publish Sipi Docker image to Docker-Hub
-	docker push $(SIPI_REPO)
+	docker push $(SIPI_IMAGE)
 
 .PHONY: compile
 compile: ## compile SIPI inside Docker
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make"
+
+.PHONY: compile-ci
+compile-ci: ## compile SIPI inside Docker (no it)
+	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make"
 
 .PHONY: test
 test: ## compile and run tests inside Docker
@@ -41,23 +45,27 @@ test: ## compile and run tests inside Docker
 	docker run -it --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
 
 .PHONY: test-ci
-test-ci: ## compile and run tests inside Docker
-	@mkdir -p ${PWD}/images
+test-ci: ## compile and run tests inside Docker (no it)
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run --rm -v ${PWD}:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "mkdir -p /sipi/build-linux && cd /sipi/build-linux && cmake .. && make && ctest --verbose"
+
+.PHONY: test-integration
+test-integration: build-sipi-image ## run tests against locally published Sipi Docker image
+	pytest -s test/integration
 
 .PHONY: run
 run: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh -c "/sipi/build-linux/sipi --config=/sipi/config/sipi.config.lua"
 
 .PHONY: cmdline
 cmdline: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
 
 .PHONY: cmdline-debug
 cmdline-debug: ## run SIPI inside Docker (does not compile)
-	@mkdir -p ${PWD}/images
+	@mkdir -p ${CURRENT_DIR}/images
 	docker run -it --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --security-opt apparmor=unconfined --rm -v ${PWD}:/sipi --workdir "/sipi" --expose "1024" --expose "1025" -p 1024:1024 -p 1025:1025 dhlabbasel/sipi-base:18.04 /bin/sh
 
 .PHONY: debug

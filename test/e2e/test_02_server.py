@@ -240,7 +240,10 @@ class TestServer:
                 "expected_result": {
                     "@context": "http://sipi.io/api/file/3/context.json",
                     "id": "http://127.0.0.1:1024/unit/",
+                    "originalFilename": "test.csv",
                     "internalMimeType": "text/csv",
+                    "checksumDerivative": "228beaf29a9cdc864f777107c8f1a7bf9243d4140a844b7117a81d7d91fa6e37",
+                    "checksumOriginal": "228beaf29a9cdc864f777107c8f1a7bf9243d4140a844b7117a81d7d91fa6e37",
                     "fileSize": 39697
                 }
             }
@@ -290,7 +293,7 @@ class TestServer:
                 {'width': 256, 'height': 256},
                 {'width': 128, 'height': 128}
             ],
-            'tiles': [{'width': 512, 'height': 512, 'scaleFactors': [1, 2, 3, 4, 5, 6, 7]}],
+            'tiles': [{'width': 512, 'height': 512, 'scaleFactors': [1, 2, 3, 4]}],
             'extraFormats': ['tif', 'pdf', 'jp2'],
             'preferredFormats': ['jpg', 'tif', 'jp2', 'png'],
             'extraFeatures': [

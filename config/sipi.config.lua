@@ -214,12 +214,12 @@ admin = {
 
 fileserver = {
     --
-    -- directory where the documents for the normal webserver are located
+    -- directory on disk where the documents for the normal webserver are located
     --
     docroot = './server',
 
     --
-    -- route under which the normal webserver should respond to requests
+    -- URL route under which the normal webserver should respond to requests
     --
     wwwroute = '/server'
 }

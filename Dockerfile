@@ -1,24 +1,34 @@
-FROM dhlabbasel/sipi-base:18.04
-
-MAINTAINER Ivan Subotic <ivan.subotic@unibas.ch>
+# STAGE 1: Build
+FROM dhlabbasel/sipi-base:18.04 as builder
 
 WORKDIR /sipi
 
 # Add everything to image.
 COPY . .
 
-# Install and clean-up SIPI.
+# Build SIPI.
 RUN mkdir -p /sipi/build-linux && \
     cd /sipi/build-linux && \
     cmake -DMAKE_DEBUG:BOOL=OFF .. && \
-    make && \
-    cp /sipi/build-linux/sipi /sipi/sipi && \
-    mkdir -p /sipi/images/knora && \
-    mkdir -p /sipi/cache && \
-    rm -rf /sipi/vendor && \
-    rm -rf /sipi/build-linux
+    make
+
+# STAGE 2: Setup
+FROM dhlabbasel/sipi-base:18.04
+
+MAINTAINER Ivan Subotic <400790+subotic@users.noreply.github.com>
+
+WORKDIR /sipi
 
 EXPOSE 1024
+
+RUN mkdir -p /sipi/images/knora && \
+    mkdir -p /sipi/cache
+
+# Copy Sipi binary and other files from the build stage
+COPY --from=builder /sipi/build-linux/sipi /sipi/sipi
+COPY --from=builder /sipi/config/sipi.config.lua /sipi/config/sipi.config.lua
+COPY --from=builder /sipi/config/sipi.init.lua /sipi/config/sipi.init.lua
+COPY --from=builder /sipi/server/test.html /sipi/server/test.html
 
 ENTRYPOINT [ "/sipi/sipi" ]
 
