@@ -1,5 +1,10 @@
 site_name: SIPI Documentation
 
+repo_url: https://github.com/dasch-swiss/sipi
+repo_name: dasch-swiss/sipi
+edit_uri: blob/main/docs/
+copyright: "&copy; 2017 - 2021 <a href='https://dasch.swiss' target='_blank'>Data and Service Center for the Humanities (DaSCH)</a>"
+
 nav:
   - Introduction: introduction.md
   - Basic information and Reference: sipi.md
