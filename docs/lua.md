@@ -32,7 +32,7 @@ used!*
 
 ## Pre-flight function
 The pre-fight function is mandatory and located in the init-script (see
-[configuarion options](../sipi/index.html#setup-of-directories-needed) of SIPI). It is executed after the incoming
+[configuarion options](../sipi/#setup-of-directories-needed) of SIPI). It is executed after the incoming
 IIIF HTTP request data has been processed but before an action to respond to the request has been taken. It should
 be noted that the pre-flight script is only executed for IIIF-specific requests. All other HTTP requests are being
 directed to "normal" HTTP-server part of SIPI. These can utilize the lua functionality by embedding LUA commands
@@ -78,7 +78,7 @@ to access a authorization server to check if the user (identified by a cookie) i
 using [Json Web Tokens](https://jwt.io) (JWT) which are supported by SIPI specific LUA functions. Please note that the
 SIPI JTW-functions support an arbitrary payload that has not to follow the JWT recommendations. In order to encode, the
 JWT_ALG_HS256 is beeing used together with the key that is defined in the SIPI configuration as
-[jwt_secret](../sipi/index.html#jwt-secret).
+[jwt_secret](../sipi/#jwt-secret).
 ```lua
 function pre_flight(prefix, identifier, cookie) {
     --
@@ -142,8 +142,8 @@ The pre-flight function uses the following SIPI-specific LUA global variables an
 
 - [config.imgroot](#configimgroot): (Global variable) Root directory of the image repository.
 - [server.http()](#serverhttp): (Function) Used to create a RESTful GET request.
-- [server.generate_jwt()](#servergenerate95jwt): (Function) Create a new JWT token from a key/value table.
-- [server.json_to_table()](#serverjson95to95table): (function) Convert a JSON into a LUA table.
+- [server.generate_jwt()](#servergenerate_jwt): (Function) Create a new JWT token from a key/value table.
+- [server.json_to_table()](#serverjson_to_table): (function) Convert a JSON into a LUA table.
 
 ## LUA embedded in HTML
 The HTTP server that is included in SIPI can serve any type of file which are just transfered as is to the client.
@@ -363,91 +363,91 @@ as command line option when starting the server.
     config.hostname
     
 The hostname  SIPI is configures to run on
-(see [hostname](../sipi/index.html#hostname) in configuration description).
+(see [hostname](../sipi/#hostname) in configuration description).
 
 #### config.port
 
     config.port
     
 Portnumber where the SIPI server listens
-(see [serverport](../sipi/index.html#port) in configuration description).
+(see [serverport](../sipi/#port) in configuration description).
 
 #### config.sslport
 
     config.sslport
     
 Portnumber for SSL connections of SIPI
-(see [sslport](../sipi/index.html#sslport) in configuration description).
+(see [sslport](../sipi/#sslport) in configuration description).
 
 ####config.imgroot
 
     config.imgroot
     
 Root directory for IIIF-served images
-(see [imgroot](../sipi/index.html#imgroot) in configuration description).
+(see [imgroot](../sipi/#imgroot) in configuration description).
 
 #### config.docroot
 
     config.docroot
 
 Root directory for WEB-Server
-(see [docroot](../sipi/index.html#docroot) in configuration description).
+(see [docroot](../sipi/#docroot) in configuration description).
 
 #### config.max\_temp\_file\_age
 
     config.max_temp_file_age
     
 maximum age of temporary files
-(see [max_temp_file_age](../sipi/index.html#maxtmpfileage) in configuration description).
+(see [max_temp_file_age](../sipi/#maxtmpfileage) in configuration description).
 
 #### config.prefix\_as\_path
 
     config.prefix_as_path`
     
 `true` if the prefix should be used as path info
-(see [prefix_as_path](../sipi/index.html#prefixaspath) in configuration description).
+(see [prefix_as_path](../sipi/#prefixaspath) in configuration description).
 
 #### config.init\_script
 
     config.init_script
     
 Path to initialization script
-(see [initscript](../sipi/index.html#initscript) in configuration description).
+(see [initscript](../sipi/#initscript) in configuration description).
 
 #### config.scriptdir
 
     config.scriptdir
 
 Path to script directory.
-(see [scriptdir](../sipi/index.html#scriptdir) in configuration description).
+(see [scriptdir](../sipi/#scriptdir) in configuration description).
 
 #### config.cache\_dir
 
     config.cache_dir
     
 Path to cache directory for iIIF served images.
-(see [cachedir](../sipi/index.html#cachedir) in configuration description).
+(see [cachedir](../sipi/#cachedir) in configuration description).
 
 #### config.cache\_size
 
     config.cache_size
     
 Maximal size of cache
-(see [cachesize](../sipi/index.html#cachesize) in configuration description).
+(see [cachesize](../sipi/#cachesize) in configuration description).
 
 #### config.cache\_n\_files
 
     config.cache_n_files
     
 Maximal number of files in cache.
-(see [cache_nfiles](../sipi/index.html#cachenfiles) in configuration description).
+(see [cache_nfiles](../sipi/#cachenfiles) in configuration description).
 
 #### config.cache\_hysteresis
 
     config.cache_hysteresis
     
 Amount of data to be purged if cache reaches maximum size.
-(see [cache_hysteresis](../sipi/index.html#hysteresis) in configuration description).
+(see [cache_hysteresis](../sipi/#hysteresis) in configuration description).
 
 #### config.jpeg\_quality
 
@@ -458,56 +458,56 @@ allows to configure the compression quality system wide with this parameter. All
 \[1..100\] where 1 the worst quality (and highest compression factor = smallest file size) and 100 the highest
 quality (with lowest compression factor = biggest file size). Please note that SIPI is not able to provide
 lossless compression for JPEG files.
-(see [jpeg_quality](../sipi/index.html#jpegquality) in configuration description).
+(see [jpeg_quality](../sipi/#jpegquality) in configuration description).
 
 #### config.keep\_alive
 
     config.keep_alive
     
 Maximal keep-alive time for HTTP requests that ask for a keep-alive connection.
-(see [keep_alive](../sipi/index.html#keepalive) in configuration description).
+(see [keep_alive](../sipi/#keepalive) in configuration description).
 
 #### config.thumb\_size
 
     config.thumb_size
     
 Default thumbnail image size.
-(see [thumb_size](../sipi/index.html#thumbsize) in configuration description).
+(see [thumb_size](../sipi/#thumbsize) in configuration description).
 
 #### config.n\_threads
 
     config.n_threads
     
 Number of worker threads SIPI uses.
-(see [nthreads](../sipi/index.html#nthreads) in configuration description).
+(see [nthreads](../sipi/#nthreads) in configuration description).
 
 #### config.max\_post\_size
 
     config.max_post_size
     
 Maximal size of POST data allowed
-(see [max_post_size](../sipi/index.html#maxpostsize) in configuration description).
+(see [max_post_size](../sipi/#maxpostsize) in configuration description).
 
 #### config.tmpdir
 
     config.tmpdir
     
 Temporary directory to store uploads.
-(see [tmpdir](../sipi/index.html#tmpdir) in configuration description).
+(see [tmpdir](../sipi/#tmpdir) in configuration description).
 
 #### config.ssl/_certificate
 
     config.ssl_certificate
     
 Path to the SSL certificate that SIPI uses.
-(see [ssl_certificate](../sipi/index.html#sslcertificate) in configuration description).
+(see [ssl_certificate](../sipi/#sslcertificate) in configuration description).
 
 #### config.ssl/_key
 
     config.ssl_key
     
 Path to the SSL key that SIPI uses.
-(see [ssl_key](../sipi/index.html#sslkey) in configuration description).
+(see [ssl_key](../sipi/#sslkey) in configuration description).
 
 #### config.logfile
 
@@ -515,28 +515,28 @@ Path to the SSL key that SIPI uses.
     
 Name of the logfile. SIPI is currently using the [syslog](https://en.wikipedia.org/wiki/Syslog) facility and the
 logfile name is ignored. 
-(see [logfile](../sipi/index.html#logfile) in configuration description).
+(see [logfile](../sipi/#logfile) in configuration description).
 
 #### config.loglevel
 
     config.loglevel
     
 Indicates what should be logged. The variable contains a integer that corresponds to the syslog level.
-(see [loglevel](../sipi/index.html#loglevel) in configuration description).
+(see [loglevel](../sipi/#loglevel) in configuration description).
 
 #### config.adminuser
 
     config.adminuser
     
 Name of admin user.
-(see [user](../sipi/index.html#configuration-of-administrator-access) in configuration description).
+(see [user](../sipi/#configuration-of-administrator-access) in configuration description).
 
 #### config.password
 
     config.password
     
 Password (plain text, not encrypted) of admin user (*use with caution*)!
-(see [password](../sipi/index.html#configuration-of-administrator-access) in configuration description).
+(see [password](../sipi/#configuration-of-administrator-access) in configuration description).
 
 ### SIPI Server Variables
 Sipi server variables are dependent on the incoming request and are created by SIPI automatically for each

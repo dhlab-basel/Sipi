@@ -6,6 +6,7 @@ edit_uri: blob/main/docs/
 copyright: "&copy; 2017 - 2021 <a href='https://dasch.swiss' target='_blank'>Data and Service Center for the Humanities (DaSCH)</a>"
 
 nav:
+  - Overview: index.md
   - Introduction: introduction.md
   - Basic information and Reference: sipi.md
   - Lua integration: lua.md
