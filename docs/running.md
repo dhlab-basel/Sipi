@@ -125,8 +125,8 @@ to install a certificate; see `config/sipi.config.lua` for instructions.
 
 ### IIIF Prefixes
 
-Sipi supports [IIIF image
-URLs](http://iiif.io/api/image/2.1/#image-request-uri-syntax).
+Sipi supports [IIIF Image API
+URLs](https://iiif.io/api/image/3.0/#21-image-request-uri-syntax).
 
 If the configuration property `prefix_as_path` is set to `true`, the
 IIIF `prefix` portion of the URL is interpreted as a subdirectory of
