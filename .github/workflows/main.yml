@@ -41,7 +41,8 @@ jobs:
     name: Docs Build Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout source
+        uses: actions/checkout@v2
         with:
           fetch-depth: 1
       - name: Set up Python 3.8
@@ -101,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout main
+      - name: Checkout main branch
         uses: actions/checkout@v2
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
