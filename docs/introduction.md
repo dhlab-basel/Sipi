@@ -5,8 +5,8 @@
   JPEG2000 implementation, it relies on the commercial [kakadu-library](https://kakadusoftware.com), but otherwise it is
   completely open source on [github](https://github.com/dasch-swiss/sipi). It offers special support for multipage PDF's
   (through a SIPI-specific extensions to the IIIF Image API).
-- SIPI has been designed with long term preservation for images regarded as culutral heritage in mind. Thus it offers
-  some unique features fpr this purpose:
+- SIPI has been designed with long term preservation for images regarded as cultural heritage in mind. Thus it offers
+  some unique features for this purpose:
   - all file format conversions try to preserve all metadata (EXIF, XMP, IPTC etc.). These functionality is based
     on the open source [exiv2 library](https://www.exiv2.org).
   - SIPI can deal with and convert ICC color profiles based on the [littlecms library](http://www.littlecms.com).
@@ -38,7 +38,7 @@
   preservation and include the following information:
     - `original filename`: The original file name before conversion
     - `original mimetype`: The mimetype of the original image before conversion
-    - `pixel checksum`: A checksum (e.g. SH256) of the original pixel values. This checksum can be used to verify that
+    - `pixel checksum`: A checksum (e.g. SHA-256) of the original pixel values. This checksum can be used to verify that
       a format conversion didn't alter the image content.
     - `icc profile`: (optional) The raw ICC profile as binary string. This field is added if the fileformat has no
       standard way to embed ICC color profiles (e.g. JPEG).
@@ -50,7 +50,7 @@ images, user data etc.
 
 ## Who is behind SIPI?
 SIPI is developed and maintained by the "Data and Service Center for the Humanities" [(DaSCH)](https://dasch.swiss),
-a Swiss national research infrastructure financed by the Swiss National Science Foundation with contributions by the
+a Swiss national research infrastructure financed by the Swiss National Science Foundation [(SNSF)](http://www.snf.ch/) with contributions by the
 Universities of Basel and Lausanne.
 
 ## How to get SIPI?

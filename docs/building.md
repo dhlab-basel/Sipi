@@ -36,7 +36,7 @@ If you must build sipi, the preferred way is to build it inside a docker image. 
 Then, in the top directory of the source tree, do
 
 - ```make compile``` will download and compile SIPI within a docker container
-- ```make test`` to run the full test suite
+- ```make test``` to run the full test suite
 - ```make run``` to run SIPI in docker image
 
 ### macOS
