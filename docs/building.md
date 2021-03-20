@@ -1,10 +1,10 @@
-# Building Sipi from Source Code
+# Building SIPI from Source Code
 
 
 ## Prerequisites
 
 
-To build Sipi from source code, you must have
+To build SIPI from source code, you must have
 [Kakadu](http://kakadusoftware.com/), a JPEG 2000 development toolkit
 that is not provided with Sipi and must be licensed separately. The
 Kakadu source code archive `v8_0_5-01727L.zip` must be placed in the
@@ -21,9 +21,9 @@ assumed to be installed by default on macOS Sierra),
 [ImageMagick](http://www.imagemagick.org/). Instructions for installing
 these prerequisites are given below.
 
-The build process downloads and builds Sipi's other prerequisites.
+The build process downloads and builds SIPI's other prerequisites.
 
-Sipi uses the Adobe ICC Color profiles, which are automatically
+SIPI uses the Adobe ICC Color profiles, which are automatically
 downloaded by the build process into the file `icc.zip`. The user is
 responsible for reading and agreeing with Adobe's license conditions,
 which are specified in the file `Color Profile EULA.pdf`.
