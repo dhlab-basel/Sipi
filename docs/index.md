@@ -1,6 +1,6 @@
 # Overview
 
-SIPI is a multihreaded, high-performance, IIIF compatible media server developed by
+SIPI is a multithreaded, high-performance, IIIF compatible media server developed by
 the [Data and Service Center for the Humanities](https://dasch.swiss) at the
 [University of Basel](https://www.unibas.ch/en.html). It is designed to
 be used by archives, libraries, and other institutions that need to
