@@ -22,8 +22,28 @@ ExternalProject_Add(project_curl
             --enable-shared
             --enable-static
             --libdir=${CONFIGURE_LIBDIR} ${OSSL}
+            --disable-ftp
+            --disable-file
             --disable-ldap
+            --disable-dict
+            --disable-telnet
+            --disable-tftp
+            --disable-rtsp
+            --disable-pop3
+            --disable-imap
+            --disable-smtp
+            --disable-gopher
+            --disable-ares
+            --disable-smb
+            --disable-debug
+            --disable-cookies
+            --disable-manual
+            --disable-proxy
+            --disable-unix-sockets
+            --without-libidn
             --without-libidn2
+            --without-librtmp
+            --without-zlib
         BUILD_COMMAND make
         BUILD_IN_SOURCE 1
         )
