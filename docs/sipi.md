@@ -12,10 +12,10 @@ The parts do have the following meaning:
 
 - `{server}`: The DNS name of the server, eg. `iiif.dasch.swiss`. The server may include a portnumber,
   eg. `iiif2.dasch.swiss:8080`.
-- `{identifier}`: The identifier of the requested image. By default, it is the filename and its extension.
 - `{prefix}`: A path (that may include `/`'s) to organize the assets. Usually the prefix reflect the internal
   directory or folder hierarchy. However this can be overridden using special features of SIPI (see pre-flight-script
   and sipi configuration file).
+- `{identifier}`: The identifier of the requested image. By default, it is the filename and its extension.
 - `{region}`: a region of interest that should be displayed. `full` indicates that the whole image is being requested.
   For more details see [IIIF regions](https://iiif.io/api/image/3.0/#41-region)
 - `{size}`: The size of the displayed image (part). `max` indicates the the "natural" maximal resolution should be used.
