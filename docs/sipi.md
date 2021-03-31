@@ -1,4 +1,5 @@
 # Basic Information and Reference
+
 This section provides the basic information to use SIPI as a high performance, versatile media server implementing the
 [IIIF](https://iiif.io) standards that can be used in many different settings, from a small standalone server providing
 basic metadata to the deployment in a complex environment. For more information about the IIIF standard see
