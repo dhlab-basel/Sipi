@@ -1,11 +1,11 @@
 # Simple Image Presentation Interface (SIPI) - Introduction
 ## What is SIPI?
 ### 1. A IIIF Image API V3 level 2 conformant image server
-- SIPI is a full multithreaded, high performance, level2 conformant [IIIF](https://iiif.io) written in C++. For the
+- SIPI is a full multithreaded, high performance, level2 compliant [IIIF Image API 3.0](https://iiif.io/api/image/3.0) written in C++. For the
   JPEG2000 implementation, it relies on the commercial [kakadu-library](https://kakadusoftware.com), but otherwise it is
-  completely open source on [github](https://github.com/dasch-swiss/sipi). It offers special support for multipage PDF's
+  completely open source on [GitHub](https://github.com/dasch-swiss/sipi). It offers special support for multipage PDFs
   (through a SIPI-specific extensions to the IIIF Image API).
-- SIPI has been designed with long term preservation for images regarded as cultural heritage in mind. Thus it offers
+- SIPI has been designed for the long term preservation of images, intended for the needs of the cultural heritage field. Thus it offers
   some unique features for this purpose:
   - all file format conversions try to preserve all metadata (EXIF, XMP, IPTC etc.). These functionality is based
     on the open source [exiv2 library](https://www.exiv2.org).
