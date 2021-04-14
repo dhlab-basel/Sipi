@@ -2,7 +2,7 @@
 
 # Overview
 
-SIPI is a multithreaded, high-performance, IIIF compatible media server developed by
+Simple Image Presentation Interface (SIPI) is a multithreaded, high-performance, IIIF compatible media server developed by
 the [Data and Service Center for the Humanities](https://dasch.swiss) at the
 [University of Basel](https://www.unibas.ch/en.html). It is designed to
 be used by archives, libraries, and other institutions that need to
@@ -31,7 +31,7 @@ serve most common file types. In addition Lua scripts and embedded Lua
 
 SIPI can also be used from the command line to convert images to/from
 TIFF-, [JPEG 2000](https://jpeg.org/jpeg2000/), JPEG- and PNG-
-formats. For all these conversion, Sipi tries to preserve all embedded
+formats. For all these conversion, SIPI tries to preserve all embedded
 metadata such as
 - [IPTC](https://iptc.org/standards/photo-metadata/iptc-standard/)
 - [EXIF](https://www.exif.org/)
