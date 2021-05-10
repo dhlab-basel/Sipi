@@ -1,0 +1,891 @@
+
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../assets/images/dasch-favicon.ico">
+      <meta name="generator" content="mkdocs-1.0.4, mkdocs-material-4.6.3">
+    
+    
+      
+        <title>Building - SIPI Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/application.adb8469c.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/application-palette.a8b3c06d.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="">
+      
+    
+    
+      <script src="../assets/javascripts/modernizr.86422ebf.js"></script>
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+    
+    <link rel="stylesheet" href="../assets/fonts/material-icons.css">
+    
+    
+      <link rel="stylesheet" href="../assets/style/theme.css">
+    
+    
+      
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="deep-blue" data-md-color-accent="deep-blue">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448" viewBox="0 0 416 448" id="__github"><path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19T128 352t-18.125-8.5-10.75-19T96 304t3.125-20.5 10.75-19T128 256t18.125 8.5 10.75 19T160 304zm160 0q0 10-3.125 20.5t-10.75 19T288 352t-18.125-8.5-10.75-19T256 304t3.125-20.5 10.75-19T288 256t18.125 8.5 10.75 19T320 304zm40 0q0-30-17.25-51T296 232q-10.25 0-48.75 5.25Q229.5 240 208 240t-39.25-2.75Q130.75 232 120 232q-29.5 0-46.75 21T56 304q0 22 8 38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0 37.25-1.75t35-7.375 30.5-15 20.25-25.75T360 304zm56-44q0 51.75-15.25 82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5T212 416q-19.5 0-35.5-.75t-36.875-3.125-38.125-7.5-34.25-12.875T37 371.5t-21.5-28.75Q0 312 0 260q0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25 30.875Q171.5 96 212 96q37 0 70 8 26.25-20.5 46.75-30.25T376 64q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34 99.5z"/></svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+    
+      <a href="#building-sipi-from-source-code" tabindex="0" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href=".." title="SIPI Documentation" aria-label="SIPI Documentation" class="md-header-nav__button md-logo">
+          
+            <img alt="logo" src="../assets/images/dasch-icon-white.svg" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            <span class="md-header-nav__topic">
+              SIPI Documentation
+            </span>
+            <span class="md-header-nav__topic">
+              
+                Building
+              
+            </span>
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+          
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" aria-label="search" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="__search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+<a href="https://github.com/dasch-swiss/sipi/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    dasch-swiss/sipi
+  </div>
+</a>
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main" role="main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="__drawer">
+    <a href=".." title="SIPI Documentation" class="md-nav__button md-logo">
+      
+        <img alt="logo" src="../assets/images/dasch-icon-white.svg" width="48" height="48">
+      
+    </a>
+    SIPI Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+<a href="https://github.com/dasch-swiss/sipi/" title="Go to repository" class="md-source" data-md-source="github">
+  
+    <div class="md-source__icon">
+      <svg viewBox="0 0 24 24" width="24" height="24">
+        <use xlink:href="#__github" width="24" height="24"></use>
+      </svg>
+    </div>
+  
+  <div class="md-source__repository">
+    dasch-swiss/sipi
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="Overview" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../introduction/" title="Introduction" class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../sipi/" title="Basic information and Reference" class="md-nav__link">
+      Basic information and Reference
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../lua/" title="Lua integration" class="md-nav__link">
+      Lua integration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../lua-image/" title="Lua imaging functions" class="md-nav__link">
+      Lua imaging functions
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../sqlite/" title="Sqlite3 integration" class="md-nav__link">
+      Sqlite3 integration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Building
+      </label>
+    
+    <a href="./" title="Building" class="md-nav__link md-nav__link--active">
+      Building
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    docker
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    macOS
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-1804" class="md-nav__link">
+    Ubuntu 18.04
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debian-8" class="md-nav__link">
+    Debian 8
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#centos-7" class="md-nav__link">
+    CentOS 7
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker_1" class="md-nav__link">
+    Docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compiling-the-source-code" class="md-nav__link">
+    Compiling the Source Code
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    Running Tests
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#making-a-directory-tree-for-installing-sipi" class="md-nav__link">
+    Making a Directory Tree for Installing Sipi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-documentation" class="md-nav__link">
+    Generating Documentation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starting-over" class="md-nav__link">
+    Starting Over
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-inside-docker" class="md-nav__link">
+    Building inside Docker
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../running/" title="Running" class="md-nav__link">
+      Running
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../developing/" title="Developing" class="md-nav__link">
+      Developing
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../0-release-notes/" title="Release-Notes" class="md-nav__link">
+      Release-Notes
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#docker" class="md-nav__link">
+    docker
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    macOS
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ubuntu-1804" class="md-nav__link">
+    Ubuntu 18.04
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debian-8" class="md-nav__link">
+    Debian 8
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#centos-7" class="md-nav__link">
+    CentOS 7
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docker_1" class="md-nav__link">
+    Docker
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compiling-the-source-code" class="md-nav__link">
+    Compiling the Source Code
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    Running Tests
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#making-a-directory-tree-for-installing-sipi" class="md-nav__link">
+    Making a Directory Tree for Installing Sipi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-documentation" class="md-nav__link">
+    Generating Documentation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#starting-over" class="md-nav__link">
+    Starting Over
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-inside-docker" class="md-nav__link">
+    Building inside Docker
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/dasch-swiss/sipi/blob/main/docs/building.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="building-sipi-from-source-code">Building SIPI from Source Code</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>To build SIPI from source code, you must have
+<a href="http://kakadusoftware.com/">Kakadu</a>, a JPEG 2000 development toolkit
+that is not provided with Sipi and must be licensed separately. The
+Kakadu source code archive <code>v8_0_5-01727L.zip</code> must be placed in the
+<code>vendor</code> subdirectory of the source tree before building Sipi.</p>
+<p>Sipi's build process requires <a href="https://cmake.org/">CMake</a> (minimal
+Version 3.0.0), a C++ compiler that supports the C++11 standard (such as
+<a href="https://gcc.gnu.org">GCC</a> or <a href="https://clang.llvm.org/">clang</a>), and
+several libraries that are readily available on supported platforms. The
+test framework requires <a href="https://www.python.org/">Python 3</a>, (version
+3.5 or later), <a href="https://httpd.apache.org/docs/2.4/programs/ab.html">Apache ab</a> (which is
+assumed to be installed by default on macOS Sierra),
+<a href="https://nginx.org/en/">nginx</a>, and a recent version of
+<a href="http://www.imagemagick.org/">ImageMagick</a>. Instructions for installing
+these prerequisites are given below.</p>
+<p>The build process downloads and builds SIPI's other prerequisites.</p>
+<p>SIPI uses the Adobe ICC Color profiles, which are automatically
+downloaded by the build process into the file <code>icc.zip</code>. The user is
+responsible for reading and agreeing with Adobe's license conditions,
+which are specified in the file <code>Color Profile EULA.pdf</code>.</p>
+<h3 id="docker">docker</h3>
+<p>We provide a docker image based on Ubuntu LTS releases, containing all
+dependencies: <a href="https://hub.docker.com/r/dhlabbasel/sipi-base/">https://hub.docker.com/r/dhlabbasel/sipi-base/</a>
+If you must build sipi, the preferred way is to build it inside a docker image. Docker must be installed on the system.
+Then, in the top directory of the source tree, do</p>
+<ul>
+<li><code>make compile</code> will download and compile SIPI within a docker container</li>
+<li><code>make test</code> to run the full test suite</li>
+<li><code>make run</code> to run SIPI in docker image</li>
+</ul>
+<h3 id="macos">macOS</h3>
+<p>You will need <a href="http://brew.sh/">Homebrew</a> and at least OSX 10.11.5.</p>
+<p>Prerequisites for building Sipi without its automated test framework:</p>
+<pre><code>xcode-select --install
+brew install cmake
+brew install doxygen
+brew install openssl
+brew install libmagic
+brew install gettext
+brew install libidn
+</code></pre>
+<p>If you also want to run Sipi's tests:</p>
+<pre><code>brew install nginx
+sudo chown -R $USER /usr/local/var/log/nginx/
+brew install imagemagick --with-openjpeg
+brew install python3
+pip3 install Sphinx
+pip3 install pytest
+pip3 install requests
+pip3 install psutil
+pip3 install iiif_validator
+</code></pre>
+<h3 id="ubuntu-1804">Ubuntu 18.04</h3>
+<p>Prerequisites for building Sipi without its automated test framework:</p>
+<pre><code>sudo apt-get install g++-7
+sudo apt-get install cmake
+sudo apt-get install libssl-dev
+sudo apt-get install doxygen
+sudo apt-get install libreadline-dev
+sudo apt-get install gettext
+sudo apt-get install libmagic-dev
+sudo apt-get install unzip
+sudo apt-get install libidn11-dev
+</code></pre>
+<p>If you also want to run Sipi's tests, you will need
+<a href="http://www.imagemagick.org/">ImageMagick</a>, version 7.0.6 or higher. We
+suggest compiling it from source:</p>
+<pre><code>sudo apt-get install libtiff5-dev libjpeg-turbo8-dev libopenjp2-7-dev
+wget https://github.com/ImageMagick/ImageMagick/archive/7.0.6-0.tar.gz
+tar -xzf 7.0.6-0.tar.gz
+cd ImageMagick-7.0.6-0/
+./configure
+make
+sudo make install
+sudo ldconfig /usr/local/lib
+</code></pre>
+<p>Then:</p>
+<pre><code>sudo apt-get install ab
+sudo apt-get install nginx
+sudo chown -R $USER /var/log/nginx
+sudo apt-get install python3
+sudo apt-get install python3-pip
+sudo -H pip3 install --upgrade pip
+sudo -H pip3 install Sphinx
+sudo -H pip3 install pytest
+sudo -H pip3 install requests
+sudo -H pip3 install psutil
+sudo -H pip3 install iiif_validator
+</code></pre>
+<h3 id="debian-8">Debian 8</h3>
+<p>First, follow the instructions for ubuntu-build.</p>
+<p>Then, CMake has to be patched. Unfortunaltely the version of CMake
+provided by the Debian packages contains a bug and cannot find the
+OpenSSL libraries and includes. To apply the patch, go to the Sipi
+dicrectory and run:</p>
+<pre><code>sudo ./debian-cmake-patch.sh
+</code></pre>
+<h3 id="centos-7">CentOS 7</h3>
+<p>This requires <a href="https://gcc.gnu.org">GCC</a> version 5.3 or greater. You can
+install it by installing
+<a href="https://www.softwarecollections.org/en/scls/rhscl/devtoolset-4/">devtoolset-4</a>,
+and adding this to your <code>.bash_profile</code>:</p>
+<pre><code>source scl_source enable devtoolset-4
+</code></pre>
+<p>Prerequisites for building Sipi without its automated test framework:</p>
+<pre><code>sudo yum -y install cmake3
+sudo yum -y install readline-devel
+sudo yum -y install doxygen
+sudo yum -y install patch
+sudo yum -y install openssl-devel
+sudo yum -y install gettext
+sudo yum -y install file-devel
+</code></pre>
+<p>If you also want to run Sipi's tests, you will need
+<a href="http://www.imagemagick.org/">ImageMagick</a>, version 7.0.6 or higher. We
+suggest compiling it from source:</p>
+<pre><code>sudo yum install libtiff-devel libjpeg-turbo-devel openjpeg2-devel
+wget https://github.com/ImageMagick/ImageMagick/archive/7.0.6-0.tar.gz
+tar -xzf 7.0.6-0.tar.gz
+cd ImageMagick-7.0.6-0/
+./configure
+make
+sudo make install
+sudo ldconfig /usr/local/lib
+</code></pre>
+<p>Then:</p>
+<pre><code>sudo yum -y install httpd-tools
+sudo yum -y install nginx
+sudo chown -R $USER /var/log/nginx
+sudo chown -R $USER /var/lib/nginx
+sudo yum -y install https://centos7.iuscommunity.org/ius-release.rpm
+sudo yum -y install python35u
+sudo yum -y install python35u-devel
+sudo yum -y install python35u-pip
+sudo pip3.5 install Sphinx
+sudo pip3.5 install pytest
+sudo pip3.5 install requests
+sudo pip3.5 install psutil
+sudo pip3.5 install iiif_validator
+</code></pre>
+<h3 id="docker_1">Docker</h3>
+<p>We provide a docker image based on Ubuntu LTS releases, containing all
+dependencies: <a href="https://hub.docker.com/r/dhlabbasel/sipi-base/">https://hub.docker.com/r/dhlabbasel/sipi-base/</a></p>
+<h2 id="compiling-the-source-code">Compiling the Source Code</h2>
+<p>Start in the <code>build</code> subdirectory of the source tree:</p>
+<pre><code>cd build
+</code></pre>
+<p>Then compile Sipi:</p>
+<pre><code>cmake ..
+make
+</code></pre>
+<p>By default, Sipi is built without optimization and with debug
+information output. To compile Sipi with optimization level 3, run:</p>
+<pre><code>cmake .. -DMAKE_DEBUG:BOOL=OFF
+make
+</code></pre>
+<h2 id="running-tests">Running Tests</h2>
+<p>You can run the automated tests in the <code>build</code> directory like this:</p>
+<pre><code>make test // will run all tests (minimum output)
+ctest --verbose // will run all tests (detailed output)
+make check // will run only e2e tests (detailed output)
+</code></pre>
+<h2 id="making-a-directory-tree-for-installing-sipi">Making a Directory Tree for Installing Sipi</h2>
+<p>In <code>build</code>, type this to install Sipi in the <code>local</code> subdirectory of the
+source tree:</p>
+<pre><code>make install
+</code></pre>
+<p>You can then copy the contents of <code>local</code> to the desired location.</p>
+<h2 id="generating-documentation">Generating Documentation</h2>
+<p>To generate this manual in HTML format, <code>cd</code> to the <code>manual</code>
+subdirectory of the source tree and type:</p>
+<pre><code>make html
+</code></pre>
+<p>You will then find the manual under <code>manual/_build/html</code>.</p>
+<p>To generate developer documentation about Sipi's C++ internals, <code>cd</code> to
+the <code>build</code> directory and type:</p>
+<pre><code>make doc
+</code></pre>
+<p>You will find the developer documentation in HTML format under
+<code>doc/html</code>. To generate developer documentation in PDF format, first
+ensure that you have <a href="https://www.latex-project.org/">LaTeX</a> installed.
+Then <code>cd</code> to <code>doc/html/latex</code> and type <code>make</code>.</p>
+<h2 id="starting-over">Starting Over</h2>
+<p>To delete the previous build and start over from scratch, <code>cd</code> to the
+top level of the source tree and type:</p>
+<pre><code>rm -rf build/* lib local extsrcs include/*_icc.h
+</code></pre>
+<h2 id="building-inside-docker">Building inside Docker</h2>
+<p>All that was described before, can also be done by using docker. All
+commands need to be executed from inside the source directory (and not
+<code>build</code> the build directory). Also, Docker needs to be installed on the
+system.</p>
+<pre><code>// deletes cached image and needs only to be used when newer image is available on dockerhub
+docker image rm --force dhlabbasel/sipi-base:18.04
+// building
+docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. &amp;&amp; make"
+// building and running all tests
+docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/build; cmake .. &amp;&amp; make &amp;&amp; ctest --verbose"
+// make html documentation
+docker run --rm -v $PWD:/sipi dhlabbasel/sipi-base:18.04 /bin/sh -c "cd /sipi/manual; make html"
+</code></pre>
+<p>Since we mount the current source directory into the docker container,
+all build artifacts can be accessed as if the build would have been
+performed without docker.</p>
+                
+                  
+                
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../sqlite/" title="Sqlite3 integration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Sqlite3 integration
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../running/" title="Running" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Running
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            &copy; 2017 - 2021 <a href='https://dasch.swiss' target='_blank'>Data and Service Center for the Humanities (DaSCH)</a>
+          </div>
+        
+        powered by
+        <a href="https://www.mkdocs.org" target="_blank" rel="noopener">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs</a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/application.c33a9706.js"></script>
+      
+      <script>app.initialize({version:"1.0.4",url:{base:".."}})</script>
+      
+    
+  </body>
+</html>
