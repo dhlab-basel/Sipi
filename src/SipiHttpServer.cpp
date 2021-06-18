@@ -791,6 +791,16 @@ static void knora_send_info(Connection &conn_obj, SipiHttpServer *serv, shttps::
       throw Error(__file__, __LINE__, "Cannot fstat file!");
     }
     json_object_set_new(root, "fileSize", json_integer(fstatbuf.st_size));
+    //
+    // add a fake duration
+    //
+    if (actual_mimetype == "audio/wav") {
+        json_object_set_new(root, "duration", json_real(1.0));
+    } else if (actual_mimetype == "audio/mpeg") {
+        json_object_set_new(root, "duration", json_real(1.0));
+    } else if (actual_mimetype == "audio/m4p") {
+        json_object_set_new(root, "duration", json_real(1.0));
+    }
     json_object_set_new(root, "originalFilename", json_string(orig_filename.c_str()));
 
     char *json_str = json_dumps(root, JSON_INDENT(3));
