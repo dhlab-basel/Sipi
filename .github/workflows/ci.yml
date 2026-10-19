@@ -43,6 +43,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+    inputs:
+      cold_cache:
+        description: Salt every action key with the run ID so the RBE action cache misses (cold-build measurement).
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -134,6 +139,7 @@ jobs:
           rbe-ca-cert: ${{ secrets.REMOTEBUILD_CA_CERT }}
           rbe-client-cert: ${{ secrets.REMOTEBUILD_CLIENT_CERT }}
           rbe-client-key: ${{ secrets.REMOTEBUILD_CLIENT_KEY }}
+          cache-salt: ${{ inputs.cold_cache && github.run_id || '' }}
 
       # Rust lint gates on the linux-amd64 leg, BEFORE build+test, so a
       # formatting/clippy finding fails the leg in lint time — short-circuiting
@@ -336,6 +342,7 @@ jobs:
           rbe-ca-cert: ${{ secrets.REMOTEBUILD_CA_CERT }}
           rbe-client-cert: ${{ secrets.REMOTEBUILD_CLIENT_CERT }}
           rbe-client-key: ${{ secrets.REMOTEBUILD_CLIENT_KEY }}
+          cache-salt: ${{ inputs.cold_cache && github.run_id || '' }}
 
       - name: Run unit + e2e tests under ASan + UBSan
         env:

@@ -25,6 +25,9 @@ inputs:
     description: mTLS client cert (PEM).
   rbe-client-key:
     description: mTLS client key (PEM).
+  cache-salt:
+    description: Forwarded to bazel-rbe; non-empty forces a cold action cache.
+    default: ""
 
 outputs:
   flags:
@@ -100,3 +103,4 @@ runs:
         client-cert: ${{ inputs.rbe-client-cert }}
         client-key: ${{ inputs.rbe-client-key }}
         target-platform: ${{ inputs.target-platform }}
+        cache-salt: ${{ inputs.cache-salt }}

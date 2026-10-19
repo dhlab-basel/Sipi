@@ -26,6 +26,9 @@ inputs:
   target-platform:
     description: "Bazel target platform for this runner (e.g. //platforms:linux_aarch64). Compiles cross-build for it on the x86_64 worker; tests run locally on the runner."
     default: "//platforms:linux_x86_64"
+  cache-salt:
+    description: "Non-empty value is added to every action key (target and exec config), so the remote action cache misses everywhere. Used for cold-build measurements."
+    default: ""
 
 outputs:
   flags:
@@ -43,6 +46,7 @@ runs:
         RBE_CLIENT_CERT: ${{ inputs.client-cert }}
         RBE_CLIENT_KEY: ${{ inputs.client-key }}
         RBE_TARGET_PLATFORM: ${{ inputs.target-platform }}
+        RBE_CACHE_SALT: ${{ inputs.cache-salt }}
       run: |
         set -euo pipefail
         # Fork PRs / missing secrets → emit empty flags so the build runs cold
@@ -109,4 +113,7 @@ runs:
         # so they run in parallel here; under `--config=asan` the LLVM symbolizer travels
         # as a runfile (test/e2e/sipi_e2e_test.bzl), so the sanitizer e2e tests run
         # remotely too. amd64 keeps .bazelrc's graceful fallback.
+        if [ -n "${RBE_CACHE_SALT:-}" ]; then
+          FLAGS="$FLAGS --action_env=SIPI_CACHE_SALT=$RBE_CACHE_SALT --host_action_env=SIPI_CACHE_SALT=$RBE_CACHE_SALT"
+        fi
         echo "flags=$FLAGS" >> "$GITHUB_OUTPUT"
