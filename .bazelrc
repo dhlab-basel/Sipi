@@ -1,4 +1,4 @@
-# Sipi Bazel configuration — pinned to Bazel 9.0.2 LTS (.bazelversion).
+# Sipi Bazel configuration — Bazel version pinned in .bazelversion.
 #
 # Defaults in Bazel 9 (do NOT re-declare):
 #   --enable_bzlmod                          (default in 9)

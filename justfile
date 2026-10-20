@@ -92,7 +92,7 @@ bazel-test *FLAGS='':
 # version cannot read the profile and yields an empty lcov. Resolved from the
 # `//bazel:llvm-{profdata,cov}` aliases (exec-platform-selected bundle) rather
 # than PATH. Required since the Bazel 7.2+ env-clobber bug — fix landed in
-# Bazel 9.1.0 (PR #25879, closes #23247), which is pinned via `.bazelversion`.
+# Bazel 9.1.0 (PR #25879, closes #23247); `.bazelversion` must stay at or above it.
 bazel-coverage *FLAGS='':
     #!/usr/bin/env bash
     set -euo pipefail
