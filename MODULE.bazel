@@ -1,7 +1,7 @@
 """Sipi — IIIF-compatible media server.
 
-Bazel 9.0.2 LTS module. Bazel is the build system; Nix provisions the
-dev shell only.
+Bazel module (version pinned in `.bazelversion`). Bazel is the build
+system; Nix provisions the dev shell only.
 
 Versioning: `version.txt` is the single source of truth for the Sipi version
 string. `tools/workspace_status.sh` reads it into `STABLE_SIPI_VERSION`, which
