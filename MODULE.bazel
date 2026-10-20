@@ -478,23 +478,7 @@ use_repo(
 # The LLVM toolchain blocks above MUST appear before the Rust extension —
 # otherwise build scripts silently pick up the host `cc` and produce
 # non-hermetic artifacts.
-bazel_dep(name = "rules_rust", version = "0.70.0")
-
-# `cargo_build_script` re-invokes the cc_toolchain's compile flags from a build
-# script's runfiles cwd (not the execroot), so `_pwd_flags` in rules_rust rewrites
-# execroot-relative toolchain flags (`--sysroot=`, `-isystem`, `-L`, `-B`,
-# `-resource-dir`) to `${pwd}/…`. It omits `-isysroot`, which hermetic-llvm's
-# macOS toolchain emits alongside `--sysroot=` (repo `@llvm++osx+macos_sdk`). The
-# relative `-isysroot external/…/sysroot` then can't resolve from the runfiles
-# cwd, so cc-rs crates (ring) fail with `'TargetConditionals.h' file not found`
-# on darwin — breaking every ring-dependent Rust target (the production server
-# included). The patch adds `-isysroot` to `_pwd_flags`, mirroring the existing
-# entries. Drop if/when fixed upstream (rules_rust > 0.70.0).
-single_version_override(
-    module_name = "rules_rust",
-    patch_strip = 1,
-    patches = ["//bazel/patches:rules_rust_cargo_build_script_isysroot.patch"],
-)
+bazel_dep(name = "rules_rust", version = "0.74.0")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
@@ -583,7 +567,7 @@ crate.spec(package = "rustls", version = "0.23", default_features = False, featu
 # mlua in `external` link mode: mlua-sys's build script emits nothing (no
 # pkg-config probe, no vendored source, no link flags) — the `lua_*` symbols
 # resolve at final-link time from the BCR `@lua` 5.3.6 cc_library, which the
-# consuming rust target lists as a direct dep. `external` is a feature of
+# consuming rust target lists in `link_deps`. `external` is a feature of
 # `mlua-sys`, not `mlua` (no passthrough feature exists), hence the
 # annotation — the first `crate.annotation()` in this file. Annotation
 # features are additive at BUILD generation and `external` has no deps, so

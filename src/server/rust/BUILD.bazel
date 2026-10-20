@@ -81,6 +81,8 @@ rust_library(
         # The FFI-free two-lane admission pool (classify + acquire + per-partition
         # counters). Owned by `AppState`; `routes.rs` keeps only the call sites.
         "//src/throttling/rust:admission",
+    ],
+    link_deps = [
         # The narrow C FFI seam → the transitive C++ image engine. This is the
         # cc_library → rust link (Open Question #1). //src/ffi:sipi_ffi pulls
         # //src/image, so the library carries the engine without depending on
