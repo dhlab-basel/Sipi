@@ -483,7 +483,7 @@ rust.toolchain(
     # also required by the transitive `pxfm` crate. First-party crates
     # stay on edition 2021 (set per `rust_*` target in their BUILD
     # files) — the transitive bumps are invisible to first-party code.
-    versions = ["1.89.0"],
+    versions = ["1.98.0"],
     # Cross-compile targets. The arm64/darwin CI legs run on native runners but
     # compile on the x86_64 RBE worker, so rules_rust must register a toolchain
     # with exec=x86_64-linux for each of these targets. Without them, no toolchain
