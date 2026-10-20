@@ -148,7 +148,7 @@ build:linux --copt=-fstack-clash-protection
 
 # ── macOS ──────────────────────────────────────────────────────────────────
 # Pin the deployment target so Bazel-built binaries are portable across macOS
-# releases. The hermetic `llvm` toolchain fetches the MacOSX26.4 SDK from
+# releases. The hermetic `llvm` toolchain fetches the MacOSX26.5 SDK from
 # Apple's CDN; a recent SDK otherwise defaults the deployment target high, so
 # pin the floor explicitly. 13.3 is retained from the toolchains_llvm era (the
 # floor at which Apple's libc++ marked the C++23 `<expected>` machinery
@@ -351,8 +351,8 @@ build:tracy --copt=-Wno-thread-safety-analysis
 # build-completeness invariant holds by default and only this config needs the
 # runtime.
 #
-# **Linux + macOS.** hermetic-llvm 0.8.18 stages the compiler-rt libFuzzer
-# runtime for darwin too (`libclang_rt.fuzzer_osx.a`, upstream PR #700), so
+# **Linux + macOS.** Since 0.8.18, hermetic-llvm stages the compiler-rt
+# libFuzzer runtime for darwin too (`libclang_rt.fuzzer_osx.a`, upstream PR #700), so
 # `-fsanitize=fuzzer` links on macOS as well as Linux. The driver also pulls
 # `libclang_rt.ubsan_osx_dynamic` on darwin, so `config:ubsan=true` below is
 # required on both. (rules_fuzzing's Python launcher deps also need a macOS

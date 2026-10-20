@@ -289,7 +289,7 @@ bazel-build-tracy *FLAGS='':
 # Coverage-guided fuzzing of the production Rust IIIF parser
 # (`//src/iiifparser/fuzz`) and the C++ codec decode entry points
 # (`//src/format_handlers/fuzz`; DEV-7066). Runs on Linux and macOS: hermetic-llvm
-# 0.8.18 stages `libclang_rt.fuzzer_osx.a`, so `-fsanitize=fuzzer` links on
+# stages `libclang_rt.fuzzer_osx.a` since 0.8.18, so `-fsanitize=fuzzer` links on
 # darwin (see `.bazelrc` §Fuzzing; the macOS repo-rule DEVELOPER_DIR that lets
 # rules_fuzzing's Python deps resolve in the Nix shell is set globally there).
 #

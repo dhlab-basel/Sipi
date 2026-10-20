@@ -22,7 +22,7 @@ module(
 # `rules_cc` is required at the top of every BUILD.bazel using cc_* in
 # Bazel 9 (built-in cc_* rules removed from the global namespace).
 bazel_dep(name = "platforms", version = "1.1.0")
-bazel_dep(name = "rules_cc", version = "0.2.19")
+bazel_dep(name = "rules_cc", version = "0.2.25")
 
 # ── Fuzzing ───────────────────────────────────────────────────────────────
 # `rules_fuzzing` provides the `cc_fuzz_test` behind
@@ -134,18 +134,14 @@ single_version_override(
 # Consumed as @cli11//:cli11 with `#include <CLI/CLI.hpp>`.
 bazel_dep(name = "cli11", version = "2.6.2")
 
-# protobuf 34.1 transitively pulls `rules_go@0.51.0-rc2` for its Go support.
-# That release's `go/private/rules/cgo.bzl` still references `CcInfo` from
-# `@rules_cc//cc:defs.bzl`, where the symbol was removed in rules_cc 0.2.x
-# (now `@rules_cc//cc/common:cc_info.bzl`). Bazel resolves the registered
-# `@go_toolchains//:all` toolchain at analysis time even for non-Go targets,
-# so the broken load fires on first `bazelisk build //src/metadata:essentials_cc_proto`.
-# Override to the latest stable rules_go, which loads CcInfo from the new path.
-# Drop this override once a protobuf release pins a Bazel-9-clean rules_go.
-bazel_dep(name = "rules_go", version = "0.60.0")
-
-# Same story for `rules_android` — protobuf 34.1 transitively pulls
-# `rules_android@0.6.4`, whose `android_local_test/attrs.bzl` still loads
+# protobuf 34.1 also pulls `rules_go@0.51.0-rc2`, whose `cgo.bzl` loads
+# `CcInfo` from `@rules_cc//cc:defs.bzl` (removed in rules_cc 0.2.x) and breaks
+# analysis of every target. There is no root `rules_go` pin because `llvm`'s
+# own `rules_go` 0.62.0 dep lifts it past that; if an `llvm` bump drops or
+# lowers that dep, restore `bazel_dep(name = "rules_go", ...)` at >= 0.60.0.
+#
+# protobuf 34.1 transitively pulls `rules_android@0.6.4`, whose
+# `android_local_test/attrs.bzl` still loads
 # `CcInfo` from `@rules_cc//cc:defs.bzl`. Bazel resolves the registered
 # `@androidsdk//:all` toolchain at analysis time for every target's
 # toolchain query (even pure C++ ones), so the broken load tanks every
@@ -165,25 +161,24 @@ single_version_override(
 # decouples from host Nix/Xcode tooling. The toolchain-extension wiring
 # (LLVM version, exec/target platforms) lives below.
 # See docs/adr/0014-toolchain-provider-swap.md.
-bazel_dep(name = "llvm", version = "0.8.18")
+bazel_dep(name = "llvm", version = "0.8.25")
 
-# hermetic-llvm hands the Linux kernel + glibc system headers to compile actions
-# as a bare source-directory artifact via two paths: the toolchain cc_args
-# (target-config compiles) and the kernel_headers / gnu_libc_headers cc_library
-# `hdrs = ["include"]` consumed by @llvm-project's libcxx/libcxxabi/libunwind
-# (the exec-config "stage0" runtime compiles, which get no kernel-header cc_args).
-# Remote execution must expand a source directory into each action's Merkle input
-# tree; the include/ subtree is dropped, giving `'linux/limits.h' file not found`
-# on the toolchain-bootstrap [for tool] compiles -- deterministic once the action
-# cache is cold, masked by warm cache hits. A Bazel-side input-declaration issue,
-# not a backend bug. The patch (1) globs the headers_directory targets into
-# discrete File artifacts (cc_args path) and (2) makes the module-map generator
-# emit one umbrella per directory, plus (3) globs the cc_library hdrs into
-# individual files (implementation_deps path). Drop if/when fixed upstream.
+# hermetic-llvm hands the Linux kernel + glibc headers to compile actions as
+# bare source directories, whose subtrees remote execution drops from the input
+# tree (`'linux/limits.h' file not found` on cold-cache [for tool] compiles).
+# The headers-glob patch declares the individual header files instead; its
+# header has the details. Re-check it on every `llvm` bump with the aquery
+# commands in docs/src/development/rbe.md § "The hermetic-llvm headers glob
+# patch", and drop `hermetic_llvm_headers_glob.patch` once both paths list
+# individual files without it.
 single_version_override(
     module_name = "llvm",
     patch_strip = 1,
-    patches = ["//bazel/patches:hermetic_llvm_headers_glob.patch"],
+    patches = [
+        "//bazel/patches:hermetic_llvm_headers_glob.patch",
+        # Drops the unused `-rtlib=compiler-rt` from macOS links; see its header.
+        "//bazel/patches:hermetic_llvm_darwin_rtlib.patch",
+    ],
 )
 
 # ── Container image rules ─────────────────────────────────────────────────
@@ -385,11 +380,11 @@ use_repo(benchmark_fixtures, "sipi_bench_fixtures")
 # than the prior toolchains_llvm Chromium debian-bullseye 2.31) and ships its
 # own libc++/compiler-rt, so there are no Chromium sysroot tarballs to pin and
 # no host-glibc leakage into Bazel-driven compiles. The macOS SDK
-# (MacOSX26.4.sdk) is fetched hermetically from Apple's CDN, so darwin needs
+# (MacOSX26.5.sdk) is fetched hermetically from Apple's CDN, so darwin needs
 # no host Xcode CLT and no `.bazelrc` SDK hacks.
 #
-# LLVM 22.1.7 is pinned explicitly via `llvm.version` below (0.8.18's own
-# default floats to 22.1.8; we pin an exact patch per ADR-0014). 19.1.7 (the
+# LLVM 22.1.7 is pinned explicitly via `llvm.version` below (0.8.25's own
+# `llvm.version` is 23.1.2; we pin an exact patch per ADR-0014). 19.1.7 (the
 # prior toolchains_llvm pin) has NO prebuilt in hermetic-llvm and would force
 # a multi-hour from-source clang bootstrap, so the provider swap necessarily
 # carries a 19→22 compiler bump. libc++ is the toolchain default on every
