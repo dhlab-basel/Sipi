@@ -55,6 +55,13 @@ _CPP_STDLIB_LINK = select({
     "//conditions:default": [],
 })
 
+# rustc links Apple targets with `-nodefaultlibs`, so clang reports BCR modules'
+# `-pthread` linkopt as unused and rustc's `linker_messages` lint prints it.
+_DARWIN_QUIET_LINK = select({
+    "@platforms//os:macos": ["-Clink-arg=-Wno-unused-command-line-argument"],
+    "//conditions:default": [],
+})
+
 _SRCS = [
     "src/commands/health.rs",
     "src/commands/mod.rs",
@@ -153,7 +160,7 @@ rust_binary(
     crate_features = _ALLOCATOR_FEATURE + _CRASH_REPORTER_FEATURE,
     crate_name = "sipi_cli",
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     # Excluded from the sanitizer build (ci.yml's `sanitizer` job filters `-no-sanitizer`):
     # the transitive C++ dep (protobuf) includes <sanitizer/asan_interface.h>
     # under --config=asan, which the hermetic LLVM toolchain does not ship.
@@ -186,7 +193,7 @@ rust_test(
     crate = ":sipi",
     crate_features = _ALLOCATOR_FEATURE + _CRASH_REPORTER_FEATURE,
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
     visibility = ["//visibility:private"],
 )
