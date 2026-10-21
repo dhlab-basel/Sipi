@@ -584,17 +584,31 @@ crate.spec(package = "rand", version = "0.9")
 # resolver will pick, because a repin alone will not move a transitive crate that
 # the existing lock already satisfies. Unlike the specs above, do not prune these
 # on sight for being unreferenced; drop one only once the graph pulls a version
-# at or above the floor on its own.
+# at or above the floor on its own. Each floor is a compatible (caret) range, so
+# it cannot pull in a second major/minor series the graph does not use, and keeps
+# `default_features = False`, so it never turns on a crate's default features.
 #
 # rustls: RUSTSEC-2026-0285, TLS 1.3 handshake messages accepted across
-# encryption level boundaries. Reaches the graph via the `sentry` crates'
-# `rustls-no-provider`. Fixed in 0.23.45.
+# encryption level boundaries, fixed in 0.23.45; RUSTSEC-2026-0346/0347/0348/0349,
+# fixed in 0.23.46. Reaches the graph via the `sentry` crates'
+# `rustls-no-provider`.
 #
 # `default_features = False` is load-bearing, not tidiness: rustls' default
 # feature set selects the `aws-lc-rs` provider, which drags in `aws-lc-sys` —
 # the one crate this graph must never contain (see the note above). Declaring
 # the floor with defaults on is enough to pull it in.
-crate.spec(package = "rustls", version = ">=0.23.45", default_features = False, features = ["ring", "std", "tls12", "logging"])
+crate.spec(package = "rustls", version = "0.23.46", default_features = False, features = ["ring", "std", "tls12", "logging"])
+
+# quinn-proto: RUSTSEC-2026-0338/0340/0343, fixed in 0.11.18. Reaches the graph
+# via `quinn`.
+crate.spec(package = "quinn-proto", version = "0.11.18", default_features = False)
+
+# rustls-webpki: RUSTSEC-2026-0382, fixed in 0.103.16. webpki-roots and
+# webpki-root-certs: RUSTSEC-2026-0381/0383, fixed in 1.0.10. All reach the
+# graph via `rustls` / `reqwest`.
+crate.spec(package = "rustls-webpki", version = "0.103.16", default_features = False)
+crate.spec(package = "webpki-roots", version = "1.0.10", default_features = False)
+crate.spec(package = "webpki-root-certs", version = "1.0.10", default_features = False)
 
 # `cargo_lockfile` materializes a Cargo-format lock alongside the Bazel-native
 # resolution — cargo-audit/OSV-Scanner read Cargo.lock syntax, not
