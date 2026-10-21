@@ -372,7 +372,7 @@ use_repo(pip, "sipi_bench_pip")
 benchmark_fixtures = use_extension("//bazel:benchmark_fixtures_extension.bzl", "benchmark_fixtures_extension", dev_dependency = True)
 use_repo(benchmark_fixtures, "sipi_bench_fixtures")
 
-# ── LLVM toolchain — hermetic, LLVM 22.1.7, libc++ ─────────────────────────
+# ── LLVM toolchain — hermetic, LLVM 23.1.2, libc++ ─────────────────────────
 #
 # hermeticbuild/hermetic-llvm is zero-sysroot: it links each Linux target
 # against per-version glibc stubs it generates itself (default floor: the
@@ -383,17 +383,16 @@ use_repo(benchmark_fixtures, "sipi_bench_fixtures")
 # (MacOSX26.5.sdk) is fetched hermetically from Apple's CDN, so darwin needs
 # no host Xcode CLT and no `.bazelrc` SDK hacks.
 #
-# LLVM 22.1.7 is pinned explicitly via `llvm.version` below (0.8.25's own
-# `llvm.version` is 23.1.2; we pin an exact patch per ADR-0014). 19.1.7 (the
+# LLVM 23.1.2 is pinned explicitly via `llvm.version` below, even though it
+# is also 0.8.25's own default: we pin an exact patch per ADR-0014. 19.1.7 (the
 # prior toolchains_llvm pin) has NO prebuilt in hermetic-llvm and would force
-# a multi-hour from-source clang bootstrap, so the provider swap necessarily
-# carries a 19→22 compiler bump. libc++ is the toolchain default on every
+# a multi-hour from-source clang bootstrap. libc++ is the toolchain default on every
 # target, so the old `stdlib = {linux-*: libc++}` map is gone. C++23 comes
 # from the global `--cxxopt=-std=c++23` in .bazelrc (the module exposes no
 # `cxx_standard` attr). See docs/adr/0014-toolchain-provider-swap.md for the
 # rationale and the v0.8.x / compatibility-level-0 pinning policy.
 llvm = use_extension("@llvm//extensions:llvm.bzl", "llvm")
-llvm.version(llvm_version = "22.1.7")
+llvm.version(llvm_version = "23.1.2")
 use_repo(llvm, "llvm-project")
 
 # `exec` = the hosts we build ON; `target` = the platforms we build FOR. CI
@@ -636,6 +635,9 @@ approvaltests_cpp(
 http_archive(
     name = "exiv2",
     build_file = "//bazel:exiv2.BUILD.bazel",
+    # Drop when the pinned exiv2 includes <ctime> in src/value.cpp (see the patch).
+    patch_strip = 1,
+    patches = ["//bazel/patches:exiv2_value_include_ctime.patch"],
     sha256 = "700b76b97695b2fab4ef8c79619c68ae57d09e0c130724791cafbd39e0eb4aef",
     strip_prefix = "exiv2-0.28.9",
     url = "https://github.com/Exiv2/exiv2/archive/refs/tags/v0.28.9.tar.gz",

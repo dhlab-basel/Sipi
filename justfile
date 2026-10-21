@@ -87,7 +87,7 @@ bazel-test *FLAGS='':
 # propagated into each test action. Bazel's `tools/test/collect_cc_coverage.sh`
 # reads these to decide the LLVM coverage path (`llvm-profdata merge` +
 # `llvm-cov export --format=lcov`) for the `.profraw` profiles. They MUST be
-# the hermetic toolchain's binaries (LLVM 22), version-matched to the
+# the hermetic toolchain's binaries (LLVM 23), version-matched to the
 # instrumented profile — a host/Nix `llvm-profdata` of a different major
 # version cannot read the profile and yields an empty lcov. Resolved from the
 # `//bazel:llvm-{profdata,cov}` aliases (exec-platform-selected bundle) rather
