@@ -31,6 +31,13 @@ _CPP_STDLIB_LINK = select({
     "//conditions:default": [],
 })
 
+# rustc links Apple targets with `-nodefaultlibs`, so clang reports BCR modules'
+# `-pthread` linkopt as unused and rustc's `linker_messages` lint prints it.
+_DARWIN_QUIET_LINK = select({
+    "@platforms//os:macos": ["-Clink-arg=-Wno-unused-command-line-argument"],
+    "//conditions:default": [],
+})
+
 # The runtime crate: VM factory (hardened profile, deadline hook, binding
 # chokepoint), limits/kill accounting, and the bytecode cache. `@lua` is a
 # `link_deps` entry — mlua's `external` mode emits no link inputs of its own, so the
@@ -87,7 +94,7 @@ rust_test(
     name = "scripting_test",
     crate = ":scripting",
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
 )
 
@@ -102,7 +109,7 @@ rust_test(
         "@crates//:mlua",
         "@crates//:tempfile",
     ],
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
 )
 
@@ -116,7 +123,7 @@ rust_binary(
         "//scripts:all_scripts",
     ],
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = [
         "manual",
         "no-sanitizer",
@@ -139,7 +146,7 @@ rust_test(
         "@crates//:serde_json",
         "@crates//:tempfile",
     ],
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
 )
 
@@ -149,7 +156,7 @@ rust_test(
     name = "entry_test",
     srcs = ["entry_tests.rs"],
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
     deps = [
         ":scripting",
@@ -165,7 +172,7 @@ rust_test(
     srcs = ["image_tests.rs"],
     data = ["//test/_test_data:images"],
     edition = "2021",
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
     deps = [
         ":scripting",
@@ -188,7 +195,7 @@ rust_test(
         "@crates//:tempfile",
         "@rules_rust//rust/runfiles",
     ],
-    rustc_flags = _CPP_STDLIB_LINK,
+    rustc_flags = _CPP_STDLIB_LINK + _DARWIN_QUIET_LINK,
     tags = ["no-sanitizer"],
 )
 
