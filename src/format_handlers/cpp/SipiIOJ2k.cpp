@@ -79,6 +79,36 @@ constexpr std::int64_t kMaxMetadataBytes = 64 * 1024 * 1024;// 64 MiB cap on any
   if (processors < 2) return 0;
   return std::min(processors, KDU_MAX_THREADS);
 }
+
+// Pixel channel of each of the nc codestream components: colour k of the
+// layer's colour space (Y, Cb, Cr for YCbCr) goes to channel k, taken from the
+// component the JP2 channel mapping (cdef box) assigns to it; components that
+// carry no colour (alpha) follow in codestream order. Empty when the mapping
+// is the identity or not a plain component permutation (a palette, another
+// codestream): component c then stays in channel c.
+[[nodiscard]] std::vector<int> jp2_channel_of(const jp2_channels &channels, int numcol, int nc)
+{
+  std::vector<int> channel_of(nc, -1);
+  for (int k = 0; k < numcol; ++k) {
+    int comp = 0;
+    int lut = 0;
+    int stream = 0;
+    int format = 0;
+    if (!channels.get_colour_mapping(k, comp, lut, stream, format) || lut >= 0 || stream != 0 || comp < 0
+        || comp >= nc || channel_of[comp] >= 0) {
+      return {};
+    }
+    channel_of[comp] = k;
+  }
+  int next = numcol;
+  bool identity = true;
+  for (int c = 0; c < nc; ++c) {
+    if (channel_of[c] < 0) channel_of[c] = next++;
+    identity = identity && channel_of[c] == c;
+  }
+  if (identity) return {};
+  return channel_of;
+}
 }// namespace
 
 namespace Sipi {
@@ -578,10 +608,12 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
   img->setPhoto(PhotometricInterpretation::INVALID);// we initialize to an invalid value in order to test later if
                                                      // photo has been set
   int numcol = 0;
+  std::vector<int> channel_of;
   if (jpx_layer.exists()) {
     kdu_supp::jp2_colour colinfo = jpx_layer.access_colour(0);
     kdu_supp::jp2_channels chaninfo = jpx_layer.access_channels();
     numcol = chaninfo.get_num_colours();// I assume these are the color channels (1, 3 or 4 in case of CMYK)
+    channel_of = jp2_channel_of(chaninfo, numcol, static_cast<int>(img->getNc()));
     int nluts = palette.get_num_luts();
     if (nluts == 3) {
       int nentries = palette.get_num_entries();
@@ -755,6 +787,18 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
       "Cannot read JPEG2000 file \"" + filepath + "\": corrupt codestream (decompressor start failed)" });
   }
   std::vector<int> stripe_heights(codestream.get_num_components(), dims.size.y);
+  // Sample-interleaved output with each component at its mapped channel. A
+  // non-NULL sample_offsets makes Kakadu default NULL sample_gaps to 1
+  // (component-interleaved), so gaps and row gaps are passed alongside.
+  std::vector<int> sample_gaps;
+  std::vector<int> row_gaps;
+  if (!channel_of.empty()) {
+    sample_gaps.assign(channel_of.size(), static_cast<int>(img->getNc()));
+    row_gaps.assign(channel_of.size(), dims.size.x * static_cast<int>(img->getNc()));
+  }
+  const int *offsets_p = channel_of.empty() ? nullptr : channel_of.data();
+  const int *sample_gaps_p = channel_of.empty() ? nullptr : sample_gaps.data();
+  const int *row_gaps_p = channel_of.empty() ? nullptr : row_gaps.data();
 
   if (force_bps_8) img->set_geometry(img->getNx(), img->getNy(), img->getNc(), 8);// forces kakadu to convert to 8 bit!
   switch (img->getBps()) {
@@ -771,7 +815,7 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
     img->set_pixels(std::vector<byte>(*buf8_size), img->getNx(), img->getNy(), img->getNc(), img->getBps());
     byte *dst = img->pixels_writable().data();
     try {
-      decompressor.pull_stripe(dst, stripe_heights.data());
+      decompressor.pull_stripe(dst, stripe_heights.data(), offsets_p, sample_gaps_p, row_gaps_p);
     } catch (kdu_exception&) {
       log_err("Error while decompressing image: %s.", filepath.c_str());
       return std::unexpected(SipiValueError{ ErrorCode::kMalformedInput,
@@ -792,9 +836,9 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
     try {
       decompressor.pull_stripe(reinterpret_cast<kdu_core::kdu_int16 *>(dst),
         stripe_heights.data(),
-        nullptr,
-        nullptr,
-        nullptr,
+        offsets_p,
+        sample_gaps_p,
+        row_gaps_p,
         nullptr,
         reinterpret_cast<bool *>(get_signed.data()));
     } catch (kdu_exception&) {
@@ -817,9 +861,9 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
     try {
       decompressor.pull_stripe(reinterpret_cast<kdu_core::kdu_int16 *>(dst),
         stripe_heights.data(),
-        nullptr,
-        nullptr,
-        nullptr,
+        offsets_p,
+        sample_gaps_p,
+        row_gaps_p,
         nullptr,
         reinterpret_cast<bool *>(get_signed.data()));
     } catch (kdu_exception&) {

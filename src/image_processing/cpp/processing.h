@@ -126,6 +126,9 @@ namespace processing {
 /*!
  * Convert full range YCbCr (YCC) to RGB colors
  *
+ * Channels 0, 1 and 2 hold Y, Cb and Cr; any further channels are copied
+ * through unchanged.
+ *
  * \param[in] img Image to convert, mutated in place
  * \returns an error if the image's bits/sample is not 8 or 16, or if the
  *          converted pixel buffer's size overflows, success otherwise
