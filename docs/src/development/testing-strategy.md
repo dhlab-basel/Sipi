@@ -532,8 +532,13 @@ The following matrix maps every testable IIIF spec requirement to its test statu
 
 | Requirement | Status | Test | Notes |
 |---|---|---|---|
-| Info.json ACAO without Origin | :white_check_mark: | `cors_info_json_without_origin` | |
-| Info.json ACAO with Origin | :white_check_mark: | `cors_info_json_with_origin` | |
+| Info.json ACAO without Origin | :white_check_mark: | `cors_info_json_without_origin` | `*`, no credentials |
+| Info.json ACAO with Origin | :white_check_mark: | `cors_info_json_with_origin` | Echoed Origin + credentials, `Vary: Origin` |
+| Info.json ACAO with Origin and Cookie | :white_check_mark: | `cors_info_json_with_origin_and_cookie` | Echoed Origin + credentials |
+| Info.json 401 auth challenge with Origin | :white_check_mark: | `cors_info_json_auth_challenge_with_origin` | Echoed Origin + credentials |
+| Info.json OPTIONS preflight | :white_check_mark: | `cors_preflight_info_json` | Echoed Origin + credentials, explicit methods and headers |
+| Info.json under `SIPI_ALLOWED_ORIGINS` | :white_check_mark: | `allowed_origins_allowlist_gates_info_json_cors` | `security.rs`; denied Origin gets no ACAO |
+| Knora.json `Vary: Origin` with and without Origin | :white_check_mark: | `cors_knora_json_varies_on_origin` | `*` without Origin, echoed Origin + credentials with one |
 | Image ACAO with Origin | :white_check_mark: | `cors_image_with_origin` | |
 | Image ACAO without Origin | :white_check_mark: | `cors_image_without_origin` | |
 | OPTIONS preflight | :white_check_mark: | `cors_preflight` | |
@@ -685,11 +690,11 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | Rotation parameters | 9 | 0 | 100% |
 | Quality parameters | 6 | 0 | 100% |
 | Format parameters | 5 | 0 | 100% |
-| CORS | 5 | 0 | 100% |
+| CORS | 10 | 0 | 100% |
 | HTTP behavior | 13 | 0 | 100% |
 | Identifiers | 4 | 1 (ARK/URN) | 80% |
 | Sipi extensions | 90 | 8 | 92% |
-| **Total** | **182** | **9** | **95%** |
+| **Total** | **187** | **9** | **95%** |
 
 *(Three additional Sipi-extension rows — Prometheus `/metrics`, `/api/cache`, SSL/TLS — are excluded from this count entirely: they are removed-on-the-Rust-shell features, not gaps. See the N/A note above the extension matrix.)*
 
