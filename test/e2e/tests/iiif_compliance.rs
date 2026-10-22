@@ -381,7 +381,8 @@ fn info_json_x_forwarded_proto_https() {
 
 #[test]
 fn cors_info_json_without_origin() {
-    // info.json always sends Access-Control-Allow-Origin: * (src/server/rust/src/info.rs)
+    // No Origin: info.json answers ACAO * without credentials (CORS forbids
+    // pairing * with credentials).
     let srv = server();
     let resp = client()
         .get(format!("{}/unit/lena512.jp2/info.json", srv.base_url))
@@ -396,11 +397,69 @@ fn cors_info_json_without_origin() {
         .to_str()
         .unwrap();
     assert_eq!(acao, "*", "info.json ACAO should be * without Origin");
+    assert!(
+        resp.headers()
+            .get("access-control-allow-credentials")
+            .is_none(),
+        "info.json without Origin must not send Access-Control-Allow-Credentials"
+    );
+}
+
+#[test]
+fn cors_knora_json_varies_on_origin() {
+    // The ACAO is `*` without an Origin and the echoed Origin with one, so a
+    // shared cache must key knora.json on Origin in both cases, as info.json.
+    let srv = server();
+    let url = format!("{}/unit/lena512.jp2/knora.json", srv.base_url);
+    let resp = client().get(&url).send().expect("GET knora.json failed");
+    assert_eq!(resp.status().as_u16(), 200);
+    assert_varies_on_origin(&resp);
+
+    let resp = client()
+        .get(&url)
+        .header("Origin", "https://example.org")
+        .send()
+        .expect("GET knora.json with Origin failed");
+    assert_eq!(resp.status().as_u16(), 200);
+    assert_credentialed_echo(&resp, "https://example.org");
+    assert_varies_on_origin(&resp);
+}
+
+/// Assert `resp` echoes `origin` with credentials, as the image route does.
+fn assert_credentialed_echo(resp: &reqwest::blocking::Response, origin: &str) {
+    let headers = resp.headers();
+    let acao = headers
+        .get("access-control-allow-origin")
+        .expect("missing ACAO header")
+        .to_str()
+        .unwrap();
+    assert_eq!(acao, origin, "ACAO should echo the Origin");
+    let credentials = headers
+        .get("access-control-allow-credentials")
+        .expect("missing Access-Control-Allow-Credentials")
+        .to_str()
+        .unwrap();
+    assert_eq!(credentials, "true");
+}
+
+/// Assert `resp` carries a `Vary` naming `Origin`.
+fn assert_varies_on_origin(resp: &reqwest::blocking::Response) {
+    let vary = resp
+        .headers()
+        .get("vary")
+        .expect("missing Vary header")
+        .to_str()
+        .unwrap();
+    assert!(
+        vary.split(',')
+            .any(|v| v.trim().eq_ignore_ascii_case("origin")),
+        "Vary should contain Origin, got: {}",
+        vary
+    );
 }
 
 #[test]
 fn cors_info_json_with_origin() {
-    // info.json always sends * regardless of Origin header
     let srv = server();
     let resp = client()
         .get(format!("{}/unit/lena512.jp2/info.json", srv.base_url))
@@ -409,14 +468,72 @@ fn cors_info_json_with_origin() {
         .expect("GET info.json with Origin failed");
 
     assert_eq!(resp.status().as_u16(), 200);
-    let acao = resp
-        .headers()
-        .get("access-control-allow-origin")
-        .expect("missing ACAO header")
+    assert_credentialed_echo(&resp, "https://example.org");
+    assert_varies_on_origin(&resp);
+}
+
+#[test]
+fn cors_info_json_with_origin_and_cookie() {
+    // DEV-7520: a credentialed info.json fetch (dsp-app sends
+    // `withCredentials: true`) is readable cross-origin only with an echoed
+    // Origin plus credentials.
+    let srv = server();
+    let resp = client()
+        .get(format!("{}/unit/lena512.jp2/info.json", srv.base_url))
+        .header("Origin", "https://app.example.org")
+        .header("Cookie", "KnoraAuthentication=abc")
+        .send()
+        .expect("GET info.json with Origin and Cookie failed");
+
+    assert_eq!(resp.status().as_u16(), 200);
+    assert_credentialed_echo(&resp, "https://app.example.org");
+}
+
+#[test]
+fn cors_info_json_auth_challenge_with_origin() {
+    // The 401 auth-challenge info.json must be readable cross-origin, or the
+    // viewer cannot see the login service it has to follow.
+    let srv = server();
+    let resp = client()
+        .get(format!("{}/auth/lena512.jp2/info.json", srv.base_url))
+        .header("Origin", "https://example.org")
+        .send()
+        .expect("GET /auth/lena512.jp2/info.json with Origin failed");
+
+    assert_eq!(resp.status().as_u16(), 401);
+    assert_credentialed_echo(&resp, "https://example.org");
+}
+
+#[test]
+fn cors_preflight_info_json() {
+    let srv = server();
+    let resp = client()
+        .request(
+            reqwest::Method::OPTIONS,
+            format!("{}/unit/lena512.jp2/info.json", srv.base_url),
+        )
+        .header("Origin", "https://example.org")
+        .header("Access-Control-Request-Method", "GET")
+        .header("Access-Control-Request-Headers", "Authorization")
+        .send()
+        .expect("OPTIONS preflight on info.json failed");
+
+    assert_credentialed_echo(&resp, "https://example.org");
+    // A credentialed preflight cannot use the `*` wildcard for methods or
+    // headers: browsers treat it literally once credentials are involved.
+    let headers = resp.headers();
+    let methods = headers
+        .get("access-control-allow-methods")
+        .expect("missing Allow-Methods")
         .to_str()
         .unwrap();
-    // info.json hardcodes * (src/server/rust/src/info.rs)
-    assert_eq!(acao, "*", "info.json ACAO should be * even with Origin");
+    assert_eq!(methods, "GET, POST, PUT, DELETE");
+    let allow_headers = headers
+        .get("access-control-allow-headers")
+        .expect("missing Allow-Headers")
+        .to_str()
+        .unwrap();
+    assert_eq!(allow_headers, "Authorization");
 }
 
 #[test]

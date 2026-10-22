@@ -666,3 +666,90 @@ fn public_hosts_allowlist_substitutes_hostile_forwarded_host() {
         allowed_id
     );
 }
+
+#[test]
+fn allowed_origins_allowlist_gates_info_json_cors() {
+    // Its own cache directory, for the same reason as
+    // `public_hosts_allowlist_substitutes_hostile_forwarded_host`.
+    let srv = SipiServer::start_env(
+        "config/sipi.e2e-test-config.lua",
+        &test_data_dir(),
+        &[],
+        &[
+            ("SIPI_ALLOWED_ORIGINS", "https://allowed.example"),
+            ("SIPI_CACHE_DIR", "./cache_allowed_origins"),
+        ],
+    );
+    let url = format!("{}/unit/lena512.jp2/info.json", srv.base_url);
+    let varies_on_origin = |resp: &reqwest::blocking::Response| {
+        resp.headers()
+            .get("vary")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| {
+                v.split(',')
+                    .any(|h| h.trim().eq_ignore_ascii_case("origin"))
+            })
+    };
+
+    let no_origin = http_client()
+        .get(&url)
+        .send()
+        .expect("GET info.json without an Origin");
+    assert_eq!(no_origin.status().as_u16(), 200);
+    assert_eq!(
+        no_origin
+            .headers()
+            .get("access-control-allow-origin")
+            .expect("missing ACAO without an Origin"),
+        "*"
+    );
+    assert!(no_origin
+        .headers()
+        .get("access-control-allow-credentials")
+        .is_none());
+    assert!(varies_on_origin(&no_origin), "Vary should contain Origin");
+
+    let denied = http_client()
+        .get(&url)
+        .header("Origin", "https://evil.example")
+        .send()
+        .expect("GET info.json with an unlisted Origin");
+    assert_eq!(denied.status().as_u16(), 200);
+    assert!(
+        denied
+            .headers()
+            .get("access-control-allow-origin")
+            .is_none(),
+        "SECURITY: an unlisted Origin must get no ACAO on info.json"
+    );
+    assert!(
+        denied
+            .headers()
+            .get("access-control-allow-credentials")
+            .is_none(),
+        "SECURITY: an unlisted Origin must get no credentials on info.json"
+    );
+    // A shared cache must not serve this deny to a listed Origin.
+    assert!(varies_on_origin(&denied), "Vary should contain Origin");
+
+    let allowed = http_client()
+        .get(&url)
+        .header("Origin", "https://allowed.example")
+        .send()
+        .expect("GET info.json with a listed Origin");
+    assert_eq!(allowed.status().as_u16(), 200);
+    let headers = allowed.headers();
+    assert_eq!(
+        headers
+            .get("access-control-allow-origin")
+            .expect("missing ACAO for a listed Origin"),
+        "https://allowed.example"
+    );
+    assert_eq!(
+        headers
+            .get("access-control-allow-credentials")
+            .expect("missing credentials for a listed Origin"),
+        "true"
+    );
+    assert!(varies_on_origin(&allowed), "Vary should contain Origin");
+}
