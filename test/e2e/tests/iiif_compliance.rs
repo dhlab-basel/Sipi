@@ -870,6 +870,40 @@ fn size_upscaling() {
     assert_iiif_status("/unit/lena512.jp2/full/^1000,/0/default.jpg", 200);
 }
 
+/// DEV-6118: `full/max` and `full/^max` on an unrestricted image are the
+/// native size from info.json, for a JP2 and a TIFF whose `sizes` ladder has
+/// more than one entry.
+#[test]
+fn full_max_on_unrestricted_images_is_the_native_size() {
+    let srv = server();
+    for file in ["unit/lena512_tiled.jp2", "unit/mario.tif"] {
+        let resp = client()
+            .get(format!("{}/{file}/info.json", srv.base_url))
+            .send()
+            .expect("GET info.json");
+        assert_eq!(resp.status().as_u16(), 200, "{file} info.json");
+        let info: Value = resp.json().expect("info.json body");
+        let native = (
+            u32::try_from(info["width"].as_u64().expect("width")).expect("width"),
+            u32::try_from(info["height"].as_u64().expect("height")).expect("height"),
+        );
+        assert!(
+            info["sizes"].as_array().expect("sizes").len() > 1,
+            "{file} must have a sizes ladder: {info}"
+        );
+        assert!(info.get("maxWidth").is_none(), "{file}: {info}");
+        for size in ["max", "^max"] {
+            let resp = client()
+                .get(format!("{}/{file}/full/{size}/0/default.jpg", srv.base_url))
+                .send()
+                .expect("GET full");
+            assert_eq!(resp.status().as_u16(), 200, "{file} full/{size}");
+            let img = image::load_from_memory(&resp.bytes().expect("body")).expect("decode");
+            assert_eq!(img.dimensions(), native, "{file} full/{size}");
+        }
+    }
+}
+
 #[test]
 fn size_no_upscale_beyond_original() {
     assert_iiif_status("/unit/lena512.jp2/full/1000,/0/default.jpg", 400);
