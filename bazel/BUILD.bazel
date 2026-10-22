@@ -103,3 +103,26 @@ cc_library(
     # introspects the cc_library's `defines`.
     defines = ["_GNU_SOURCE"],
 )
+
+# Public for the same reason as `:llvm-cov`: `just compile-commands` resolves
+# the absolute path of clang++ (the compile database's driver) and clangd (an
+# LSP server matching the toolchain version) via `bazel cquery --output=files`.
+alias(
+    name = "clang++",
+    actual = select({
+        "//platforms:is_linux_x86_64": "@llvm-toolchain-minimal-linux-amd64//:bin/clang++",
+        "//platforms:is_linux_aarch64": "@llvm-toolchain-minimal-linux-arm64//:bin/clang++",
+        "//conditions:default": "@llvm-toolchain-minimal-darwin-arm64//:bin/clang++",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+alias(
+    name = "clangd",
+    actual = select({
+        "//platforms:is_linux_x86_64": "@llvm-toolchain-minimal-linux-amd64//:bin/clangd",
+        "//platforms:is_linux_aarch64": "@llvm-toolchain-minimal-linux-arm64//:bin/clangd",
+        "//conditions:default": "@llvm-toolchain-minimal-darwin-arm64//:bin/clangd",
+    }),
+    visibility = ["//visibility:public"],
+)

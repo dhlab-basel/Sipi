@@ -336,11 +336,18 @@ bazel_dep(name = "google_benchmark", version = "1.9.5", dev_dependency = True)
 # compare.py — see tools/benchmark/BUILD.bazel for why it is vendored).
 # `rules_python` is resolved transitively at 1.8.0 (`rules_fuzzing` requires
 # it as a non-dev dep; googletest→re2→pybind11 and protobuf only ask for
-# 1.7.0), so this direct dev_dependency matches MVS and causes zero churn.
+# 1.7.0). `hedron_compile_commands` (below) asks for 2.0.1, which MVS would
+# apply to the whole graph, so the override holds it at 1.8.0. Bump the dep and
+# the override together; drop the override once the fork asks for <= the dep.
 # The hermetic 3.12 toolchain and the
 # `sipi_bench_pip` hub (numpy/scipy, mirroring google_benchmark 1.9.5's own
 # tools/requirements.txt) keep the compare workflow off the host/Nix python.
 bazel_dep(name = "rules_python", version = "1.8.0", dev_dependency = True)
+
+single_version_override(
+    module_name = "rules_python",
+    version = "1.8.0",
+)
 
 python = use_extension("@rules_python//python/extensions:python.bzl", "python", dev_dependency = True)
 python.toolchain(python_version = "3.12")
@@ -371,6 +378,16 @@ use_repo(pip, "sipi_bench_pip")
 # test builds.
 benchmark_fixtures = use_extension("//bazel:benchmark_fixtures_extension.bzl", "benchmark_fixtures_extension", dev_dependency = True)
 use_repo(benchmark_fixtures, "sipi_bench_fixtures")
+
+# compile_commands.json generator behind `just compile-commands` (clangd,
+# clang-tidy). The helly25 fork, not upstream hedronvision: upstream calls the
+# `native.py_binary` Bazel 9 removed, and neither is in the BCR.
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "078ba7675c05bea2666c92d9a8abe200d8547655",
+    remote = "https://github.com/helly25/bazel-compile-commands-extractor.git",
+)
 
 # ── LLVM toolchain — hermetic, LLVM 23.1.2, libc++ ─────────────────────────
 #
@@ -449,7 +466,8 @@ llvm_toolchain_minimal = use_extension("@llvm//extensions:llvm_toolchain_minimal
 # The extension reports all six prebuilt bundles as direct deps, so all six are
 # imported here even though `//bazel`'s `alias(actual = "@llvm-toolchain-minimal-…")`
 # targets only reference the darwin-arm64 / linux-amd64 / linux-arm64 triples
-# (Linux debug-split objcopy/readelf + `bazel coverage` llvm-cov/llvm-profdata).
+# (Linux debug-split objcopy/readelf + `bazel coverage` llvm-cov/llvm-profdata +
+# `just compile-commands` clang++/clangd).
 use_repo(
     llvm_toolchain_minimal,
     "llvm-toolchain-minimal-darwin-amd64",
