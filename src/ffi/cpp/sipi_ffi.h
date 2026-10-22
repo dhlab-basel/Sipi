@@ -634,8 +634,8 @@ SIPI_FFI_NODISCARD int sipi_memory_limit_bytes(size_t *out);
  *  parseable Essentials packet; it fires zero times otherwise (a plain
  *  JPEG/PNG, or a TIFF/JP2 without a packet, has no original-file identity to
  *  report — this is not an error). Returns 0, or 500 if the shape cannot be
- *  read (the edge has already confirmed the file exists, so an unreadable
- *  image here is an engine-level failure). */
+ *  read within the decode deadline (the edge has already confirmed the file
+ *  exists, so an unreadable image here is an engine-level failure). */
 SIPI_FFI_NODISCARD int sipi_image_dims(const char *resolved_path,
   SipiImageDims *out,
   SipiEssentialsFn emit,
