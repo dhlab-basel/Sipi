@@ -602,10 +602,10 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | Prometheus metrics endpoint | N/A — removed | — | OTLP replaces it on the Rust shell; there is no scrape endpoint |
 | SSL/TLS endpoints | N/A — removed | — | TLS terminates at Traefik; the Rust shell serves plain HTTP only, flags parse-only |
 | Image dimension verification | :white_check_mark: | `iiif_compliance.rs::region_dimension_verification`, `size_dimension_verification`, `rotation_dimension_verification` | decodes output and asserts actual pixel dimensions |
-| EXIF preservation through IIIF pipeline | :white_check_mark: | `iiif_compliance.rs::metadata_iiif_pipeline`; `server.rs::lua_exif_gps` | HTTP-level; deep tag-by-tag EXIF diffing remains a gap (no exiv2 binding in the Rust test crate) |
-| XMP preservation through IIIF pipeline | :x: GAP | — | Only a negative/malformed-XMP fixture (`cli_json.rs`); no positive XMP round-trip-through-pipeline test |
+| EXIF preservation through IIIF pipeline | :white_check_mark: | `iiif_compliance.rs::metadata_iiif_pipeline`; `server.rs::lua_exif_gps` | HTTP-level; `server.rs::restricted_output_rewrites_dimension_metadata` diffs every `Exif.*` line (via `sipi query`) against the unrestricted output |
+| XMP preservation through IIIF pipeline | :white_check_mark: | `server.rs::restricted_output_keeps_rights_metadata_verbatim` | XMP `dc:rights` and EXIF `Copyright` of `CIELab16.tif` survive byte for byte in jpg/png/tif/jp2 outputs; `cli_json.rs` covers malformed XMP |
 | ICC profile preservation/conversion | :x: GAP | — | C++ unit tests exist but no HTTP-level round-trip test |
-| IPTC metadata preservation | :white_check_mark: | `heritage_jpeg.rs` | resilient parse of heritage APP13/IPTC; no positive field-value round-trip assertion |
+| IPTC metadata preservation | :white_check_mark: | `heritage_jpeg.rs` | resilient parse of heritage APP13/IPTC; `server.rs::restricted_output_rewrites_dimension_metadata` compares `Iptc.*` lines with the unrestricted output |
 | Essentials round-trip | :white_check_mark: | `upload.rs::metadata_essentials_roundtrip` | |
 | CLI conversion metadata fidelity | :white_check_mark: | `cli.rs::cli_metadata_fidelity` | |
 | MIME consistency check (`/api/mimetest`) | :white_check_mark: | `server.rs::mime_consistency` | all 6 cases ported |
@@ -620,6 +620,7 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | JP2 channel order from the `cdef` mapping | :white_check_mark: | `cli_conversions.rs` `jp2_decode_file2`; unit `//src/format_handlers:formats_test` (`J2kChannelOrder.*`) | YCbCr converted in Y/Cb/Cr order, with and without a reversing `cdef` |
 | Writing over a larger existing file | :white_check_mark: | unit `//src/format_handlers:formats_test` (`FormatOverwrite.*`, `JpegWrite.OverwritingLargerFileTruncatesIt`) | No stale trailing bytes in any format |
 | EXIF `addKeyVal` replaces an existing value | :white_check_mark: | unit `//src/metadata:exif_rational_test` (`ExifAddKeyVal.*`) | Tag/group overloads; an unsupported type throws and keeps the value |
+| Size-restricted output dimension metadata | :white_check_mark: | `server.rs::restricted_output_rewrites_dimension_metadata`; `serve_image_test` `RestrictedImage.MetadataDropsPreviewsAndStatesTheDeliveredSize`, `RestrictedImage.ExifImageResourcesDropPreviewsAndStateTheDeliveredSize`; unit `//src/metadata:pixel_dimensions_test` | EXIF and XMP size fields state the delivered size, no EXIF thumbnail, maker-note preview, XMP thumbnail or Photoshop thumbnail resource (crafted source), every other EXIF/IPTC line equal to the unrestricted output |
 | 4-bit palette PNG upload | :white_check_mark: | `upload.rs` | `upload_4bit_palette_png` |
 | Cache API routes (`/api/cache`) | N/A — removed | — | route unregistered, Lua `cache` table bindings absent from `src/` |
 | Favicon endpoint | :x: GAP | — | favicon route exists (`src/server/rust/src/lib.rs`); its only e2e test was removed with the differential suite |
@@ -700,14 +701,14 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | CORS | 10 | 0 | 100% |
 | HTTP behavior | 13 | 0 | 100% |
 | Identifiers | 4 | 1 (ARK/URN) | 80% |
-| Sipi extensions | 98 | 8 | 92% |
-| **Total** | **195** | **9** | **96%** |
+| Sipi extensions | 100 | 7 | 93% |
+| **Total** | **197** | **8** | **96%** |
 
 *(Three additional Sipi-extension rows — Prometheus `/metrics`, `/api/cache`, SSL/TLS — are excluded from this count entirely: they are removed-on-the-Rust-shell features, not gaps. See the N/A note above the extension matrix.)*
 
-**Key remaining gap categories** (8 rows, all in Sipi extensions):
+**Key remaining gap categories** (7 rows, all in Sipi extensions):
 
-- **Deep metadata survival** (2 gaps): positive XMP round-trip, ICC profile HTTP-level round-trip — EXIF/IPTC now covered
+- **Deep metadata survival** (1 gap): ICC profile HTTP-level round-trip — EXIF/IPTC/XMP now covered
 - **Concurrency edge cases** (1 gap): thread-pool-exhaustion saturation test (`concurrent_requests`/`lua_state_thread_isolation` are written and correct, just `#[ignore]`'d for the unrelated 503-shedding reason above — not gaps)
 - **Hardening depth** (2 gaps): TSan (nightly-future), extremely long URL/header (URL half now covered by the nightly libFuzzer target; the header half is untested)
 - **Test-harness depth** (1 gap): a direct SImage Lua-API unit harness (vs. black-box HTTP coverage)
