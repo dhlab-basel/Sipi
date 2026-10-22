@@ -131,8 +131,9 @@ cc_test(
 )
 
 # Co-located unit test for the transport-pure IIIF response builder (build_image_response):
-# body shape (FileBody/StreamBody/EmptyBody) + pre-commit status codes, driven
-# off the lena512.tif fixture. Fixture paths resolve via //test:test_paths,
+# body shape (FileBody/StreamBody/EmptyBody), pre-commit status codes, and the
+# decoded output of restricted requests (SipiImage reads the drained body; a
+# real SipiCache counts entries). Fixture paths resolve via //test:test_paths,
 # which honours SIPI_WORKSPACE_ROOT.
 cc_test(
     name = "serve_image_test",
@@ -141,6 +142,8 @@ cc_test(
     env = {"SIPI_WORKSPACE_ROOT": "."},
     deps = [
         ":sipi_ffi",
+        "//src/cache",
+        "//src/image",
         "//test:test_paths",
         "@googletest//:gtest_main",
     ],
