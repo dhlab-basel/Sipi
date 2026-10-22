@@ -801,6 +801,37 @@ fn restricted_output_keeps_rights_metadata_verbatim() {
 }
 
 #[test]
+fn every_output_format_keeps_the_iptc_metadata() {
+    let srv = server();
+    let src = std::fs::read(sipi_e2e::test_data_dir().join("images/unit/CIELab16.tif"))
+        .expect("read CIELab16.tif");
+    let iptc = |lines: Vec<String>| -> Vec<String> {
+        lines
+            .into_iter()
+            .filter(|l| l.starts_with("Iptc."))
+            .collect()
+    };
+    let src_iptc = iptc(query_metadata(&src, "iptc_src.tif").2);
+    assert!(
+        src_iptc
+            .iter()
+            .any(|l| l.starts_with("Iptc.Application2.Copyright ")),
+        "source has no IPTC Copyright: {src_iptc:?}"
+    );
+
+    for prefix in ["unit", "test_restrict"] {
+        for fmt in ["jpg", "png", "tif", "jp2"] {
+            let body = fetch_image(&format!(
+                "{}/{prefix}/CIELab16.tif/full/!128,128/0/default.{fmt}",
+                srv.base_url
+            ));
+            let got = iptc(query_metadata(&body, &format!("iptc.{fmt}")).2);
+            assert_eq!(got, src_iptc, "{prefix} -> {fmt}");
+        }
+    }
+}
+
+#[test]
 fn temp_directory_cleanup() {
     let srv = server();
     // The Lua clean_temp_dir script reads imgroot/tmp — ensure it exists
