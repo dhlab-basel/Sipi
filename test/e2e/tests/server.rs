@@ -1093,3 +1093,29 @@ fn lua_state_thread_isolation() {
         "Lua global variables should be isolated between request threads"
     );
 }
+
+#[test]
+fn subsampled_jp2_serves_full_image() {
+    // ISO/IEC 15444-4 file3.jp2: chroma components subsampled 2x2 against a
+    // 480x640 luma component (DEV-7432). The shared client times out after 30 s.
+    let srv = server();
+    let base = format!("{}/iso-15444-4/testfiles_jp2/file3.jp2", srv.base_url);
+
+    let resp = client()
+        .get(format!("{base}/info.json"))
+        .send()
+        .expect("GET file3 info.json failed");
+    assert_eq!(resp.status().as_u16(), 200);
+    let info: serde_json::Value = resp.json().expect("invalid info.json");
+    assert_eq!(info["width"], 480);
+    assert_eq!(info["height"], 640);
+
+    let resp = client()
+        .get(format!("{base}/full/max/0/default.jpg"))
+        .send()
+        .expect("GET file3 full/max failed");
+    assert_eq!(resp.status().as_u16(), 200);
+    let bytes = resp.bytes().expect("read file3 body");
+    let img = image::load_from_memory(&bytes).expect("decode file3 JPEG");
+    assert_eq!(img.dimensions(), (480, 640));
+}

@@ -93,7 +93,9 @@ cc_library(
 )
 
 # Decode tier — SipiImage::read() across the @sipi_bench_fixtures input-format
-# matrix. Co-located with the module per ADR-0003 (moved from //src with the
+# matrix, plus one source-tree fixture (`decode_full_subsampled_jp2`, resolved
+# from SIPI_WORKSPACE_ROOT, which `just bench` sets to the repo root).
+# Co-located with the module per ADR-0003 (moved from //src with the
 # format_handlers carve). Built only by `just bench` (`tags = ["manual"]`).
 cc_binary(
     name = "decode_benchmark",
@@ -143,6 +145,7 @@ cc_test(
         "cpp/j2k_dimension_regression_test.cpp",
         "cpp/j2k_metadata_regression_test.cpp",
         "cpp/j2k_palette_regression_test.cpp",
+        "cpp/j2k_subsampling_test.cpp",
         "cpp/jpeg_format_regression_test.cpp",
         "cpp/jpeg_marker_regression_test.cpp",
         "cpp/jpeg_write_test.cpp",
