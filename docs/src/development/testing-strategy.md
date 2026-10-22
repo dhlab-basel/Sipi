@@ -613,6 +613,13 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | Convert from binaries (`/convert_from_binaries`) | :white_check_mark: | `server.rs::image_conversion_from_binaries` | |
 | Temp directory cleanup | :white_check_mark: | `server.rs::temp_directory_cleanup` | |
 | Restricted image size reduction | :white_check_mark: | `server.rs::restricted_image_reduction` | |
+| Restricted image as its own image (RW, RH) | :white_check_mark: | `dsp_api_closure.rs::restricted_info_json_states_the_restricted_dims_as_its_maximum`, `restricted_info_json_dims_equal_full_max`, `restricted_tiles_at_size_max_stitch_to_full_max`, `restricted_left_half_region_is_the_left_half_of_full_max`, `restricted_canonical_link_is_in_restricted_coordinates`, `permission_code_1_restricts_the_size_of_a_region_request`; unit `//src/ffi:serve_image_test` (`RestrictedImage.*`, `Sizes/RestrictedSize.*`) | ADR-0028: region/size resolve against (RW, RH), exact `full/max` on non-dividing sizes, tiles stitch, pre-rotation (RW, RH) bound, passthrough guard, `/r<RW>x<RH>` cache-key marker; `info.rs::size_restricted_image_states_its_max_size` |
+| `full/max` on unrestricted images is native (DEV-6118) | :white_check_mark: | `iiif_compliance.rs::full_max_on_unrestricted_images_is_the_native_size` | JP2 and TIFF, `max` and `^max` |
+| Restriction refusals and the box size | :white_check_mark: | `security.rs::no_op_restrictions_are_refused_on_every_route`, `restricted_knora_json_dims_match_info_json`, `image_inside_restriction_box_is_served_at_native_size` | A size that never reduces (`max`, `pct:100`, empty watermark) is refused on the image, info.json and knora.json; knora.json dims equal info.json's; an image inside a box size is served at native size |
+| JP2 component subsampling | :white_check_mark: | `server.rs::subsampled_jp2_serves_full_image`; `cli_conversions.rs` `jp2_decode_file3`; unit `//src/format_handlers:formats_test` (`J2kSubsampling.*`, `J2kSubsamplingRegion.*`) | ISO 15444-4 `file3.jp2` decodes full, reduced and by region against the reference; unsupported factors fail fast |
+| JP2 channel order from the `cdef` mapping | :white_check_mark: | `cli_conversions.rs` `jp2_decode_file2`; unit `//src/format_handlers:formats_test` (`J2kChannelOrder.*`) | YCbCr converted in Y/Cb/Cr order, with and without a reversing `cdef` |
+| Writing over a larger existing file | :white_check_mark: | unit `//src/format_handlers:formats_test` (`FormatOverwrite.*`, `JpegWrite.OverwritingLargerFileTruncatesIt`) | No stale trailing bytes in any format |
+| EXIF `addKeyVal` replaces an existing value | :white_check_mark: | unit `//src/metadata:exif_rational_test` (`ExifAddKeyVal.*`) | Tag/group overloads; an unsupported type throws and keeps the value |
 | 4-bit palette PNG upload | :white_check_mark: | `upload.rs` | `upload_4bit_palette_png` |
 | Cache API routes (`/api/cache`) | N/A — removed | — | route unregistered, Lua `cache` table bindings absent from `src/` |
 | Favicon endpoint | :x: GAP | — | favicon route exists (`src/server/rust/src/lib.rs`); its only e2e test was removed with the differential suite |
@@ -693,8 +700,8 @@ Two Rust-shell features the C++-era gap list assumed are permanently **removed**
 | CORS | 10 | 0 | 100% |
 | HTTP behavior | 13 | 0 | 100% |
 | Identifiers | 4 | 1 (ARK/URN) | 80% |
-| Sipi extensions | 90 | 8 | 92% |
-| **Total** | **187** | **9** | **95%** |
+| Sipi extensions | 98 | 8 | 92% |
+| **Total** | **195** | **9** | **96%** |
 
 *(Three additional Sipi-extension rows — Prometheus `/metrics`, `/api/cache`, SSL/TLS — are excluded from this count entirely: they are removed-on-the-Rust-shell features, not gaps. See the N/A note above the extension matrix.)*
 

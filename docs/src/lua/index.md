@@ -124,13 +124,15 @@ The pre-flight function must return at least 2 parameters:
     - Restricted access with size limitation. The size must be a
       [IIIF size expression](https://iiif.io/api/image/3.0/#42-size). For example:  
      `{ type = 'restrict', size='!256,256' }`  
-     The size expression caps the effective *sampling factor* of any served
-     bytes, not just a full-image output box: it is converted to a scale
-     factor `f` (the restricted size relative to the full image), and every
-     request — including a region request — is capped so its output cannot
-     exceed `f` times that region's own pixel extent. A client cannot recover
-     full resolution by requesting many native-scale regions instead of the
-     full image.  
+     The size expression turns the image into its own, smaller image of the restricted
+     dimensions (RW, RH): `info.json` reports (RW, RH) as `width`/`height`, as its largest
+     `sizes` entry and as `maxWidth`/`maxHeight`. Region and size in an image request
+     resolve against (RW, RH), not the native pixels, and every response is cut from one
+     rendering of the whole image at (RW, RH), so tiles at size `max` stitch to `full/max`
+     exactly. A request whose output (before rotation) is wider than RW or taller than RH,
+     `^` upscaling included, is a 400. A client cannot recover more than `full/max` by
+     requesting regions.  
+     A watermark-only `restrict` keeps the native dimensions and coordinates.  
      A size that can never reduce an image (`max`, `pct:` of 100 or more, `red:0`) is refused when no
      watermark is set (an empty `watermark` is none): 403 on the image and on `info.json`, 404 on
      `knora.json`. A size that leaves an axis below 2 px is refused with or without a watermark. An
