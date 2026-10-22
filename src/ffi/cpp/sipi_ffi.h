@@ -208,7 +208,8 @@ typedef struct
   const char *prefix; /* IIIF prefix — canonical-URL + cache key */
   const char *identifier; /* IIIF identifier — canonical-URL `id` + cache key */
   SipiIiifParams params; /* region/size/rotation/quality/format */
-  const char *restricted_size; /* preflight `restrict` downscale, or NULL */
+  uint32_t restricted_width; /* preflight `restrict` size cap (RW, RH), decided by routes::restriction; */
+  uint32_t restricted_height; /* 0, 0 = no size cap; exactly one of them 0 is a 500 */
   const char *watermark_path; /* preflight `restrict` watermark, or NULL */
   const char *forwarded_proto; /* X-Forwarded-Proto → canonical-URL / redirect scheme */
   const char *forwarded_host; /* X-Forwarded-Host  → canonical-URL `id` (host for the canonical URL) */
@@ -495,7 +496,8 @@ static_assert(offsetof(SipiServeRequest, resolved_path) == 0, "SipiServeRequest 
 static_assert(offsetof(SipiServeRequest, prefix) == 8, "SipiServeRequest layout drift");
 static_assert(offsetof(SipiServeRequest, identifier) == 16, "SipiServeRequest layout drift");
 static_assert(offsetof(SipiServeRequest, params) == 24, "SipiServeRequest layout drift");
-static_assert(offsetof(SipiServeRequest, restricted_size) == 96, "SipiServeRequest layout drift");
+static_assert(offsetof(SipiServeRequest, restricted_width) == 96, "SipiServeRequest layout drift");
+static_assert(offsetof(SipiServeRequest, restricted_height) == 100, "SipiServeRequest layout drift");
 static_assert(offsetof(SipiServeRequest, watermark_path) == 104, "SipiServeRequest layout drift");
 static_assert(offsetof(SipiServeRequest, forwarded_proto) == 112, "SipiServeRequest layout drift");
 static_assert(offsetof(SipiServeRequest, forwarded_host) == 120, "SipiServeRequest layout drift");

@@ -463,6 +463,80 @@ fn bare_restrict_knora_json_is_not_found() {
     );
 }
 
+#[test]
+fn no_op_restrictions_are_refused_on_every_route() {
+    // `size=max` and `size=pct:100` without a watermark (an empty one
+    // included) restrict nothing. The image route, info.json and
+    // knora.json must agree on the refusal, each with its own status: 403,
+    // 403, and 404 on knora.json, which hides existence.
+    let srv = server();
+    for prefix in [
+        "test_restrict_max",
+        "test_restrict_pct100",
+        "test_restrict_max_emptywm",
+    ] {
+        for (path, status) in [
+            ("full/max/0/default.jpg", 403),
+            ("info.json", 403),
+            ("knora.json", 404),
+        ] {
+            let resp = client()
+                .get(format!("{}/{prefix}/lena512.jp2/{path}", srv.base_url))
+                .send()
+                .expect("GET no-op restriction failed");
+            assert_eq!(resp.status().as_u16(), status, "{prefix} {path}");
+        }
+    }
+}
+
+#[test]
+fn restricted_knora_json_dims_match_info_json() {
+    let srv = server();
+    let get = |path: &str| -> serde_json::Value {
+        let resp = client()
+            .get(format!("{}/test_restrict/lena512.jp2/{path}", srv.base_url))
+            .send()
+            .expect("GET restricted json failed");
+        assert_eq!(resp.status().as_u16(), 200, "{path}");
+        resp.json().expect("restricted response must be JSON")
+    };
+    let info = get("info.json");
+    let knora = get("knora.json");
+    assert_eq!(knora["width"], info["width"]);
+    assert_eq!(knora["height"], info["height"]);
+    assert_eq!(info["width"], 128);
+}
+
+#[test]
+fn image_inside_restriction_box_is_served_at_native_size() {
+    // `test_restrict_bigbox` caps at `!1024,1024`; lena512.jp2 (512x512) is
+    // already inside the box, so it is served, not refused.
+    let srv = server();
+    let resp = client()
+        .get(format!(
+            "{}/test_restrict_bigbox/lena512.jp2/full/max/0/default.jpg",
+            srv.base_url
+        ))
+        .send()
+        .expect("GET big-box restricted image failed");
+    assert_eq!(resp.status().as_u16(), 200);
+    let img = image::load_from_memory(&resp.bytes().expect("read body"))
+        .expect("decode big-box restricted image");
+    assert_eq!(img.dimensions(), (512, 512));
+
+    let info: serde_json::Value = client()
+        .get(format!(
+            "{}/test_restrict_bigbox/lena512.jp2/info.json",
+            srv.base_url
+        ))
+        .send()
+        .expect("GET big-box restricted info.json failed")
+        .json()
+        .expect("big-box info.json must be JSON");
+    assert_eq!(info["width"], 512);
+    assert_eq!(info["height"], 512);
+}
+
 // =============================================================================
 // `stream` permission: parity with `allow` (ADR-0027)
 // =============================================================================
