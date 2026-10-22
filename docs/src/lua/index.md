@@ -132,6 +132,14 @@ The pre-flight function must return at least 2 parameters:
      exactly. A request whose output (before rotation) is wider than RW or taller than RH,
      `^` upscaling included, is a 400. A client cannot recover more than `full/max` by
      requesting regions.  
+     The embedded size fields of a size-restricted output (EXIF `PixelXDimension`/`PixelYDimension`,
+     `ImageWidth`/`ImageLength`/`ImageHeight` including maker-note ones, `RelatedImageWidth`/`RelatedImageLength`,
+     `DefaultCropSize`, `ActiveArea` and the DNG `Original*Size` tags; XMP `exif:PixelXDimension`/`exif:PixelYDimension`,
+     `tiff:ImageWidth`/`tiff:ImageLength` and `Iptc4xmpExt:MaxAvailWidth`/`MaxAvailHeight`) state the delivered
+     size, and every embedded preview image (the EXIF thumbnail, SubIFD and maker-note previews, XMP
+     `xmp:Thumbnails` and `xmpGImg:image`, the IPTC `Preview` record, and the same inside the Photoshop image resources an EXIF block can carry) is dropped; image
+     resources that cannot be rewritten (unparseable, or carrying slices) fail the request with a 500. All other embedded metadata, rights and copyright included, is returned
+     unchanged.  
      A watermark-only `restrict` keeps the native dimensions and coordinates.  
      A size that can never reduce an image (`max`, `pct:` of 100 or more, `red:0`) is refused when no
      watermark is set (an empty `watermark` is none): 403 on the image and on `info.json`, 404 on

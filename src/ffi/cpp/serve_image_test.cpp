@@ -10,6 +10,7 @@
 
 #include "gtest/gtest.h"
 
+#include <algorithm>
 #include <chrono>
 #include <climits>
 #include <cstdint>
@@ -24,12 +25,16 @@
 #include <variant>
 #include <vector>
 
+#include <exiv2/exiv2.hpp>
+
 #include "cache/SipiCache.h"
 #include "ffi/engine_context.h"
 #include "ffi/serve_image.h"
 #include "ffi/serve_response.h"
 #include "ffi/sipi_ffi.h"
 #include "image/SipiImage.h"
+#include "metadata/exif.h"
+#include "metadata/xmp.h"
 #include "observability/metrics.h"
 #include "test_paths.h"
 
@@ -600,6 +605,176 @@ TEST(RestrictedImage, SizeAndWatermarkNeverReachThePassthrough)
       EXPECT_TRUE(std::holds_alternative<StreamBody>(result->body)) << rw << "x" << rh << " wm=" << (wm != nullptr);
     }
   }
+}
+
+// A size-restricted output carries no embedded preview and states the
+// delivered size in its size fields; every other field, rights included, is
+// returned. No test image carries a maker-note preview, an Iop size or an XMP
+// thumbnail, so the source is crafted.
+TEST(RestrictedImage, MetadataDropsPreviewsAndStatesTheDeliveredSize)
+{
+  const std::string pixels = "SIPI-PREVIEW-PIXELS";
+  const std::string xmp_pixels = "U0lQSS1QUkVWSUVX";
+  std::vector<Exiv2::byte> jpeg = { 0xff, 0xd8 };
+  jpeg.insert(jpeg.end(), pixels.begin(), pixels.end());
+  jpeg.insert(jpeg.end(), { 0xff, 0xd9 });
+
+  Exiv2::ExifData data;
+  data["Exif.Image.Make"] = "OLYMPUS IMAGING CORP.";
+  data["Exif.Image.Copyright"] = "DaSCH";
+  data["Exif.Photo.PixelXDimension"] = static_cast<std::uint32_t>(512);
+  data["Exif.Iop.RelatedImageWidth"] = static_cast<std::uint32_t>(512);
+  Exiv2::DataValue preview(Exiv2::undefined);
+  preview.read(jpeg.data(), jpeg.size());
+  data.add(Exiv2::ExifKey("Exif.Olympus2.ThumbnailImage"), &preview);
+  Exiv2::ExifThumb(data).setJpegThumbnail(jpeg.data(), jpeg.size());
+  Exiv2::Blob blob;
+  Exiv2::ExifParser::encode(blob, Exiv2::littleEndian, data);
+  auto exif = Sipi::Exif::parse(blob.data(), static_cast<unsigned int>(blob.size()));
+  ASSERT_TRUE(exif.has_value());
+
+  const std::string rights = R"(<dc:rights><rdf:Alt><rdf:li xml:lang="x-default">DaSCH</rdf:li></rdf:Alt></dc:rights>)";
+  const std::string xmp =
+    R"(<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">)"
+    R"(<rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/")"
+    R"( xmlns:xmpGImg="http://ns.adobe.com/xap/1.0/g/img/" xmlns:tiff="http://ns.adobe.com/tiff/1.0/" tiff:ImageWidth="512">)"
+    R"(<xmp:Thumbnails><rdf:Alt><rdf:li rdf:parseType="Resource"><xmpGImg:width>512</xmpGImg:width><xmpGImg:image>)"
+    + xmp_pixels + R"(</xmpGImg:image></rdf:li></rdf:Alt></xmp:Thumbnails>)" + rights
+    + R"(</rdf:Description></rdf:RDF></x:xmpmeta>)";
+
+  Sipi::SipiImage src;
+  ASSERT_TRUE(src.read(fixture("/unit/lena512.tif")).has_value());
+  src.set_exif(*exif);
+  src.set_xmp(std::make_shared<Sipi::Xmp>(xmp));
+  const std::string path = scratch_dir("crafted") + "/crafted.jpg";
+  ASSERT_TRUE(src.write("jpg", path).has_value());
+
+  const auto serve = [&](uint32_t rw, uint32_t rh) {
+    auto params = full_params(SIPI_FORMAT_JPG);
+    set_size(params, SIPI_SIZE_PIXELS_XY, 100, 80);
+    auto req = make_request(path, params);
+    req.restricted_width = rw;
+    req.restricted_height = rh;
+    auto result = build_image_response(req, bare_engine(), kNeverCancelled);
+    EXPECT_TRUE(result.has_value());
+    return result.has_value() ? drain(*result) : std::vector<std::uint8_t>{};
+  };
+  const auto has = [](const std::vector<std::uint8_t> &bytes, const std::string &needle) {
+    return std::search(bytes.begin(), bytes.end(), needle.begin(), needle.end()) != bytes.end();
+  };
+
+  // The same size served unrestricted keeps the previews.
+  const auto unrestricted = serve(0, 0);
+  ASSERT_TRUE(has(unrestricted, pixels));
+  ASSERT_TRUE(has(unrestricted, xmp_pixels));
+
+  const auto body = serve(100, 80);
+  EXPECT_FALSE(has(body, pixels));
+  EXPECT_FALSE(has(body, xmp_pixels));
+  const std::string out_path = scratch_dir("crafted_out") + "/out.jpg";
+  {
+    std::ofstream out(out_path, std::ios::binary);
+    out.write(reinterpret_cast<const char *>(body.data()), static_cast<std::streamsize>(body.size()));
+  }
+  Sipi::SipiImage out;
+  ASSERT_TRUE(out.read(out_path).has_value());
+  ASSERT_EQ(out.getNx(), 100U);
+  ASSERT_EQ(out.getNy(), 80U);
+
+  ASSERT_NE(out.getExif(), nullptr);
+  std::uint32_t v = 0;
+  EXPECT_TRUE(out.getExif()->getValByKey("Exif.Photo.PixelXDimension", v));
+  EXPECT_EQ(v, 100U);
+  EXPECT_TRUE(out.getExif()->getValByKey("Exif.Iop.RelatedImageWidth", v));
+  EXPECT_EQ(v, 100U);
+  EXPECT_FALSE(out.getExif()->getValByKey("Exif.Thumbnail.JPEGInterchangeFormat", v));
+  std::string text;
+  EXPECT_TRUE(out.getExif()->getValByKey("Exif.Image.Copyright", text));
+  EXPECT_EQ(text, "DaSCH");
+  EXPECT_TRUE(out.getExif()->getValByKey("Exif.Image.Make", text));
+  EXPECT_EQ(text, "OLYMPUS IMAGING CORP.");
+
+  ASSERT_NE(out.getXmp(), nullptr);
+  const std::string out_xmp = out.getXmp()->xmpBytes();
+  EXPECT_EQ(out_xmp.find("Thumbnails"), std::string::npos);
+  EXPECT_NE(out_xmp.find(R"(tiff:ImageWidth="100")"), std::string::npos);
+  EXPECT_NE(out_xmp.find(rights), std::string::npos);
+}
+
+// The Photoshop image resources an EXIF block can carry get the same
+// treatment; resources it cannot rewrite fail the restricted request only.
+TEST(RestrictedImage, ExifImageResourcesDropPreviewsAndStateTheDeliveredSize)
+{
+  const auto resource = [](std::uint16_t id, const std::string &data) {
+    const std::size_t n = data.size();
+    std::vector<Exiv2::byte> r = { '8',
+      'B',
+      'I',
+      'M',
+      static_cast<Exiv2::byte>(id >> 8),
+      static_cast<Exiv2::byte>(id),
+      0,
+      0,
+      static_cast<Exiv2::byte>(n >> 24),
+      static_cast<Exiv2::byte>(n >> 16),
+      static_cast<Exiv2::byte>(n >> 8),
+      static_cast<Exiv2::byte>(n) };
+    r.insert(r.end(), data.begin(), data.end());
+    if (n % 2 == 1) { r.push_back(0); }
+    return r;
+  };
+  const auto crafted_jpeg = [](const std::vector<Exiv2::byte> &irb, const std::string &name) {
+    Exiv2::ExifData data;
+    data["Exif.Image.Copyright"] = "DaSCH";
+    Exiv2::DataValue resources(Exiv2::unsignedByte);
+    resources.read(irb.data(), irb.size());
+    data.add(Exiv2::ExifKey("Exif.Image.ImageResources"), &resources);
+    Exiv2::Blob blob;
+    Exiv2::ExifParser::encode(blob, Exiv2::littleEndian, data);
+    auto exif = Sipi::Exif::parse(blob.data(), static_cast<unsigned int>(blob.size()));
+    EXPECT_TRUE(exif.has_value());
+    Sipi::SipiImage src;
+    EXPECT_TRUE(src.read(fixture("/unit/lena512.tif")).has_value());
+    src.set_exif(*exif);
+    const std::string path = scratch_dir(name) + "/crafted.jpg";
+    EXPECT_TRUE(src.write("jpg", path).has_value());
+    return path;
+  };
+  const auto serve = [](const std::string &path, uint32_t rw, uint32_t rh) {
+    auto params = full_params(SIPI_FORMAT_JPG);
+    set_size(params, SIPI_SIZE_PIXELS_XY, 100, 80);
+    auto req = make_request(path, params);
+    req.restricted_width = rw;
+    req.restricted_height = rh;
+    return build_image_response(req, bare_engine(), kNeverCancelled);
+  };
+  const auto has = [](const std::vector<std::uint8_t> &bytes, const std::string &needle) {
+    return std::search(bytes.begin(), bytes.end(), needle.begin(), needle.end()) != bytes.end();
+  };
+
+  const std::string pixels = "SIPI-PREVIEW-PIXELS";
+  const std::string rights = R"(<dc:rights><rdf:Alt><rdf:li xml:lang="x-default">DaSCH</rdf:li></rdf:Alt></dc:rights>)";
+  const std::string xmp = R"(<rdf:Description rdf:about="" tiff:ImageWidth="512">)" + rights + "</rdf:Description>";
+  std::vector<Exiv2::byte> irb = resource(0x040c, pixels);
+  const auto nested_xmp = resource(0x0424, xmp);
+  irb.insert(irb.end(), nested_xmp.begin(), nested_xmp.end());
+  const std::string path = crafted_jpeg(irb, "crafted_irb");
+
+  auto unrestricted = serve(path, 0, 0);
+  ASSERT_TRUE(unrestricted.has_value());
+  ASSERT_TRUE(has(drain(*unrestricted), pixels));
+  auto restricted = serve(path, 100, 80);
+  ASSERT_TRUE(restricted.has_value());
+  const auto body = drain(*restricted);
+  EXPECT_FALSE(has(body, pixels));
+  EXPECT_TRUE(has(body, R"(tiff:ImageWidth="100")"));
+  EXPECT_TRUE(has(body, rights));
+
+  const std::string slices = crafted_jpeg(resource(0x041a, "SLICES"), "crafted_slices");
+  EXPECT_TRUE(serve(slices, 0, 0).has_value());
+  const auto refused = serve(slices, 100, 80);
+  ASSERT_FALSE(refused.has_value());
+  EXPECT_EQ(refused.error(), SipiStatus::InternalError);
 }
 
 // A restricted and an unrestricted request with the same canonical
