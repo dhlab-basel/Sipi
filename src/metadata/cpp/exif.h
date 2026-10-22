@@ -109,8 +109,10 @@ public:
    */
   static Exiv2::URational toURational(float f);
 
+  /// Assigns through ExifData::operator[]: replaces the first entry for the key only.
   template<class T> void addKeyVal(const std::string &key_p, const T &val) { exifData[key_p] = val; }
 
+  /// Replaces every existing entry for the key; an unsupported type or a read that throws leaves them untouched.
   template<class T> void addKeyVal(uint16_t tag, const std::string &groupName, const T &val)
   {
     Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -120,6 +122,7 @@ public:
       // stores the 24-byte std::string object itself as the tag value.
       v = Exiv2::Value::create(Exiv2::asciiString);
       v->read(val);
+      for (auto pos = exifData.findKey(key); pos != exifData.end(); pos = exifData.findKey(key)) { exifData.erase(pos); }
       exifData.add(key, v.get());
       return;
     }
@@ -148,9 +151,11 @@ public:
     }
 
     v->read((unsigned char *)&val, sizeof(T), Exiv2::littleEndian);
+    for (auto pos = exifData.findKey(key); pos != exifData.end(); pos = exifData.findKey(key)) { exifData.erase(pos); }
     exifData.add(key, v.get());
   }
 
+  /// Replaces every existing entry for the key; an unsupported type or a read that throws leaves them untouched.
   template<class T> void addKeyVal(uint16_t tag, const std::string &groupName, const T *valptr, size_t len)
   {
     Exiv2::ExifKey key = Exiv2::ExifKey(tag, groupName);
@@ -179,6 +184,7 @@ public:
       throw SipiError("Unsupported type of addKeyVal(2)");
     }
     v->read((unsigned char *)valptr, static_cast<long>(len * sizeof(T)), Exiv2::littleEndian);
+    for (auto pos = exifData.findKey(key); pos != exifData.end(); pos = exifData.findKey(key)) { exifData.erase(pos); }
     exifData.add(key, v.get());
   }
 
