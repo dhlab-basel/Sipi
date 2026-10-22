@@ -35,7 +35,10 @@
 #include "iiifparser/SipiRotation.h"
 #include "iiifparser/SipiSize.h"
 #include "logging/logger.h"
+#include "metadata/exif.h"
 #include "metadata/icc.h"
+#include "metadata/iptc.h"
+#include "metadata/xmp.h"
 #include "observability/metrics.h"
 #include "image/populate_from_image.h"
 #include "util/Parsing.h"
@@ -471,6 +474,29 @@ namespace {
     if (auto r = processing::crop(img, region); !r) { return r; }
     if (img.getNx() == out_w && img.getNy() == out_h) { return {}; }
     return processing::scale_with(img, out_w, out_h, method);
+  }
+
+  // A size-restricted output is its own image of the delivered size: the
+  // embedded size fields must state that size, not the original's, and the
+  // embedded previews (pixels that can exceed the restriction) go. Nothing
+  // else is removed: rights and other descriptive metadata are always
+  // returned (UBIQUITOUS_LANGUAGE.md, restrict). False if a size field kept
+  // its native value, or an XMP preview or the EXIF's Photoshop resources
+  // could not be rewritten.
+  [[nodiscard]] bool rewrite_restricted_metadata(SipiImage &img)
+  {
+    bool ok = true;
+    if (auto exif = img.getExif(); exif != nullptr) {
+      exif->erase_previews();
+      ok = exif->set_pixel_dimensions(img.getNx(), img.getNy());
+      ok = exif->restrict_image_resources(img.getNx(), img.getNy()) && ok;
+    }
+    if (auto xmp = img.getXmp(); xmp != nullptr) {
+      ok = xmp->erase_thumbnails() && ok;
+      xmp->set_pixel_dimensions(img.getNx(), img.getNy());
+    }
+    if (auto iptc = img.getIptc(); iptc != nullptr) { iptc->erase_preview(); }
+    return ok;
   }
 
   // A full-file body for the passthrough / cache-hit paths. Opened here
@@ -985,6 +1011,21 @@ std::expected<ServeResponse, SipiStatus>
   if (cancelled()) {
     Metrics::instance().client_disconnected_total.Increment();
     return std::unexpected(SipiStatus::ClientGone);
+  }
+
+  if (size_restricted) {
+    bool rewritten = false;
+    // Exiv2 can throw while editing the EXIF data.
+    try {
+      rewritten = rewrite_restricted_metadata(img);
+    } catch (const std::exception &err) {
+      log_warn("GET %s: restricted metadata rewrite failed: %s", uri.c_str(), err.what());
+    }
+    // A native size field or an embedded preview must not be served.
+    if (!rewritten) {
+      log_warn("GET %s: a native size field or preview could not be removed", uri.c_str());
+      return std::unexpected(SipiStatus::InternalError);
+    }
   }
 
   // Cache file: probe writability now (a 500 here is still pre-commit), then let

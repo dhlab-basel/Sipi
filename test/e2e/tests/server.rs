@@ -586,6 +586,220 @@ fn restricted_image_reduction() {
     );
 }
 
+const DIMENSION_KEYS: [&str; 4] = [
+    "Exif.Photo.PixelXDimension",
+    "Exif.Photo.PixelYDimension",
+    "Exif.Image.ImageWidth",
+    "Exif.Image.ImageLength",
+];
+
+/// `GET` an image and return its body.
+fn fetch_image(url: &str) -> Vec<u8> {
+    let resp = client().get(url).send().expect("GET image failed");
+    assert_eq!(resp.status().as_u16(), 200, "{url}");
+    resp.bytes().expect("read body").to_vec()
+}
+
+/// `sipi query` of an encoded image: (nx, ny) and its `Exif.*` / `Iptc.*`
+/// lines with whitespace collapsed.
+fn query_metadata(body: &[u8], name: &str) -> (u32, u32, Vec<String>) {
+    let path = sipi_e2e::cli_tmp_path(name);
+    std::fs::write(&path, body).expect("write image");
+    let out = sipi_e2e::cli_run(&["query", path.to_str().unwrap()]);
+    let _ = std::fs::remove_file(&path);
+    assert!(out.status.success(), "sipi query {name} failed");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let field = |label: &str| -> u32 {
+        stdout
+            .lines()
+            .find_map(|l| l.strip_prefix(label))
+            .and_then(|v| v.trim_start_matches([' ', '=']).trim().parse().ok())
+            .unwrap_or_else(|| panic!("{name}: no {label} in sipi query output"))
+    };
+    let lines = stdout
+        .lines()
+        .filter(|l| l.starts_with("Exif.") || l.starts_with("Iptc."))
+        .map(|l| l.split_whitespace().collect::<Vec<_>>().join(" "))
+        .collect();
+    (field("nx"), field("ny"), lines)
+}
+
+/// The XMP of an encoded image as text: PNG may compress its iTXt chunk, the
+/// other formats store the packet verbatim, so their bytes are searched as is.
+fn xmp_text(body: &[u8], fmt: &str) -> String {
+    if fmt != "png" {
+        return String::from_utf8_lossy(body).into_owned();
+    }
+    let mut decoder =
+        image::ImageReader::with_format(std::io::Cursor::new(body), image::ImageFormat::Png)
+            .into_decoder()
+            .expect("PNG decoder");
+    let xmp = image::ImageDecoder::xmp_metadata(&mut decoder).expect("PNG XMP");
+    String::from_utf8_lossy(&xmp.unwrap_or_default()).into_owned()
+}
+
+/// The numeric values of an XMP property in attribute (`name="1"`) or element
+/// (`<name>1</name>`) form.
+fn xmp_values(text: &str, name: &str) -> Vec<u32> {
+    let mut values = Vec::new();
+    for (i, _) in text.match_indices(name) {
+        if text[..i].ends_with('/') {
+            continue;
+        }
+        let rest = text[i + name.len()..].trim_start();
+        let rest = if let Some(r) = rest.strip_prefix('=') {
+            r.trim_start().trim_start_matches(['"', '\''])
+        } else if let Some(r) = rest.strip_prefix('>') {
+            r.trim_start()
+        } else {
+            continue;
+        };
+        let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+        if let Ok(v) = digits.parse() {
+            values.push(v);
+        }
+    }
+    values
+}
+
+/// A metadata line a size restriction changes on these sources: a pixel
+/// dimension, the EXIF thumbnail, or an IFD offset that moves when the
+/// thumbnail goes. The other size fields and previews are covered by
+/// `serve_image_test` and `pixel_dimensions_test`.
+fn restriction_may_change(line: &str) -> bool {
+    let key = line.split(' ').next().unwrap_or_default();
+    DIMENSION_KEYS.contains(&key)
+        || key.starts_with("Exif.Thumbnail.")
+        // IFD pointers (ExifTag, GPSTag, InteroperabilityTag): offsets.
+        || (key.ends_with("Tag") && key.starts_with("Exif."))
+}
+
+#[test]
+fn restricted_output_rewrites_dimension_metadata() {
+    let srv = server();
+    // Each source carries native dimensions in EXIF and/or XMP; MaoriFigure.jpg
+    // also carries an EXIF thumbnail, CIELab16.tif rights in EXIF, XMP and IPTC,
+    // img_exif_gps.jpg a maker note without a preview, which is kept.
+    for src in [
+        "MaoriFigure.jpg",
+        "CIELab16.tif",
+        "gray_with_icc.jp2",
+        "img_exif_gps.jpg",
+    ] {
+        for fmt in ["jpg", "png", "tif", "jp2"] {
+            let label = format!("{src} -> {fmt}");
+            let body = fetch_image(&format!(
+                "{}/test_restrict/{src}/full/max/0/default.{fmt}",
+                srv.base_url
+            ));
+            let (nx, ny, lines) = query_metadata(&body, &format!("restricted_meta.{fmt}"));
+            assert!(nx <= 128 && ny <= 128, "{label}: {nx}x{ny}");
+
+            let mut dims_seen = 0;
+            for line in &lines {
+                let key = line.split(' ').next().unwrap();
+                if DIMENSION_KEYS.contains(&key) {
+                    dims_seen += 1;
+                    let want = if key.ends_with("XDimension") || key.ends_with("Width") {
+                        nx
+                    } else {
+                        ny
+                    };
+                    let got: u32 = line
+                        .rsplit(' ')
+                        .next()
+                        .and_then(|v| v.parse().ok())
+                        .unwrap_or_else(|| panic!("{label}: {line}"));
+                    assert_eq!(got, want, "{label}: {line}");
+                }
+                assert!(
+                    !key.starts_with("Exif.Thumbnail."),
+                    "{label}: EXIF thumbnail kept: {line}"
+                );
+            }
+            assert!(
+                dims_seen >= 2,
+                "{label}: no EXIF dimension tags in {lines:?}"
+            );
+            let xmp = xmp_text(&body, fmt);
+            for (name, want) in [
+                ("exif:PixelXDimension", nx),
+                ("exif:PixelYDimension", ny),
+                ("tiff:ImageWidth", nx),
+                ("tiff:ImageLength", ny),
+            ] {
+                for got in xmp_values(&xmp, name) {
+                    assert_eq!(got, want, "{label}: XMP {name}");
+                }
+            }
+            // The only source whose XMP carries dimensions: every property
+            // must be present, or the loop above asserted nothing.
+            if src == "gray_with_icc.jp2" {
+                for name in [
+                    "exif:PixelXDimension",
+                    "exif:PixelYDimension",
+                    "tiff:ImageWidth",
+                    "tiff:ImageLength",
+                ] {
+                    assert!(
+                        !xmp_values(&xmp, name).is_empty(),
+                        "{label}: XMP {name} missing"
+                    );
+                }
+            }
+
+            // Nothing else is dropped: the same image served unrestricted at
+            // the same size carries the same metadata otherwise.
+            let unrestricted = fetch_image(&format!(
+                "{}/unit/{src}/full/{nx},{ny}/0/default.{fmt}",
+                srv.base_url
+            ));
+            let (_, _, unrestricted_lines) =
+                query_metadata(&unrestricted, &format!("unrestricted_meta.{fmt}"));
+            let kept = |ls: &[String]| -> Vec<String> {
+                ls.iter()
+                    .filter(|l| !restriction_may_change(l))
+                    .cloned()
+                    .collect()
+            };
+            assert_eq!(kept(&lines), kept(&unrestricted_lines), "{label}");
+        }
+    }
+}
+
+#[test]
+fn restricted_output_keeps_rights_metadata_verbatim() {
+    let srv = server();
+    let src_path = sipi_e2e::test_data_dir().join("images/unit/CIELab16.tif");
+    let src = std::fs::read(&src_path).expect("read CIELab16.tif");
+    let src_text = String::from_utf8_lossy(&src);
+    let start = src_text.find("<dc:rights>").expect("source has dc:rights");
+    let end = src_text[start..].find("</dc:rights>").unwrap() + start + "</dc:rights>".len();
+    let rights = src_text[start..end].to_string();
+    let (_, _, src_lines) = query_metadata(&src, "rights_src.tif");
+    let copyright = src_lines
+        .iter()
+        .find(|l| l.starts_with("Exif.Image.Copyright "))
+        .expect("source has Exif.Image.Copyright")
+        .clone();
+
+    for fmt in ["jpg", "png", "tif", "jp2"] {
+        let body = fetch_image(&format!(
+            "{}/test_restrict/CIELab16.tif/full/max/0/default.{fmt}",
+            srv.base_url
+        ));
+        assert!(
+            xmp_text(&body, fmt).contains(&rights),
+            "{fmt}: XMP dc:rights not kept verbatim"
+        );
+        let (_, _, lines) = query_metadata(&body, &format!("rights.{fmt}"));
+        assert!(
+            lines.contains(&copyright),
+            "{fmt}: {copyright} missing in {lines:?}"
+        );
+    }
+}
+
 #[test]
 fn temp_directory_cleanup() {
     let srv = server();

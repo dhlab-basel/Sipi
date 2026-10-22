@@ -144,6 +144,7 @@ cc_test(
         ":sipi_ffi",
         "//src/cache",
         "//src/image",
+        "//src/metadata",
         "//test:test_paths",
         "@googletest//:gtest_main",
     ],
