@@ -155,6 +155,7 @@ cc_test(
         "cpp/select_pyramid_level_test.cpp",
         "cpp/tiff_bilevel_regression_test.cpp",
         "cpp/tiff_exif_rational_test.cpp",
+        "cpp/tiff_stream_write_test.cpp",
     ],
     data = ["//test/_test_data:images"],
     env = {"SIPI_WORKSPACE_ROOT": "."},
