@@ -505,6 +505,7 @@ fn dispatch_engine(
                 parsed,
                 headers,
                 &access,
+                &state.allowed_origins,
                 &state.public_hosts,
                 state.has_preflight,
             ),
@@ -1977,6 +1978,7 @@ fn serve_info_json(
     parsed: &ParsedRequest,
     headers: &HeaderMap,
     access: &Access,
+    allowed_origins: &[String],
     public_hosts: &[String],
     hook_configured: bool,
 ) -> Response {
@@ -2035,23 +2037,20 @@ fn serve_info_json(
         StatusCode::OK
     };
 
-    // info.json always sends ACAO: *, even with an Origin — unaffected by the
-    // allowlist, which restricts credentialed CORS and not this public,
-    // credential-less response, so it bypasses `cors_allow` entirely. When a
-    // preflight hook is configured, the permission (and thus the body) is
-    // credential-dependent, so the response must not be shared across
-    // credentials by an intermediary cache.
-    let vary: &[&str] = if hook_configured {
-        &["Cookie", "Authorization"]
-    } else {
-        &[]
-    };
+    // The body depends on the caller's credentials (clamped dims, 401 auth
+    // challenge), so a credentialed viewer must be able to read it: the same
+    // CORS as knora.json and the image route.
+    let (acao, vary) = json_cors(
+        header_str(headers, "origin"),
+        allowed_origins,
+        hook_configured,
+    );
     json_response(
         status,
         &value,
         headers,
         Some(link_context),
-        Some("*"),
+        acao.as_deref(),
         vary,
         hook_configured,
     )
@@ -2108,34 +2107,18 @@ fn serve_knora_json(
         }
     };
 
-    // knora.json echoes the Origin when present (gated by `cors_allow` against
-    // the configured allowlist — empty = the unconditional echo default), else *.
-    let origin = header_str(headers, "origin");
-    let (acao, origin_vary) = match origin {
-        None => (Some("*".to_owned()), false),
-        Some(o) => match cors_allow(Some(&o), allowed_origins) {
-            CorsDecision::Allow { vary } => (Some(o), vary),
-            CorsDecision::Deny { vary } => (None, vary),
-        },
-    };
-    // The permission (and thus the body — dims may be clamped) is
-    // credential-dependent whenever a preflight hook is configured, so an
-    // intermediary cache must not share this response across credentials.
-    let mut vary: Vec<&str> = Vec::new();
-    if origin_vary {
-        vary.push("Origin");
-    }
-    if hook_configured {
-        vary.push("Cookie");
-        vary.push("Authorization");
-    }
+    let (acao, vary) = json_cors(
+        header_str(headers, "origin"),
+        allowed_origins,
+        hook_configured,
+    );
     json_response(
         StatusCode::OK,
         &value,
         headers,
         None,
         acao.as_deref(),
-        &vary,
+        vary,
         hook_configured,
     )
 }
@@ -2170,9 +2153,37 @@ fn redirect(headers: &HeaderMap, parsed: &ParsedRequest, public_hosts: &[String]
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+/// The `Access-Control-Allow-Origin` and the `Vary` list of info.json and
+/// knora.json. No Origin answers `*`; a presented Origin is echoed when
+/// [`cors_allow`] allows it against `allowlist`, else no ACAO is emitted.
+/// [`json_response`] adds credentials to an echoed Origin. The ACAO depends on
+/// the Origin in every mode, so the response always varies on `Origin`
+/// (whatever [`CorsDecision`]'s `vary` says, which the image route uses); with a
+/// preflight hook the body depends on the credentials too (clamped dims, 401
+/// auth challenge), so an intermediary cache must not share it across them.
+fn json_cors(
+    origin: Option<String>,
+    allowlist: &[String],
+    hook_configured: bool,
+) -> (Option<String>, &'static [&'static str]) {
+    let acao = match origin {
+        None => Some("*".to_owned()),
+        Some(o) => match cors_allow(Some(&o), allowlist) {
+            CorsDecision::Allow { .. } => Some(o),
+            CorsDecision::Deny { .. } => None,
+        },
+    };
+    let vary: &'static [&'static str] = if hook_configured {
+        &["Origin", "Cookie", "Authorization"]
+    } else {
+        &["Origin"]
+    };
+    (acao, vary)
+}
+
 /// A CORS decision for one request Origin against the configured allowlist.
 /// The single chokepoint every CORS site (`iiif`'s image/file
-/// stream, [`json_response`]'s knora.json path, [`cors_preflight_response`],
+/// stream, [`json_cors`] for info.json and knora.json, [`cors_preflight_response`],
 /// [`push_cors`]) reads through [`cors_allow`] — the four sites differ only in
 /// which headers they attach on `Allow`, not in whether they attach them.
 #[derive(Clone, Copy)]
@@ -2277,17 +2288,15 @@ fn restricted_dims(
 }
 
 /// Serialise a JSON value with the standard IIIF headers: a CORS
-/// `Access-Control-Allow-Origin` (`acao`: `Some("*")` for info.json,
-/// Origin-echo-`Some`-else-`Some("*")` for knora.json, gated by [`cors_allow`]
-/// — `None` when an allowlist is configured and the origin isn't on it, so no
-/// ACAO is emitted at all) and either `application/ld+json` (when the client
-/// `Accept`s it) or `application/json` + a `Link` to the JSON-LD context. A
-/// concretely echoed origin also carries `Access-Control-Allow-Credentials:
-/// true` (cookie auth); `*` (public info.json) does not — CORS forbids the
-/// pairing. `vary`, set by the caller, names every header the response varies
-/// on (e.g. `Origin` in allowlist mode, `Cookie`/`Authorization` whenever the
-/// permission/body is credential-dependent) and is emitted as one joined
-/// `Vary` header when non-empty. `private`, set by the caller whenever the
+/// `Access-Control-Allow-Origin` (`acao`, from [`json_cors`]: the echoed
+/// Origin, `*` when no Origin was sent, or `None` when the allowlist denies
+/// the Origin, so no ACAO is emitted at all) and either `application/ld+json`
+/// (when the client `Accept`s it) or `application/json` + a `Link` to the
+/// JSON-LD context. A concretely echoed origin also carries
+/// `Access-Control-Allow-Credentials: true` (cookie auth); `*` does not, as
+/// CORS forbids the pairing. `vary`, from [`json_cors`], names every header
+/// the response varies on and is emitted as one joined `Vary` header when
+/// non-empty. `private`, set by the caller whenever the
 /// body is credential-dependent, emits `Cache-Control: private, no-store` so
 /// an intermediary cache never shares one caller's response with another.
 fn json_response(
@@ -2304,11 +2313,9 @@ fn json_response(
     if let Some(acao) = acao {
         if let Ok(acao_value) = HeaderValue::from_str(acao) {
             builder = builder.header(header::ACCESS_CONTROL_ALLOW_ORIGIN, acao_value);
-            // A concrete echoed origin (knora.json with an Origin) also needs
-            // credentials so the browser accepts the cookie-authenticated
-            // cross-origin response (set whenever an Origin is present).
-            // `*` (public info.json) must not pair with
-            // credentials — CORS forbids it — so it is intentionally excluded.
+            // A concrete echoed origin also needs credentials so the browser
+            // accepts the cookie-authenticated cross-origin response. `*` (no
+            // Origin sent) must not pair with credentials: CORS forbids it.
             if acao != "*" {
                 builder = builder.header(header::ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             }
@@ -2594,7 +2601,7 @@ mod tests {
     #[test]
     fn json_response_sets_credentials_only_for_echoed_origin() {
         let value = serde_json::json!({ "ok": true });
-        // A concrete echoed origin (knora.json with an Origin) → ACAO + credentials.
+        // A concrete echoed origin → ACAO + credentials.
         let resp = json_response(
             StatusCode::OK,
             &value,
@@ -2616,7 +2623,7 @@ mod tests {
                 .unwrap(),
             "true"
         );
-        // Public `*` (info.json) → ACAO but never credentials (CORS forbids it).
+        // `*` (no Origin sent) → ACAO but never credentials (CORS forbids it).
         let resp = json_response(
             StatusCode::OK,
             &value,
@@ -2699,6 +2706,31 @@ mod tests {
         // Allowlist mode still varies by Origin on a deny, so a shared cache
         // doesn't serve this deny to a later allowed origin.
         assert_eq!(h.get(header::VARY).unwrap(), "Origin");
+    }
+
+    #[test]
+    fn json_cors_always_varies_on_origin() {
+        let allowlist = ["https://a.example".to_owned()];
+        for (origin, list, acao) in [
+            (None, &[][..], Some("*")),
+            (
+                Some("https://b.example"),
+                &[][..],
+                Some("https://b.example"),
+            ),
+            (
+                Some("https://a.example"),
+                &allowlist[..],
+                Some("https://a.example"),
+            ),
+            (Some("https://b.example"), &allowlist[..], None),
+        ] {
+            let (got, vary) = json_cors(origin.map(str::to_owned), list, false);
+            assert_eq!(got.as_deref(), acao, "{origin:?}");
+            assert_eq!(vary, ["Origin"], "{origin:?}");
+        }
+        let (_, vary) = json_cors(None, &[], true);
+        assert_eq!(vary, ["Origin", "Cookie", "Authorization"]);
     }
 
     #[test]
