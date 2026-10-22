@@ -23,7 +23,9 @@ multiple concurrent large decodes.
    components also holds one buffer per component while it decodes, together at
    most the size of the decode buffer (half of it for 4:2:0). The estimate does
    not charge them: the shape probe it is computed from does not report
-   subsampling.
+   subsampling. A size-restricted request is estimated as the decode of the
+   whole image at the restricted dimensions (RW, RH), whatever its region, since
+   every restricted output is cut from that one rendering.
 
 2. **Pipeline-aware peak estimation:** Walks the processing stages (decode → scale
    → rotate → ICC convert) and returns the maximum concurrent allocation at any
