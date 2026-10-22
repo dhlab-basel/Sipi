@@ -16,6 +16,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 SIPI (Simple Image Presentation Interface) is a multithreaded, high-performance, IIIF-compatible media server written in C++23. It implements IIIF Image API 3.0 and provides efficient image format conversions while preserving metadata. The server can be used both as a command-line tool and as a web server with Lua scripting support.
 
+**Naming: SIPI is now called Vitrinli.** In Linear (team DEV), the product label is `components > vitrinli` (renamed from `sipi`, so it covers all history), set by the reporter. The `vitrinli module` label group holds one label per `CONVENTIONS.md` module scope, set by the maintainer at triage. To list Vitrinli issues, filter on the `vitrinli` label and also search title/description text for both "sipi" and "vitrinli", then merge: issues filed without the product label only show up in the text search.
+
 ## Domain Model
 
 Read these before reasoning about names, boundaries, or architectural decisions:
