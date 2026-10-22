@@ -2042,14 +2042,17 @@ fn serve_info_json(
             Ok(d) => d,
             Err(_) => return sink::error_response(StatusCode::INTERNAL_SERVER_ERROR),
         };
-        let dims = match restricted_dims(&dims, access, &parsed.identifier) {
+        let (dims, size_restricted) = match restricted_dims(&dims, access, &parsed.identifier) {
             Ok(d) => d,
             Err(RestrictRefusal::Refuse) => return sink::error_response(StatusCode::FORBIDDEN),
             Err(RestrictRefusal::Misconfigured) => {
                 return sink::error_response(StatusCode::INTERNAL_SERVER_ERROR)
             }
         };
-        (info::image_info_json(&id, &dims), info::image_context())
+        (
+            info::image_info_json(&id, &dims, size_restricted),
+            info::image_context(),
+        )
     } else {
         let size = match std::fs::metadata(resolved) {
             Ok(m) => m.len(),
@@ -2130,7 +2133,7 @@ fn serve_knora_json(
             Ok(result) => result,
             Err(_) => return sink::error_response(StatusCode::INTERNAL_SERVER_ERROR),
         };
-        let dims = match restricted_dims(&dims, access, &parsed.identifier) {
+        let (dims, _) = match restricted_dims(&dims, access, &parsed.identifier) {
             Ok(d) => d,
             Err(RestrictRefusal::Refuse) => return sink::error_response(StatusCode::NOT_FOUND),
             Err(RestrictRefusal::Misconfigured) => {
@@ -2328,6 +2331,7 @@ fn restriction(
     }
     let (w, h) = iiif_parser::clamp_dims_to_size(size, width, height)
         .map_err(|_| RestrictRefusal::Misconfigured)?;
+    // The engine refuses the same minimum at the seam (serve_image.cpp).
     if w < 2 || h < 2 {
         return Err(RestrictRefusal::Refuse);
     }
@@ -2349,7 +2353,7 @@ fn restriction(
 /// `size` reports its [`restriction`] dims, or refuses as the image route
 /// does; every other restricted permission keeps the native width/height (the
 /// caller renders an auth challenge, not the image) but still loses the tile
-/// grid.
+/// grid. The flag is true when the dims are a size restriction's (RW, RH).
 ///
 /// `Stream` is not a restriction: it restricts no pixel and must describe the
 /// image exactly as `Allow` does, tile grid included (ADR-0027).
@@ -2357,14 +2361,15 @@ fn restricted_dims(
     dims: &ffi::SipiImageDims,
     access: &Access,
     identifier: &str,
-) -> Result<ffi::SipiImageDims, RestrictRefusal> {
+) -> Result<(ffi::SipiImageDims, bool), RestrictRefusal> {
     if matches!(
         access.permission,
         SipiPermType::Allow | SipiPermType::Stream
     ) {
-        return Ok(*dims);
+        return Ok((*dims, false));
     }
     let mut restricted = *dims;
+    let mut size_restricted = false;
     if access.permission == SipiPermType::Restrict {
         if let Some(size) = access_kv_str(access, "size") {
             let watermarked = restrict_watermark(access).is_some();
@@ -2372,11 +2377,12 @@ fn restricted_dims(
                 restriction(size, watermarked, dims.width, dims.height, identifier)?;
             restricted.width = width.get();
             restricted.height = height.get();
+            size_restricted = true;
         }
     }
     restricted.tile_width = 0;
     restricted.tile_height = 0;
-    Ok(restricted)
+    Ok((restricted, size_restricted))
 }
 
 /// Serialise a JSON value with the standard IIIF headers: a CORS
