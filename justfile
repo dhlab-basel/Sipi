@@ -207,6 +207,19 @@ commit-lint from="origin/main":
 bazel-rust-project:
     bazel run @rules_rust//tools/rust_analyzer:gen_rust_project
 
+# (Re)generate the git-ignored compile_commands.json for clangd and clang-tidy.
+# Re-run after adding/moving a C++ file or changing a target's deps/copts.
+# --bcce-compiler pins the driver to the hermetic clang++'s absolute path (the
+# tool would emit it relative). Prints the version-matched hermetic clangd path.
+compile-commands:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    EXEC_ROOT="$(bazel info execution_root)"
+    CLANGXX="$EXEC_ROOT/$(bazel cquery --output=files '"//bazel:clang++"' 2>/dev/null)"
+    test -x "$CLANGXX" || { echo "//bazel:clang++ did not resolve to the hermetic clang++: $CLANGXX" >&2; exit 1; }
+    bazel run //tools/compile_commands:refresh_compile_commands -- --bcce-compiler="$CLANGXX"
+    echo "hermetic clangd: $EXEC_ROOT/$(bazel cquery --output=files //bazel:clangd 2>/dev/null || true)"
+
 # Run all Rust e2e `rust_test` targets against the Bazel-built `:sipi`
 # binary. Pass extra Bazel flags positionally: e.g. `--config=asan` for
 # the sanitiser run, `--test_output=streamed` for live stdout,
