@@ -10,6 +10,8 @@
 #define SIPI_METADATA_EXIF_H
 
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -221,6 +223,27 @@ public:
       return false;
     }
   }
+
+  /// Sets the pixel-size tags that are present to w x h, keeping each tag's type; adds none:
+  /// PixelX/YDimension, ImageWidth/ImageLength/ImageHeight in any IFD (maker notes
+  /// included), RelatedImageWidth/Length, DefaultCropSize and the DNG Original*Size
+  /// tags (w h), ActiveArea (0 0 h w). False if a tag's type cannot hold its value,
+  /// which then keeps the old one.
+  [[nodiscard]] bool set_pixel_dimensions(std::size_t w, std::size_t h);
+
+  /// Removes every embedded preview image Exiv2 exposes, with its offset and size
+  /// tags: the IFD1 thumbnail, the SubIFD and IFD2/IFD3 images, and the maker-note
+  /// previews Exiv2's PreviewManager reads.
+  void erase_previews();
+
+  /// Gives the Photoshop image resources IFD0 can carry (Exif.Image.ImageResources)
+  /// the same treatment: drops the thumbnail resources, and the nested XMP and EXIF
+  /// go through erase_thumbnails/erase_previews and set_pixel_dimensions. Every
+  /// other resource stays byte for byte. False if the block cannot be parsed or
+  /// holds a native size this does not rewrite (slices, the legacy header).
+  /// The IPTC resource and the raw XMP and IPTC copies (XMLPacket, IPTCNAA)
+  /// need nothing: exifBytes() never writes them.
+  [[nodiscard]] bool restrict_image_resources(std::size_t w, std::size_t h);
 
   friend std::ostream &operator<<(std::ostream &lhs, Exif &rhs);
 };

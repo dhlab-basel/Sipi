@@ -6,6 +6,7 @@
 #ifndef SIPI_METADATA_XMP_H
 #define SIPI_METADATA_XMP_H
 
+#include <cstddef>
 #include <iosfwd>
 #include <mutex>
 #include <string>
@@ -24,7 +25,9 @@ extern void xmplock_func(void *pLockData, bool lockUnlock);
 /*!
  * This class holds an XMP metadata packet. SIPI stores the RDF/XML payload
  * verbatim, neither parsing nor validating it, because Exiv2's XMP parser
- * is not thread-safe at the Exiv2 version SIPI depends on.
+ * is not thread-safe at the Exiv2 version SIPI depends on. The only edits are
+ * set_pixel_dimensions() and erase_thumbnails(), text substitutions a
+ * size-restricted output applies.
  */
 class Xmp
 {
@@ -67,6 +70,22 @@ public:
    * @return String holding the xmp data
    */
   std::string xmpBytes();
+
+  /*!
+   * Sets exif:PixelXDimension/PixelYDimension, tiff:ImageWidth/ImageLength and
+   * Iptc4xmpExt:MaxAvailWidth/MaxAvailHeight, in attribute or element form and
+   * under any prefix the packet binds to their namespace, to w x h where the
+   * value is an integer. Every other byte of the packet is left as it is.
+   */
+  void set_pixel_dimensions(std::size_t w, std::size_t h);
+
+  /*!
+   * Removes every xmp:Thumbnails property (the embedded preview images, with
+   * their xmpGImg size fields) and every other xmpGImg:image, under any prefix
+   * the packet binds to their namespace. False if an element has no end or a
+   * Thumbnails element or GImg image is left that the scan cannot attribute.
+   */
+  [[nodiscard]] bool erase_thumbnails();
 };
 
 /*!

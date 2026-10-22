@@ -3,13 +3,22 @@
  * contributors. SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+#include <algorithm>
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
+#include <initializer_list>
 #include <memory>
+#include <optional>
+#include <set>
+#include <string>
+
+#include <exiv2/photoshop.hpp>
 
 #include "error/SipiError.h"
 #include "metadata/exif.h"
+#include "metadata/xmp.h"
 
 namespace Sipi {
 
@@ -177,6 +186,202 @@ std::vector<unsigned char> Exif::exifBytes()
     binaryExif.assign(blob.begin(), blob.end());
   }
   return binaryExif;
+}
+//============================================================================
+
+namespace {
+
+  // A superset of the previews exiv2's PreviewManager reads (src/preview.cpp,
+  // 0.28): re-check on an exiv2 bump. Maker-note tags are matched by name in
+  // every maker-note group.
+  bool is_preview(const Exiv2::Exifdatum &datum)
+  {
+    static const std::set<std::string> groups = { "Thumbnail",
+      "SubImage1",
+      "SubImage2",
+      "SubImage3",
+      "SubImage4",
+      "SubImage5",
+      "SubImage6",
+      "SubImage7",
+      "SubImage8",
+      "SubImage9",
+      "SubThumb1",
+      "Image2",
+      "Image3",
+      "NikonPreview",
+      "SamsungPreview" };
+    static const std::set<std::string> keys = { "Exif.Image.JPEGInterchangeFormat",
+      "Exif.Image.JPEGInterchangeFormatLength",
+      "Exif.PanasonicRaw.PreviewImage" };
+    static const std::set<std::string> maker_note_tags = { "Preview",
+      "PreviewImage",
+      "PreviewImageStart",
+      "PreviewImageLength",
+      "PreviewImageValid",
+      "PreviewOffset",
+      "PreviewLength",
+      "Thumbnail",
+      "ThumbnailImage",
+      "ThumbnailOffset",
+      "ThumbnailLength" };
+    return groups.contains(datum.groupName()) || keys.contains(datum.key())
+           || (Exiv2::ExifTags::isMakerGroup(datum.groupName()) && maker_note_tags.contains(datum.tagName()));
+  }
+
+  // `values` as the datum's type reads them: a rational as n/1.
+  std::string as_value(const Exiv2::Exifdatum &datum, std::initializer_list<std::size_t> values)
+  {
+    const bool rational = datum.typeId() == Exiv2::unsignedRational || datum.typeId() == Exiv2::signedRational;
+    std::string s;
+    for (const std::size_t v : values) {
+      if (!s.empty()) { s += ' '; }
+      s += std::to_string(v);
+      if (rational) { s += "/1"; }
+    }
+    return s;
+  }
+
+}// namespace
+
+bool Exif::set_pixel_dimensions(std::size_t w, std::size_t h)
+{
+  bool ok = true;
+  for (auto &datum : exifData) {
+    const std::string tag = datum.tagName();
+    std::string value;
+    if (tag == "PixelXDimension" || tag == "ImageWidth" || tag == "RelatedImageWidth") {
+      value = as_value(datum, { w });
+    } else if (tag == "PixelYDimension" || tag == "ImageLength" || tag == "ImageHeight"
+               || tag == "RelatedImageLength") {
+      value = as_value(datum, { h });
+    } else if (tag == "DefaultCropSize" || tag == "OriginalDefaultFinalSize" || tag == "OriginalBestQualityFinalSize"
+               || tag == "OriginalDefaultCropSize") {
+      value = as_value(datum, { w, h });
+    } else if (tag == "ActiveArea") {
+      value = as_value(datum, { 0, 0, h, w });
+    } else {
+      continue;
+    }
+    ok = datum.setValue(value) == 0 && ok;
+  }
+  return ok;
+}
+//============================================================================
+
+void Exif::erase_previews()
+{
+  bool maker_note = false;
+  for (auto it = exifData.begin(); it != exifData.end();) {
+    if (is_preview(*it)) {
+      maker_note = maker_note || Exiv2::ExifTags::isMakerGroup(it->groupName());
+      it = exifData.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  // Exiv2 rebuilds a decoded maker note from its remaining tags; the raw copy
+  // would still carry the preview.
+  if (maker_note) {
+    if (auto pos = exifData.findKey(Exiv2::ExifKey("Exif.Photo.MakerNote")); pos != exifData.end()) {
+      exifData.erase(pos);
+    }
+  }
+}
+//============================================================================
+
+bool Exif::restrict_image_resources(std::size_t w, std::size_t h)
+{
+  const Exiv2::ExifKey key("Exif.Image.ImageResources");
+  const auto pos = exifData.findKey(key);
+  if (pos == exifData.end()) { return true; }
+  // Only one block is rewritten; a second would pass as it is.
+  if (std::count_if(exifData.begin(), exifData.end(), [&](const Exiv2::Exifdatum &d) { return d.key() == key.key(); })
+      > 1) {
+    return false;
+  }
+  std::vector<unsigned char> in(pos->size());
+  pos->copy(in.data(), byteorder);
+  std::vector<unsigned char> out;
+  bool changed = false;
+  std::size_t at = 0;
+  while (at < in.size()) {
+    if (std::all_of(in.begin() + static_cast<std::ptrdiff_t>(at), in.end(), [](unsigned char b) { return b == 0; })) {
+      out.insert(out.end(), in.begin() + static_cast<std::ptrdiff_t>(at), in.end());
+      break;
+    }
+    // Signature, 2-byte id, Pascal name padded to even, 4-byte size, data padded to even.
+    const std::size_t left = in.size() - at;
+    if (left < 12 || !Exiv2::Photoshop::isIrb(&in[at])) { return false; }
+    const std::size_t head = 6 + ((in[at + 6] + 2U) & ~std::size_t{ 1 }) + 4;
+    if (left < head) { return false; }
+    const std::size_t len = (std::size_t{ in[at + head - 4] } << 24) | (std::size_t{ in[at + head - 3] } << 16)
+                            | (std::size_t{ in[at + head - 2] } << 8) | in[at + head - 1];
+    if (left - head < len) { return false; }
+    const std::size_t end = at + std::min(left, head + len + len % 2);
+    const auto data = in.begin() + static_cast<std::ptrdiff_t>(at + head);
+    std::optional<std::vector<unsigned char>> replacement;
+    switch ((in[at + 4] << 8) | in[at + 5]) {
+    case 0x0409:// thumbnails
+    case 0x040c:
+      changed = true;
+      at = end;
+      continue;
+    case 0x03e8:// legacy header: rows and columns
+    case 0x041a:// slices: the bounds of the whole image
+      return false;
+    case 0x0424: {
+      Xmp xmp(std::string(data, data + static_cast<std::ptrdiff_t>(len)));
+      if (!xmp.erase_thumbnails()) { return false; }
+      xmp.set_pixel_dimensions(w, h);
+      const std::string bytes = xmp.xmpBytes();
+      if (!std::equal(bytes.begin(), bytes.end(), data, data + static_cast<std::ptrdiff_t>(len))) {
+        replacement.emplace(bytes.begin(), bytes.end());
+      }
+      break;
+    }
+    case 0x0422:// EXIF
+    case 0x0423: {
+      auto nested = parse(in.data() + at + head, static_cast<unsigned int>(len));
+      if (!nested || (*nested)->byteorder == Exiv2::invalidByteOrder) { return false; }
+      Exif &e = **nested;
+      if (e.exifData.findKey(Exiv2::ExifKey("Exif.Image.ImageResources")) != e.exifData.end()) { return false; }
+      e.erase_previews();
+      if (!e.set_pixel_dimensions(w, h)) { return false; }
+      std::vector<unsigned char> bytes = e.exifBytes();
+      if (!std::equal(bytes.begin(), bytes.end(), data, data + static_cast<std::ptrdiff_t>(len))) {
+        replacement = std::move(bytes);
+      }
+      break;
+    }
+    default:
+      break;
+    }
+    if (replacement) {
+      const std::size_t n = replacement->size();
+      out.insert(out.end(), in.begin() + static_cast<std::ptrdiff_t>(at), data - 4);
+      out.insert(out.end(),
+        { static_cast<unsigned char>(n >> 24),
+          static_cast<unsigned char>(n >> 16),
+          static_cast<unsigned char>(n >> 8),
+          static_cast<unsigned char>(n) });
+      out.insert(out.end(), replacement->begin(), replacement->end());
+      if (n % 2 == 1) { out.push_back(0); }
+      changed = true;
+    } else {
+      out.insert(
+        out.end(), in.begin() + static_cast<std::ptrdiff_t>(at), in.begin() + static_cast<std::ptrdiff_t>(end));
+    }
+    at = end;
+  }
+  if (!changed) { return true; }
+  const Exiv2::TypeId type = pos->typeId();
+  const std::size_t unit = std::max<std::size_t>(1, Exiv2::TypeInfo::typeSize(type));
+  out.resize(out.size() + (unit - out.size() % unit) % unit, 0);
+  auto value = Exiv2::Value::create(type);
+  value->read(out.data(), out.size(), byteorder);
+  pos->setValue(value.get());
+  return true;
 }
 //============================================================================
 
