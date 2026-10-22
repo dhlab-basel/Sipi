@@ -10,13 +10,16 @@
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <string>
 
+#include <exiv2/iptc.hpp>
 #include <exiv2/photoshop.hpp>
 
 #include "error/SipiError.h"
+#include "logging/logger.h"
 #include "metadata/exif.h"
 #include "metadata/xmp.h"
 
@@ -186,6 +189,100 @@ std::vector<unsigned char> Exif::exifBytes()
     binaryExif.assign(blob.begin(), blob.end());
   }
   return binaryExif;
+}
+//============================================================================
+
+namespace {
+
+  bool is_preview(const Exiv2::Exifdatum &datum);
+
+  // What ExifParser::encode can drop whether the EXIF fits or not (exiv2 0.28
+  // exif.cpp filteredIfd0Tags/filteredIfds and the TiffEncoder: the raw XMP
+  // and IPTC copies, the raw maker note it rebuilds from the decoded one, the
+  // image resources when nothing but IPTC is left in them). Review-only:
+  // re-check on an exiv2 bump. ExifEncode.DropsLargeFieldsToFit pins only
+  // that Exiv2 drops large fields to fit.
+  bool dropped_on_every_encode(const Exiv2::Exifdatum &datum)
+  {
+    static const std::set<std::string> groups = { "SubImage1",
+      "SubImage2",
+      "SubImage3",
+      "SubImage4",
+      "SubImage5",
+      "SubImage6",
+      "SubImage7",
+      "SubImage8",
+      "SubImage9",
+      "SubThumb1",
+      "PanasonicRaw",
+      "Image2",
+      "Image3",
+      "MakerNote" };
+    static const std::set<std::string> keys = { "Exif.Image.JPEGInterchangeFormat",
+      "Exif.Image.JPEGInterchangeFormatLength",
+      "Exif.Image.PhotometricInterpretation",
+      "Exif.Image.StripOffsets",
+      "Exif.Image.RowsPerStrip",
+      "Exif.Image.StripByteCounts",
+      "Exif.Image.SubIFDs",
+      "Exif.Image.XMLPacket",
+      "Exif.Image.IPTCNAA",
+      "Exif.Photo.MakerNote" };
+    if (datum.key() == "Exif.Image.ImageResources") {
+      std::vector<Exiv2::byte> irb(datum.size());
+      datum.copy(irb.data(), Exiv2::invalidByteOrder);
+      return Exiv2::Photoshop::setIptcIrb(irb.data(), irb.size(), Exiv2::IptcData()).empty();
+    }
+    return groups.contains(datum.groupName()) || keys.contains(datum.key()) || datum.key().starts_with("Exif.Canon.AF");
+  }
+
+  // True if the encode that turned `before` into `after` dropped a field to
+  // make the EXIF fit 65527 bytes: Exiv2 then drops previews and every field
+  // over 4 KB.
+  bool dropped_to_fit(const Exiv2::ExifData &before, const Exiv2::ExifData &after)
+  {
+    return std::any_of(before.begin(), before.end(), [&](const Exiv2::Exifdatum &datum) {
+      return (is_preview(datum) || datum.size() > 4096) && !dropped_on_every_encode(datum)
+             && after.findKey(Exiv2::ExifKey(datum.key())) == after.end();
+    });
+  }
+
+}// namespace
+
+Result<std::vector<unsigned char>> Exif::exifBytes(std::size_t limit) const
+{
+  // Encodes copies: this EXIF keeps its previews for other outputs.
+  std::string why;
+  const auto encode_within = [&](Exif trial) -> std::optional<std::vector<unsigned char>> {
+    const Exiv2::ExifData before = trial.exifData;
+    std::vector<unsigned char> bytes = trial.exifBytes();
+    if (bytes.size() > limit) {
+      why = "encodes to " + std::to_string(bytes.size()) + " bytes";
+      return std::nullopt;
+    }
+    if (dropped_to_fit(before, trial.exifData)) {
+      const auto values =
+        std::accumulate(before.begin(), before.end(), std::size_t{ 0 }, [](std::size_t n, const auto &datum) {
+          return n + datum.size();
+        });
+      why = "holds " + std::to_string(values) + " bytes of field values, which Exiv2 fits only by dropping fields";
+      return std::nullopt;
+    }
+    return bytes;
+  };
+  try {
+    if (auto bytes = encode_within(*this)) { return *std::move(bytes); }
+    Exif without_previews = *this;
+    without_previews.erase_previews();
+    if (auto bytes = encode_within(std::move(without_previews))) {
+      log_warn("EXIF over %zu bytes: embedded preview images dropped to fit", limit);
+      return *std::move(bytes);
+    }
+  } catch (const Exiv2::Error &err) {
+    return std::unexpected(SipiValueError{ ErrorCode::kWriteFailed, std::string("EXIF encode failed: ") + err.what() });
+  }
+  return std::unexpected(SipiValueError{ ErrorCode::kWriteFailed,
+    "EXIF does not fit in " + std::to_string(limit) + " bytes without its preview images: " + why });
 }
 //============================================================================
 

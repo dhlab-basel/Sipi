@@ -570,3 +570,89 @@ TEST(ExifImageResources, ExifBytesNeverWritesTheRawXmpOrIptcCopies)
 }
 
 }// namespace
+
+namespace {
+
+TEST(XmpSplitExtended, MovesTheLargestPropertiesWithTheirBindingsAndKeepsRightsLast)
+{
+  const std::string big = "<a:big>" + std::string(1000, 'b') + "</a:big>";
+  const std::string empty = R"(<a:empty rdf:resource="urn:x"/>)";
+  const std::string mid = "<c:mid>" + std::string(600, 'm') + "</c:mid>";
+  const std::string rights =
+    R"(<dc:rights><rdf:Alt><rdf:li xml:lang="x-default">)" + std::string(700, 'r') + "</rdf:li></rdf:Alt></dc:rights>";
+  const std::string packet =
+    R"(<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">)"
+    R"(<rdf:Description rdf:about="" xmlns:a="urn:a" xmlns:dc="http://purl.org/dc/elements/1.1/">)"
+    + big + "<a:small>s</a:small>" + empty + rights
+    + R"(</rdf:Description><rdf:Description rdf:about="" xmlns:c="urn:c" c:attr="1">)" + mid
+    + "</rdf:Description></rdf:RDF></x:xmpmeta>";
+  const Sipi::Xmp xmp(packet);
+
+  const auto split = xmp.split_extended(packet.size() - 1200);
+  ASSERT_TRUE(split.has_value()) << split.error().diagnostic_message();
+  EXPECT_LE(split->standard.size(), packet.size() - 1200);
+  EXPECT_EQ(split->standard.find(big), std::string::npos);
+  EXPECT_EQ(split->standard.find(mid), std::string::npos);
+  EXPECT_NE(split->standard.find(rights), std::string::npos);
+  EXPECT_NE(split->standard.find("<a:small>s</a:small>" + empty), std::string::npos);
+  EXPECT_NE(split->standard.find(R"(xmpNote:HasExtendedXMP=")" + split->guid + '"'), std::string::npos);
+  EXPECT_EQ(split->guid.size(), 32U);
+  EXPECT_EQ(split->guid.find_first_not_of("0123456789ABCDEF"), std::string::npos);
+  EXPECT_NE(
+    split->extended.find(R"(xmlns:a="urn:a")" + std::string(R"( xmlns:dc="http://purl.org/dc/elements/1.1/">)") + big),
+    std::string::npos);
+  EXPECT_NE(split->extended.find(R"(xmlns:c="urn:c">)" + mid), std::string::npos);
+
+  Exiv2::XmpData standard;
+  ASSERT_EQ(Exiv2::XmpParser::decode(standard, split->standard), 0);
+  EXPECT_EQ(standard["Xmp.xmpNote.HasExtendedXMP"].toString(), split->guid);
+  Exiv2::XmpData extended;
+  ASSERT_EQ(Exiv2::XmpParser::decode(extended, split->extended), 0);
+
+  // Rights move only when nothing else is left to move.
+  const auto all = xmp.split_extended(packet.size() - 1900);
+  ASSERT_TRUE(all.has_value());
+  EXPECT_NE(all->extended.find(rights), std::string::npos);
+}
+
+TEST(XmpSplitExtended, FailsOnMalformedXmlOrWhenNothingCanMove)
+{
+  EXPECT_FALSE(Sipi::Xmp(std::string("<x:xmpmeta><rdf:RDF")).split_extended(10).has_value());
+  const std::string attributes_only =
+    R"(<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:a="urn:a" a:v=")"
+    + std::string(500, 'v') + R"("/></rdf:RDF>)";
+  EXPECT_FALSE(Sipi::Xmp(attributes_only).split_extended(400).has_value());
+  const std::string description = R"(<rdf:Description><a:v>)" + std::string(100, 'v') + "</a:v></rdf:Description>";
+  const auto packet = [&](const std::string &prolog, const std::string &bindings, int descriptions) {
+    std::string p =
+      prolog + R"(<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:a="urn:a")" + bindings + ">";
+    for (int i = 0; i < descriptions; ++i) { p += description; }
+    return Sipi::Xmp(p + "</rdf:RDF>");
+  };
+  // Room for everything: only the parse can fail.
+  constexpr std::size_t kRoom = 1 << 20;
+  ASSERT_TRUE(packet("", "", 10).split_extended(kRoom).has_value());
+  EXPECT_FALSE(packet("<!DOCTYPE x>", "", 10).split_extended(kRoom).has_value());
+  std::string many;
+  for (int i = 0; i < 62; ++i) { many += " xmlns:n" + std::to_string(i) + R"(="urn:n")"; }
+  ASSERT_TRUE(packet("", many, 10).split_extended(kRoom).has_value());
+  EXPECT_FALSE(packet("", many + R"( xmlns:last="urn:n")", 10).split_extended(kRoom).has_value());
+  ASSERT_TRUE(packet("", "", 256).split_extended(kRoom).has_value());
+  EXPECT_FALSE(packet("", "", 257).split_extended(kRoom).has_value());
+}
+
+// Exif::exifBytes(limit) tells a fitting encode from one that dropped
+// fields to fit; this pins the Exiv2 behaviour it relies on.
+TEST(ExifEncode, DropsLargeFieldsToFit)
+{
+  Exiv2::ExifData data;
+  data["Exif.Image.Copyright"] = "DaSCH";
+  data["Exif.Image.ImageDescription"] = std::string(70000, 'd');
+  Exiv2::Blob blob;
+  Exiv2::ExifParser::encode(blob, Exiv2::littleEndian, data);
+  EXPECT_LE(blob.size(), 65527U);
+  EXPECT_EQ(value_of(data, "Exif.Image.ImageDescription"), "<absent>");
+  EXPECT_EQ(value_of(data, "Exif.Image.Copyright"), "DaSCH");
+}
+
+}// namespace

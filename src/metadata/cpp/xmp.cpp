@@ -5,11 +5,18 @@
 
 #include <algorithm>
 #include <cctype>
+#include <climits>
+#include <cstdio>
 #include <initializer_list>
+#include <memory>
 #include <mutex>
+#include <numeric>
 #include <ostream>
 #include <utility>
 #include <vector>
+
+#include <expat.h>
+#include <openssl/evp.h>
 
 #include "metadata/xmp.h"
 
@@ -232,6 +239,253 @@ bool Xmp::erase_thumbnails()
     }
   }
   return __xmpstr.find("GImg:image") == std::string::npos;
+}
+//============================================================================
+
+namespace {
+
+  constexpr const char *kRdfNs = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+
+  struct Description
+  {
+    std::string about;
+    std::vector<std::pair<std::string, std::string>> bindings;// in scope: prefix ("" = default), URI
+  };
+
+  struct Property
+  {
+    std::size_t begin;
+    std::size_t end;
+    std::size_t description;
+    bool rights;
+  };
+
+  // Real packets bind a few dozen namespaces and hold a few descriptions;
+  // every description copies the bindings in scope, so both are capped.
+  constexpr std::size_t kMaxSplitBindings = 64;
+  constexpr std::size_t kMaxSplitDescriptions = 256;
+
+  // The packet's top-level properties: the children of every rdf:Description
+  // directly inside rdf:RDF, as expat (namespace mode, ' ' separator) reports them.
+  struct Scan
+  {
+    XML_Parser parser = nullptr;
+    std::vector<std::string> path;
+    std::vector<std::pair<std::string, std::string>> bindings;
+    std::vector<Description> descriptions;
+    std::vector<Property> properties;
+    std::size_t rdf_content = std::string::npos;// first byte after the rdf:RDF start tag
+    std::size_t property_depth = 0;
+    std::size_t property_tag = 0;
+    const char *refused = nullptr;// why the scan stopped the parse
+
+    void refuse(const char *why)
+    {
+      refused = why;
+      XML_StopParser(parser, XML_FALSE);
+    }
+
+    static void start_ns(void *self, const XML_Char *prefix, const XML_Char *uri)
+    {
+      auto &s = *static_cast<Scan *>(self);
+      if (s.bindings.size() == kMaxSplitBindings) {
+        s.refuse("more than 64 namespace bindings in scope");
+        return;
+      }
+      s.bindings.emplace_back(prefix != nullptr ? prefix : "", uri != nullptr ? uri : "");
+    }
+
+    // XMP has no DOCTYPE; entities would not survive the cut.
+    static void doctype(void *self, const XML_Char *, const XML_Char *, const XML_Char *, int)
+    {
+      static_cast<Scan *>(self)->refuse("a DOCTYPE");
+    }
+
+    static void end_ns(void *self, const XML_Char *prefix)
+    {
+      auto &b = static_cast<Scan *>(self)->bindings;
+      const std::string p = prefix != nullptr ? prefix : "";
+      const auto it = std::find_if(b.rbegin(), b.rend(), [&](const auto &e) { return e.first == p; });
+      if (it != b.rend()) { b.erase(std::next(it).base()); }
+    }
+
+    static void start(void *self, const XML_Char *name, const XML_Char **atts)
+    {
+      auto &s = *static_cast<Scan *>(self);
+      const std::string rdf(kRdfNs);
+      const auto here = static_cast<std::size_t>(XML_GetCurrentByteIndex(s.parser));
+      const auto tag = static_cast<std::size_t>(XML_GetCurrentByteCount(s.parser));
+      const std::size_t depth = s.path.size();
+      if (name == rdf + " RDF" && s.rdf_content == std::string::npos) { s.rdf_content = here + tag; }
+      if (name == rdf + " Description" && depth > 0 && s.path.back() == rdf + " RDF") {
+        if (s.descriptions.size() == kMaxSplitDescriptions) {
+          s.refuse("more than 256 rdf:Description elements");
+          return;
+        }
+        Description d{ "", s.bindings };
+        for (int i = 0; atts[i] != nullptr; i += 2) {
+          if (atts[i] == rdf + " about") { d.about = atts[i + 1]; }
+        }
+        s.descriptions.push_back(std::move(d));
+      } else if (depth > 1 && s.path.back() == rdf + " Description" && s.path[depth - 2] == rdf + " RDF") {
+        static const std::vector<std::string> rights = { "http://purl.org/dc/elements/1.1/ rights",
+          "http://purl.org/dc/elements/1.1/ creator",
+          "http://ns.adobe.com/photoshop/1.0/ Credit" };
+        static const std::vector<std::string> rights_ns = { "http://ns.adobe.com/xap/1.0/rights/ ",
+          "http://ns.useplus.org/ldf/xmp/1.0/ ",
+          "http://creativecommons.org/ns# " };
+        const std::string n(name);
+        const bool is_rights =
+          std::find(rights.begin(), rights.end(), n) != rights.end()
+          || std::any_of(rights_ns.begin(), rights_ns.end(), [&](const std::string &ns) { return n.starts_with(ns); });
+        s.properties.push_back({ here, here + tag, s.descriptions.size() - 1, is_rights });
+        s.property_depth = depth + 1;
+        s.property_tag = tag;
+      }
+      s.path.emplace_back(name);
+    }
+
+    static void end(void *self, const XML_Char *)
+    {
+      auto &s = *static_cast<Scan *>(self);
+      if (s.path.size() == s.property_depth) {
+        const auto count = static_cast<std::size_t>(XML_GetCurrentByteCount(s.parser));
+        // An empty-element tag reports its end with no bytes of its own.
+        if (count > 0) {
+          s.properties.back().end = static_cast<std::size_t>(XML_GetCurrentByteIndex(s.parser)) + count;
+        }
+        s.property_depth = 0;
+      }
+      s.path.pop_back();
+    }
+  };
+
+  std::string escaped(const std::string &v)
+  {
+    std::string out;
+    for (const char c : v) {
+      switch (c) {
+      case '&':
+        out += "&amp;";
+        break;
+      case '<':
+        out += "&lt;";
+        break;
+      case '"':
+        out += "&quot;";
+        break;
+      default:
+        out += c;
+      }
+    }
+    return out;
+  }
+
+  std::string md5_hex(const std::string &bytes)
+  {
+    unsigned char digest[EVP_MAX_MD_SIZE];
+    unsigned int len = 0;
+    if (EVP_Digest(bytes.data(), bytes.size(), digest, &len, EVP_md5(), nullptr) != 1) { return {}; }
+    std::string hex;
+    char buf[3];
+    for (unsigned int i = 0; i < len; ++i) {
+      std::snprintf(buf, sizeof(buf), "%02X", digest[i]);
+      hex += buf;
+    }
+    return hex;
+  }
+
+  std::string has_extended_note(const std::string &about, const std::string &guid)
+  {
+    return std::string(R"(<rdf:Description xmlns:rdf=")") + kRdfNs + R"(" rdf:about=")" + escaped(about)
+           + R"(" xmlns:xmpNote="http://ns.adobe.com/xmp/note/" xmpNote:HasExtendedXMP=")" + guid + R"("/>)";
+  }
+
+}// namespace
+
+Result<Xmp::Extended> Xmp::split_extended(std::size_t limit) const
+{
+  const auto fail = [](const std::string &why) {
+    return std::unexpected(SipiValueError{ ErrorCode::kWriteFailed, "XMP packet cannot be split: " + why });
+  };
+  if (__xmpstr.size() > INT_MAX) { return fail("over 2 GB"); }
+  Scan scan;
+  const std::unique_ptr<XML_ParserStruct, decltype(&XML_ParserFree)> parser(
+    XML_ParserCreateNS(nullptr, ' '), &XML_ParserFree);
+  if (parser == nullptr) { return fail("no XML parser"); }
+  scan.parser = parser.get();
+  XML_SetUserData(parser.get(), &scan);
+  XML_SetNamespaceDeclHandler(parser.get(), Scan::start_ns, Scan::end_ns);
+  XML_SetElementHandler(parser.get(), Scan::start, Scan::end);
+  XML_SetStartDoctypeDeclHandler(parser.get(), Scan::doctype);
+  if (XML_Parse(parser.get(), __xmpstr.data(), static_cast<int>(__xmpstr.size()), XML_TRUE) != XML_STATUS_OK) {
+    return fail(scan.refused != nullptr ? scan.refused : XML_ErrorString(XML_GetErrorCode(parser.get())));
+  }
+  if (scan.rdf_content == std::string::npos || scan.descriptions.empty()) { return fail("no rdf:Description"); }
+  const std::string about = scan.descriptions.front().about;
+
+  // Rights properties go last; among the rest the largest go first.
+  std::vector<std::size_t> order(scan.properties.size());
+  std::iota(order.begin(), order.end(), 0);
+  std::stable_sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+    const Property &pa = scan.properties[a];
+    const Property &pb = scan.properties[b];
+    if (pa.rights != pb.rights) { return !pa.rights; }
+    return pa.end - pa.begin > pb.end - pb.begin;
+  });
+  std::vector<bool> moved(scan.properties.size(), false);
+  std::size_t size = __xmpstr.size() + has_extended_note(about, std::string(32, '0')).size();
+  for (const std::size_t i : order) {
+    if (size <= limit) { break; }
+    moved[i] = true;
+    size -= scan.properties[i].end - scan.properties[i].begin;
+  }
+  if (size > limit) { return fail("over " + std::to_string(limit) + " bytes with every property moved"); }
+
+  Extended out;
+  out.extended = std::string(R"(<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf=")") + kRdfNs + R"(">)";
+  for (std::size_t d = 0; d < scan.descriptions.size(); ++d) {
+    std::string body;
+    for (std::size_t i = 0; i < scan.properties.size(); ++i) {
+      const Property &p = scan.properties[i];
+      if (moved[i] && p.description == d) { body.append(__xmpstr, p.begin, p.end - p.begin); }
+    }
+    if (body.empty()) { continue; }
+    std::string open = R"(<rdf:Description rdf:about=")" + escaped(scan.descriptions[d].about) + '"';
+    const auto &bindings = scan.descriptions[d].bindings;
+    for (std::size_t b = 0; b < bindings.size(); ++b) {
+      const auto &[prefix, uri] = bindings[b];
+      // The innermost binding of a prefix is the one in scope.
+      if (std::any_of(bindings.begin() + static_cast<std::ptrdiff_t>(b) + 1, bindings.end(), [&](const auto &e) {
+            return e.first == prefix;
+          })) {
+        continue;
+      }
+      // The bindings go on the rdf:Description itself, so they name it too.
+      if (prefix == "rdf" && uri != kRdfNs) { return fail("prefix rdf bound to " + uri); }
+      open += " xmlns" + (prefix.empty() ? "" : ":" + prefix) + "=\"" + escaped(uri) + '"';
+    }
+    out.extended += open + '>' + body + "</rdf:Description>";
+  }
+  out.extended += "</rdf:RDF></x:xmpmeta>";
+  out.guid = md5_hex(out.extended);
+  if (out.guid.size() != 32) { return fail("no MD5"); }
+
+  out.standard.reserve(size);
+  std::size_t copied = 0;
+  const auto copy_to = [&](std::size_t pos) {
+    out.standard.append(__xmpstr, copied, pos - copied);
+    copied = pos;
+  };
+  copy_to(scan.rdf_content);
+  out.standard += has_extended_note(about, out.guid);
+  for (std::size_t i = 0; i < scan.properties.size(); ++i) {
+    if (!moved[i]) { continue; }
+    copy_to(scan.properties[i].begin);
+    copied = scan.properties[i].end;
+  }
+  copy_to(__xmpstr.size());
+  return out;
 }
 //============================================================================
 

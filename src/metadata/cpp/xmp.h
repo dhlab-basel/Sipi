@@ -11,6 +11,8 @@
 #include <mutex>
 #include <string>
 
+#include "error/SipiValueError.h"
+
 namespace Sipi {
 
 typedef struct
@@ -27,7 +29,8 @@ extern void xmplock_func(void *pLockData, bool lockUnlock);
  * verbatim, neither parsing nor validating it, because Exiv2's XMP parser
  * is not thread-safe at the Exiv2 version SIPI depends on. The only edits are
  * set_pixel_dimensions() and erase_thumbnails(), text substitutions a
- * size-restricted output applies.
+ * size-restricted output applies; split_extended() reads the packet with
+ * expat (one parser per call, so thread-safe) to cut it, without changing it.
  */
 class Xmp
 {
@@ -86,6 +89,26 @@ public:
    * Thumbnails element or GImg image is left that the scan cannot attribute.
    */
   [[nodiscard]] bool erase_thumbnails();
+
+  /// A packet split into StandardXMP and ExtendedXMP (XMP Specification Part 3,
+  /// 1.1.3.1), for a container that holds at most `limit` bytes of it in one piece.
+  struct Extended
+  {
+    std::string standard;//!< The packet without the moved properties, plus xmpNote:HasExtendedXMP
+    std::string extended;//!< The moved properties as one serialization
+    std::string guid;//!< MD5 of `extended`, 32 upper-case hex digits
+  };
+
+  /*!
+   * Moves whole top-level properties, largest first and rights properties
+   * last, out of the packet until the rest fits in `limit` bytes. Every
+   * property keeps its bytes. kWriteFailed if the packet is not well-formed
+   * XML, has a DOCTYPE, binds more than 64 namespaces in scope, holds more
+   * than 256 top-level rdf:Description elements, is over 2 GB, or does not
+   * fit even with every property moved; the caller decides what that means
+   * (the JPEG writer leaves the packet out with a warning).
+   */
+  [[nodiscard]] Result<Extended> split_extended(std::size_t limit) const;
 };
 
 /*!

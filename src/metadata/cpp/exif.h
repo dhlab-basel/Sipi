@@ -96,6 +96,15 @@ public:
   std::vector<unsigned char> exifBytes();
 
   /*!
+   * The EXIF data encoded in at most `limit` bytes. When it does not fit, it is
+   * encoded again without the embedded previews (logged); this EXIF keeps
+   * them. kWriteFailed if it still does not fit, if Exiv2 would drop any other
+   * field to make it fit, or if Exiv2 fails to encode it; the caller decides
+   * what that means (the JPEG writer leaves the EXIF out with a warning).
+   */
+  [[nodiscard]] Result<std::vector<unsigned char>> exifBytes(std::size_t limit) const;
+
+  /*!
    * Helper function to convert a signed float to a signed rational as used by EXIF
    *
    * \param[in] f Input signed float
