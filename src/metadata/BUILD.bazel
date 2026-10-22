@@ -156,3 +156,19 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+# Co-located unit test for the size-field rewrite and preview removal a
+# size-restricted output applies to its EXIF and XMP.
+cc_test(
+    name = "pixel_dimensions_test",
+    srcs = ["cpp/pixel_dimensions_test.cpp"],
+    # exiv2's Exifdatum value conversion reaches iconv(), explicit on macOS.
+    linkopts = select({
+        "@platforms//os:macos": ["-liconv"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":metadata",
+        "@googletest//:gtest_main",
+    ],
+)
