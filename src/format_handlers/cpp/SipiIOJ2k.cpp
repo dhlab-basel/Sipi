@@ -1080,16 +1080,10 @@ Result<bool> SipiIOJ2k::read(SipiImage *img,
   }
 
   if ((size != nullptr) && (!redonly)) {
-    switch (scaling_quality.jk2) {
-    case ScalingMethod::HIGH:
-      if (auto r = Sipi::processing::scale(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
-      break;
-    case ScalingMethod::MEDIUM:
-      if (auto r = Sipi::processing::scaleMedium(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
-      break;
-    case ScalingMethod::LOW:
-      if (auto r = Sipi::processing::scaleFast(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
-      break;
+    if (auto r = Sipi::processing::scale_with(
+          *img, nnx, nny, scaling_method_for(SipiQualityFormat::JP2, scaling_quality));
+        !r) {
+      return std::unexpected(r.error());
     }
   }
   return true;

@@ -1706,15 +1706,10 @@ Result<bool> SipiIOTiff::read(SipiImage *img,
       bool redonly;
       SipiSize::SizeType rtype = size->get_size(w, h, nnx, nny, reduce, redonly);
       if (rtype != SipiSize::FULL) {
-        switch (scaling_quality.jpeg) {
-        case ScalingMethod::HIGH:
-          if (auto r = Sipi::processing::scale(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
-          break;
-        case ScalingMethod::MEDIUM:
-          if (auto r = Sipi::processing::scaleMedium(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
-          break;
-        case ScalingMethod::LOW:
-          if (auto r = Sipi::processing::scaleFast(*img, nnx, nny); !r) { return std::unexpected(r.error()); }
+        if (auto r = Sipi::processing::scale_with(
+              *img, nnx, nny, scaling_method_for(SipiQualityFormat::TIF, scaling_quality));
+            !r) {
+          return std::unexpected(r.error());
         }
       }
     }
