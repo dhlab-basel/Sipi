@@ -85,6 +85,7 @@ cc_library(
     deps = [
         "@exiv2//:exiv2",
         "@lcms2//:lcms2",
+        "@libexpat//:expat",
         "@openssl//:crypto",
         "@openssl//:ssl",
         "//src/util",
