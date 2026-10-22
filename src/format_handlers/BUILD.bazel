@@ -148,6 +148,7 @@ cc_test(
         "cpp/j2k_subsampling_test.cpp",
         "cpp/jpeg_format_regression_test.cpp",
         "cpp/jpeg_marker_regression_test.cpp",
+        "cpp/jpeg_metadata_segments_test.cpp",
         "cpp/jpeg_write_test.cpp",
         "cpp/malformed_tiff_test.cpp",
         "cpp/png_metadata_roundtrip_test.cpp",
@@ -160,6 +161,7 @@ cc_test(
     deps = [
         ":format_handlers",
         "//test:test_paths",
+        "@exiv2",
         "@googletest//:gtest_main",
     ],
 )
