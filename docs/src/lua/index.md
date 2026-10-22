@@ -130,7 +130,11 @@ The pre-flight function must return at least 2 parameters:
      request — including a region request — is capped so its output cannot
      exceed `f` times that region's own pixel extent. A client cannot recover
      full resolution by requesting many native-scale regions instead of the
-     full image.
+     full image.  
+     A size that can never reduce an image (`max`, `pct:` of 100 or more, `red:0`) is refused when no
+     watermark is set (an empty `watermark` is none): 403 on the image and on `info.json`, 404 on
+     `knora.json`. A size that leaves an axis below 2 px is refused with or without a watermark. An
+     image already inside a box size (e.g. 100×80 under `!128,128`) is served at its native size.
     - `"stream"` marks the representation as one to be consumed in place rather than kept as a file —
       streamed audio or video, typically. **It expresses intent and enforces nothing:** SIPI serves a
       `stream` decision exactly as `allow`, with the same bytes and the same headers, and only counts

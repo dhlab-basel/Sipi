@@ -12,9 +12,11 @@
 
 #include <chrono>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
 #include <string>
+#include <utility>
 #include <variant>
 
 #include "ffi/engine_context.h"
@@ -72,7 +74,8 @@ SipiServeRequest make_request(const std::string &path, const SipiIiifParams &par
   req.prefix = "unit";
   req.identifier = "lena512.tif";
   req.params = params;
-  req.restricted_size = nullptr;
+  req.restricted_width = 0;
+  req.restricted_height = 0;
   req.watermark_path = nullptr;
   req.forwarded_proto = nullptr;
   req.forwarded_host = "localhost";
@@ -175,6 +178,49 @@ TEST(BuildImageResponse, ClientGoneBeforeDecode)
   const auto result = build_image_response(req, bare_engine(), always_cancelled);
   ASSERT_FALSE(result.has_value());
   EXPECT_EQ(result.error(), SipiStatus::ClientGone);
+}
+
+// The restricted dims (RW, RH) arrive decided by the shell. lena512.tif is
+// 512x512; the in-bounds case is the canary that the two refusals below come
+// from the restricted pair, not from the request.
+TEST(BuildImageResponse, RestrictedDimsWithinImageServe)
+{
+  const std::string path = fixture("/unit/lena512.tif");
+  auto req = make_request(path, full_params(SIPI_FORMAT_PNG));
+  req.restricted_width = 128;
+  req.restricted_height = 128;
+
+  const auto result = build_image_response(req, bare_engine(), kNeverCancelled);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(result->http_status, 200);
+}
+
+TEST(BuildImageResponse, HalfSetRestrictedPairIsInternalError)
+{
+  const std::string path = fixture("/unit/lena512.tif");
+  for (const auto &[rw, rh] : { std::pair<uint32_t, uint32_t>{ 128, 0 }, std::pair<uint32_t, uint32_t>{ 0, 128 } }) {
+    auto req = make_request(path, full_params(SIPI_FORMAT_PNG));
+    req.restricted_width = rw;
+    req.restricted_height = rh;
+
+    const auto result = build_image_response(req, bare_engine(), kNeverCancelled);
+    ASSERT_FALSE(result.has_value()) << rw << "x" << rh;
+    EXPECT_EQ(result.error(), SipiStatus::InternalError) << rw << "x" << rh;
+  }
+}
+
+TEST(BuildImageResponse, RestrictedDimsLargerThanImageIsInternalError)
+{
+  const std::string path = fixture("/unit/lena512.tif");
+  for (const auto &[rw, rh] : { std::pair<uint32_t, uint32_t>{ 513, 512 }, std::pair<uint32_t, uint32_t>{ 512, 513 } }) {
+    auto req = make_request(path, full_params(SIPI_FORMAT_PNG));
+    req.restricted_width = rw;
+    req.restricted_height = rh;
+
+    const auto result = build_image_response(req, bare_engine(), kNeverCancelled);
+    ASSERT_FALSE(result.has_value()) << rw << "x" << rh;
+    EXPECT_EQ(result.error(), SipiStatus::InternalError) << rw << "x" << rh;
+  }
 }
 
 TEST(BuildImageResponse, ReportErrorFiresOnReadFailure)

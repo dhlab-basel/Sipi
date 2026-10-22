@@ -516,8 +516,12 @@ std::expected<ServeResponse, SipiStatus>
   const SipiIdentifier sid(shttps::urldecode(str_or_empty(req.identifier)));
 
   const std::string watermark = str_or_empty(req.watermark_path);
-  auto restricted_size =
-    req.restricted_size != nullptr ? std::make_shared<SipiSize>(std::string(req.restricted_size)) : std::make_shared<SipiSize>();
+  const size_t rest_w = req.restricted_width;
+  const size_t rest_h = req.restricted_height;
+  if ((rest_w == 0) != (rest_h == 0)) {
+    log_warn("GET %s: half-set restricted dims", uri.c_str());
+    return std::unexpected(SipiStatus::InternalError);
+  }
 
   const SipiQualityFormat::FormatType in_format = detect_in_format(infile);
 
@@ -570,27 +574,13 @@ std::expected<ServeResponse, SipiStatus>
     return std::unexpected(SipiStatus::BadRequest);
   }
 
-  size_t rest_w{ 0 }, rest_h{ 0 };
-  try {
-    restricted_size->get_size(img_w, img_h, rest_w, rest_h, tmp_red, tmp_ro);
-  } catch (Sipi::SipiSizeError &) {
-    return std::unexpected(SipiStatus::BadRequest);
-  } catch (Sipi::SipiError &) {
-    return std::unexpected(SipiStatus::BadRequest);
+  // The shell probed the shape before this read; a file replaced in between
+  // must not widen the restricted view.
+  if (rest_w > img_w || rest_h > img_h) {
+    log_warn("GET %s: restricted dims exceed the image", uri.c_str());
+    return std::unexpected(SipiStatus::InternalError);
   }
-  // A restrict decision that does not reduce resolution and adds no watermark
-  // is not a restriction — refuse it rather than pass the original through at
-  // full fidelity (S2-09). Catches size=max, size=pct:100, ^pct:200 (upscale).
-  // `req.restricted_size` (not `restricted_size->undefined()`) is the signal
-  // that a size was actually requested: "max" parses to the same `undefined()`
-  // shape as "no restriction", but still resolves rest_w/rest_h to the full
-  // image extent above. (A bare {type='restrict'} with no size and no
-  // watermark arrives with a null restricted_size and is refused on the Rust
-  // edge before the seam.)
-  if (req.restricted_size != nullptr && rest_w >= img_w && rest_h >= img_h && watermark.empty()) {
-    return std::unexpected(SipiStatus::Forbidden);
-  }
-  if (!restricted_size->undefined()) {
+  if (rest_w != 0) {
     // The restricted-size cap must bound the effective SAMPLING FACTOR of ANY
     // region, not the full-image output box: comparing full-image boxes (the
     // previous check) lets a client reconstruct the full-resolution image by

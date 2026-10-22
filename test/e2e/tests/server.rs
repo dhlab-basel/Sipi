@@ -825,7 +825,7 @@ fn restrict_plus_watermark() {
 }
 
 // A restrict decision that neither shrinks resolution nor adds a watermark is
-// not a restriction — the engine must refuse it (403) rather than serve the
+// not a restriction — the server must refuse it (403) rather than serve the
 // original at full fidelity (S2-09).
 
 #[test]
