@@ -1098,7 +1098,7 @@ Result<void> SipiIOJpeg::write(SipiImage *img, const OutputSink &sink, const Sip
   } else if (filepath == "stdout:") {
     use_stdout = true;
   } else {
-    int outfile = open(filepath.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    int outfile = open(filepath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (outfile == -1) {
       return std::unexpected(SipiValueError{ ErrorCode::kWriteFailed, "Cannot open file \"" + filepath + "\"!" });
     }
